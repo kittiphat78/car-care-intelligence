@@ -6,18 +6,19 @@
   --slate-900: #0F172A; 
   --blue-600: #2563EB;
   --indigo-600: #4F46E5;
-  --text-soft: #1E293B; /* ปรับให้เข้มกำลังดี อ่านง่ายกว่าเดิม */
+  --text-soft: #1E293B;
 
   --radius-card: 1.25rem;
   --radius-button: 999px;
 
   --shadow-soft: 0 14px 32px rgba(15, 23, 42, 0.12);
+  --shadow-card: 0 2px 12px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
+  --shadow-blue: 0 8px 24px rgba(37, 99, 235, 0.15);
 }
 
 @layer base {
   html {
-    /* 📍 ปรับฐานเป็น 106.25% (ประมาณ 17px) เพื่อความพอดี */
-    font-size: 106.25%; 
+    font-size: 106.25%;
     -webkit-text-size-adjust: 100%;
     scroll-behavior: smooth;
     background-color: var(--app-bg);
@@ -31,22 +32,19 @@
     color: var(--slate-900);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    letter-spacing: -0.01em; 
-    line-height: 1.55; 
+    letter-spacing: -0.01em;
+    line-height: 1.55;
     text-rendering: optimizeLegibility;
     min-height: 100vh;
-    /* 📍 ใช้ความหนาระดับ Medium เป็นมาตรฐานเพื่อให้ดูชัดแต่ไม่ทึบ */
-    @apply font-medium; 
+    @apply font-medium;
   }
 
-  /* 📍 ปรับหัวข้อให้ขนาดพอดีมือถือ */
   h1 { @apply text-3xl font-black mb-4; }
   h2 { @apply text-2xl font-bold mb-3; }
   h3 { @apply text-xl font-bold mb-2; }
 
-  /* 📍 ช่องกรอกข้อมูลและปุ่มปรับให้ขนาดจิ้มง่ายพอดีนิ้ว */
   input, select, textarea {
-    font-size: 1rem !important; 
+    font-size: 1rem !important;
     @apply font-semibold;
   }
 
@@ -57,25 +55,22 @@
 
   p, li, a {
     color: var(--text-soft);
-    font-size: 0.95rem; 
+    font-size: 0.95rem;
   }
 }
 
-/* --- ส่วนที่ปรับตามความเหมาะสมของ UI --- */
+/* --- Sticky Header overrides --- */
 
-/* 📍 บรรทัดตัวหนังสือในบัตรสีน้ำเงิน (Sticky) */
 .sticky p, .sticky span {
-  font-size: 0.9rem !important; 
+  font-size: 0.9rem !important;
   @apply font-bold text-white;
 }
 
-/* 📍 ตัวเลขราคาในส่วน Header ให้ใหญ่พอดี (ลดจาก 2rem เหลือ 1.5rem) */
 .sticky .text-lg, .sticky .text-xl, .sticky .text-2xl {
-  font-size: 1.5rem !important; 
+  font-size: 1.5rem !important;
   @apply font-black text-blue-400;
 }
 
-/* 📍 ปรับช่องค้นหาให้ไม่สูงเกินไป */
 input[type="text"] {
   padding-top: 0.75rem !important;
   padding-bottom: 0.75rem !important;
@@ -85,8 +80,7 @@ input[type="text"] {
 /* --- Mobile-first Responsive --- */
 @media (max-width: 768px) {
   html {
-    /* 📍 บนมือถือใช้ 100% (16px) ตามมาตรฐานสากลแต่เน้นน้ำหนักฟอนต์ช่วย */
-    font-size: 100%; 
+    font-size: 100%;
   }
 
   .app-container {
@@ -99,7 +93,7 @@ input[type="text"] {
   }
 }
 
-/* ป้องกันการลากคลุม (ทำให้เหมือนแอป Native) */
+/* --- Native App Feel --- */
 * {
   -webkit-tap-highlight-color: transparent;
   user-select: none;
@@ -110,5 +104,96 @@ input, textarea {
   user-select: text !important;
 }
 
+/* --- Scrollbar hiding --- */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* --- Card & Surface Enhancements --- */
+
+/* White card base — used by RecordCard and similar surfaces */
+.card-surface {
+  background: #ffffff;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  border: 1px solid rgba(226, 232, 240, 0.6);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.card-surface:active {
+  transform: scale(0.97);
+  box-shadow: var(--shadow-soft);
+}
+
+/* Dark card (summary panels) */
+.card-dark {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border-radius: 1.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+}
+
+/* --- Input Focus Glow --- */
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+/* --- Button Press Feel --- */
+button:active {
+  transform: scale(0.96);
+  transition: transform 0.1s ease;
+}
+
+/* --- Page Background Texture (subtle grain) --- */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+/* --- Pill / Badge utility --- */
+.badge-wash {
+  background: #eff6ff;
+  color: #3b82f6;
+  border: 1px solid #bfdbfe;
+  font-size: 0.6rem;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.5rem;
+}
+
+.badge-polish {
+  background: #fffbeb;
+  color: #f59e0b;
+  border: 1px solid #fde68a;
+  font-size: 0.6rem;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.5rem;
+}
+
+/* --- Smooth page transitions --- */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-up {
+  animation: fadeUp 0.35s cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+/* Staggered children */
+.animate-fade-up:nth-child(1) { animation-delay: 0ms; }
+.animate-fade-up:nth-child(2) { animation-delay: 40ms; }
+.animate-fade-up:nth-child(3) { animation-delay: 80ms; }
+.animate-fade-up:nth-child(4) { animation-delay: 120ms; }
+.animate-fade-up:nth-child(5) { animation-delay: 160ms; }

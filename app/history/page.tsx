@@ -120,18 +120,22 @@ export default function HistoryPage() {
   return (
     <div className="relative w-full h-auto min-h-screen bg-[#F4F6F9] overflow-y-visible block">
       
-      {/* --- Sticky Header: ปรับให้ Compact และโชว์การ์ดยอดรวมค้างไว้ --- */}
-      <div className="sticky top-0 z-30 bg-[#F4F6F9]/80 backdrop-blur-xl border-b border-slate-200/50 px-4 pt-6 pb-3">
+      {/* --- Sticky Header --- */}
+      <div className="sticky top-0 z-30 bg-[#F4F6F9]/90 backdrop-blur-xl border-b border-slate-200/60 px-4 pt-6 pb-3">
         <div className="max-w-2xl mx-auto">
           
           {/* Header Row: Archive + Year Select */}
           <div className="flex items-center justify-between mb-3 px-1">
-            <h1 className="text-xl font-black text-slate-900 tracking-tight font-sarabun">Archive</h1>
+            <div className="flex items-center gap-2">
+              {/* Decorative accent bar */}
+              <div className="w-1 h-5 rounded-full bg-gradient-to-b from-blue-400 to-blue-600" />
+              <h1 className="text-xl font-black text-slate-900 tracking-tight font-sarabun">Archive</h1>
+            </div>
             <div className="relative">
               <select 
                 value={selectedYear} 
                 onChange={(e) => { setSelectedYear(parseInt(e.target.value)); setSelectedMonth(null); }}
-                className="appearance-none bg-white border border-slate-200 rounded-xl pl-3 pr-8 py-1.5 text-[10px] font-black text-slate-900 shadow-sm outline-none cursor-pointer font-sarabun"
+                className="appearance-none bg-white border border-slate-200 rounded-xl pl-3 pr-8 py-1.5 text-[10px] font-black text-slate-900 shadow-sm outline-none cursor-pointer font-sarabun focus:border-blue-300 transition-colors"
               >
                 {dynamicYears.map(y => <option key={y} value={y}>พ.ศ. {y + 543}</option>)}
               </select>
@@ -139,78 +143,124 @@ export default function HistoryPage() {
             </div>
           </div>
 
-          {/* 📍 บัตรสรุปยอด: ย้ายเข้ามาอยู่ใน Sticky และปรับให้ Compact (โชว์ค้างตลอด) */}
-          <div className="relative rounded-[20px] overflow-hidden shadow-lg shadow-blue-900/10 p-3 bg-slate-900 mb-3 border border-white/5">
-            <div className="flex items-center justify-between mb-2">
+          {/* Summary Card */}
+          <div className="relative rounded-[20px] overflow-hidden shadow-lg shadow-blue-900/10 p-3 mb-3 border border-white/5"
+            style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}>
+            
+            {/* Subtle glow orb */}
+            <div className="absolute -top-4 -right-4 w-20 h-20 rounded-full bg-blue-500/10 blur-2xl pointer-events-none" />
+
+            <div className="flex items-center justify-between mb-2 relative">
               <div className="flex items-baseline gap-2">
                 <span className="text-[8px] font-black uppercase text-slate-500 font-sarabun tracking-wider">รายได้ปี {selectedYear + 543}</span>
-                <span className="text-lg font-black text-blue-400 tracking-tight font-sarabun">฿{records.reduce((s, r) => s + r.price, 0).toLocaleString()}</span>
+                <span className="text-lg font-black text-blue-400 tracking-tight font-sarabun">
+                  ฿{records.reduce((s, r) => s + r.price, 0).toLocaleString()}
+                </span>
               </div>
               <button 
                 onClick={() => exportToCSV(records, `Summary-${selectedYear}`)}
-                className="bg-white/10 p-1.5 rounded-lg text-[8px] font-black text-white/80 uppercase font-sarabun active:scale-90 transition-all"
+                className="bg-white/10 hover:bg-white/15 active:scale-90 px-2.5 py-1.5 rounded-lg text-[8px] font-black text-white/80 uppercase font-sarabun transition-all flex items-center gap-1"
               >
-                📥 CSV
+                <span>📥</span>
+                <span>CSV</span>
               </button>
             </div>
             
-            {/* Slim Summary Bar */}
-            <div className="pt-2 border-t border-white/5 flex items-center justify-between">
+            {/* Divider */}
+            <div className="border-t border-white/[0.06] pt-2 flex items-center justify-between relative">
               <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-400/60" />
                 <span className="text-[7px] font-black text-blue-300/60 uppercase font-sarabun">2 วันล่าสุด:</span>
                 <span className="text-xs font-black text-white font-sarabun">฿{combinedRevenue.toLocaleString()}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="text-[7px] font-black text-slate-500 uppercase font-sarabun">รวม:</span>
-                <span className="text-xs font-black text-white font-sarabun">{combinedCount} <span className="text-[8px] opacity-40">คัน</span></span>
+                <span className="text-xs font-black text-white font-sarabun">
+                  {combinedCount} <span className="text-[8px] opacity-40">คัน</span>
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Search Bar: Compact Version */}
+          {/* Search Bar */}
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">🔍</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none">🔍</span>
             <input 
               type="text" 
               value={search} 
               onChange={e => setSearch(e.target.value)} 
               placeholder="ค้นหาทะเบียนรถ..."
-              className="w-full pl-9 pr-4 py-2 bg-white/70 border border-slate-100 rounded-xl text-xs font-semibold outline-none shadow-sm focus:bg-white transition-all font-sarabun" 
+              className="w-full pl-9 pr-4 py-2 bg-white/80 border border-slate-200/80 rounded-xl text-xs font-semibold outline-none shadow-sm focus:bg-white focus:border-blue-300 focus:shadow-blue-100 transition-all font-sarabun" 
             />
           </div>
         </div>
       </div>
 
-      {/* --- ส่วนเนื้อหาที่เลื่อนได้ --- */}
+      {/* --- Scrollable Content --- */}
       <div className="px-5 pt-5 pb-[450px] max-w-2xl mx-auto block overflow-visible">
         
-        {/* Filter Wash/Polish + Date Picker: ปล่อยให้เลื่อนหายไปได้เพื่อเพิ่มพื้นที่ดูรถ */}
+        {/* Filter Pills */}
         <div className="flex gap-2 mb-3 overflow-x-auto no-scrollbar py-1">
           {(['all', 'wash', 'polish'] as FilterType[]).map(t => (
             <button key={t} onClick={() => setFilterType(t)}
-              className={`px-4 py-1.5 rounded-full text-[10px] font-black transition-all border whitespace-nowrap font-sarabun ${filterType === t ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-400 border-slate-200'}`}>
-              {t === 'all' ? 'ทั้งหมด' : t === 'wash' ? '🚿 Wash' : '✨ Polish'}
+              className={`px-4 py-1.5 rounded-full text-[10px] font-black transition-all border whitespace-nowrap font-sarabun shadow-sm ${
+                filterType === t 
+                  ? t === 'wash'
+                    ? 'bg-blue-600 text-white border-blue-600 shadow-blue-200'
+                    : t === 'polish'
+                    ? 'bg-amber-500 text-white border-amber-500 shadow-amber-100'
+                    : 'bg-slate-900 text-white border-slate-900'
+                  : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300'
+              }`}>
+              {t === 'all' ? 'ทั้งหมด' : t === 'wash' ? '🧼 Wash' : '✨ Polish'}
             </button>
           ))}
         </div>
 
-        <div className="flex gap-2 mb-6">
-          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="flex-1 px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 font-sarabun outline-none" />
-          <span className="text-slate-300 self-center text-[10px]">to</span>
-          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="flex-1 px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 font-sarabun outline-none" />
+        {/* Date Range Picker */}
+        <div className="flex gap-2 mb-6 items-center">
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={e => setDateFrom(e.target.value)}
+            className="flex-1 px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 font-sarabun outline-none focus:border-blue-300 transition-colors"
+          />
+          <span className="text-slate-300 self-center text-[10px] shrink-0">→</span>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={e => setDateTo(e.target.value)}
+            className="flex-1 px-2 py-1.5 bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 font-sarabun outline-none focus:border-blue-300 transition-colors"
+          />
         </div>
 
         {/* Record List */}
         {loading ? (
-          <div className="space-y-4 pt-5">
-            {[1, 2, 3].map(i => <div key={i} className="h-24 bg-white rounded-[28px] animate-pulse" />)}
+          <div className="space-y-3 pt-2">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-[76px] bg-white rounded-[24px] animate-pulse"
+                style={{ opacity: 1 - (i - 1) * 0.2 }} />
+            ))}
+          </div>
+        ) : Object.keys(grouped).length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="text-4xl mb-3">📂</div>
+            <p className="text-sm font-black text-slate-400 font-sarabun">ไม่พบรายการ</p>
+            <p className="text-[10px] text-slate-300 font-sarabun mt-1">ลองเปลี่ยนตัวกรองหรือช่วงวันที่ดูครับ</p>
           </div>
         ) : (
           Object.entries(grouped).map(([date, recs]) => (
             <div key={date} className="mb-8">
+              {/* Date header */}
               <div className="flex items-center justify-between mb-3 px-1">
-                <span className="text-[10px] font-black text-slate-700 font-sarabun uppercase">{date}</span>
-                <span className="text-[10px] font-black text-blue-600">฿{recs.reduce((s, r) => s + r.price, 0).toLocaleString()}</span>
+                <div className="flex items-center gap-2">
+                  {/* Dot accent */}
+                  <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
+                  <span className="text-[10px] font-black text-slate-500 font-sarabun uppercase tracking-wide">{date}</span>
+                </div>
+                <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                  ฿{recs.reduce((s, r) => s + r.price, 0).toLocaleString()}
+                </span>
               </div>
               <div className="grid gap-2.5">
                 {recs.map(r => (
