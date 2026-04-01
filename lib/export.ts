@@ -13,35 +13,58 @@ export function exportToCSV(records: Record[], fileName: string) {
     'ราคา (บาท)'
   ]
 
+  // ฟังก์ชันช่วยจัดการข้อมูลที่มีเครื่องหมาย , หรือเว้นวรรค เพื่อไม่ให้ CSV พัง
+  const formatCell = (cell: any) => {
+    const stringValue = String(cell ?? '-');
+    // ถ้าในข้อมูลมีคอมม่า ให้ใส่ฟันหนูครอบไว้ Excel จะได้ไม่ตัดคอลัมน์ผิด
+    return `"${stringValue.replace(/"/g, '""')}"`; 
+  };
+
   // 2. แปลงข้อมูลแต่ละแถว
   const rows = records.map(r => {
-    const date = new Date(r.created_at).toLocaleString('th-TH')
+    const date = new Date(r.created_at).toLocaleString('th-TH', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+    
     const type = r.type === 'wash' ? 'ล้างรถ' : 'ขัดสี'
     
-    // แยกข้อมูลจากอาเรย์ services [ประเภทรถ, ยี่ห้อรถ, หมายเหตุ]
+    // ดึงข้อมูลจากอาเรย์ services [ประเภทรถ, ยี่ห้อรถ, หมายเหตุ]
     const carType = r.services[0] || '-'
     const brand = r.services[1] || '-'
     const note = r.services[2] || '-'
 
     return [
       r.seq_number,
-      `"${date}"`, // ใส่ฟันหนูครอบเพื่อป้องกัน CSV ตัดวันที่ผิด
+      date,
       type,
       r.plate,
       carType,
       brand,
       note,
       r.price
-    ]
+    ].map(formatCell); // จัดการทุก Cell ให้ปลอดภัย
   })
 
-  // 3. คำนวณยอดรวมบรรทัดสุดท้าย
+  // 3. คำนวณยอดรวมบรรทัดสุดท้าย (ใส่ช่องว่างให้ตรงคอลัมน์)
   const totalPrice = records.reduce((sum, r) => sum + r.price, 0)
-  const summaryRow = ['', '', '', '', '', '', 'ยอดรวมทั้งสิ้น:', totalPrice]
+  const summaryRow = [
+    formatCell(''),
+    formatCell(''),
+    formatCell(''),
+    formatCell(''),
+    formatCell(''),
+    formatCell(''),
+    formatCell('ยอดรวมทั้งสิ้น:'),
+    formatCell(totalPrice)
+  ]
 
-  // 4. รวมข้อมูลทั้งหมดและใส่ BOM (\uFEFF) เพื่อให้ Excel อ่านภาษาไทยออก (ไม่เป็นต่างด้าว)
+  // 4. รวมข้อมูลทั้งหมดและใส่ BOM (\uFEFF) เพื่อให้ Excel อ่านภาษาไทยออก 100%
   const csvContent = "\uFEFF" + [
-    headers.join(','),
+    headers.map(formatCell).join(','),
     ...rows.map(row => row.join(',')),
     summaryRow.join(',')
   ].join('\n')
@@ -57,4 +80,5 @@ export function exportToCSV(records: Record[], fileName: string) {
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
+  URL.revokeObjectURL(url) // คืนค่า Memory
 }
