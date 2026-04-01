@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --app-bg: #FDFDFD;
+  --app-bg: #F4F6F9;
   --slate-950: #020617; /* สีดำลึกแบบ Premium */
   --slate-900: #0F172A;
   --blue-600: #2563EB;
@@ -16,7 +16,7 @@
 
 @layer base {
   html {
-    font-size: 100%; /* 16px */
+    font-size: 106.25%; /* 17px — ใหญ่ขึ้นจาก 16px */
     -webkit-text-size-adjust: 100%;
     scroll-behavior: smooth;
     background-color: var(--app-bg);
@@ -25,12 +25,13 @@
 
   body {
     margin: 0;
-    font-family: Inter, 'Segoe UI', Roboto, sans-serif;
+    font-family: inherit;
     background-color: var(--app-bg);
     color: var(--slate-900);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    letter-spacing: -0.025em; /* ปรับให้กระชับสไตล์ Modern UI */
+    letter-spacing: -0.01em; /* ลด tracking ให้ภาษาไทยอ่านง่ายขึ้น */
+    line-height: 1.65;       /* เพิ่ม line-height ให้สบายตา */
     text-rendering: optimizeLegibility;
     min-height: 100vh;
   }
@@ -38,6 +39,7 @@
   h1, h2, h3, h4, h5, h6 {
     color: var(--slate-950);
     font-weight: 700;
+    line-height: 1.2;
   }
 
   p, li, a {
@@ -147,7 +149,7 @@ input, textarea {
 /* Mobile-first Responsive */
 @media (max-width: 768px) {
   html {
-    font-size: 93.75%; /* 15px */
+    font-size: 100%; /* 16px — ขึ้นจาก 15px เดิม */
   }
 
   .app-container {
@@ -166,7 +168,7 @@ input, textarea {
 
 @media (min-width: 1024px) {
   html {
-    font-size: 110%; /* 17.6px */
+    font-size: 112.5%; /* 18px — ขึ้นจาก 17.6px เดิม */
   }
 
   .app-container {

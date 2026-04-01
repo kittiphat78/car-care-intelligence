@@ -25,7 +25,6 @@ export default function BottomNav() {
                   ? 'bg-white text-slate-950 shadow-xl scale-100' 
                   : 'text-slate-500 hover:text-slate-300 active:scale-95'}`}
             >
-              {/* Indicator Dot สำหรับเมนูที่ active */}
               {active && (
                 <div className="absolute -top-1 w-1 h-1 bg-white rounded-full animate-pulse" />
               )}

@@ -3,10 +3,9 @@ import { Sarabun } from 'next/font/google'
 import './globals.css'
 import BottomNav from '@/components/BottomNav'
 
-// เลือกใช้ Weight ที่หลากหลายขึ้นเพื่อสร้างลำดับความสำคัญของข้อความ (Hierarchy)
 const sarabun = Sarabun({
   subsets: ['thai', 'latin'],
-  weight: ['300', '400', '500', '600', '700', '800'],
+  weight: ['400', '500', '600', '700', '800'], // ตัด 300 ออก — เบาเกินอ่านยากบนมือถือ
 })
 
 export const metadata: Metadata = {
@@ -18,8 +17,8 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  userScalable: false, // ป้องกันการเผลอซูมเข้าออกเพื่อให้เหมือน Native App ที่สุด
-  themeColor: '#0F172A', // เปลี่ยนสีแถบสถานะให้เข้ากับสี Slate-950 ของ Dashboard
+  userScalable: false,
+  themeColor: '#0F172A',
 }
 
 export default function RootLayout({
@@ -29,22 +28,21 @@ export default function RootLayout({
 }) {
   return (
     <html lang="th" className="scroll-smooth">
-      <body className={`relative min-h-screen min-w-full overflow-x-hidden bg-gradient-to-b from-blue-50 via-white to-slate-100 text-slate-900 antialiased ${sarabun.className}`}>
+      <body className={`relative min-h-screen min-w-full overflow-x-hidden bg-[#F4F6F9] text-slate-900 antialiased ${sarabun.className}`}>
 
-        {/* Main Content Wrapper: จัดวางกึ่งกลางและคุมความกว้างระดับพรีเมียม */}
         <div className="app-container relative min-h-screen">
-          <main className="mt-6 max-w-6xl mx-auto pb-32 md:pb-20 transition-all duration-500">
+          <main className="max-w-6xl mx-auto pb-32 md:pb-20 transition-all duration-500">
             {children}
           </main>
         </div>
 
-        {/* Navigation Section */}
         <BottomNav />
 
-        {/* ใส่ลูกเล่น Gradient จางๆ เป็นพื้นหลังคงที่เพื่อให้ดูมีมิติ */}
+        {/* Subtle ambient blobs — ลดความจัดเพื่อให้ card สีขาวดูโดดกว่าเดิม */}
         <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
-          <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] rounded-full bg-blue-50/50 blur-[120px]"></div>
-          <div className="absolute top-[60%] -right-[10%] w-[30%] h-[50%] rounded-full bg-indigo-50/40 blur-[100px]"></div>
+          <div className="absolute -top-[5%] -left-[5%] w-[35%] h-[35%] rounded-full bg-blue-100/30 blur-[140px]" />
+          <div className="absolute top-[55%] -right-[8%] w-[28%] h-[45%] rounded-full bg-indigo-100/25 blur-[120px]" />
+          <div className="absolute bottom-0 left-[30%] w-[20%] h-[20%] rounded-full bg-slate-200/40 blur-[80px]" />
         </div>
 
       </body>

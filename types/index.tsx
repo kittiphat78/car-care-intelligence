@@ -5,21 +5,40 @@ export interface Record {
   created_at: string
   type: RecordType
   plate: string
-  services: string[]
+  services: string[] // เก็บ [ประเภทรถ, ยี่ห้อรถ, หมายเหตุ]
   price: number
-  note: string
   seq_number: number
 }
 
-export const WASH_SERVICES = [
-  { id: 'basic',    name: 'ล้างรถทั่วไป', price: 100 },
-  { id: 'interior', name: 'ล้างอัดฉีด',   price: 150 },
-  { id: 'wax',      name: 'แว็กซ์',        price: 200 },
-  { id: 'engine',   name: 'ล้างเครื่อง',   price: 250 },
+// 1. เพิ่ม CAR_TYPES (ที่ Error แจ้งว่าหายไป)
+export const CAR_TYPES = [
+  { id: 'sedan', name: 'รถเก๋ง', icon: '🚗' },
+  { id: 'suv',   name: 'SUV / กระบะ', icon: '🚙' },
+  { id: 'van',   name: 'รถตู้ / VIP', icon: '🚐' },
+  { id: 'moto',  name: 'มอเตอร์ไซค์', icon: '🏍️' },
 ]
 
-export const POLISH_SERVICES = [
-  { id: 'polish_full',    name: 'ขัดสีทั้งคัน',   price: 0 },
-  { id: 'polish_partial', name: 'ขัดสีบางส่วน',   price: 0 },
-  { id: 'coat',           name: 'เคลือบสี',        price: 0 },
+// 2. รายชื่อยี่ห้อรถแบบครบๆ (ตามที่คุณต้องการ)
+export const CAR_BRANDS = [
+  { id: 'toyota',    name: 'TOYOTA' },
+  { id: 'honda',     name: 'HONDA' },
+  { id: 'isuzu',     name: 'ISUZU' },
+  { id: 'mitsubishi', name: 'MITSUBISHI' },
+  { id: 'mazda',     name: 'MAZDA' },
+  { id: 'nissan',    name: 'NISSAN' },
+  { id: 'suzuki',    name: 'SUZUKI' },
+  { id: 'ford',      name: 'FORD' },
+  { id: 'mg',        name: 'MG' },
+  { id: 'byd',       name: 'BYD' },
+  { id: 'ora',       name: 'ORA / GWM' },
+  { id: 'neta',      name: 'NETA' },
+  { id: 'tesla',     name: 'TESLA' },
+  { id: 'aion',      name: 'AION' },
+  { id: 'mercedes',  name: 'BENZ' },
+  { id: 'bmw',       name: 'BMW' },
+  { id: 'volvo',     name: 'VOLVO' },
+  { id: 'hyundai',   name: 'HYUNDAI' },
+  { id: 'kia',       name: 'KIA' },
+  { id: 'subaru',    name: 'SUBARU' },
+  { id: 'volkswagen', name: 'VOLKSWAGEN' },
 ]
