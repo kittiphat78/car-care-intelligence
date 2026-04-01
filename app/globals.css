@@ -2,13 +2,13 @@
 
 :root {
   --app-bg: #F4F6F9;
-  --slate-950: #020617; /* สีดำลึกแบบ Premium */
-  --slate-900: #0F172A;
+  --slate-950: #020617; 
+  --slate-900: #0F172A; 
   --blue-600: #2563EB;
   --indigo-600: #4F46E5;
-  --text-soft: #334155;
+  --text-soft: #1E293B; /* ปรับให้เข้มกำลังดี อ่านง่ายกว่าเดิม */
 
-  --radius-card: 1rem;
+  --radius-card: 1.25rem;
   --radius-button: 999px;
 
   --shadow-soft: 0 14px 32px rgba(15, 23, 42, 0.12);
@@ -16,7 +16,8 @@
 
 @layer base {
   html {
-    font-size: 106.25%; /* 17px — ใหญ่ขึ้นจาก 16px */
+    /* 📍 ปรับฐานเป็น 106.25% (ประมาณ 17px) เพื่อความพอดี */
+    font-size: 106.25%; 
     -webkit-text-size-adjust: 100%;
     scroll-behavior: smooth;
     background-color: var(--app-bg);
@@ -30,148 +31,84 @@
     color: var(--slate-900);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    letter-spacing: -0.01em; /* ลด tracking ให้ภาษาไทยอ่านง่ายขึ้น */
-    line-height: 1.65;       /* เพิ่ม line-height ให้สบายตา */
+    letter-spacing: -0.01em; 
+    line-height: 1.55; 
     text-rendering: optimizeLegibility;
     min-height: 100vh;
+    /* 📍 ใช้ความหนาระดับ Medium เป็นมาตรฐานเพื่อให้ดูชัดแต่ไม่ทึบ */
+    @apply font-medium; 
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    color: var(--slate-950);
-    font-weight: 700;
-    line-height: 1.2;
+  /* 📍 ปรับหัวข้อให้ขนาดพอดีมือถือ */
+  h1 { @apply text-3xl font-black mb-4; }
+  h2 { @apply text-2xl font-bold mb-3; }
+  h3 { @apply text-xl font-bold mb-2; }
+
+  /* 📍 ช่องกรอกข้อมูลและปุ่มปรับให้ขนาดจิ้มง่ายพอดีนิ้ว */
+  input, select, textarea {
+    font-size: 1rem !important; 
+    @apply font-semibold;
+  }
+
+  button {
+    font-size: 0.95rem !important;
+    @apply font-bold tracking-wide;
   }
 
   p, li, a {
     color: var(--text-soft);
-  }
-
-  a {
-    text-decoration: none;
-    color: var(--blue-600);
-  }
-
-  button, input, select, textarea {
-    font: inherit;
+    font-size: 0.95rem; 
   }
 }
 
-/* ลบเงาขอบปุ่มเวลาเน้น (Focus) เพื่อความ Clean */
-*:focus {
-  outline: none !important;
+/* --- ส่วนที่ปรับตามความเหมาะสมของ UI --- */
+
+/* 📍 บรรทัดตัวหนังสือในบัตรสีน้ำเงิน (Sticky) */
+.sticky p, .sticky span {
+  font-size: 0.9rem !important; 
+  @apply font-bold text-white;
 }
 
-/* ป้องกันการลากคลุม (ทำให้เหมือนแอปจริง) */
+/* 📍 ตัวเลขราคาในส่วน Header ให้ใหญ่พอดี (ลดจาก 2rem เหลือ 1.5rem) */
+.sticky .text-lg, .sticky .text-xl, .sticky .text-2xl {
+  font-size: 1.5rem !important; 
+  @apply font-black text-blue-400;
+}
+
+/* 📍 ปรับช่องค้นหาให้ไม่สูงเกินไป */
+input[type="text"] {
+  padding-top: 0.75rem !important;
+  padding-bottom: 0.75rem !important;
+  font-size: 1rem !important;
+}
+
+/* --- Mobile-first Responsive --- */
+@media (max-width: 768px) {
+  html {
+    /* 📍 บนมือถือใช้ 100% (16px) ตามมาตรฐานสากลแต่เน้นน้ำหนักฟอนต์ช่วย */
+    font-size: 100%; 
+  }
+
+  .app-container {
+    padding: 1rem;
+  }
+
+  .btn-active {
+    padding: 1rem 1.25rem;
+    font-size: 1.1rem;
+  }
+}
+
+/* ป้องกันการลากคลุม (ทำให้เหมือนแอป Native) */
 * {
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   box-sizing: border-box;
 }
 
-/* ยกเว้นช่อง Input ให้พิมพ์และเลือกได้ปกติ */
 input, textarea {
   user-select: text !important;
 }
 
-/* Container กลาง responsive */
-.app-container {
-  width: min(98%, 1080px);
-  margin: 0 auto;
-  padding: 1rem;
-}
-
-/* --- Premium UI Classes --- */
-.premium-card {
-  background: #ffffff;
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-soft);
-  border: 1px solid rgba(148, 163, 184, 0.15);
-}
-
-/* เงาแบบลอยตัวละมุน (Floating Effect) */
-.premium-shadow {
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.035);
-}
-
-/* ปรับแต่งปุ่มให้มีการตอบสนองเหมือนแอป iOS/Android Native */
-.btn-active {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  border-radius: var(--radius-button);
-  background: linear-gradient(105deg, var(--blue-600), var(--indigo-600));
-  color: #fff;
-  border: 0;
-  cursor: pointer;
-  padding: 0.75rem 1.25rem;
-  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s, box-shadow 0.15s;
-}
-
-.btn-active:active {
-  transform: scale(0.97);
-  opacity: 0.9;
-}
-
-/* Glassmorphism Effect สำหรับส่วนที่โปร่งแสง */
-.glass-effect {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-/* Animation เวลาเปลี่ยนหน้า (ลื่นไหลขึ้น) */
-.page-transition {
-  animation: slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes slideUpFade {
-  from { 
-    opacity: 0; 
-    transform: translateY(12px) scale(0.99); 
-  }
-  to { 
-    opacity: 1; 
-    transform: translateY(0) scale(1); 
-  }
-}
-
-/* ซ่อน Scrollbar แต่ยังเลื่อนได้ (เพื่อความสวยงามบนคอม) */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-/* Mobile-first Responsive */
-@media (max-width: 768px) {
-  html {
-    font-size: 100%; /* 16px — ขึ้นจาก 15px เดิม */
-  }
-
-  .app-container {
-    padding: 0.75rem;
-  }
-
-  .btn-active {
-    width: 100%;
-    padding: 0.75rem 1rem;
-  }
-
-  .premium-card {
-    border-radius: 0.85rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  html {
-    font-size: 112.5%; /* 18px — ขึ้นจาก 17.6px เดิม */
-  }
-
-  .app-container {
-    padding: 1.5rem;
-  }
-}
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

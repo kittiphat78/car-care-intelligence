@@ -12,10 +12,12 @@ export interface Record {
 
 // 1. เพิ่ม CAR_TYPES (ที่ Error แจ้งว่าหายไป)
 export const CAR_TYPES = [
-  { id: 'sedan', name: 'รถเก๋ง', icon: '🚗' },
-  { id: 'suv',   name: 'SUV / กระบะ', icon: '🚙' },
-  { id: 'van',   name: 'รถตู้ / VIP', icon: '🚐' },
-  { id: 'moto',  name: 'มอเตอร์ไซค์', icon: '🏍️' },
+  { id: 'sedan', name: 'รถเก๋ง / Small', icon: '🚗' },
+  { id: 'suv', name: 'SUV / MPV', icon: '🚙' },
+  { id: 'pickup', name: 'รถกระบะ / Truck', icon: '🛻' },
+  { id: 'van', name: 'รถตู้ / VIP', icon: '🚐' },
+  { id: 'motorcycle', name: 'มอเตอร์ไซค์', icon: '🛵' },
+  { id: 'bigbike', name: 'บิ๊กไบค์ / Big Bike', icon: '🏍️' },
 ]
 
 // 2. รายชื่อยี่ห้อรถแบบครบๆ (ตามที่คุณต้องการ)
