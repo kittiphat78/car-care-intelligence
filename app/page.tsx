@@ -172,7 +172,7 @@ export default function Dashboard() {
             <p className="text-[12px] text-slate-700 font-bold mt-2 uppercase">คัน</p>
           </div>
           <div className="bg-white p-5 rounded-[22px] border-2 border-slate-100 shadow-sm text-center">
-            <p className="text-[11px] font-black text-amber-700 uppercase tracking-widest mb-2">งานขัดสี/เต็นท์ ✨</p>
+            <p className="text-[11px] font-black text-amber-700 uppercase tracking-widest mb-2">งานขัดสี ✨</p>
             <p className="text-3xl font-black text-slate-900 leading-none">{polishCount}</p>
             <p className="text-[12px] text-slate-700 font-bold mt-2 uppercase">คัน</p>
           </div>
