@@ -117,7 +117,8 @@ export default function Dashboard() {
             <div className="absolute -top-8 -left-8 w-32 h-32 rounded-full bg-blue-500/10 blur-2xl pointer-events-none" />
             <div className="absolute -bottom-6 -right-6 w-28 h-28 rounded-full bg-indigo-500/10 blur-2xl pointer-events-none" />
 
-            <p className="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] mb-2">
+            {/* ✅ ปรับเป็นสีขาวล้วน */}
+            <p className="text-white text-[10px] font-extrabold uppercase tracking-[0.2em] mb-2 opacity-100 text-opacity-100 drop-shadow-[0_0_10px_rgba(255,255,255,0.45)]">
               เงินสดที่เข้ากระเป๋าจริงวันนี้
             </p>
 
@@ -133,7 +134,8 @@ export default function Dashboard() {
                 <span>{isUp ? '▲' : '▼'}</span>
                 <span>{Math.abs(diffPct)}%</span>
               </div>
-              <span className="text-slate-500 text-[10px] font-bold uppercase tracking-wide">เทียบจากเมื่อวาน</span>
+              {/* ✅ ปรับเป็นสีขาวล้วน */}
+              <span className="text-white text-[10px] font-bold uppercase tracking-wide">เทียบจากเมื่อวาน</span>
             </div>
           </div>
         </div>
@@ -159,7 +161,7 @@ export default function Dashboard() {
             <p className="text-[10px] text-slate-400 font-semibold mt-1">คัน</p>
           </div>
           <div className="bg-white p-5 rounded-[22px] border border-slate-100 shadow-sm text-center">
-            <p className="text-[9px] font-black text-amber-500 uppercase tracking-widest mb-2">งานขัดสี / เต็นท์ ✨</p>
+            <p className="text-[9px] font-black text-amber-500 uppercase tracking-widest mb-2">งานขัดสี/เต็นท์ ✨</p>
             <p className="text-3xl font-black leading-none">{polishCount}</p>
             <p className="text-[10px] text-slate-400 font-semibold mt-1">คัน</p>
           </div>

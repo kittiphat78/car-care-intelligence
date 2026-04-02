@@ -154,10 +154,10 @@ export default function HistoryPage() {
           <div className={`rounded-[20px] p-4 mb-3 text-white shadow-lg transition-colors duration-500 ${activeTab === 'income' ? 'bg-slate-900' : 'bg-rose-900'}`}>
             <div className="flex justify-between items-end">
               <div>
-                <p className="text-[8px] font-black uppercase text-white/40 mb-1">
+                <p className="text-[8px] font-black uppercase text-white mb-1">
                   ยอดรวม{activeTab === 'income' ? 'รายรับ' : 'รายจ่าย'}ประจำปี
                 </p>
-                <p className="text-2xl font-black">
+                <p className="text-2xl font-black text-white drop-shadow-[0_0_5px_rgba(255,255,255,0.33)]">
                   ฿{(activeTab === 'income' ? totalIncome : totalExpense).toLocaleString()}
                 </p>
               </div>
