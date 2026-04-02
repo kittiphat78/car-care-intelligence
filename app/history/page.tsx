@@ -82,15 +82,35 @@ export default function HistoryPage() {
     if (!selectedRecord) return
     const { error } = await supabase
       .from('records')
-      .update({ plate: updatedFields.plate, price: updatedFields.price, services: updatedFields.services })
+      .update({ 
+        plate: updatedFields.plate, 
+        price: updatedFields.price, 
+        services: updatedFields.services,
+        customer_name: updatedFields.customer_name,
+        payment_status: updatedFields.payment_status 
+      })
       .eq('id', selectedRecord.id)
 
     if (error) alert(error.message)
     else { setIsModalOpen(false); fetchYearlyData(); fetchYesterdayStats(); }
   }
 
+  // ✅ ฟังก์ชันอำนวยความสะดวก: กดรับเงินทันที
+  async function handleMarkAsPaid(id: string) {
+    const { error } = await supabase
+      .from('records')
+      .update({ payment_status: 'paid' })
+      .eq('id', id)
+    
+    if (error) alert(error.message)
+    else { fetchYearlyData(); }
+  }
+
   const filtered = records.filter(r => {
-    const matchSearch = r.plate.toLowerCase().includes(search.toLowerCase())
+    // ค้นหาได้ทั้งป้ายทะเบียน และ ชื่อเต็นท์รถ
+    const matchSearch = r.plate.toLowerCase().includes(search.toLowerCase()) || 
+                        (r.customer_name?.toLowerCase().includes(search.toLowerCase()))
+    
     const matchType = filterType === 'all' || r.type === filterType
     const matchMonth = selectedMonth === null || new Date(r.created_at).getMonth() === selectedMonth
     let matchDateRange = true
@@ -106,17 +126,6 @@ export default function HistoryPage() {
     return acc
   }, {} as { [key: string]: Record[] })
 
-  const monthlySummary = Array.from({ length: 12 }, (_, i) => {
-    const monthRecs = records.filter(r => new Date(r.created_at).getMonth() === i)
-    return {
-      month: i,
-      label: new Date(selectedYear, i, 1).toLocaleDateString('th-TH', { month: 'short' }),
-      wash: monthRecs.filter(r => r.type === 'wash').length,
-      polish: monthRecs.filter(r => r.type === 'polish').length,
-      total: monthRecs.reduce((s, r) => s + r.price, 0),
-    }
-  }).filter(m => m.total > 0 || m.wash > 0)
-
   return (
     <div className="relative w-full h-auto min-h-screen bg-[#F4F6F9] overflow-y-visible block">
       
@@ -127,7 +136,6 @@ export default function HistoryPage() {
           {/* Header Row: Archive + Year Select */}
           <div className="flex items-center justify-between mb-3 px-1">
             <div className="flex items-center gap-2">
-              {/* Decorative accent bar */}
               <div className="w-1 h-5 rounded-full bg-gradient-to-b from-blue-400 to-blue-600" />
               <h1 className="text-xl font-black text-slate-900 tracking-tight font-sarabun">Archive</h1>
             </div>
@@ -147,7 +155,6 @@ export default function HistoryPage() {
           <div className="relative rounded-[20px] overflow-hidden shadow-lg shadow-blue-900/10 p-3 mb-3 border border-white/5"
             style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}>
             
-            {/* Subtle glow orb */}
             <div className="absolute -top-4 -right-4 w-20 h-20 rounded-full bg-blue-500/10 blur-2xl pointer-events-none" />
 
             <div className="flex items-center justify-between mb-2 relative">
@@ -166,7 +173,6 @@ export default function HistoryPage() {
               </button>
             </div>
             
-            {/* Divider */}
             <div className="border-t border-white/[0.06] pt-2 flex items-center justify-between relative">
               <div className="flex items-center gap-1.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-blue-400/60" />
@@ -189,7 +195,7 @@ export default function HistoryPage() {
               type="text" 
               value={search} 
               onChange={e => setSearch(e.target.value)} 
-              placeholder="ค้นหาทะเบียนรถ..."
+              placeholder="ค้นหาทะเบียน หรือ ชื่อเต็นท์รถ..."
               className="w-full pl-9 pr-4 py-2 bg-white/80 border border-slate-200/80 rounded-xl text-xs font-semibold outline-none shadow-sm focus:bg-white focus:border-blue-300 focus:shadow-blue-100 transition-all font-sarabun" 
             />
           </div>
@@ -246,15 +252,12 @@ export default function HistoryPage() {
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <div className="text-4xl mb-3">📂</div>
             <p className="text-sm font-black text-slate-400 font-sarabun">ไม่พบรายการ</p>
-            <p className="text-[10px] text-slate-300 font-sarabun mt-1">ลองเปลี่ยนตัวกรองหรือช่วงวันที่ดูครับ</p>
           </div>
         ) : (
           Object.entries(grouped).map(([date, recs]) => (
             <div key={date} className="mb-8">
-              {/* Date header */}
               <div className="flex items-center justify-between mb-3 px-1">
                 <div className="flex items-center gap-2">
-                  {/* Dot accent */}
                   <div className="w-1.5 h-1.5 rounded-full bg-slate-300" />
                   <span className="text-[10px] font-black text-slate-500 font-sarabun uppercase tracking-wide">{date}</span>
                 </div>
@@ -274,7 +277,13 @@ export default function HistoryPage() {
         )}
       </div>
 
-      <EditModal record={selectedRecord} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleSave} onDelete={handleDelete} />
+      <EditModal 
+        record={selectedRecord} 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSave={handleSave} 
+        onDelete={handleDelete} 
+      />
     </div>
   )
 }
