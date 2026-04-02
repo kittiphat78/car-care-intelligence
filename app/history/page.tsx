@@ -142,7 +142,7 @@ export default function HistoryPage() {
           {/* Tab Toggle - ปรับขนาดเล็กลง */}
           <div className="flex p-1 bg-slate-200/60 rounded-xl mb-3 gap-1">
             <button onClick={() => switchTab('income')} className={`flex-1 py-2 rounded-lg text-[10px] font-black transition-all ${activeTab === 'income' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500'}`}>
-              รายรับรถ 🧼
+              รายรับร้าน 💰
             </button>
             <button onClick={() => switchTab('expense')} className={`flex-1 py-2 rounded-lg text-[10px] font-black transition-all ${activeTab === 'expense' ? 'bg-white text-rose-700 shadow-sm' : 'text-slate-500'}`}>
               รายจ่ายร้าน 💸
