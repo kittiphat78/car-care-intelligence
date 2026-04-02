@@ -99,11 +99,11 @@ export default function Dashboard() {
             <div className="w-7 h-7 bg-slate-900 rounded-full flex items-center justify-center text-white text-xs shrink-0">
               👤
             </div>
-            <p className="text-xs font-black text-slate-700">{userEmail.split('@')[0] || '...'}</p>
+            <p className="text-xs font-black text-slate-800">{userEmail.split('@')[0] || '...'}</p>
           </div>
           <button
             onClick={() => { supabase.auth.signOut(); router.push('/login') }}
-            className="text-[10px] font-black text-rose-500 uppercase tracking-widest bg-rose-50 px-3 py-2 rounded-xl border border-rose-100 active:scale-95 transition-all"
+            className="text-[10px] font-black text-rose-600 uppercase tracking-widest bg-rose-50 px-3 py-2 rounded-xl border border-rose-200 active:scale-95 transition-all"
           >
             ออกจากระบบ
           </button>
@@ -111,43 +111,54 @@ export default function Dashboard() {
 
         {/* ── Net Profit Hero Card ── */}
         <div className="mt-5 mb-4 animate-fade-up" style={{ animationDelay: '40ms' }}>
-          <div className="relative bg-[#0D1117] rounded-[32px] px-7 py-8 text-center text-white overflow-hidden shadow-[0_20px_56px_rgba(0,0,0,0.32),0_4px_12px_rgba(0,0,0,0.16)]">
+          {/* เพิ่ม Border สีขาวจางๆ เพื่อช่วยตัดขอบ Card */}
+          <div className="relative bg-[#0D1117] rounded-[32px] px-7 py-8 text-center overflow-hidden shadow-[0_24px_48px_rgba(0,0,0,0.4)] border border-white/10">
 
-            {/* Decorative gradient blobs inside card */}
-            <div className="absolute -top-8 -left-8 w-32 h-32 rounded-full bg-blue-500/10 blur-2xl pointer-events-none" />
-            <div className="absolute -bottom-6 -right-6 w-28 h-28 rounded-full bg-indigo-500/10 blur-2xl pointer-events-none" />
+            {/* Decorative gradient blobs */}
+            <div className="absolute -top-8 -left-8 w-32 h-32 rounded-full bg-blue-500/15 blur-2xl pointer-events-none" />
+            <div className="absolute -bottom-6 -right-6 w-28 h-28 rounded-full bg-indigo-500/15 blur-2xl pointer-events-none" />
 
-            {/* ✅ ปรับเป็นสีขาวล้วน */}
-            <p className="text-white text-[10px] font-extrabold uppercase tracking-[0.2em] mb-2 opacity-100 text-opacity-100 drop-shadow-[0_0_10px_rgba(255,255,255,0.45)]">
+            {/* บังคับสีขาว 100% ด้วย Inline Style */}
+            <p 
+              style={{ color: '#FFFFFF', opacity: 1 }}
+              className="text-[12px] font-black uppercase tracking-[0.2em] mb-2 drop-shadow-sm"
+            >
               เงินสดที่เข้ากระเป๋าจริงวันนี้
             </p>
 
-            <h2 className="text-[3.25rem] font-black tracking-tight leading-none mb-5">
+            <h2 
+              style={{ color: '#FFFFFF' }}
+              className="text-[3.5rem] font-black tracking-tight leading-none mb-5 drop-shadow-lg"
+            >
               ฿{netProfit.toLocaleString()}
             </h2>
 
             <div className="flex items-center justify-center gap-2">
               <div className={`
-                inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-2xl text-xs font-black
-                ${isUp ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/15 text-rose-400 border border-rose-500/20'}
+                inline-flex items-center gap-1.5 px-4 py-1.5 rounded-2xl text-xs font-black
+                ${isUp ? 'bg-emerald-500/20 !text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/20 !text-rose-400 border border-rose-500/30'}
               `}>
                 <span>{isUp ? '▲' : '▼'}</span>
                 <span>{Math.abs(diffPct)}%</span>
               </div>
-              {/* ✅ ปรับเป็นสีขาวล้วน */}
-              <span className="text-white text-[10px] font-bold uppercase tracking-wide">เทียบจากเมื่อวาน</span>
+              <span 
+                style={{ color: '#FFFFFF', opacity: 0.9 }}
+                className="text-[11px] font-bold uppercase tracking-wide"
+              >
+                เทียบจากเมื่อวาน
+              </span>
             </div>
           </div>
         </div>
 
         {/* ── Unpaid Banner ── */}
         {todayUnpaid > 0 && (
-          <div className="mb-4 animate-scale-in bg-rose-50 border border-rose-100 rounded-[22px] px-5 py-4 flex justify-between items-center">
+          <div className="mb-4 animate-scale-in bg-rose-50 border-2 border-rose-200 rounded-[22px] px-5 py-4 flex justify-between items-center shadow-sm">
             <div>
-              <p className="text-rose-500 text-[9px] font-black uppercase tracking-widest mb-0.5">ยอดค้างชำระ</p>
-              <p className="text-2xl font-black text-rose-600 leading-none">฿{todayUnpaid.toLocaleString()}</p>
+              <p className="text-rose-600 text-[10px] font-black uppercase tracking-widest mb-0.5">ยอดค้างชำระ</p>
+              <p className="text-2xl font-black text-rose-700 leading-none">฿{todayUnpaid.toLocaleString()}</p>
             </div>
-            <div className="bg-rose-500 text-white px-3 py-1.5 rounded-full text-[9px] font-black shadow-sm">
+            <div className="bg-rose-600 text-white px-3.5 py-1.5 rounded-full text-[10px] font-black shadow-md">
               ⏳ ค้างจ่าย
             </div>
           </div>
@@ -155,57 +166,57 @@ export default function Dashboard() {
 
         {/* ── Stats Grid ── */}
         <div className="grid grid-cols-2 gap-3 mb-3 stagger animate-fade-up" style={{ animationDelay: '80ms' }}>
-          <div className="bg-white p-5 rounded-[22px] border border-slate-100 shadow-sm text-center">
-            <p className="text-[9px] font-black text-blue-500 uppercase tracking-widest mb-2">ล้างรถทั่วไป 🧼</p>
-            <p className="text-3xl font-black leading-none">{washCount}</p>
-            <p className="text-[10px] text-slate-400 font-semibold mt-1">คัน</p>
+          <div className="bg-white p-5 rounded-[22px] border-2 border-slate-100 shadow-sm text-center">
+            <p className="text-[11px] font-black text-blue-700 uppercase tracking-widest mb-2">ล้างรถทั่วไป 🧼</p>
+            <p className="text-3xl font-black text-slate-900 leading-none">{washCount}</p>
+            <p className="text-[12px] text-slate-700 font-bold mt-2 uppercase">คัน</p>
           </div>
-          <div className="bg-white p-5 rounded-[22px] border border-slate-100 shadow-sm text-center">
-            <p className="text-[9px] font-black text-amber-500 uppercase tracking-widest mb-2">งานขัดสี/เต็นท์ ✨</p>
-            <p className="text-3xl font-black leading-none">{polishCount}</p>
-            <p className="text-[10px] text-slate-400 font-semibold mt-1">คัน</p>
+          <div className="bg-white p-5 rounded-[22px] border-2 border-slate-100 shadow-sm text-center">
+            <p className="text-[11px] font-black text-amber-700 uppercase tracking-widest mb-2">งานขัดสี/เต็นท์ ✨</p>
+            <p className="text-3xl font-black text-slate-900 leading-none">{polishCount}</p>
+            <p className="text-[12px] text-slate-700 font-bold mt-2 uppercase">คัน</p>
           </div>
         </div>
 
         {/* ── Income / Expense ── */}
         <div className="grid grid-cols-2 gap-3 mb-6 animate-fade-up" style={{ animationDelay: '120ms' }}>
-          <div className="bg-emerald-50 p-5 rounded-[22px] border border-emerald-100/70">
+          <div className="bg-emerald-50 p-5 rounded-[22px] border-2 border-emerald-100 shadow-sm">
             <div className="flex items-center gap-1.5 mb-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-500" />
-              <p className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">รายรับ</p>
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-600" />
+              <p className="text-[11px] font-black text-emerald-800 uppercase tracking-widest">รายรับ</p>
             </div>
-            <p className="text-xl font-black text-slate-900 leading-none">฿{todayTotalIncome.toLocaleString()}</p>
+            <p className="text-2xl font-black text-slate-900 leading-none">฿{todayTotalIncome.toLocaleString()}</p>
           </div>
-          <div className="bg-rose-50 p-5 rounded-[22px] border border-rose-100/70">
+          <div className="bg-rose-50 p-5 rounded-[22px] border-2 border-rose-100 shadow-sm">
             <div className="flex items-center gap-1.5 mb-2">
-              <div className="w-2 h-2 rounded-full bg-rose-400" />
-              <p className="text-[9px] font-black text-rose-500 uppercase tracking-widest">รายจ่าย</p>
+              <div className="w-2.5 h-2.5 rounded-full bg-rose-600" />
+              <p className="text-[11px] font-black text-rose-800 uppercase tracking-widest">รายจ่าย</p>
             </div>
-            <p className="text-xl font-black text-slate-900 leading-none">฿{todayExpense.toLocaleString()}</p>
+            <p className="text-2xl font-black text-slate-900 leading-none">฿{todayExpense.toLocaleString()}</p>
           </div>
         </div>
 
         {/* ── Chart ── */}
-        <div className="bg-white rounded-[26px] p-5 mb-6 border border-slate-100 shadow-sm animate-fade-up" style={{ animationDelay: '160ms' }}>
-          <div className="flex justify-between items-center mb-5">
-            <h3 className="font-black text-sm text-slate-800">แนวโน้มรายได้</h3>
-            <div className="flex bg-slate-100 p-1 rounded-xl gap-0.5">
+        <div className="bg-white rounded-[26px] p-6 mb-6 border-2 border-slate-100 shadow-md animate-fade-up" style={{ animationDelay: '160ms' }}>
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="font-black text-sm text-slate-900 uppercase tracking-tight">แนวโน้มรายได้</h3>
+            <div className="flex bg-slate-100 p-1.5 rounded-xl gap-1">
               <button
                 onClick={() => setChartMode('week')}
-                className={`px-3.5 py-1.5 rounded-lg text-[10px] font-bold transition-all ${chartMode === 'week' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-400'}`}
+                className={`px-4 py-1.5 rounded-lg text-[11px] font-bold transition-all ${chartMode === 'week' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}
               >7 วัน</button>
               <button
                 onClick={() => setChartMode('month')}
-                className={`px-3.5 py-1.5 rounded-lg text-[10px] font-bold transition-all ${chartMode === 'month' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-400'}`}
+                className={`px-4 py-1.5 rounded-lg text-[11px] font-bold transition-all ${chartMode === 'month' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}
               >30 วัน</button>
             </div>
           </div>
-          <div className="h-40">
+          <div className="h-44">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorInc" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="#3B82F6" stopOpacity={0.15} />
+                    <stop offset="5%"  stopColor="#3B82F6" stopOpacity={0.25} />
                     <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
                   </linearGradient>
                 </defs>
@@ -213,29 +224,29 @@ export default function Dashboard() {
                   dataKey="label"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fill: '#CBD5E1', fontSize: 9, fontWeight: 700 }}
-                  dy={8}
+                  tick={{ fill: '#475569', fontSize: 11, fontWeight: 800 }}
+                  dy={10}
                 />
                 <Tooltip
                   formatter={(value: any) => [`฿${Number(value || 0).toLocaleString()}`, 'รายได้']}
                   contentStyle={{
-                    borderRadius: '14px',
+                    borderRadius: '16px',
                     border: 'none',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.10)',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    padding: '8px 12px',
+                    boxShadow: '0 12px 32px rgba(0,0,0,0.15)',
+                    fontSize: '12px',
+                    fontWeight: 800,
+                    padding: '10px 14px',
                   }}
                 />
                 <Area
                   type="monotone"
                   dataKey="income"
-                  stroke="#3B82F6"
-                  strokeWidth={2.5}
+                  stroke="#2563EB"
+                  strokeWidth={3}
                   fillOpacity={1}
                   fill="url(#colorInc)"
                   dot={false}
-                  activeDot={{ r: 4, fill: '#3B82F6', strokeWidth: 0 }}
+                  activeDot={{ r: 6, fill: '#2563EB', stroke: '#FFF', strokeWidth: 2 }}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -243,25 +254,25 @@ export default function Dashboard() {
         </div>
 
         {/* ── Record List ── */}
-        <div className="space-y-3 animate-fade-up" style={{ animationDelay: '200ms' }}>
+        <div className="space-y-4 animate-fade-up" style={{ animationDelay: '200ms' }}>
           <div className="flex justify-between items-center px-1">
-            <p className="font-black text-[9px] uppercase tracking-[0.2em] text-slate-400">รายการรถวันนี้</p>
+            <p className="font-black text-[12px] uppercase tracking-[0.2em] text-slate-800">รายการรถวันนี้</p>
             <button
               onClick={fetchData}
-              className="text-[10px] font-black text-blue-500 bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100 active:scale-95 transition-all"
+              className="text-[11px] font-black text-blue-700 bg-blue-100/50 px-4 py-2 rounded-xl border border-blue-200 active:scale-95 transition-all shadow-sm"
             >
-              🔄 รีเฟรช
+              🔄 รีเฟรชข้อมูล
             </button>
           </div>
 
           {records.length === 0 ? (
-            <div className="bg-white p-14 rounded-[26px] text-center border-2 border-dashed border-slate-100">
-              <p className="text-4xl mb-3">🚗</p>
-              <p className="text-slate-300 font-bold text-sm">ยังไม่มีงานเข้ามา</p>
-              <p className="text-slate-200 text-xs font-semibold mt-1">เพิ่มรายการแรกของวันกันเลย</p>
+            <div className="bg-white p-16 rounded-[30px] text-center border-2 border-dashed border-slate-200">
+              <p className="text-5xl mb-4 opacity-50">🚗</p>
+              <p className="text-slate-800 font-black text-base uppercase tracking-tight">ยังไม่มีงานเข้ามา</p>
+              <p className="text-slate-500 text-sm font-bold mt-1">กดปุ่มบวกเพื่อเพิ่มงานใหม่</p>
             </div>
           ) : (
-            <div className="grid gap-2.5 stagger">
+            <div className="grid gap-3 stagger">
               {records.map(r => <RecordCard key={r.id} record={r} />)}
             </div>
           )}
