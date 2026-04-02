@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { RecordType, CAR_TYPES, CAR_BRANDS } from '@/types'
+import { RecordType, CAR_TYPES, CAR_BRANDS, PaymentStatus } from '@/types'
 
 type FormMode = 'income' | 'expense'
 
@@ -17,6 +17,8 @@ export default function AddPage() {
   const [plate, setPlate] = useState('')
   const [selectedType, setSelectedType] = useState('')
   const [selectedBrand, setSelectedBrand] = useState('')
+  const [customerName, setCustomerName] = useState('') // ✅ สำหรับงานเต็นท์
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('paid') // ✅ จ่ายแล้ว/ค้าง
   const [note, setNote] = useState('')
   const [price, setPrice] = useState('')
   
@@ -33,7 +35,6 @@ export default function AddPage() {
   async function handleSubmit() {
     setSaving(true)
     
-    // สร้าง Timestamp ตามวันที่เลือก + เวลาปัจจุบัน
     const now = new Date()
     const selectedDate = new Date(date)
     selectedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds())
@@ -65,8 +66,11 @@ export default function AddPage() {
         price: parseInt(price),
         seq_number: (count ?? 0) + 1,
         created_at: timestamp,
-        created_by: user?.id, // 👤 บันทึกว่าใครเป็นคนลง
-        payment_method: 'cash' // เริ่มต้นเป็นเงินสด
+        created_by: user?.id,
+        payment_method: 'cash',
+        customer_name: type === 'polish' ? customerName : '', // ✅ บันทึกชื่อเต็นท์
+        payment_status: paymentStatus, // ✅ บันทึกว่าจ่ายหรือค้าง
+        job_status: 'done'
       })
 
       if (error) { alert('❌ Error: ' + error.message); setSaving(false) } 
@@ -103,50 +107,36 @@ export default function AddPage() {
 
       <div className="px-5 space-y-6 max-w-2xl mx-auto">
         
-        {/* --- 1. Mode Switcher (Income/Expense) --- */}
+        {/* --- 1. Mode Switcher --- */}
         <div className="flex p-1.5 bg-white border-2 border-slate-200 rounded-[22px] shadow-sm">
-          <button
-            onClick={() => setFormMode('income')}
-            className={`flex-1 py-4 rounded-[18px] text-sm font-black transition-all ${formMode === 'income' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400'}`}
-          >
-            บวกรายรับ 💰
-          </button>
-          <button
-            onClick={() => setFormMode('expense')}
-            className={`flex-1 py-4 rounded-[18px] text-sm font-black transition-all ${formMode === 'expense' ? 'bg-rose-500 text-white shadow-md' : 'text-slate-400'}`}
-          >
-            หักรายจ่าย 💸
-          </button>
+          <button onClick={() => setFormMode('income')} className={`flex-1 py-4 rounded-[18px] text-sm font-black transition-all ${formMode === 'income' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400'}`}>บวกรายรับ 💰</button>
+          <button onClick={() => setFormMode('expense')} className={`flex-1 py-4 rounded-[18px] text-sm font-black transition-all ${formMode === 'expense' ? 'bg-rose-500 text-white shadow-md' : 'text-slate-400'}`}>หักรายจ่าย 💸</button>
         </div>
 
-        {/* --- 2. Date Picker (ลงย้อนหลังได้) --- */}
+        {/* --- 2. Date Picker --- */}
         <div className="bg-white p-4 rounded-[22px] border border-slate-200 shadow-sm">
           <label className="px-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-slate-400 block mb-2">เลือกวันที่บันทึก (ลงย้อนหลังได้)</label>
-          <input 
-            type="date" 
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="w-full text-xl font-black text-slate-900 outline-none bg-slate-50 p-3 rounded-xl border border-slate-100"
-          />
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full text-xl font-black text-slate-900 outline-none bg-slate-50 p-3 rounded-xl border border-slate-100" />
         </div>
 
         {formMode === 'income' ? (
           <>
-            {/* --- Income Form --- */}
             <div className="flex p-1.5 bg-slate-200/50 rounded-[22px] gap-1.5">
               <button onClick={() => setType('wash')} className={`flex-1 py-3 rounded-[18px] text-xs font-black transition-all ${type === 'wash' ? 'bg-white text-slate-900' : 'text-slate-500'}`}>🧼 ล้างรถทั่วไป</button>
               <button onClick={() => setType('polish')} className={`flex-1 py-3 rounded-[18px] text-xs font-black transition-all ${type === 'polish' ? 'bg-amber-400 text-white' : 'text-slate-500'}`}>✨ งานขัดสี / งานเต็นท์</button>
             </div>
 
+            {/* ✅ ส่วนที่เพิ่มเข้ามา: ชื่อลูกค้า/เต็นท์ (เฉพาะโหมดขัดสี) */}
+            {type === 'polish' && (
+              <div className="space-y-3 animate-in fade-in zoom-in duration-300">
+                <label className="px-1 text-[10px] font-extrabold text-amber-600 block uppercase tracking-wider">ชื่อลูกค้า / ชื่อเต็นท์รถ</label>
+                <input type="text" value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder="เช่น เต็นท์เฮียเก่ง" className="w-full bg-white rounded-[22px] px-6 py-4 text-xl font-bold text-slate-900 outline-none border-2 border-amber-200 focus:border-amber-500 transition-all shadow-sm" />
+              </div>
+            )}
+
             <div className="space-y-3">
               <label className="px-1 text-[10px] font-extrabold text-slate-400 block uppercase">เลขทะเบียนรถ</label>
-              <input
-                type="text"
-                value={plate}
-                onChange={e => setPlate(e.target.value.toUpperCase())}
-                placeholder="กข 1234"
-                className="w-full bg-white rounded-[22px] px-6 py-6 text-4xl font-black text-slate-900 outline-none text-center border-2 border-slate-200 focus:border-slate-900 transition-all shadow-sm"
-              />
+              <input type="text" value={plate} onChange={e => setPlate(e.target.value.toUpperCase())} placeholder="กข 1234" className="w-full bg-white rounded-[22px] px-6 py-6 text-4xl font-black text-slate-900 outline-none text-center border-2 border-slate-200 focus:border-slate-900 transition-all shadow-sm" />
             </div>
 
             <div className="space-y-3">
@@ -161,46 +151,28 @@ export default function AddPage() {
               </div>
             </div>
 
+            {/* ✅ ส่วนที่เพิ่มเข้ามา: สถานะการเงิน (จ่ายแล้ว/ค้างชำระ) */}
             <div className="space-y-3">
-              <label className="px-1 text-[10px] font-extrabold text-slate-400 block uppercase">ยี่ห้อรถ</label>
-              <div className="grid grid-cols-3 gap-2 max-h-[200px] overflow-y-auto no-scrollbar p-1">
-                {CAR_BRANDS.map(b => (
-                  <button key={b.id} onClick={() => setSelectedBrand(b.id)} className={`p-3 rounded-xl border-2 text-[10px] font-black tracking-tight transition-all ${selectedBrand === b.id ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-100 text-slate-400'}`}>
-                    {b.name}
-                  </button>
-                ))}
+              <label className="px-1 text-[10px] font-extrabold text-slate-400 block uppercase">สถานะการชำระเงิน</label>
+              <div className="flex gap-2">
+                <button onClick={() => setPaymentStatus('paid')} className={`flex-1 py-4 rounded-2xl font-black text-sm border-2 transition-all ${paymentStatus === 'paid' ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-100 text-slate-400'}`}>จ่ายสด / โอนแล้ว ✅</button>
+                <button onClick={() => setPaymentStatus('unpaid')} className={`flex-1 py-4 rounded-2xl font-black text-sm border-2 transition-all ${paymentStatus === 'unpaid' ? 'bg-rose-500 border-rose-500 text-white' : 'bg-white border-slate-100 text-slate-400'}`}>ค้างชำระ (ลงบัญชี) ⏳</button>
               </div>
             </div>
           </>
         ) : (
-          <>
-            {/* --- Expense Form --- */}
-            <div className="space-y-4">
-              <div className="space-y-3">
-                <label className="px-1 text-[10px] font-extrabold text-slate-400 block uppercase">จ่ายค่าอะไร?</label>
-                <input
-                  type="text"
-                  value={expenseTitle}
-                  onChange={e => setExpenseTitle(e.target.value)}
-                  placeholder="เช่น ค่าน้ำยา, ค่าไฟ, ค่าแรง"
-                  className="w-full bg-white rounded-[22px] px-6 py-5 text-xl font-bold text-slate-900 outline-none border-2 border-rose-100 focus:border-rose-500 transition-all shadow-sm"
-                />
-              </div>
-              <div className="space-y-3">
-                <label className="px-1 text-[10px] font-extrabold text-slate-400 block uppercase">จำนวนเงิน (บาท)</label>
-                <input
-                  type="number"
-                  value={expenseAmount}
-                  onChange={e => setExpenseAmount(e.target.value)}
-                  placeholder="0"
-                  className="w-full bg-rose-50 rounded-[22px] px-6 py-8 text-5xl font-black text-rose-600 outline-none text-center border-2 border-rose-200"
-                />
-              </div>
+          <div className="space-y-4">
+            <div className="space-y-3">
+              <label className="px-1 text-[10px] font-extrabold text-slate-400 block uppercase">จ่ายค่าอะไร?</label>
+              <input type="text" value={expenseTitle} onChange={e => setExpenseTitle(e.target.value)} placeholder="เช่น ค่าน้ำยา, ค่าไฟ" className="w-full bg-white rounded-[22px] px-6 py-5 text-xl font-bold text-slate-900 outline-none border-2 border-rose-100 focus:border-rose-500 transition-all shadow-sm" />
             </div>
-          </>
+            <div className="space-y-3">
+              <label className="px-1 text-[10px] font-extrabold text-slate-400 block uppercase">จำนวนเงิน (บาท)</label>
+              <input type="number" value={expenseAmount} onChange={e => setExpenseAmount(e.target.value)} placeholder="0" className="w-full bg-rose-50 rounded-[22px] px-6 py-8 text-5xl font-black text-rose-600 outline-none text-center border-2 border-rose-200" />
+            </div>
+          </div>
         )}
 
-        {/* Input ราคาสำหรับรายรับ หรือ หมายเหตุสำหรับรายจ่าย */}
         <div className="space-y-3">
            <label className="px-1 text-[10px] font-extrabold text-slate-400 block uppercase">{formMode === 'income' ? 'ราคา (บาท)' : 'หมายเหตุเพิ่มเติม'}</label>
            {formMode === 'income' ? (
@@ -210,15 +182,7 @@ export default function AddPage() {
            )}
         </div>
 
-        {/* ปุ่มบันทึก */}
-        <button
-          onClick={handleSubmit}
-          disabled={saving}
-          className={`w-full py-6 rounded-[26px] text-xl font-black text-white transition-all shadow-xl active:scale-95 ${saving ? 'bg-slate-300' : formMode === 'income' ? 'bg-slate-900 shadow-slate-200' : 'bg-rose-600 shadow-rose-200'}`}
-        >
-          {saving ? 'กำลังบันทึก...' : 'ตกลง บันทึกรายการ ✅'}
-        </button>
-
+        <button onClick={handleSubmit} disabled={saving} className={`w-full py-6 rounded-[26px] text-xl font-black text-white transition-all shadow-xl active:scale-95 ${saving ? 'bg-slate-300' : formMode === 'income' ? 'bg-slate-900 shadow-slate-200' : 'bg-rose-600 shadow-rose-200'}`}>{saving ? 'กำลังบันทึก...' : 'ตกลง บันทึกรายการ ✅'}</button>
       </div>
     </div>
   )
