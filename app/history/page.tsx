@@ -115,11 +115,15 @@ export default function HistoryPage() {
 
   const totalIncome  = records.reduce((s, r) => s + r.price, 0)
   const totalExpense = expenses.reduce((s, e) => s + e.amount, 0)
+  
+  // ✅ คำนวณจำนวนคันสะสมประจำปี
+  const yearlyWashCount = records.filter(r => r.type === 'wash').length
+  const yearlyPolishCount = records.filter(r => r.type === 'polish').length
 
   return (
     <div className="relative w-full min-h-screen pb-32 text-slate-900 bg-[#F4F6F9]">
 
-      {/* Sticky Header - ปรับให้กะทัดรัดขึ้น */}
+      {/* Sticky Header */}
       <div className="sticky top-0 z-30 bg-[#F4F6F9]/95 backdrop-blur-md border-b border-slate-200/50 px-4 pt-4 pb-2 shadow-sm">
         <div className="max-w-2xl mx-auto">
 
@@ -139,7 +143,7 @@ export default function HistoryPage() {
             </select>
           </div>
 
-          {/* Tab Toggle - ปรับขนาดเล็กลง */}
+          {/* Tab Toggle */}
           <div className="flex p-1 bg-slate-200/60 rounded-xl mb-3 gap-1">
             <button onClick={() => switchTab('income')} className={`flex-1 py-2 rounded-lg text-[10px] font-black transition-all ${activeTab === 'income' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500'}`}>
               รายรับร้าน 💰
@@ -149,28 +153,33 @@ export default function HistoryPage() {
             </button>
           </div>
 
-          {/* Summary Card - ปรับให้กะทัดรัด (Compact) และ Force White Text */}
+          {/* Summary Card - เพิ่มจำนวนคันสะสมปีนี้ */}
           <div className={`relative overflow-hidden rounded-[22px] p-4 mb-3 shadow-md transition-all duration-500 border border-white/10 ${activeTab === 'income' ? 'bg-[#0D1117]' : 'bg-rose-950'}`}>
-            <div className="relative z-10 flex justify-between items-center">
+            <div className="relative z-10 flex justify-between items-start">
               <div>
-                <p 
-                  style={{ color: '#FFFFFF', opacity: 0.8 }}
-                  className="text-[9px] font-black uppercase tracking-[0.1em] mb-0.5"
-                >
-                  ยอดรวมราย{activeTab === 'income' ? 'รับ' : 'จ่าย'}ปีนี้
+                <p style={{ color: '#FFFFFF', opacity: 0.8 }} className="text-[9px] font-black uppercase tracking-[0.1em] mb-0.5">
+                  ยอดรวมราย{activeTab === 'income' ? 'รับ' : 'จ่าย'}ปี {selectedYear + 543}
                 </p>
-                <p 
-                  style={{ color: '#FFFFFF' }}
-                  className="text-2xl font-black tracking-tight"
-                >
+                <p style={{ color: '#FFFFFF' }} className="text-2xl font-black tracking-tight mb-3">
                   ฿{(activeTab === 'income' ? totalIncome : totalExpense).toLocaleString()}
                 </p>
+                
+                {/* ✅ ส่วนแสดงสถิติจำนวนคันประจำปี (เฉพาะแถบรายรับ) */}
+                {activeTab === 'income' && (
+                  <div className="flex gap-3">
+                    <div className="bg-white/10 px-2.5 py-1 rounded-lg border border-white/5">
+                      <p style={{ color: '#FFFFFF', opacity: 0.6 }} className="text-[7px] font-black uppercase tracking-wider">ล้างรถ</p>
+                      <p style={{ color: '#FFFFFF' }} className="text-xs font-black">{yearlyWashCount.toLocaleString()} <span className="text-[8px] opacity-60">คัน</span></p>
+                    </div>
+                    <div className="bg-white/10 px-2.5 py-1 rounded-lg border border-white/5">
+                      <p style={{ color: '#FFFFFF', opacity: 0.6 }} className="text-[7px] font-black uppercase tracking-wider">ขัดสี</p>
+                      <p style={{ color: '#FFFFFF' }} className="text-xs font-black">{yearlyPolishCount.toLocaleString()} <span className="text-[8px] opacity-60">คัน</span></p>
+                    </div>
+                  </div>
+                )}
               </div>
               <button
-                onClick={() => exportToCSV(
-                  activeTab === 'income' ? records : expenses,
-                  `History-${activeTab}-${selectedYear}`
-                )}
+                onClick={() => exportToCSV(activeTab === 'income' ? records : expenses, `History-${activeTab}-${selectedYear}`)}
                 className="bg-white/10 hover:bg-white/20 border border-white/10 px-3 py-1.5 rounded-xl text-[10px] font-black text-white flex items-center gap-1.5 transition-all active:scale-95"
               >
                 📥 CSV
@@ -179,7 +188,7 @@ export default function HistoryPage() {
             <div className={`absolute top-0 right-0 w-24 h-24 blur-[40px] -mr-8 -mt-8 ${activeTab === 'income' ? 'bg-blue-600/20' : 'bg-rose-600/20'}`} />
           </div>
 
-          {/* Search - ปรับให้เตี้ยลง */}
+          {/* Search */}
           <div className="relative">
             <input
               type="text"
@@ -195,8 +204,7 @@ export default function HistoryPage() {
 
       {/* Content */}
       <div className="px-4 pt-4 max-w-2xl mx-auto">
-
-        {/* Filter Pills - เล็กลง */}
+        {/* Filter Pills (income only) */}
         {activeTab === 'income' && (
           <div className="flex gap-1.5 mb-4 overflow-x-auto no-scrollbar py-1">
             {(['all', 'wash', 'polish'] as FilterType[]).map(t => (
@@ -211,7 +219,7 @@ export default function HistoryPage() {
           </div>
         )}
 
-        {/* Date Range - เล็กและเตี้ยลง */}
+        {/* Date Range */}
         <div className="flex gap-2 mb-6 items-center bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
           <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="flex-1 bg-transparent text-[10px] font-black text-slate-600 outline-none" />
           <span className="text-slate-300 font-bold">→</span>
