@@ -12,13 +12,21 @@ export default function AddPage() {
   const [formMode, setFormMode] = useState<FormMode>('income')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   
+  // ✅ แปลง ค.ศ. เป็น พ.ศ. สำหรับแสดงผลให้พ่อแม่
+  const displayThaiDate = (isoDate: string) => {
+    if (!isoDate) return '-'
+    const [y, m, d] = isoDate.split('-')
+    const thaiYear = parseInt(y) + 543
+    return `${d}/${m}/${thaiYear}`
+  }
+
   // Income States
   const [type, setType] = useState<RecordType>('wash')
   const [plate, setPlate] = useState('')
   const [selectedType, setSelectedType] = useState('')
   const [selectedBrand, setSelectedBrand] = useState('')
-  const [customerName, setCustomerName] = useState('') // ✅ สำหรับงานเต็นท์
-  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('paid') // ✅ จ่ายแล้ว/ค้าง
+  const [customerName, setCustomerName] = useState('') 
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('paid') 
   const [note, setNote] = useState('')
   const [price, setPrice] = useState('')
   
@@ -34,7 +42,6 @@ export default function AddPage() {
 
   async function handleSubmit() {
     setSaving(true)
-    
     const now = new Date()
     const selectedDate = new Date(date)
     selectedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds())
@@ -45,7 +52,6 @@ export default function AddPage() {
       if (!selectedType) { alert('⚠️ กรุณาเลือกประเภทรถ'); setSaving(false); return }
       if (!price || parseInt(price) <= 0) { alert('⚠️ กรุณากรอกราคา'); setSaving(false); return }
 
-      // คำนวณเลขคิวตามวันที่เลือก
       const dayStart = new Date(date); dayStart.setHours(0, 0, 0, 0)
       const dayEnd = new Date(date); dayEnd.setHours(23, 59, 59, 999)
 
@@ -68,8 +74,8 @@ export default function AddPage() {
         created_at: timestamp,
         created_by: user?.id,
         payment_method: 'cash',
-        customer_name: type === 'polish' ? customerName : '', // ✅ บันทึกชื่อเต็นท์
-        payment_status: paymentStatus, // ✅ บันทึกว่าจ่ายหรือค้าง
+        customer_name: type === 'polish' ? customerName : '',
+        payment_status: paymentStatus,
         job_status: 'done'
       })
 
@@ -77,7 +83,6 @@ export default function AddPage() {
       else { router.push('/'); router.refresh() }
 
     } else {
-      // บันทึกรายจ่าย (Expense)
       if (!expenseTitle.trim()) { alert('⚠️ กรุณาระบุรายการจ่าย'); setSaving(false); return }
       if (!expenseAmount || parseInt(expenseAmount) <= 0) { alert('⚠️ กรุณากรอกจำนวนเงิน'); setSaving(false); return }
 
@@ -97,7 +102,6 @@ export default function AddPage() {
   return (
     <div className="min-h-screen bg-[#F0F2F8] pb-64 font-sarabun text-slate-900">
       
-      {/* Header */}
       <div className="px-6 pt-12 pb-6 text-center">
         <p className="text-[10px] font-extrabold uppercase tracking-[0.25em] text-slate-400 mb-2">บันทึกข้อมูล</p>
         <h1 className="text-3xl font-black text-slate-900 tracking-tight">
@@ -107,16 +111,43 @@ export default function AddPage() {
 
       <div className="px-5 space-y-6 max-w-2xl mx-auto">
         
-        {/* --- 1. Mode Switcher --- */}
         <div className="flex p-1.5 bg-white border-2 border-slate-200 rounded-[22px] shadow-sm">
           <button onClick={() => setFormMode('income')} className={`flex-1 py-4 rounded-[18px] text-sm font-black transition-all ${formMode === 'income' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400'}`}>บวกรายรับ 💰</button>
           <button onClick={() => setFormMode('expense')} className={`flex-1 py-4 rounded-[18px] text-sm font-black transition-all ${formMode === 'expense' ? 'bg-rose-500 text-white shadow-md' : 'text-slate-400'}`}>หักรายจ่าย 💸</button>
         </div>
 
-        {/* --- 2. Date Picker --- */}
+        {/* ✅ --- 2. Thai Date Picker (พ.ศ.) แบบแก้ทางเทคนิคให้จิ้มง่าย --- */}
         <div className="bg-white p-4 rounded-[22px] border border-slate-200 shadow-sm">
-          <label className="px-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-slate-400 block mb-2">เลือกวันที่บันทึก (ลงย้อนหลังได้)</label>
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full text-xl font-black text-slate-900 outline-none bg-slate-50 p-3 rounded-xl border border-slate-100" />
+          <label className="px-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-slate-400 block mb-2">
+            เลือกวันที่บันทึก (พ.ศ.)
+          </label>
+          
+          <div 
+            onClick={() => {
+              const el = document.getElementById('date-input') as any;
+              if (el) {
+                if (el.showPicker) {
+                  el.showPicker(); 
+                } else {
+                  el.click(); 
+                }
+              }
+            }}
+            className="relative h-14 w-full bg-slate-50 border border-slate-100 rounded-xl flex items-center px-4 cursor-pointer active:bg-slate-100 transition-all"
+          >
+            <span className="text-xl font-black text-slate-900 pointer-events-none">
+              {displayThaiDate(date)}
+            </span>
+            <span className="ml-auto text-xl pointer-events-none">📅</span>
+            
+            <input 
+              id="date-input"
+              type="date" 
+              value={date} 
+              onChange={(e) => setDate(e.target.value)} 
+              className="absolute inset-0 w-full h-full opacity-0 pointer-events-none"
+            />
+          </div>
         </div>
 
         {formMode === 'income' ? (
@@ -126,7 +157,6 @@ export default function AddPage() {
               <button onClick={() => setType('polish')} className={`flex-1 py-3 rounded-[18px] text-xs font-black transition-all ${type === 'polish' ? 'bg-amber-400 text-white' : 'text-slate-500'}`}>✨ งานขัดสี / งานเต็นท์</button>
             </div>
 
-            {/* ✅ ส่วนที่เพิ่มเข้ามา: ชื่อลูกค้า/เต็นท์ (เฉพาะโหมดขัดสี) */}
             {type === 'polish' && (
               <div className="space-y-3 animate-in fade-in zoom-in duration-300">
                 <label className="px-1 text-[10px] font-extrabold text-amber-600 block uppercase tracking-wider">ชื่อลูกค้า / ชื่อเต็นท์รถ</label>
@@ -140,7 +170,7 @@ export default function AddPage() {
             </div>
 
             <div className="space-y-3">
-              <label className="px-1 text-[10px] font-extrabold text-slate-400 block uppercase">ประเภทรถ</label>
+              <label className="px-1 text-[10px] font-extrabold text-slate-400 block uppercase">ประเภทสมรรถนะรถ</label>
               <div className="grid grid-cols-2 gap-2">
                 {CAR_TYPES.map(t => (
                   <button key={t.id} onClick={() => setSelectedType(t.id)} className={`flex items-center gap-2 p-4 rounded-2xl border-2 transition-all ${selectedType === t.id ? 'bg-slate-900 border-slate-900 text-white shadow-lg' : 'bg-white border-slate-100 text-slate-500'}`}>
@@ -151,7 +181,6 @@ export default function AddPage() {
               </div>
             </div>
 
-            {/* ✅ ส่วนที่เพิ่มเข้ามา: สถานะการเงิน (จ่ายแล้ว/ค้างชำระ) */}
             <div className="space-y-3">
               <label className="px-1 text-[10px] font-extrabold text-slate-400 block uppercase">สถานะการชำระเงิน</label>
               <div className="flex gap-2">

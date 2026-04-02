@@ -1,44 +1,37 @@
-import type { Metadata, Viewport } from 'next'
+'use client' // ✅ ต้องใช้ Client Component เพื่อเช็ค Pathname
 import { Sarabun } from 'next/font/google'
 import './globals.css'
 import BottomNav from '@/components/BottomNav'
+import { usePathname } from 'next/navigation'
 
-// ปรับน้ำหนักฟอนต์: เน้น 500 ขึ้นไปเพื่อให้ตัวหนังสือดูอิ่มและอ่านง่าย
 const sarabun = Sarabun({
   subsets: ['thai', 'latin'],
   weight: ['500', '600', '700', '800'], 
 })
-
-export const metadata: Metadata = {
-  title: 'CarCare Intelligence',
-  description: 'Premium Business Management System',
-}
-
-export const viewport: Viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  maximumScale: 5,    // ปล่อยให้ขยายได้ถ้าพ่อแม่มองไม่เห็น
-  userScalable: true, // เปิดให้ใช้นิ้วถ่างขยายหน้าจอได้ (Accessibility)
-  themeColor: '#0F172A',
-}
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const pathname = usePathname()
+  
+  // ✅ กำหนดหน้าที่ "ไม่ต้องการ" ให้โชว์ BottomNav (เช่น หน้า Login)
+  const isLoginPage = pathname === '/login'
+
   return (
     <html lang="th" className="scroll-smooth">
       <body className={`relative h-auto min-h-full w-full overflow-x-hidden bg-[#F4F6F9] text-slate-900 antialiased ${sarabun.className} font-medium`}>
 
         <div className="app-container relative w-full block">
-          {/* ปรับระยะห่างด้านล่าง (pb) ให้มากขึ้นเพื่อให้รายการสุดท้ายลอยพ้นแถบเมนูสีดำแน่นอน */}
-          <main className="max-w-6xl mx-auto pb-48 md:pb-24 transition-all duration-500 block">
+          {/* ปรับระยะห่างด้านล่าง (pb) เฉพาะหน้าที่ไม่ใช่ Login */}
+          <main className={`max-w-6xl mx-auto transition-all duration-500 block ${isLoginPage ? 'pb-0' : 'pb-48 md:pb-24'}`}>
             {children}
           </main>
         </div>
 
-        <BottomNav />
+        {/* ✅ แสดง BottomNav เฉพาะหน้าที่ "ไม่ใช่" หน้า Login */}
+        {!isLoginPage && <BottomNav />}
 
         {/* Subtle ambient blobs — ฉากหลังละมุนๆ */}
         <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">

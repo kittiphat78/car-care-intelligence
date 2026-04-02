@@ -2,9 +2,9 @@
 
 export type RecordType = 'wash' | 'polish'
 export type PaymentMethod = 'cash' | 'transfer'
-// ✅ เพิ่มสถานะการจ่ายเงิน
+// ✅ สถานะการจ่ายเงิน
 export type PaymentStatus = 'paid' | 'unpaid' 
-// ✅ เพิ่มสถานะงาน (เผื่อไว้สำหรับงานขัดสีที่ต้องรอข้ามวัน)
+// ✅ สถานะงาน
 export type JobStatus = 'pending' | 'done'
 
 export interface Record {
@@ -17,10 +17,9 @@ export interface Record {
   seq_number: number
   created_by?: string
   payment_method?: PaymentMethod
-  // --- ส่วนที่อัปเกรดเพื่อ Master Plan ---
-  customer_name?: string;     // ✅ สำหรับใส่ชื่อเต็นท์รถ/ลูกค้าประจำ
+  customer_name?: string;      // ✅ ชื่อเต็นท์รถ/ลูกค้าประจำ
   payment_status: PaymentStatus; // ✅ จ่ายแล้ว หรือ ค้างชำระ
-  job_status: JobStatus;      // ✅ งานเสร็จหรือยัง
+  job_status: JobStatus;       // ✅ งานเสร็จหรือยัง
   note?: string
 }
 
@@ -29,7 +28,7 @@ export interface Expense {
   created_at: string
   title: string
   amount: number
-  note: string
+  note: string      // ✅ ตรวจสอบว่ามีตัวนี้ เพื่อใช้ใน Modal แก้ไข
   created_by?: string
 }
 
@@ -49,7 +48,7 @@ export const CAR_BRANDS = [
   { id: 'mitsubishi', name: 'MITSUBISHI' },
   { id: 'mazda',      name: 'MAZDA' },
   { id: 'nissan',     name: 'NISSAN' },
-  { id: 'suzuki',      name: 'SUZUKI' },
+  { id: 'suzuki',     name: 'SUZUKI' },
   { id: 'ford',       name: 'FORD' },
   { id: 'mg',         name: 'MG' },
   { id: 'byd',        name: 'BYD' },
