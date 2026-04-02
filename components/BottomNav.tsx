@@ -3,16 +3,19 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 const tabs = [
-  { href: '/',        label: 'ภาพรวม',    icon: '📈' },
+  { href: '/',        label: 'ภาพรวม',     icon: '📈' },
   { href: '/add',     label: 'เพิ่มรายการ', icon: '📝' },
-  { href: '/history', label: 'ประวัติ',    icon: '📂' },
+  { href: '/history', label: 'ประวัติ',     icon: '📂' },
 ]
 
 export default function BottomNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pb-6 px-6 pointer-events-none font-sarabun">
+    <nav
+      aria-label="เมนูหลัก"
+      className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pb-6 px-6 pointer-events-none"
+    >
       <div className="
         bg-slate-950/95 backdrop-blur-2xl
         border border-white/[0.08]
@@ -21,12 +24,13 @@ export default function BottomNav() {
         pointer-events-auto w-full max-w-[360px]
         transition-all duration-500
       ">
-        {tabs.map((tab) => {
+        {tabs.map(tab => {
           const active = pathname === tab.href
           return (
             <Link
               key={tab.href}
               href={tab.href}
+              aria-current={active ? 'page' : undefined}
               className={`
                 relative flex-1 flex flex-col items-center gap-1 py-3 px-2 rounded-[24px]
                 transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]
@@ -35,11 +39,6 @@ export default function BottomNav() {
                   : 'hover:bg-white/5 active:scale-95'}
               `}
             >
-              {/* Active glow underneath */}
-              {active && (
-                <div className="absolute inset-0 rounded-[24px] bg-white/10 blur-md -z-10" />
-              )}
-
               {/* Icon */}
               <span className={`text-xl leading-none transition-all duration-300 ${active ? 'scale-110' : 'opacity-50 grayscale'}`}>
                 {tab.icon}
@@ -55,7 +54,7 @@ export default function BottomNav() {
                 {tab.label}
               </span>
 
-              {/* Active dot indicator */}
+              {/* Active dot */}
               {active && (
                 <span className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-slate-400" />
               )}

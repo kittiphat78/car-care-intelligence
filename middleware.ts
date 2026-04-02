@@ -3,9 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+    request: { headers: request.headers },
   })
 
   const supabase = createServerClient(
@@ -17,48 +15,30 @@ export async function middleware(request: NextRequest) {
           return request.cookies.get(name)?.value
         },
         set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          })
+          request.cookies.set({ name, value, ...options })
+          response = NextResponse.next({ request: { headers: request.headers } })
+          response.cookies.set({ name, value, ...options })
         },
         remove(name: string, options: CookieOptions) {
-          request.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
+          request.cookies.set({ name, value: '', ...options })
+          response = NextResponse.next({ request: { headers: request.headers } })
+          response.cookies.set({ name, value: '', ...options })
         },
       },
     }
   )
 
-  const { data: { session } } = await supabase.auth.getSession()
+  const { data: { user } } = await supabase.auth.getUser()
+  const isLoginPage = request.nextUrl.pathname.startsWith('/login')
 
-  // 🔒 ถ้าไม่มี Session (ไม่ได้ล็อกอิน) และไม่ใช่หน้า Login ให้ส่งไปหน้า Login
-  if (!session && !request.nextUrl.pathname.startsWith('/login')) {
+  // ไม่ได้ login → redirect ไป /login
+  if (!user && !isLoginPage) {
     return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  // login อยู่แล้ว แต่เข้า /login → redirect ไปหน้าหลัก
+  if (user && isLoginPage) {
+    return NextResponse.redirect(new URL('/', request.url))
   }
 
   return response

@@ -1,13 +1,8 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  typescript: {
-    // ปิดการเช็ค Error ของ TypeScript ตอน Build เพื่อให้ Deploy ผ่าน
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    // ปิดการเช็ค Error ของ ESLint ตอน Build
-    ignoreDuringBuilds: true,
-  },
-};
+import type { NextConfig } from 'next'
 
-export default nextConfig;
+const nextConfig: NextConfig = {
+  // ไม่มีอะไรพิเศษ — ใช้ค่า default ของ Next.js ทั้งหมด
+  // TypeScript และ ESLint จะทำงานปกติตอน build
+}
+
+export default nextConfig
