@@ -12,6 +12,17 @@ const displayThaiDate = (isoDate: string) => {
   return `${d}/${m}/${parseInt(y) + 543}`
 }
 
+// ✅ ลิสต์ "รายจ่ายด่วน" 
+const EXPENSE_PRESETS = [
+  { icon: '💧', label: 'ค่าน้ำยา' },
+  { icon: '👷', label: 'ค่าแรง' },
+  { icon: '🍚', label: 'ค่าข้าว' },
+  { icon: '⚡', label: 'ค่าไฟ' },
+  { icon: '🚰', label: 'ค่าน้ำ' },
+  { icon: '🗑️', label: 'ค่าขยะ' },
+  { icon: '🛒', label: 'อุปกรณ์' }
+]
+
 export default function AddPage() {
   const router = useRouter()
   const [userId, setUserId]           = useState<string | null>(null)
@@ -35,7 +46,6 @@ export default function AddPage() {
   const [price, setPrice]                   = useState('')
   const [savedCustomers, setSavedCustomers] = useState<string[]>([]) 
   
-  // ✅ State ใหม่: เก็บนับจำนวนครั้งที่ลูกค้ารถคันนี้เคยมา
   const [visitCount, setVisitCount]         = useState<number>(0)
 
   // Expense states
@@ -57,16 +67,13 @@ export default function AddPage() {
     }
   }, [])
 
-  // ✅ ฟีเจอร์ "จำลูกค้าประจำ": แอบเช็คฐานข้อมูลทันทีที่พิมพ์ทะเบียนรถ
   useEffect(() => {
     const checkPlate = plate.trim().toUpperCase()
-    // ถ้ายังพิมพ์ไม่ถึง 3 ตัวอักษร ให้รีเซ็ตค่า
     if (checkPlate.length < 3) {
       setVisitCount(0)
       return
     }
 
-    // ใช้ Debounce (หน่วงเวลา 600ms) เพื่อไม่ให้ยิง Database ถี่เกินไปตอนกำลังพิมพ์
     const timer = setTimeout(async () => {
       const { count } = await supabase
         .from('records')
@@ -79,7 +86,7 @@ export default function AddPage() {
     return () => clearTimeout(timer)
   }, [plate])
 
-  // Drag-to-scroll for brand chips
+  // Drag-to-scroll for brand chips and expense presets
   const [isDown, setIsDown]       = useState(false)
   const [startX, setStartX]       = useState(0)
   const [scrollLeftVal, setScrollLeftVal] = useState(0)
@@ -142,7 +149,7 @@ export default function AddPage() {
 
     if (isBulk) {
       setSuccessMsg(`บันทึก ${plate.toUpperCase().trim()} สำเร็จ`)
-      setPlate(''); setPrice(''); setNote(''); setCustomerName(''); setVisitCount(0) // ✅ รีเซ็ตค่านับประวัติด้วย
+      setPlate(''); setPrice(''); setNote(''); setCustomerName(''); setVisitCount(0) 
       window.scrollTo({ top: 0, behavior: 'smooth' })
       setTimeout(() => setSuccessMsg(''), 4000)
     } else {
@@ -310,7 +317,6 @@ export default function AddPage() {
               <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-[var(--border)] pointer-events-none" />
             </div>
             
-            {/* ✅ กล่องแสดงประวัติลูกค้าประจำ (จะเด้งขึ้นมาถ้ารถเคยมาล้าง) */}
             {visitCount > 0 && (
               <div className="mt-3 bg-[var(--amber-light)] border border-[var(--amber)] rounded-[var(--radius-md)] p-2.5 flex items-center justify-center gap-2 animate-kiosk">
                 <span className="text-xl">🌟</span>
@@ -474,12 +480,40 @@ export default function AddPage() {
           </div>
 
           <div className="card p-4">
-            <p className="text-xs text-[var(--text-tertiary)] font-semibold uppercase tracking-widest mb-2">จ่ายค่าอะไร</p>
+            <div className="flex justify-between items-end mb-2">
+              <p className="text-xs text-[var(--text-tertiary)] font-semibold uppercase tracking-widest">จ่ายค่าอะไร</p>
+            </div>
+            
+            {/* ✅ ปุ่มรายจ่ายด่วน (Quick Expense) พร้อมระบบลากเลื่อน */}
+            <div 
+              ref={scrollRef}
+              onMouseDown={handleMouseDown}
+              onMouseLeave={handleMouseLeave}
+              onMouseUp={handleMouseUp}
+              onMouseMove={handleMouseMove}
+              className="flex gap-2 overflow-x-auto pb-3 mb-2 no-scrollbar cursor-grab active:cursor-grabbing"
+            >
+              {EXPENSE_PRESETS.map(preset => (
+                <button
+                  key={preset.label}
+                  type="button"
+                  onClick={() => setExpenseTitle(preset.label)}
+                  className={`flex-shrink-0 px-3 py-1.5 rounded-[var(--radius-md)] border text-xs font-semibold transition-all ${
+                    expenseTitle === preset.label
+                      ? 'bg-[var(--red)] text-white border-transparent'
+                      : 'bg-white text-[var(--text-secondary)] border-[var(--border)] hover:bg-[var(--red-light)] hover:text-[var(--red)] hover:border-transparent'
+                  }`}
+                >
+                  {preset.icon} {preset.label}
+                </button>
+              ))}
+            </div>
+
             <input
               type="text"
               value={expenseTitle}
               onChange={e => setExpenseTitle(e.target.value)}
-              placeholder="เช่น ค่าน้ำยา, ค่าไฟ..."
+              placeholder="พิมพ์หรือเลือกรายการจากด้านบน..."
               className="input text-sm"
             />
           </div>
