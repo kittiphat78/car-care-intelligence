@@ -37,19 +37,11 @@ export default function HistoryPage() {
       supabase.from('expenses').select('*').gte('created_at', startOfYear).lt('created_at', endOfYear).order('created_at', { ascending: false }),
     ])
 
-    if (recordsRes.error) {
-      setError(recordsRes.error.message)
-      setRecords([])
-    } else {
-      setRecords(recordsRes.data ?? [])
-    }
+    if (recordsRes.error) { setError(recordsRes.error.message); setRecords([]) }
+    else setRecords(recordsRes.data ?? [])
 
-    if (expensesRes.error) {
-      setError(expensesRes.error.message)
-      setExpenses([])
-    } else {
-      setExpenses(expensesRes.data ?? [])
-    }
+    if (expensesRes.error) { setError(expensesRes.error.message); setExpenses([]) }
+    else setExpenses(expensesRes.data ?? [])
 
     setLoading(false)
   }, [selectedYear])
@@ -74,8 +66,20 @@ export default function HistoryPage() {
     setError('')
     const table = activeTab === 'income' ? 'records' : 'expenses'
     const updateData = activeTab === 'income'
-      ? { plate: updatedFields.plate, price: updatedFields.price, services: updatedFields.services, customer_name: updatedFields.customer_name, payment_status: updatedFields.payment_status }
-      : { title: updatedFields.title, amount: updatedFields.amount, note: updatedFields.note }
+      ? {
+          plate:          updatedFields.plate,
+          price:          updatedFields.price,
+          services:       updatedFields.services,
+          customer_name:  updatedFields.customer_name,
+          payment_status: updatedFields.payment_status,
+          created_at:     updatedFields.created_at,
+        }
+      : {
+          title:      updatedFields.title,
+          amount:     updatedFields.amount,
+          note:       updatedFields.note,
+          created_at: updatedFields.created_at,
+        }
     const { error } = await supabase.from(table).update(updateData).eq('id', selectedItem.id)
     if (error) setError(error.message)
     else { setIsModalOpen(false); fetchAllData() }
@@ -83,10 +87,10 @@ export default function HistoryPage() {
 
   const filteredItems = activeTab === 'income'
     ? records.filter(r => {
-        const ms = r.plate.toLowerCase().includes(search.toLowerCase()) || (r.customer_name || '').toLowerCase().includes(search.toLowerCase())
-        const mt = filterType === 'all' || r.type === filterType
-        const mf = !dateFrom || new Date(r.created_at) >= new Date(dateFrom)
-        const mto = !dateTo || new Date(r.created_at) <= new Date(dateTo + 'T23:59:59')
+        const ms  = r.plate.toLowerCase().includes(search.toLowerCase()) || (r.customer_name || '').toLowerCase().includes(search.toLowerCase())
+        const mt  = filterType === 'all' || r.type === filterType
+        const mf  = !dateFrom || new Date(r.created_at) >= new Date(dateFrom)
+        const mto = !dateTo   || new Date(r.created_at) <= new Date(dateTo + 'T23:59:59')
         return ms && mt && mf && mto
       })
     : expenses.filter(e => {
@@ -103,8 +107,10 @@ export default function HistoryPage() {
     return acc
   }, {} as {[date: string]: (Record | Expense)[]})
 
-  const totalIncome  = records.reduce((s,r) => s + r.price, 0)
-  const totalExpense = expenses.reduce((s,e) => s + e.amount, 0)
+  const totalIncome      = records.reduce((s, r) => s + r.price, 0)
+  const totalExpense     = expenses.reduce((s, e) => s + e.amount, 0)
+  const totalWashCount   = records.filter(r => r.type === 'wash').length
+  const totalPolishCount = records.filter(r => r.type === 'polish').length
 
   return (
     <div className="min-h-dvh px-4 pt-6 pb-32 space-y-4">
@@ -150,28 +156,44 @@ export default function HistoryPage() {
 
       {/* ── Summary + Export ── */}
       <div className="card-dark p-4 fade-up delay-1">
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs text-white/50 mb-1">ยอดรวมทั้งปี</p>
             <p className="text-2xl font-bold text-white">
               ฿{(activeTab === 'income' ? totalIncome : totalExpense).toLocaleString()}
             </p>
           </div>
-          <button
-            onClick={() => exportToCSV(activeTab === 'income' ? records : expenses, `history-${activeTab}-${selectedYear}`)}
-            className="flex items-center gap-2 text-xs font-semibold text-white/70 hover:text-white bg-white/10 hover:bg-white/15 border border-white/10 px-3 py-2.5 rounded-[var(--radius-md)] transition-all"
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M7 1v8M4 6l3 3 3-3M2 10v1.5a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5V10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            CSV
-          </button>
+          <div className="flex items-center gap-3">
+            {activeTab === 'income' && (
+              <div className="flex items-center gap-2 bg-white/10 border border-white/10 rounded-[var(--radius-md)] px-3 py-2">
+                <div className="text-center">
+                  <p className="text-[10px] text-white/50 leading-none mb-1">ล้างรถ</p>
+                  <p className="text-sm font-bold text-white leading-none">{totalWashCount.toLocaleString()}</p>
+                  <p className="text-[9px] text-white/40 leading-none mt-0.5">คัน</p>
+                </div>
+                <div className="w-px h-7 bg-white/15" />
+                <div className="text-center">
+                  <p className="text-[10px] text-white/50 leading-none mb-1">ขัดสี</p>
+                  <p className="text-sm font-bold text-white leading-none">{totalPolishCount.toLocaleString()}</p>
+                  <p className="text-[9px] text-white/40 leading-none mt-0.5">คัน</p>
+                </div>
+              </div>
+            )}
+            <button
+              onClick={() => exportToCSV(activeTab === 'income' ? records : expenses, `history-${activeTab}-${selectedYear}`)}
+              className="flex items-center gap-2 text-xs font-semibold text-white/70 hover:text-white bg-white/10 hover:bg-white/15 border border-white/10 px-3 py-2.5 rounded-[var(--radius-md)] transition-all"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M7 1v8M4 6l3 3 3-3M2 10v1.5a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5V10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              CSV
+            </button>
+          </div>
         </div>
       </div>
 
       {/* ── Search & Filter ── */}
       <div className="card p-3.5 space-y-3 fade-up delay-2">
-        {/* Search */}
         <div className="relative">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" width="15" height="15" viewBox="0 0 15 15" fill="none">
             <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.3"/>
@@ -186,24 +208,12 @@ export default function HistoryPage() {
           />
         </div>
 
-        {/* Date range */}
         <div className="flex items-center gap-2">
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={e => setDateFrom(e.target.value)}
-            className="input flex-1 text-sm py-2.5 text-center cursor-pointer"
-          />
+          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="input flex-1 text-sm py-2.5 text-center cursor-pointer" />
           <span className="text-[var(--text-tertiary)] text-sm font-medium shrink-0">—</span>
-          <input
-            type="date"
-            value={dateTo}
-            onChange={e => setDateTo(e.target.value)}
-            className="input flex-1 text-sm py-2.5 text-center cursor-pointer"
-          />
+          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="input flex-1 text-sm py-2.5 text-center cursor-pointer" />
         </div>
 
-        {/* Type filter (income only) */}
         {activeTab === 'income' && (
           <div className="flex gap-2">
             {(['all','wash','polish'] as FilterType[]).map(t => (
@@ -212,9 +222,9 @@ export default function HistoryPage() {
                 onClick={() => setFilterType(t)}
                 className={`flex-1 py-2 rounded-[var(--radius-md)] text-xs font-semibold transition-all border ${
                   filterType === t
-                    ? t === 'all'    ? 'bg-[var(--text-primary)] text-white border-transparent'
-                    : t === 'wash'   ? 'bg-[var(--accent-light)] text-[var(--accent)] border-blue-100'
-                    :                  'bg-[var(--amber-light)] text-[var(--amber)] border-amber-100'
+                    ? t === 'all'  ? 'bg-[var(--text-primary)] text-white border-transparent'
+                    : t === 'wash' ? 'bg-[var(--accent-light)] text-[var(--accent)] border-blue-100'
+                    :                'bg-[var(--amber-light)] text-[var(--amber)] border-amber-100'
                     : 'bg-white text-[var(--text-secondary)] border-[var(--border)] hover:bg-[var(--surface-2)]'
                 }`}
               >
@@ -247,7 +257,6 @@ export default function HistoryPage() {
 
             return (
               <div key={date} className="mb-6">
-                {/* Date header */}
                 <div className="sticky top-0 z-10 bg-[var(--bg)]/90 backdrop-blur-sm py-2 mb-2">
                   <div className="flex items-center gap-2.5">
                     <span className="text-xs font-semibold text-[var(--text-secondary)] shrink-0">{date}</span>
@@ -257,9 +266,7 @@ export default function HistoryPage() {
                         ล้าง {dayWashCount} · ขัด {dayPolishCount}
                       </span>
                     )}
-                    <span className={`text-xs font-semibold shrink-0 ${
-                      activeTab === 'income' ? 'text-[var(--green)]' : 'text-[var(--red)]'
-                    }`}>
+                    <span className={`text-xs font-semibold shrink-0 ${activeTab === 'income' ? 'text-[var(--green)]' : 'text-[var(--red)]'}`}>
                       ฿{dayTotal.toLocaleString()}
                     </span>
                   </div>
@@ -268,11 +275,7 @@ export default function HistoryPage() {
                 <div className="grid gap-2">
                   {items.map(item =>
                     activeTab === 'income' ? (
-                      <div
-                        key={item.id}
-                        onClick={() => { setSelectedItem(item); setIsModalOpen(true) }}
-                        className="cursor-pointer"
-                      >
+                      <div key={item.id} onClick={() => { setSelectedItem(item); setIsModalOpen(true) }} className="cursor-pointer">
                         <RecordCard record={item as Record} />
                       </div>
                     ) : (
@@ -288,17 +291,13 @@ export default function HistoryPage() {
                             </svg>
                           </div>
                           <div>
-                            <p className="text-sm font-semibold text-[var(--text-primary)] leading-tight">
-                              {(item as Expense).title}
-                            </p>
+                            <p className="text-sm font-semibold text-[var(--text-primary)] leading-tight">{(item as Expense).title}</p>
                             <p className="text-[11px] text-[var(--text-tertiary)] mt-0.5">
                               {new Date(item.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.
                             </p>
                           </div>
                         </div>
-                        <p className="text-sm font-bold text-[var(--red)]">
-                          −฿{(item as Expense).amount.toLocaleString()}
-                        </p>
+                        <p className="text-sm font-bold text-[var(--red)]">−฿{(item as Expense).amount.toLocaleString()}</p>
                       </div>
                     )
                   )}
