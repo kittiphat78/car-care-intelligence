@@ -354,9 +354,9 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
           )}
         </div>
 
-        {/* Confirm Delete */}
+        {/* ✅ FIX: เพิ่ม border-t ให้ confirmDelete block เพื่อ visual separation */}
         {confirmDelete && (
-          <div className="mx-5 mb-4 p-4 rounded-[var(--radius-md)] bg-[var(--red-light)] border border-red-100 shrink-0">
+          <div className="mx-5 mb-4 p-4 rounded-[var(--radius-md)] bg-[var(--red-light)] border border-red-100 shrink-0 border-t border-[var(--border)] pt-4 mt-1">
             <p className="text-sm font-semibold text-[var(--red)] mb-3">ยืนยันลบรายการนี้?</p>
             <div className="flex gap-2">
               <button
@@ -375,12 +375,12 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
           </div>
         )}
 
-        {/* Footer */}
+        {/* ✅ FIX: pt-1 → pt-3, pb-6 → pb-8 (safe area), ลบ mt-3 จากปุ่มทั้งสอง */}
         {!confirmDelete && (
-          <div className="flex gap-2.5 px-5 pb-6 pt-1 shrink-0 border-t border-[var(--border)]">
+          <div className="flex gap-2.5 px-5 pb-8 pt-3 shrink-0 border-t border-[var(--border)]">
             <button
               onClick={() => setConfirmDelete(true)}
-              className="btn btn-danger py-3 text-sm mt-3"
+              className="btn btn-danger py-3 text-sm"
             >
               <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
                 <path d="M2.5 4h10M5 4V2.5h5V4M6 7v4M9 7v4M3.5 4l.5 8.5h7L12 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
@@ -389,7 +389,7 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
             </button>
             <button
               onClick={handleSave}
-              className="btn btn-primary flex-1 py-3 text-sm mt-3"
+              className="btn btn-primary flex-1 py-3 text-sm"
             >
               บันทึกการแก้ไข
             </button>

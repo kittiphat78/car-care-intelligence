@@ -113,7 +113,8 @@ export default function HistoryPage() {
   const totalPolishCount = records.filter(r => r.type === 'polish').length
 
   return (
-    <div className="min-h-dvh px-4 pt-6 pb-32 space-y-4">
+    // ✅ FIX: ลบ pb-32 ออก — ClientLayout จัดการ pb-28 ให้แล้ว
+    <div className="min-h-dvh px-4 pt-6 space-y-4">
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between fade-up">
@@ -257,7 +258,8 @@ export default function HistoryPage() {
 
             return (
               <div key={date} className="mb-6">
-                <div className="sticky top-0 z-10 bg-[var(--bg)]/90 backdrop-blur-sm py-2 mb-2">
+                {/* ✅ FIX: top-0 → top-2 เพื่อให้มี gap จาก viewport edge */}
+                <div className="sticky top-2 z-10 bg-[var(--bg)]/90 backdrop-blur-sm py-2 mb-2">
                   <div className="flex items-center gap-2.5">
                     <span className="text-xs font-semibold text-[var(--text-secondary)] shrink-0">{date}</span>
                     <div className="h-px flex-1 bg-[var(--border)]" />
@@ -309,7 +311,8 @@ export default function HistoryPage() {
       </div>
 
       {error && (
-        <div className="fixed bottom-24 left-4 right-4 max-w-lg mx-auto p-3 rounded-[var(--radius-md)] bg-[var(--red)] text-white text-sm font-medium text-center fade-up">
+        // ✅ FIX: bottom-24 → bottom-28 เพื่อไม่ซ้อนทับ BottomNav
+        <div className="fixed bottom-28 left-4 right-4 max-w-lg mx-auto p-3 rounded-[var(--radius-md)] bg-[var(--red)] text-white text-sm font-medium text-center fade-up">
           {error}
         </div>
       )}

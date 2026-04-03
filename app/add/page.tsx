@@ -138,7 +138,7 @@ export default function AddPage() {
   }
 
   return (
-    <div className="min-h-dvh px-4 pt-6 pb-32 space-y-4">
+    <div className="min-h-dvh px-4 pt-6 space-y-4">
 
       {/* ── Mode Toggle ──────────────────────────────────────────────── */}
       <div className="flex bg-[var(--surface-2)] p-1.5 rounded-[var(--radius-lg)] gap-1.5 fade-up">
@@ -275,7 +275,7 @@ export default function AddPage() {
                 value={price}
                 onChange={e => setPrice(e.target.value.replace(/\D/g, ''))}
                 placeholder="0"
-                className="input pl-9 text-3xl font-bold text-[var(--text-primary)] py-4"
+                className="input !pl-12 w-full text-3xl font-bold text-[var(--text-primary)] py-4"
               />
             </div>
           </div>
@@ -405,7 +405,7 @@ export default function AddPage() {
                 value={expenseAmount}
                 onChange={e => setExpenseAmount(e.target.value.replace(/\D/g, ''))}
                 placeholder="0"
-                className="input pl-9 text-3xl font-bold text-[var(--red)] py-4"
+                className="input !pl-12 w-full text-3xl font-bold text-[var(--red)] py-4"
               />
             </div>
           </div>
@@ -436,7 +436,7 @@ export default function AddPage() {
 
       {/* ── Error ────────────────────────────────────────────────────── */}
       {error && (
-        <div className="fixed bottom-24 left-4 right-4 max-w-lg mx-auto p-3 rounded-[var(--radius-md)] bg-[var(--red)] text-white text-sm font-medium text-center fade-up">
+        <div className="fixed bottom-28 left-4 right-4 max-w-lg mx-auto p-3 rounded-[var(--radius-md)] bg-[var(--red)] text-white text-sm font-medium text-center fade-up">
           {error}
         </div>
       )}

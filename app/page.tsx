@@ -88,7 +88,8 @@ export default function Dashboard() {
   )
 
   return (
-    <div className="min-h-dvh px-4 pt-6 pb-32 space-y-4">
+    // ✅ FIX: ลบ pb-32 ออก — ClientLayout จัดการ pb-28 ให้แล้ว
+    <div className="min-h-dvh px-4 pt-6 space-y-4">
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between fade-up">
@@ -127,7 +128,7 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="text-right">
-            <p className="text-xs text-white/40 mb-1">รับรวม</p>
+            <p className="text-xs text-white/40 mb-1">รายรับรวม</p>
             <p className="text-lg font-semibold text-white">฿{todayTotalIncome.toLocaleString()}</p>
           </div>
         </div>
