@@ -186,7 +186,8 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
                       inputMode="numeric"
                       value={price}
                       onChange={e => setPrice(e.target.value.replace(/\D/g, ''))}
-                      className="input pl-7 font-bold"
+                      className="input font-bold w-full"
+                      style={{ paddingLeft: '2rem' }} /* ✅ FIX: บังคับ Padding ให้ดันตัวเลขหนีตัว ฿ */
                       placeholder="0"
                     />
                   </div>
@@ -283,19 +284,17 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
                 </div>
               </div>
 
-              {/* ชื่อลูกค้า (polish only) */}
-              {isPolish && (
-                <div>
-                  <label className="label" style={{ color: 'var(--amber)' }}>ชื่อลูกค้า / เต็นท์</label>
-                  <input
-                    type="text"
-                    value={customerName}
-                    onChange={e => setCustomerName(e.target.value)}
-                    className="input"
-                    placeholder="ระบุชื่อ..."
-                  />
-                </div>
-              )}
+              {/* ชื่อลูกค้า / เต็นท์ (แก้ไขได้ทุกประเภท) */}
+              <div>
+                <label className="label">ชื่อลูกค้า / เต็นท์ (ถ้ามี)</label>
+                <input
+                  type="text"
+                  value={customerName}
+                  onChange={e => setCustomerName(e.target.value)}
+                  className="input"
+                  placeholder="ระบุชื่อ..."
+                />
+              </div>
 
               {/* หมายเหตุ */}
               <div>
@@ -333,7 +332,8 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
                     inputMode="numeric"
                     value={amount}
                     onChange={e => setAmount(e.target.value.replace(/\D/g, ''))}
-                    className="input pl-7 font-bold text-[var(--red)]"
+                    className="input font-bold text-[var(--red)] w-full"
+                    style={{ paddingLeft: '2rem' }} /* ✅ FIX: บังคับ Padding ให้ดันตัวเลขหนีตัว ฿ */
                     placeholder="0"
                   />
                 </div>
@@ -354,7 +354,7 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
           )}
         </div>
 
-        {/* ✅ FIX: เพิ่ม border-t ให้ confirmDelete block เพื่อ visual separation */}
+        {/* confirmDelete block */}
         {confirmDelete && (
           <div className="mx-5 mb-4 p-4 rounded-[var(--radius-md)] bg-[var(--red-light)] border border-red-100 shrink-0 border-t border-[var(--border)] pt-4 mt-1">
             <p className="text-sm font-semibold text-[var(--red)] mb-3">ยืนยันลบรายการนี้?</p>
@@ -375,7 +375,7 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
           </div>
         )}
 
-        {/* ✅ FIX: pt-1 → pt-3, pb-6 → pb-8 (safe area), ลบ mt-3 จากปุ่มทั้งสอง */}
+        {/* Action Buttons */}
         {!confirmDelete && (
           <div className="flex gap-2.5 px-5 pb-8 pt-3 shrink-0 border-t border-[var(--border)]">
             <button
