@@ -8,7 +8,10 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
   return (
     <>
-      <main className={`relative w-full max-w-6xl mx-auto block transition-all duration-500 ${isLoginPage ? 'pb-0' : 'pb-48 md:pb-24'}`}>
+      <main className={`
+        relative w-full max-w-lg mx-auto block
+        ${isLoginPage ? 'pb-0' : 'pb-28'}
+      `}>
         {children}
       </main>
       {!isLoginPage && <BottomNav />}

@@ -3,59 +3,71 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 const tabs = [
-  { href: '/',        label: 'ภาพรวม',     icon: '📈', activeColor: 'bg-blue-600' },
-  { href: '/add',     label: 'เพิ่มรายการ', icon: '＋',  activeColor: 'bg-slate-900', isCenter: true },
-  { href: '/history', label: 'ประวัติ',     icon: '📂', activeColor: 'bg-indigo-600' },
+  {
+    href: '/',
+    label: 'ภาพรวม',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <rect x="2" y="2" width="7" height="7" rx="1.5" fill="currentColor" opacity=".9"/>
+        <rect x="11" y="2" width="7" height="7" rx="1.5" fill="currentColor" opacity=".4"/>
+        <rect x="2" y="11" width="7" height="7" rx="1.5" fill="currentColor" opacity=".4"/>
+        <rect x="11" y="11" width="7" height="7" rx="1.5" fill="currentColor" opacity=".9"/>
+      </svg>
+    ),
+  },
+  {
+    href: '/add',
+    label: 'เพิ่มงาน',
+    isCenter: true,
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+        <path d="M11 4v14M4 11h14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+      </svg>
+    ),
+  },
+  {
+    href: '/history',
+    label: 'ประวัติ',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <circle cx="10" cy="10" r="7.5" stroke="currentColor" strokeWidth="1.5" opacity=".4"/>
+        <path d="M10 6.5V10l2.5 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    ),
+  },
 ]
 
 export default function BottomNav() {
   const pathname = usePathname()
 
   return (
-    <nav
-      aria-label="เมนูหลัก"
-      className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pb-5 px-5 pointer-events-none"
-    >
+    <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-center px-4 pb-6">
       <div className="
-        relative flex items-center
-        bg-[#0D1117]/90 backdrop-blur-2xl
-        border border-white/[0.07]
-        rounded-[28px] p-1.5 gap-1
-        pointer-events-auto w-full max-w-[340px]
-        shadow-[0_20px_56px_rgba(0,0,0,0.5),0_0_0_0.5px_rgba(255,255,255,0.04)]
-        transition-all duration-500
+        flex items-center gap-1
+        bg-white/90 backdrop-blur-xl
+        border border-[var(--border)]
+        rounded-[18px] p-1.5
+        shadow-[0_8px_32px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.06)]
+        w-full max-w-[320px]
       ">
         {tabs.map(tab => {
           const active = pathname === tab.href
 
-          /* Center "add" button */
           if (tab.isCenter) {
             return (
               <Link
                 key={tab.href}
                 href={tab.href}
-                aria-current={active ? 'page' : undefined}
                 className={`
-                  relative flex-1 flex flex-col items-center justify-center gap-0.5 py-3 px-2
-                  rounded-[20px] transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]
+                  flex-1 flex flex-col items-center justify-center gap-1 py-2.5 px-3
+                  rounded-[13px] transition-all duration-200
                   ${active
-                    ? 'bg-white shadow-[0_4px_16px_rgba(255,255,255,0.12)]'
-                    : 'hover:bg-white/5 active:scale-95'}
+                    ? 'bg-[var(--text-primary)] text-white shadow-sm'
+                    : 'bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)]'}
                 `}
               >
-                <span className={`
-                  w-9 h-9 rounded-2xl flex items-center justify-center text-lg font-black
-                  transition-all duration-300
-                  ${active
-                    ? 'bg-slate-900 text-white shadow-md scale-110'
-                    : 'bg-white/10 text-white/70'}
-                `}>
-                  {tab.icon}
-                </span>
-                <span className={`text-[9px] font-black tracking-wide transition-all duration-300
-                  ${active ? 'text-slate-900' : 'text-white/40'}`}>
-                  {tab.label}
-                </span>
+                <span className="flex items-center justify-center">{tab.icon}</span>
+                <span className="text-[10px] font-semibold leading-none">{tab.label}</span>
               </Link>
             )
           }
@@ -66,31 +78,17 @@ export default function BottomNav() {
               href={tab.href}
               aria-current={active ? 'page' : undefined}
               className={`
-                relative flex-1 flex flex-col items-center gap-1 py-3 px-2
-                rounded-[20px] transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]
+                flex-1 flex flex-col items-center justify-center gap-1 py-2.5 px-3
+                rounded-[13px] transition-all duration-200
                 ${active
-                  ? 'bg-white shadow-[0_4px_16px_rgba(255,255,255,0.12)] scale-[1.02]'
-                  : 'hover:bg-white/5 active:scale-95'}
+                  ? 'bg-[var(--surface-2)] text-[var(--text-primary)]'
+                  : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--surface-2)]/60'}
               `}
             >
-              {/* Icon */}
-              <span className={`text-xl leading-none transition-all duration-300
-                ${active ? 'scale-110' : 'opacity-40 grayscale'}`}>
-                {tab.icon}
-              </span>
-
-              {/* Label */}
-              <span className={`
-                font-black tracking-tight leading-none whitespace-nowrap transition-all duration-300
-                ${active ? 'text-slate-900 text-[10px]' : 'text-white/50 text-[10px]'}
-              `}>
+              <span className="flex items-center justify-center">{tab.icon}</span>
+              <span className={`text-[10px] font-semibold leading-none transition-colors ${active ? 'text-[var(--text-primary)]' : ''}`}>
                 {tab.label}
               </span>
-
-              {/* Active indicator */}
-              {active && (
-                <span className="absolute bottom-1 w-1 h-1 rounded-full bg-blue-500" />
-              )}
             </Link>
           )
         })}

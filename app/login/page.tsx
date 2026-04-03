@@ -5,20 +5,16 @@ import { useRouter } from 'next/navigation'
 
 export default function LoginPage() {
   const router = useRouter()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [email, setEmail]               = useState('')
+  const [password, setPassword]         = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [rememberMe, setRememberMe] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [rememberMe, setRememberMe]     = useState(false)
+  const [loading, setLoading]           = useState(false)
+  const [error, setError]               = useState('')
 
-  // 1. โหลดอีเมลที่เคยจดจำไว้ในเครื่อง (localStorage)
   useEffect(() => {
     const saved = localStorage.getItem('remembered_email')
-    if (saved) {
-      setEmail(saved)
-      setRememberMe(true)
-    }
+    if (saved) { setEmail(saved); setRememberMe(true) }
   }, [])
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -26,9 +22,8 @@ export default function LoginPage() {
     setError('')
     setLoading(true)
 
-    // ใช้ FormData เพื่อให้ Browser เข้าใจว่าเป็นข้อมูลฟอร์มมาตรฐาน
-    const formData = new FormData(e.currentTarget)
-    const emailValue = formData.get('email') as string
+    const formData     = new FormData(e.currentTarget)
+    const emailValue   = formData.get('email') as string
     const passwordValue = formData.get('password') as string
 
     try {
@@ -37,127 +32,144 @@ export default function LoginPage() {
         password: passwordValue,
       })
 
-      if (authError) {
-        setError('อีเมลหรือรหัสผ่านไม่ถูกต้อง')
-        setLoading(false)
-        return
-      }
+      if (authError) { setError('อีเมลหรือรหัสผ่านไม่ถูกต้อง'); setLoading(false); return }
 
       if (data.session) {
-        // จัดการระบบ "จดจำฉันไว้" (อีเมล)
-        if (rememberMe) {
-          localStorage.setItem('remembered_email', emailValue)
-        } else {
-          localStorage.removeItem('remembered_email')
-        }
-
-        // สำคัญ: บังคับ Refresh เพื่อให้ Session ใหม่ทำงาน
+        if (rememberMe) localStorage.setItem('remembered_email', emailValue)
+        else localStorage.removeItem('remembered_email')
         router.refresh()
         router.push('/')
       }
-    } catch (err) {
-      setError('เกิดข้อผิดพลาดในการเชื่อมต่อ')
+    } catch {
+      setError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง')
       setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex flex-col justify-center px-6 text-slate-900 bg-[#F8FAFC] font-sarabun">
-      <div className="bg-white p-8 rounded-[40px] shadow-2xl shadow-blue-900/5 border border-slate-100 max-w-md mx-auto w-full">
+    <div className="min-h-dvh flex flex-col items-center justify-center px-5 py-12 bg-[var(--bg)]">
 
-        {/* Header */}
-        <div className="text-center mb-10">
-          <div className="w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center text-4xl mx-auto mb-6 shadow-sm border border-blue-100/50">
-            🔐
-          </div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">เข้าสู่ระบบ</h1>
-          <p className="text-slate-400 font-bold mt-2">ระบบจัดการร้านล้างรถ 🧼✨</p>
+      {/* Logo / Brand */}
+      <div className="mb-8 text-center fade-up">
+        <div className="w-14 h-14 rounded-[16px] bg-[var(--text-primary)] flex items-center justify-center mx-auto mb-4 shadow-[var(--shadow-md)]">
+          <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+            <path d="M4 16c0-2 1-4 3-5l2-5h8l2 5c2 1 3 3 3 5v2H4v-2z" fill="white" fillOpacity=".9"/>
+            <circle cx="8" cy="20" r="2.5" fill="white"/>
+            <circle cx="18" cy="20" r="2.5" fill="white"/>
+            <path d="M2 16h22" stroke="white" strokeWidth="1.2" strokeOpacity=".4"/>
+          </svg>
         </div>
+        <h1 className="text-xl font-bold text-[var(--text-primary)] tracking-tight">Carwash</h1>
+        <p className="text-sm text-[var(--text-secondary)] mt-1">ระบบจัดการร้านล้างรถ</p>
+      </div>
 
-        {/* ✅ ต้องมี action และ method เพื่อให้ Browser รู้ว่าเป็น Login Form */}
-        <form onSubmit={handleLogin} action="#" method="POST" className="space-y-6">
+      {/* Card */}
+      <div className="card-elevated w-full max-w-sm p-6 fade-up delay-1">
+
+        <form onSubmit={handleLogin} action="#" method="POST" className="space-y-4">
 
           {/* Email */}
-          <div className="space-y-2">
-            <label className="px-2 text-[10px] font-black uppercase text-slate-400 tracking-widest">อีเมล</label>
+          <div>
+            <label className="label">อีเมล</label>
             <input
               type="email"
-              name="email" // ✅ ห้ามลบ name
-              autoComplete="username email" // ✅ ช่วยให้ Browser รู้ว่านี่คือช่อง Username
+              name="email"
+              autoComplete="username email"
               placeholder="example@email.com"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              className="w-full bg-slate-50 border-2 border-slate-100 rounded-[22px] px-6 py-4 text-lg font-bold outline-none focus:border-blue-500 focus:bg-white transition-all"
+              className="input"
               required
             />
           </div>
 
           {/* Password */}
-          <div className="space-y-2">
-            <label className="px-2 text-[10px] font-black uppercase text-slate-400 tracking-widest">รหัสผ่าน</label>
+          <div>
+            <label className="label">รหัสผ่าน</label>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
-                name="password" // ✅ ห้ามลบ name
-                autoComplete="current-password" // ✅ บอก Browser ว่านี่คือรหัสผ่านปัจจุบัน
+                name="password"
+                autoComplete="current-password"
                 placeholder="••••••••"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full bg-slate-50 border-2 border-slate-100 rounded-[22px] px-6 py-4 text-lg font-bold outline-none focus:border-blue-500 focus:bg-white transition-all"
+                className="input pr-12"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(v => !v)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center text-xl bg-white border border-slate-100 rounded-2xl shadow-sm hover:bg-slate-50"
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg text-[var(--text-secondary)] hover:bg-[var(--surface-2)] transition-colors"
+                tabIndex={-1}
               >
-                {showPassword ? '👁️' : '🙈'}
+                {showPassword ? (
+                  <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
+                    <path d="M1 8.5C2.5 5 5.5 3 8.5 3s6 2 7.5 5.5C14.5 12 11.5 14 8.5 14S2.5 12 1 8.5z" stroke="currentColor" strokeWidth="1.3"/>
+                    <circle cx="8.5" cy="8.5" r="2" stroke="currentColor" strokeWidth="1.3"/>
+                    <path d="M2 2l13 13" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+                  </svg>
+                ) : (
+                  <svg width="17" height="17" viewBox="0 0 17 17" fill="none">
+                    <path d="M1 8.5C2.5 5 5.5 3 8.5 3s6 2 7.5 5.5C14.5 12 11.5 14 8.5 14S2.5 12 1 8.5z" stroke="currentColor" strokeWidth="1.3"/>
+                    <circle cx="8.5" cy="8.5" r="2" stroke="currentColor" strokeWidth="1.3"/>
+                  </svg>
+                )}
               </button>
             </div>
           </div>
 
-          {/* Remember Me Toggle */}
-          <div className="flex items-center px-2">
-            <label className="flex items-center gap-3 cursor-pointer group">
-              <div className="relative">
-                <input
-                  type="checkbox"
-                  className="sr-only peer"
-                  checked={rememberMe}
-                  onChange={e => setRememberMe(e.target.checked)}
-                />
-                <div className="w-6 h-6 border-2 border-slate-200 rounded-lg peer-checked:bg-blue-600 peer-checked:border-blue-600 transition-all flex items-center justify-center">
-                  <div className={`w-2 h-2 bg-white rounded-sm transition-transform ${rememberMe ? 'scale-100' : 'scale-0'}`} />
-                </div>
+          {/* Remember me */}
+          <label className="flex items-center gap-2.5 cursor-pointer py-1">
+            <div className="relative">
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={rememberMe}
+                onChange={e => setRememberMe(e.target.checked)}
+              />
+              <div className="w-5 h-5 rounded-[5px] border-2 border-[var(--border)] bg-white peer-checked:bg-[var(--accent)] peer-checked:border-[var(--accent)] transition-all flex items-center justify-center">
+                {rememberMe && (
+                  <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                    <path d="M1 4l3 3 5-6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                )}
               </div>
-              <span className="text-sm font-bold text-slate-500 group-hover:text-slate-700 transition-colors">จดจำฉันไว้ (อีเมล)</span>
-            </label>
-          </div>
+            </div>
+            <span className="text-sm text-[var(--text-secondary)]">จดจำอีเมลไว้</span>
+          </label>
 
-          {/* Error Message */}
+          {/* Error */}
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 font-bold text-sm px-5 py-4 rounded-2xl animate-in fade-in slide-in-from-top-1">
-              ⚠️ {error}
+            <div className="flex items-center gap-2.5 p-3 rounded-[var(--radius-md)] bg-[var(--red-light)] border border-red-100 fade-up">
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" className="shrink-0">
+                <circle cx="7.5" cy="7.5" r="6.5" stroke="#DC2626" strokeWidth="1.3"/>
+                <path d="M7.5 4.5v4M7.5 10.5v.5" stroke="#DC2626" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+              <p className="text-sm font-medium text-[var(--red)]">{error}</p>
             </div>
           )}
 
-          {/* Submit Button */}
+          {/* Submit */}
           <button
-            type="submit" // ✅ ต้องเป็น submit
+            type="submit"
             disabled={loading}
-            className={`w-full py-5 rounded-[25px] text-xl font-black text-white transition-all shadow-xl active:scale-[0.98] ${
-              loading ? 'bg-slate-400' : 'bg-slate-900 shadow-slate-200 hover:bg-black'
-            }`}
+            className="btn btn-primary w-full py-3.5 text-base mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {loading ? '⏳ กำลังดำเนินการ...' : 'ตกลง เข้าสู่ระบบ ✅'}
+            {loading ? (
+              <>
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full spinner" />
+                กำลังเข้าสู่ระบบ...
+              </>
+            ) : 'เข้าสู่ระบบ'}
           </button>
 
         </form>
-
-        <p className="text-center mt-10 text-[9px] font-black text-slate-300 uppercase tracking-[0.3em]">
-          CARWASH MANAGEMENT SYSTEM V2
-        </p>
       </div>
+
+      <p className="mt-8 text-[11px] text-[var(--text-tertiary)] tracking-widest uppercase fade-up delay-2">
+        Carwash Management System
+      </p>
     </div>
   )
 }

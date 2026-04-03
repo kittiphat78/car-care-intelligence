@@ -7,7 +7,7 @@ export function exportToCSV(data: Record[] | Expense[], fileName: string): boole
 
   const headers = isExpense
     ? ['วันที่-เวลา', 'รายการจ่าย', 'จำนวนเงิน (บาท)', 'หมายเหตุ']
-    : ['ลำดับคิว', 'วันที่-เวลา', 'ประเภทงาน', 'ป้ายทะเบียน', 'ประเภทรถ', 'หมายเหตุ', 'ราคา (บาท)']
+    : ['ลำดับคิว', 'วันที่-เวลา', 'ประเภทงาน', 'ป้ายทะเบียน', 'ยี่ห้อรถ', 'ประเภทรถ', 'หมายเหตุ', 'ราคา (บาท)']
 
   const formatCell = (cell: unknown): string => {
     const val = String(cell ?? '-')
@@ -28,14 +28,17 @@ export function exportToCSV(data: Record[] | Expense[], fileName: string): boole
       return [date, e.title, e.amount, e.note ?? '-'].map(formatCell)
     } else {
       const r = item as Record
-      // services = [typeName, note]
-      const carType = r.services[0] ?? '-'
-      const note    = r.services[1] ?? '-'
+      // ✅ Fix: แมปปิ้ง Array ใหม่ [0: ประเภท, 1: ยี่ห้อ, 2: หมายเหตุ]
+      const carType  = r.services[0] || '-'
+      const carBrand = r.services[1] || '-'
+      const note     = r.services[2] || '-'
+      
       return [
         r.seq_number,
         date,
         r.type === 'wash' ? 'ล้างรถ' : 'ขัดสี',
         r.plate,
+        carBrand,
         carType,
         note,
         r.price,
@@ -49,7 +52,7 @@ export function exportToCSV(data: Record[] | Expense[], fileName: string): boole
 
   const summaryRow = isExpense
     ? [formatCell(''), formatCell('ยอดรวมรายจ่ายทั้งสิ้น:'), formatCell(total), formatCell('')]
-    : [formatCell(''), formatCell(''), formatCell(''), formatCell(''), formatCell(''), formatCell('ยอดรวมรายรับทั้งสิ้น:'), formatCell(total)]
+    : [formatCell(''), formatCell(''), formatCell(''), formatCell(''), formatCell(''), formatCell(''), formatCell('ยอดรวมรายรับทั้งสิ้น:'), formatCell(total)]
 
   const csvContent = '\uFEFF' + [
     headers.map(formatCell).join(','),

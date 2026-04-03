@@ -10,13 +10,13 @@ type ChartMode = 'week' | 'month'
 
 export default function Dashboard() {
   const router = useRouter()
-  const [userEmail, setUserEmail] = useState('')
-  const [records, setRecords] = useState<Record[]>([])
-  const [allRecords, setAllRecords] = useState<Record[]>([])
-  const [expenses, setExpenses] = useState<Expense[]>([])
+  const [userEmail, setUserEmail]           = useState('')
+  const [records, setRecords]               = useState<Record[]>([])
+  const [allRecords, setAllRecords]         = useState<Record[]>([])
+  const [expenses, setExpenses]             = useState<Expense[]>([])
   const [yesterdayRecords, setYesterdayRecords] = useState<Record[]>([])
-  const [chartMode, setChartMode] = useState<ChartMode>('week')
-  const [loading, setLoading] = useState(true)
+  const [chartMode, setChartMode]           = useState<ChartMode>('week')
+  const [loading, setLoading]               = useState(true)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -24,9 +24,9 @@ export default function Dashboard() {
     if (!user) { router.push('/login'); return }
     setUserEmail(user.email ?? '')
 
-    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
-    const yesterdayStart = new Date(todayStart); yesterdayStart.setDate(yesterdayStart.getDate() - 1)
-    const thirtyDaysAgo = new Date(todayStart); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    const todayStart     = new Date(); todayStart.setHours(0,0,0,0)
+    const yesterdayStart = new Date(todayStart); yesterdayStart.setDate(yesterdayStart.getDate()-1)
+    const thirtyDaysAgo  = new Date(todayStart); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate()-30)
 
     const [todayRes, yesterdayRes, allRes, expenseRes] = await Promise.all([
       supabase.from('records').select('*').gte('created_at', todayStart.toISOString()).order('created_at', { ascending: false }),
@@ -45,240 +45,232 @@ export default function Dashboard() {
   useEffect(() => {
     fetchData()
     const channel = supabase.channel('dashboard-updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'records' }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'records' },  fetchData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, fetchData)
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [fetchData])
 
-  const todayTotalIncome = records.reduce((s, r) => s + r.price, 0)
-  const todayPaid        = records.filter(r => r.payment_status === 'paid').reduce((s, r) => s + r.price, 0)
-  const todayUnpaid      = records.filter(r => r.payment_status === 'unpaid').reduce((s, r) => s + r.price, 0)
-  const todayExpense     = expenses.reduce((s, e) => s + e.amount, 0)
+  const todayTotalIncome = records.reduce((s,r) => s + r.price, 0)
+  const todayPaid        = records.filter(r => r.payment_status === 'paid').reduce((s,r) => s + r.price, 0)
+  const todayUnpaid      = records.filter(r => r.payment_status === 'unpaid').reduce((s,r) => s + r.price, 0)
+  const todayExpense     = expenses.reduce((s,e) => s + e.amount, 0)
   const netProfit        = todayPaid - todayExpense
   const washCount        = records.filter(r => r.type === 'wash').length
   const polishCount      = records.filter(r => r.type === 'polish').length
-  const yesterdayIncome  = yesterdayRecords.reduce((s, r) => s + r.price, 0)
+  const yesterdayIncome  = yesterdayRecords.reduce((s,r) => s + r.price, 0)
   const diffAmount       = todayTotalIncome - yesterdayIncome
   const diffPct          = yesterdayIncome > 0 ? Math.round((diffAmount / yesterdayIncome) * 100) : 0
   const isUp             = diffAmount >= 0
 
   const chartData = useMemo(() => {
-    const now = new Date()
+    const now  = new Date()
     const days = chartMode === 'week' ? 7 : 30
-    return Array.from({ length: days }, (_, i) => {
-      const d = new Date(now); d.setDate(d.getDate() - (days - 1 - i)); d.setHours(0, 0, 0, 0)
-      const next = new Date(d); next.setDate(next.getDate() + 1)
+    return Array.from({ length: days }, (_,i) => {
+      const d = new Date(now); d.setDate(d.getDate() - (days-1-i)); d.setHours(0,0,0,0)
+      const next = new Date(d); next.setDate(next.getDate()+1)
       const dayRecs = allRecords.filter(r => { const t = new Date(r.created_at); return t >= d && t < next })
       return {
         label: chartMode === 'week'
           ? d.toLocaleDateString('th-TH', { weekday: 'short' })
           : d.toLocaleDateString('th-TH', { day: 'numeric' }),
-        income: dayRecs.reduce((s, r) => s + r.price, 0),
+        income: dayRecs.reduce((s,r) => s + r.price, 0),
       }
     })
   }, [allRecords, chartMode])
 
-  /* ── Loading ── */
+  /* Loading */
   if (loading) return (
-    <div className="min-h-dvh flex flex-col items-center justify-center gap-3">
-      <div className="w-10 h-10 rounded-2xl bg-slate-900 flex items-center justify-center animate-pulse">
-        <span className="text-white text-lg">🚗</span>
-      </div>
-      <p className="text-slate-400 text-sm font-bold animate-pulse">กำลังโหลด...</p>
+    <div className="min-h-dvh flex flex-col items-center justify-center gap-3 bg-[var(--bg)]">
+      <div className="w-10 h-10 border-2 border-[var(--border)] border-t-[var(--text-primary)] rounded-full spinner" />
+      <p className="text-sm text-[var(--text-secondary)]">กำลังโหลด...</p>
     </div>
   )
 
   return (
-    <div className="min-h-dvh pb-32 text-slate-900">
-      <div className="max-w-2xl mx-auto px-4">
+    <div className="min-h-dvh px-4 pt-6 pb-32 space-y-4">
 
-        {/* ── Header ── */}
-        <div className="pt-8 pb-2 flex justify-between items-center animate-fade-up">
-          <div className="flex items-center gap-2.5 bg-white px-3 py-2 rounded-2xl shadow-sm border border-slate-100">
-            <div className="w-7 h-7 bg-slate-900 rounded-full flex items-center justify-center text-white text-xs shrink-0">
-              👤
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between fade-up">
+        <div>
+          <p className="text-xs text-[var(--text-tertiary)] mb-0.5">สวัสดี,</p>
+          <h2 className="text-lg font-semibold text-[var(--text-primary)] leading-none">
+            {userEmail.split('@')[0] || 'Admin'}
+          </h2>
+        </div>
+        <button
+          onClick={() => { supabase.auth.signOut(); router.push('/login') }}
+          className="btn btn-ghost text-xs py-2 px-3"
+        >
+          ออกจากระบบ
+        </button>
+      </div>
+
+      {/* ── Net Profit Hero ── */}
+      <div className="card-dark p-5 fade-up delay-1">
+        <p className="text-xs font-medium text-white/50 uppercase tracking-widest mb-3">
+          กำไรสุทธิวันนี้
+        </p>
+        <div className="flex items-end justify-between">
+          <div>
+            <p className="text-[2.75rem] font-bold tracking-tight leading-none text-white">
+              ฿{netProfit.toLocaleString()}
+            </p>
+            <div className="flex items-center gap-2 mt-2.5">
+              <span className={`
+                inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full
+                ${isUp ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}
+              `}>
+                {isUp ? '↑' : '↓'} {Math.abs(diffPct)}%
+              </span>
+              <span className="text-xs text-white/40">vs เมื่อวาน</span>
             </div>
-            <p className="text-xs font-black text-slate-800">{userEmail.split('@')[0] || '...'}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-white/40 mb-1">รับรวม</p>
+            <p className="text-lg font-semibold text-white">฿{todayTotalIncome.toLocaleString()}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Unpaid Alert ── */}
+      {todayUnpaid > 0 && (
+        <div className="flex items-center justify-between p-4 rounded-[var(--radius-lg)] bg-[var(--red-light)] border border-red-100 fade-up delay-2">
+          <div>
+            <p className="text-xs font-semibold text-[var(--red)] uppercase tracking-wide mb-0.5">ค้างชำระ</p>
+            <p className="text-xl font-bold text-[var(--red)]">฿{todayUnpaid.toLocaleString()}</p>
+          </div>
+          <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M9 3v6M9 12.5v.5" stroke="#DC2626" strokeWidth="2" strokeLinecap="round"/>
+              <circle cx="9" cy="9" r="7.5" stroke="#DC2626" strokeWidth="1.3"/>
+            </svg>
+          </div>
+        </div>
+      )}
+
+      {/* ── Stats Row ── */}
+      <div className="grid grid-cols-3 gap-2.5 fade-up delay-2">
+        {/* Expense */}
+        <div className="card p-3.5">
+          <p className="text-[10px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wide mb-2">รายจ่าย</p>
+          <p className="text-lg font-bold text-[var(--red)] leading-none">
+            ฿{todayExpense.toLocaleString()}
+          </p>
+        </div>
+        {/* Wash */}
+        <div className="card p-3.5">
+          <p className="text-[10px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wide mb-2">ล้างรถ</p>
+          <div className="flex items-baseline gap-1">
+            <p className="text-lg font-bold text-[var(--text-primary)] leading-none">{washCount}</p>
+            <span className="text-xs text-[var(--text-tertiary)]">คัน</span>
+          </div>
+        </div>
+        {/* Polish */}
+        <div className="card p-3.5">
+          <p className="text-[10px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wide mb-2">ขัดสี</p>
+          <div className="flex items-baseline gap-1">
+            <p className="text-lg font-bold text-[var(--text-primary)] leading-none">{polishCount}</p>
+            <span className="text-xs text-[var(--text-tertiary)]">คัน</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Chart ── */}
+      <div className="card p-4 fade-up delay-3">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold text-[var(--text-primary)]">แนวโน้มรายได้</h3>
+          <div className="flex bg-[var(--surface-2)] p-1 rounded-[10px] gap-1">
+            {(['week','month'] as ChartMode[]).map(m => (
+              <button
+                key={m}
+                onClick={() => setChartMode(m)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  chartMode === m
+                    ? 'bg-white text-[var(--text-primary)] shadow-[var(--shadow-sm)]'
+                    : 'text-[var(--text-tertiary)]'
+                }`}
+              >
+                {m === 'week' ? '7 วัน' : '30 วัน'}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="h-40">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
+              <defs>
+                <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor="#2563EB" stopOpacity={0.15}/>
+                  <stop offset="95%" stopColor="#2563EB" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <XAxis
+                dataKey="label"
+                axisLine={false} tickLine={false}
+                tick={{ fill: '#9CA3AF', fontSize: 10, fontWeight: 500 }}
+                dy={8}
+              />
+              <Tooltip
+                formatter={(v: any) => [`฿${Number(v||0).toLocaleString()}`, 'รายได้']}
+                contentStyle={{
+                  borderRadius: '10px',
+                  border: '1px solid #E5E7EB',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  padding: '8px 14px',
+                }}
+              />
+              <Area
+                type="monotone"
+                dataKey="income"
+                stroke="#2563EB"
+                strokeWidth={2}
+                fillOpacity={1}
+                fill="url(#grad)"
+                dot={false}
+                activeDot={{ r: 5, fill: '#2563EB', stroke: '#fff', strokeWidth: 2 }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* ── Record List ── */}
+      <div className="fade-up delay-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-[var(--text-primary)]">รายการวันนี้</h3>
+            <span className="badge" style={{ background: 'var(--surface-2)', color: 'var(--text-secondary)' }}>
+              {records.length}
+            </span>
           </div>
           <button
-            onClick={() => { supabase.auth.signOut(); router.push('/login') }}
-            className="text-[10px] font-black text-rose-600 uppercase tracking-widest bg-rose-50 px-3 py-2 rounded-xl border border-rose-200 active:scale-95 transition-all"
+            onClick={fetchData}
+            className="flex items-center gap-1.5 text-xs text-[var(--accent)] font-semibold hover:text-[var(--accent-hover)] transition-colors py-1"
           >
-            ออกจากระบบ
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+              <path d="M11 6.5A4.5 4.5 0 1 1 6.5 2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+              <path d="M6.5 2l1.5 1.5L6.5 5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            รีเฟรช
           </button>
         </div>
 
-        {/* ── Net Profit Hero Card ── */}
-        <div className="mt-5 mb-4 animate-fade-up" style={{ animationDelay: '40ms' }}>
-          {/* เพิ่ม Border สีขาวจางๆ เพื่อช่วยตัดขอบ Card */}
-          <div className="relative bg-[#0D1117] rounded-[32px] px-7 py-8 text-center overflow-hidden shadow-[0_24px_48px_rgba(0,0,0,0.4)] border border-white/10">
-
-            {/* Decorative gradient blobs */}
-            <div className="absolute -top-8 -left-8 w-32 h-32 rounded-full bg-blue-500/15 blur-2xl pointer-events-none" />
-            <div className="absolute -bottom-6 -right-6 w-28 h-28 rounded-full bg-indigo-500/15 blur-2xl pointer-events-none" />
-
-            {/* บังคับสีขาว 100% ด้วย Inline Style */}
-            <p 
-              style={{ color: '#FFFFFF', opacity: 1 }}
-              className="text-[12px] font-black uppercase tracking-[0.2em] mb-2 drop-shadow-sm"
-            >
-              เงินสดที่เข้ากระเป๋าจริงวันนี้
-            </p>
-
-            <h2 
-              style={{ color: '#FFFFFF' }}
-              className="text-[3.5rem] font-black tracking-tight leading-none mb-5 drop-shadow-lg"
-            >
-              ฿{netProfit.toLocaleString()}
-            </h2>
-
-            <div className="flex items-center justify-center gap-2">
-              <div className={`
-                inline-flex items-center gap-1.5 px-4 py-1.5 rounded-2xl text-xs font-black
-                ${isUp ? 'bg-emerald-500/20 !text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/20 !text-rose-400 border border-rose-500/30'}
-              `}>
-                <span>{isUp ? '▲' : '▼'}</span>
-                <span>{Math.abs(diffPct)}%</span>
-              </div>
-              <span 
-                style={{ color: '#FFFFFF', opacity: 0.9 }}
-                className="text-[11px] font-bold uppercase tracking-wide"
-              >
-                เทียบจากเมื่อวาน
-              </span>
-            </div>
+        {records.length === 0 ? (
+          <div className="card p-10 text-center border-dashed">
+            <p className="text-3xl mb-3 opacity-20">🚗</p>
+            <p className="text-sm font-semibold text-[var(--text-primary)]">ยังไม่มีงานวันนี้</p>
+            <p className="text-xs text-[var(--text-tertiary)] mt-1">กด + เพื่อเพิ่มรายการใหม่</p>
           </div>
-        </div>
-
-        {/* ── Unpaid Banner ── */}
-        {todayUnpaid > 0 && (
-          <div className="mb-4 animate-scale-in bg-rose-50 border-2 border-rose-200 rounded-[22px] px-5 py-4 flex justify-between items-center shadow-sm">
-            <div>
-              <p className="text-rose-600 text-[10px] font-black uppercase tracking-widest mb-0.5">ยอดค้างชำระ</p>
-              <p className="text-2xl font-black text-rose-700 leading-none">฿{todayUnpaid.toLocaleString()}</p>
-            </div>
-            <div className="bg-rose-600 text-white px-3.5 py-1.5 rounded-full text-[10px] font-black shadow-md">
-              ⏳ ค้างจ่าย
-            </div>
+        ) : (
+          <div className="grid gap-2">
+            {records.map(r => <RecordCard key={r.id} record={r} />)}
           </div>
         )}
-
-        {/* ── Stats Grid ── */}
-        <div className="grid grid-cols-2 gap-3 mb-3 stagger animate-fade-up" style={{ animationDelay: '80ms' }}>
-          <div className="bg-white p-5 rounded-[22px] border-2 border-slate-100 shadow-sm text-center">
-            <p className="text-[11px] font-black text-blue-700 uppercase tracking-widest mb-2">ล้างรถทั่วไป 🧼</p>
-            <p className="text-3xl font-black text-slate-900 leading-none">{washCount}</p>
-            <p className="text-[12px] text-slate-700 font-bold mt-2 uppercase">คัน</p>
-          </div>
-          <div className="bg-white p-5 rounded-[22px] border-2 border-slate-100 shadow-sm text-center">
-            <p className="text-[11px] font-black text-amber-700 uppercase tracking-widest mb-2">งานขัดสี ✨</p>
-            <p className="text-3xl font-black text-slate-900 leading-none">{polishCount}</p>
-            <p className="text-[12px] text-slate-700 font-bold mt-2 uppercase">คัน</p>
-          </div>
-        </div>
-
-        {/* ── Income / Expense ── */}
-        <div className="grid grid-cols-2 gap-3 mb-6 animate-fade-up" style={{ animationDelay: '120ms' }}>
-          <div className="bg-emerald-50 p-5 rounded-[22px] border-2 border-emerald-100 shadow-sm">
-            <div className="flex items-center gap-1.5 mb-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-600" />
-              <p className="text-[11px] font-black text-emerald-800 uppercase tracking-widest">รายรับ</p>
-            </div>
-            <p className="text-2xl font-black text-slate-900 leading-none">฿{todayTotalIncome.toLocaleString()}</p>
-          </div>
-          <div className="bg-rose-50 p-5 rounded-[22px] border-2 border-rose-100 shadow-sm">
-            <div className="flex items-center gap-1.5 mb-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-rose-600" />
-              <p className="text-[11px] font-black text-rose-800 uppercase tracking-widest">รายจ่าย</p>
-            </div>
-            <p className="text-2xl font-black text-slate-900 leading-none">฿{todayExpense.toLocaleString()}</p>
-          </div>
-        </div>
-
-        {/* ── Chart ── */}
-        <div className="bg-white rounded-[26px] p-6 mb-6 border-2 border-slate-100 shadow-md animate-fade-up" style={{ animationDelay: '160ms' }}>
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-black text-sm text-slate-900 uppercase tracking-tight">แนวโน้มรายได้</h3>
-            <div className="flex bg-slate-100 p-1.5 rounded-xl gap-1">
-              <button
-                onClick={() => setChartMode('week')}
-                className={`px-4 py-1.5 rounded-lg text-[11px] font-bold transition-all ${chartMode === 'week' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}
-              >7 วัน</button>
-              <button
-                onClick={() => setChartMode('month')}
-                className={`px-4 py-1.5 rounded-lg text-[11px] font-bold transition-all ${chartMode === 'month' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}
-              >30 วัน</button>
-            </div>
-          </div>
-          <div className="h-44">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorInc" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="#3B82F6" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis
-                  dataKey="label"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: '#475569', fontSize: 11, fontWeight: 800 }}
-                  dy={10}
-                />
-                <Tooltip
-                  formatter={(value: any) => [`฿${Number(value || 0).toLocaleString()}`, 'รายได้']}
-                  contentStyle={{
-                    borderRadius: '16px',
-                    border: 'none',
-                    boxShadow: '0 12px 32px rgba(0,0,0,0.15)',
-                    fontSize: '12px',
-                    fontWeight: 800,
-                    padding: '10px 14px',
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="income"
-                  stroke="#2563EB"
-                  strokeWidth={3}
-                  fillOpacity={1}
-                  fill="url(#colorInc)"
-                  dot={false}
-                  activeDot={{ r: 6, fill: '#2563EB', stroke: '#FFF', strokeWidth: 2 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* ── Record List ── */}
-        <div className="space-y-4 animate-fade-up" style={{ animationDelay: '200ms' }}>
-          <div className="flex justify-between items-center px-1">
-            <p className="font-black text-[12px] uppercase tracking-[0.2em] text-slate-800">รายการรถวันนี้</p>
-            <button
-              onClick={fetchData}
-              className="text-[11px] font-black text-blue-700 bg-blue-100/50 px-4 py-2 rounded-xl border border-blue-200 active:scale-95 transition-all shadow-sm"
-            >
-              🔄 รีเฟรชข้อมูล
-            </button>
-          </div>
-
-          {records.length === 0 ? (
-            <div className="bg-white p-16 rounded-[30px] text-center border-2 border-dashed border-slate-200">
-              <p className="text-5xl mb-4 opacity-50">🚗</p>
-              <p className="text-slate-800 font-black text-base uppercase tracking-tight">ยังไม่มีงานเข้ามา</p>
-              <p className="text-slate-500 text-sm font-bold mt-1">กดปุ่มบวกเพื่อเพิ่มงานใหม่</p>
-            </div>
-          ) : (
-            <div className="grid gap-3 stagger">
-              {records.map(r => <RecordCard key={r.id} record={r} />)}
-            </div>
-          )}
-        </div>
-
       </div>
+
     </div>
   )
 }

@@ -1,5 +1,3 @@
-// types/index.ts
-
 export type RecordType     = 'wash' | 'polish'
 export type PaymentMethod  = 'cash' | 'transfer'
 export type PaymentStatus  = 'paid' | 'unpaid'
@@ -10,12 +8,12 @@ export interface Record {
   created_at:     string
   type:           RecordType
   plate:          string
-  services:       string[]        // [ประเภทรถ, หมายเหตุ]
+  services:       string[]        // Format ใหม่: [0: ประเภทรถ, 1: ยี่ห้อรถ, 2: หมายเหตุ]
   price:          number
   seq_number:     number
   created_by?:    string
   payment_method?: PaymentMethod
-  customer_name?: string          // ชื่อเต็นท์รถ / ลูกค้าประจำ (polish)
+  customer_name?: string          
   payment_status: PaymentStatus
   job_status:     JobStatus
   note?:          string
@@ -39,7 +37,6 @@ export const CAR_TYPES = [
   { id: 'bigbike',    name: 'บิ๊กไบค์ / Big Bike', icon: '🏍️' },
 ] as const
 
-// Reserved — ใช้สำหรับ filter / report ในอนาคต
 export const CAR_BRANDS = [
   { id: 'toyota',     name: 'TOYOTA' },
   { id: 'honda',      name: 'HONDA' },

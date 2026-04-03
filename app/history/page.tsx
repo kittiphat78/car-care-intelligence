@@ -9,8 +9,8 @@ import EditModal from '@/components/EditModal'
 type TabType    = 'income' | 'expense'
 type FilterType = 'all' | 'wash' | 'polish'
 
-const START_YEAR = new Date().getFullYear() - 5
-const YEAR_OPTIONS = Array.from({ length: 16 }, (_, i) => START_YEAR + i)
+const START_YEAR   = new Date().getFullYear() - 5
+const YEAR_OPTIONS = Array.from({ length: 16 }, (_,i) => START_YEAR + i)
 
 export default function HistoryPage() {
   const [activeTab, setActiveTab]       = useState<TabType>('income')
@@ -23,26 +23,34 @@ export default function HistoryPage() {
   const [dateTo, setDateTo]             = useState('')
   const [loading, setLoading]           = useState(true)
   const [error, setError]               = useState('')
-
   const [selectedItem, setSelectedItem] = useState<Record | Expense | null>(null)
   const [isModalOpen, setIsModalOpen]   = useState(false)
 
   const fetchAllData = useCallback(async () => {
     setLoading(true)
+    setError('')
     const startOfYear = new Date(selectedYear, 0, 1).toISOString()
     const endOfYear   = new Date(selectedYear + 1, 0, 1).toISOString()
 
     const [recordsRes, expensesRes] = await Promise.all([
-      supabase.from('records').select('*')
-        .gte('created_at', startOfYear).lt('created_at', endOfYear)
-        .order('created_at', { ascending: false }),
-      supabase.from('expenses').select('*')
-        .gte('created_at', startOfYear).lt('created_at', endOfYear)
-        .order('created_at', { ascending: false }),
+      supabase.from('records').select('*').gte('created_at', startOfYear).lt('created_at', endOfYear).order('created_at', { ascending: false }),
+      supabase.from('expenses').select('*').gte('created_at', startOfYear).lt('created_at', endOfYear).order('created_at', { ascending: false }),
     ])
 
-    setRecords(recordsRes.data ?? [])
-    setExpenses(expensesRes.data ?? [])
+    if (recordsRes.error) {
+      setError(recordsRes.error.message)
+      setRecords([])
+    } else {
+      setRecords(recordsRes.data ?? [])
+    }
+
+    if (expensesRes.error) {
+      setError(expensesRes.error.message)
+      setExpenses([])
+    } else {
+      setExpenses(expensesRes.data ?? [])
+    }
+
     setLoading(false)
   }, [selectedYear])
 
@@ -50,10 +58,7 @@ export default function HistoryPage() {
 
   function switchTab(tab: TabType) {
     setActiveTab(tab)
-    setSearch('')
-    setDateFrom('')
-    setDateTo('')
-    setFilterType('all')
+    setSearch(''); setDateFrom(''); setDateTo(''); setFilterType('all')
   }
 
   async function handleDelete(id: string) {
@@ -68,21 +73,9 @@ export default function HistoryPage() {
     if (!selectedItem) return
     setError('')
     const table = activeTab === 'income' ? 'records' : 'expenses'
-
     const updateData = activeTab === 'income'
-      ? {
-          plate:          updatedFields.plate,
-          price:          updatedFields.price,
-          services:       updatedFields.services,
-          customer_name:  updatedFields.customer_name,
-          payment_status: updatedFields.payment_status,
-        }
-      : {
-          title:  updatedFields.title,
-          amount: updatedFields.amount,
-          note:   updatedFields.note,
-        }
-
+      ? { plate: updatedFields.plate, price: updatedFields.price, services: updatedFields.services, customer_name: updatedFields.customer_name, payment_status: updatedFields.payment_status }
+      : { title: updatedFields.title, amount: updatedFields.amount, note: updatedFields.note }
     const { error } = await supabase.from(table).update(updateData).eq('id', selectedItem.id)
     if (error) setError(error.message)
     else { setIsModalOpen(false); fetchAllData() }
@@ -90,204 +83,237 @@ export default function HistoryPage() {
 
   const filteredItems = activeTab === 'income'
     ? records.filter(r => {
-        const matchSearch = r.plate.toLowerCase().includes(search.toLowerCase())
-          || (r.customer_name?.toLowerCase().includes(search.toLowerCase()) ?? false)
-        const matchType = filterType === 'all' || r.type === filterType
-        const matchFrom = !dateFrom || new Date(r.created_at) >= new Date(dateFrom)
-        const matchTo   = !dateTo   || new Date(r.created_at) <= new Date(dateTo + 'T23:59:59')
-        return matchSearch && matchType && matchFrom && matchTo
+        const ms = r.plate.toLowerCase().includes(search.toLowerCase()) || (r.customer_name || '').toLowerCase().includes(search.toLowerCase())
+        const mt = filterType === 'all' || r.type === filterType
+        const mf = !dateFrom || new Date(r.created_at) >= new Date(dateFrom)
+        const mto = !dateTo || new Date(r.created_at) <= new Date(dateTo + 'T23:59:59')
+        return ms && mt && mf && mto
       })
     : expenses.filter(e => {
-        const matchSearch = e.title.toLowerCase().includes(search.toLowerCase())
-        const matchFrom = !dateFrom || new Date(e.created_at) >= new Date(dateFrom)
-        const matchTo   = !dateTo   || new Date(e.created_at) <= new Date(dateTo + 'T23:59:59')
-        return matchSearch && matchFrom && matchTo
+        const ms  = e.title.toLowerCase().includes(search.toLowerCase())
+        const mf  = !dateFrom || new Date(e.created_at) >= new Date(dateFrom)
+        const mto = !dateTo   || new Date(e.created_at) <= new Date(dateTo + 'T23:59:59')
+        return ms && mf && mto
       })
 
-  const grouped = filteredItems.reduce<{ [key: string]: (Record | Expense)[] }>((acc, item) => {
-    const date = new Date(item.created_at).toLocaleDateString('th-TH', {
-      year: 'numeric', month: 'long', day: 'numeric',
-    })
+  const grouped = filteredItems.reduce((acc, item) => {
+    const date = new Date(item.created_at).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
     if (!acc[date]) acc[date] = []
     acc[date].push(item)
     return acc
-  }, {})
+  }, {} as {[date: string]: (Record | Expense)[]})
 
-  const totalIncome  = records.reduce((s, r) => s + r.price, 0)
-  const totalExpense = expenses.reduce((s, e) => s + e.amount, 0)
-  
-  // ✅ คำนวณจำนวนคันสะสมประจำปี
-  const yearlyWashCount = records.filter(r => r.type === 'wash').length
-  const yearlyPolishCount = records.filter(r => r.type === 'polish').length
+  const totalIncome  = records.reduce((s,r) => s + r.price, 0)
+  const totalExpense = expenses.reduce((s,e) => s + e.amount, 0)
 
   return (
-    <div className="relative w-full min-h-screen pb-32 text-slate-900 bg-[#F4F6F9]">
+    <div className="min-h-dvh px-4 pt-6 pb-32 space-y-4">
 
-      {/* Sticky Header */}
-      <div className="sticky top-0 z-30 bg-[#F4F6F9]/95 backdrop-blur-md border-b border-slate-200/50 px-4 pt-4 pb-2 shadow-sm">
-        <div className="max-w-2xl mx-auto">
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between fade-up">
+        <h1 className="text-xl font-bold text-[var(--text-primary)]">ประวัติ</h1>
+        <select
+          value={selectedYear}
+          onChange={e => setSelectedYear(parseInt(e.target.value))}
+          className="input py-2 px-3 text-sm w-auto appearance-none cursor-pointer"
+          style={{ width: 'auto' }}
+        >
+          {YEAR_OPTIONS.map(y => (
+            <option key={y} value={y}>พ.ศ. {y + 543}</option>
+          ))}
+        </select>
+      </div>
 
-          <div className="flex items-center justify-between mb-3 px-1">
-            <div className="flex items-center gap-2">
-              <div className="w-1 h-5 rounded-full bg-blue-600" />
-              <h1 className="text-xl font-black text-slate-900 tracking-tight">คลังข้อมูล</h1>
-            </div>
-            <select
-              value={selectedYear}
-              onChange={e => setSelectedYear(parseInt(e.target.value))}
-              className="bg-white border border-slate-200 rounded-lg px-2 py-1 text-[10px] font-black text-slate-900 outline-none"
-            >
-              {YEAR_OPTIONS.map(y => (
-                <option key={y} value={y}>พ.ศ. {y + 543}</option>
-              ))}
-            </select>
+      {/* ── Tab Toggle ── */}
+      <div className="flex bg-[var(--surface-2)] p-1.5 rounded-[var(--radius-lg)] gap-1.5 fade-up delay-1">
+        <button
+          onClick={() => switchTab('income')}
+          className={`flex-1 py-2.5 rounded-[var(--radius-md)] text-sm font-semibold transition-all ${
+            activeTab === 'income'
+              ? 'bg-white text-[var(--text-primary)] shadow-[var(--shadow-sm)]'
+              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+          }`}
+        >
+          รายรับ
+        </button>
+        <button
+          onClick={() => switchTab('expense')}
+          className={`flex-1 py-2.5 rounded-[var(--radius-md)] text-sm font-semibold transition-all ${
+            activeTab === 'expense'
+              ? 'bg-white text-[var(--red)] shadow-[var(--shadow-sm)]'
+              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+          }`}
+        >
+          รายจ่าย
+        </button>
+      </div>
+
+      {/* ── Summary + Export ── */}
+      <div className="card-dark p-4 fade-up delay-1">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs text-white/50 mb-1">ยอดรวมทั้งปี</p>
+            <p className="text-2xl font-bold text-white">
+              ฿{(activeTab === 'income' ? totalIncome : totalExpense).toLocaleString()}
+            </p>
           </div>
-
-          {/* Tab Toggle */}
-          <div className="flex p-1 bg-slate-200/60 rounded-xl mb-3 gap-1">
-            <button onClick={() => switchTab('income')} className={`flex-1 py-2 rounded-lg text-[10px] font-black transition-all ${activeTab === 'income' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-500'}`}>
-              รายรับร้าน 💰
-            </button>
-            <button onClick={() => switchTab('expense')} className={`flex-1 py-2 rounded-lg text-[10px] font-black transition-all ${activeTab === 'expense' ? 'bg-white text-rose-700 shadow-sm' : 'text-slate-500'}`}>
-              รายจ่ายร้าน 💸
-            </button>
-          </div>
-
-          {/* Summary Card - เพิ่มจำนวนคันสะสมปีนี้ */}
-          <div className={`relative overflow-hidden rounded-[22px] p-4 mb-3 shadow-md transition-all duration-500 border border-white/10 ${activeTab === 'income' ? 'bg-[#0D1117]' : 'bg-rose-950'}`}>
-            <div className="relative z-10 flex justify-between items-start">
-              <div>
-                <p style={{ color: '#FFFFFF', opacity: 0.8 }} className="text-[9px] font-black uppercase tracking-[0.1em] mb-0.5">
-                  ยอดรวมราย{activeTab === 'income' ? 'รับ' : 'จ่าย'}ปี {selectedYear + 543}
-                </p>
-                <p style={{ color: '#FFFFFF' }} className="text-2xl font-black tracking-tight mb-3">
-                  ฿{(activeTab === 'income' ? totalIncome : totalExpense).toLocaleString()}
-                </p>
-                
-                {/* ✅ ส่วนแสดงสถิติจำนวนคันประจำปี (เฉพาะแถบรายรับ) */}
-                {activeTab === 'income' && (
-                  <div className="flex gap-3">
-                    <div className="bg-white/10 px-2.5 py-1 rounded-lg border border-white/5">
-                      <p style={{ color: '#FFFFFF', opacity: 0.6 }} className="text-[7px] font-black uppercase tracking-wider">ล้างรถ</p>
-                      <p style={{ color: '#FFFFFF' }} className="text-xs font-black">{yearlyWashCount.toLocaleString()} <span className="text-[8px] opacity-60">คัน</span></p>
-                    </div>
-                    <div className="bg-white/10 px-2.5 py-1 rounded-lg border border-white/5">
-                      <p style={{ color: '#FFFFFF', opacity: 0.6 }} className="text-[7px] font-black uppercase tracking-wider">ขัดสี</p>
-                      <p style={{ color: '#FFFFFF' }} className="text-xs font-black">{yearlyPolishCount.toLocaleString()} <span className="text-[8px] opacity-60">คัน</span></p>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <button
-                onClick={() => exportToCSV(activeTab === 'income' ? records : expenses, `History-${activeTab}-${selectedYear}`)}
-                className="bg-white/10 hover:bg-white/20 border border-white/10 px-3 py-1.5 rounded-xl text-[10px] font-black text-white flex items-center gap-1.5 transition-all active:scale-95"
-              >
-                📥 CSV
-              </button>
-            </div>
-            <div className={`absolute top-0 right-0 w-24 h-24 blur-[40px] -mr-8 -mt-8 ${activeTab === 'income' ? 'bg-blue-600/20' : 'bg-rose-600/20'}`} />
-          </div>
-
-          {/* Search */}
-          <div className="relative">
-            <input
-              type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder={activeTab === 'income' ? 'ค้นหาเลขทะเบียน หรือ ชื่อลูกค้า...' : 'ค้นหารายการจ่าย...'}
-              className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-xs font-bold outline-none shadow-sm focus:border-blue-400 transition-all"
-            />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 text-sm">🔍</span>
-          </div>
+          <button
+            onClick={() => exportToCSV(activeTab === 'income' ? records : expenses, `history-${activeTab}-${selectedYear}`)}
+            className="flex items-center gap-2 text-xs font-semibold text-white/70 hover:text-white bg-white/10 hover:bg-white/15 border border-white/10 px-3 py-2.5 rounded-[var(--radius-md)] transition-all"
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M7 1v8M4 6l3 3 3-3M2 10v1.5a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5V10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            CSV
+          </button>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="px-4 pt-4 max-w-2xl mx-auto">
-        {/* Filter Pills (income only) */}
+      {/* ── Search & Filter ── */}
+      <div className="card p-3.5 space-y-3 fade-up delay-2">
+        {/* Search */}
+        <div className="relative">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" width="15" height="15" viewBox="0 0 15 15" fill="none">
+            <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.3"/>
+            <path d="M10.5 10.5l3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+          </svg>
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder={activeTab === 'income' ? 'ค้นหาทะเบียน หรือชื่อลูกค้า...' : 'ค้นหารายการจ่าย...'}
+            className="input pl-9 text-sm"
+          />
+        </div>
+
+        {/* Date range */}
+        <div className="flex items-center gap-2">
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={e => setDateFrom(e.target.value)}
+            className="input flex-1 text-sm py-2.5 text-center cursor-pointer"
+          />
+          <span className="text-[var(--text-tertiary)] text-sm font-medium shrink-0">—</span>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={e => setDateTo(e.target.value)}
+            className="input flex-1 text-sm py-2.5 text-center cursor-pointer"
+          />
+        </div>
+
+        {/* Type filter (income only) */}
         {activeTab === 'income' && (
-          <div className="flex gap-1.5 mb-4 overflow-x-auto no-scrollbar py-1">
-            {(['all', 'wash', 'polish'] as FilterType[]).map(t => (
+          <div className="flex gap-2">
+            {(['all','wash','polish'] as FilterType[]).map(t => (
               <button
                 key={t}
                 onClick={() => setFilterType(t)}
-                className={`px-4 py-1.5 rounded-full text-[9px] font-black transition-all border whitespace-nowrap ${filterType === t ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-slate-400 border-slate-200'}`}
+                className={`flex-1 py-2 rounded-[var(--radius-md)] text-xs font-semibold transition-all border ${
+                  filterType === t
+                    ? t === 'all'    ? 'bg-[var(--text-primary)] text-white border-transparent'
+                    : t === 'wash'   ? 'bg-[var(--accent-light)] text-[var(--accent)] border-blue-100'
+                    :                  'bg-[var(--amber-light)] text-[var(--amber)] border-amber-100'
+                    : 'bg-white text-[var(--text-secondary)] border-[var(--border)] hover:bg-[var(--surface-2)]'
+                }`}
               >
-                {t === 'all' ? 'ทั้งหมด' : t === 'wash' ? '🧼 ล้างรถ' : '✨ ขัดสี'}
+                {t === 'all' ? 'ทั้งหมด' : t === 'wash' ? 'ล้างรถ' : 'ขัดสี'}
               </button>
             ))}
           </div>
         )}
+      </div>
 
-        {/* Date Range */}
-        <div className="flex gap-2 mb-6 items-center bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
-          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="flex-1 bg-transparent text-[10px] font-black text-slate-600 outline-none" />
-          <span className="text-slate-300 font-bold">→</span>
-          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="flex-1 bg-transparent text-[10px] font-black text-slate-600 outline-none" />
-        </div>
-
-        {/* Error */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 font-bold text-xs px-4 py-3 rounded-xl mb-4 animate-fade-up">
-            ⚠️ {error}
-          </div>
-        )}
-
-        {/* List */}
+      {/* ── List ── */}
+      <div className="fade-up delay-3">
         {loading ? (
-          <div className="space-y-3">
-            {[1, 2, 3, 4].map(i => <div key={i} className="h-20 bg-white rounded-2xl animate-pulse shadow-sm" />)}
+          <div className="space-y-2.5">
+            {[1,2,3].map(i => (
+              <div key={i} className="h-[68px] bg-[var(--surface-2)] rounded-[var(--radius-lg)] animate-pulse" />
+            ))}
           </div>
         ) : Object.keys(grouped).length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-slate-200 shadow-sm">
-            <p className="text-4xl mb-3 grayscale opacity-30">📂</p>
-            <p className="text-xs font-black text-slate-400 uppercase tracking-widest">ไม่พบรายการ</p>
+          <div className="card p-12 text-center border-dashed">
+            <p className="text-3xl mb-3 opacity-20">📂</p>
+            <p className="text-sm font-semibold text-[var(--text-primary)]">ไม่พบรายการ</p>
+            <p className="text-xs text-[var(--text-tertiary)] mt-1">ลองเปลี่ยนตัวกรองดูครับ</p>
           </div>
         ) : (
-          Object.entries(grouped).map(([date, items]) => (
-            <div key={date} className="mb-6">
-              <div className="flex items-center justify-between mb-3 px-2">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.15em]">{date}</span>
-                <div className={`px-3 py-1 rounded-full border font-black text-[9px] shadow-sm ${activeTab === 'income' ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-rose-50 text-rose-700 border-rose-100'}`}>
-                  ฿{items.reduce((s, i) => s + ('price' in i ? i.price : i.amount), 0).toLocaleString()}
+          Object.entries(grouped).map(([date, items]) => {
+            const dayWashCount   = items.filter(i => 'type' in i && i.type === 'wash').length
+            const dayPolishCount = items.filter(i => 'type' in i && i.type === 'polish').length
+            const dayTotal       = items.reduce((s,i) => s + ('price' in i ? i.price : i.amount), 0)
+
+            return (
+              <div key={date} className="mb-6">
+                {/* Date header */}
+                <div className="sticky top-0 z-10 bg-[var(--bg)]/90 backdrop-blur-sm py-2 mb-2">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xs font-semibold text-[var(--text-secondary)] shrink-0">{date}</span>
+                    <div className="h-px flex-1 bg-[var(--border)]" />
+                    {activeTab === 'income' && (
+                      <span className="text-[10px] text-[var(--text-tertiary)] shrink-0">
+                        ล้าง {dayWashCount} · ขัด {dayPolishCount}
+                      </span>
+                    )}
+                    <span className={`text-xs font-semibold shrink-0 ${
+                      activeTab === 'income' ? 'text-[var(--green)]' : 'text-[var(--red)]'
+                    }`}>
+                      ฿{dayTotal.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid gap-2">
+                  {items.map(item =>
+                    activeTab === 'income' ? (
+                      <div
+                        key={item.id}
+                        onClick={() => { setSelectedItem(item); setIsModalOpen(true) }}
+                        className="cursor-pointer"
+                      >
+                        <RecordCard record={item as Record} />
+                      </div>
+                    ) : (
+                      <div
+                        key={item.id}
+                        onClick={() => { setSelectedItem(item); setIsModalOpen(true) }}
+                        className="card flex items-center justify-between px-4 py-3.5 cursor-pointer hover:shadow-[var(--shadow-md)] transition-shadow active:scale-[0.985]"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-[10px] bg-[var(--red-light)] flex items-center justify-center shrink-0">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                              <path d="M8 3v10M3 8h10" stroke="#DC2626" strokeWidth="1.5" strokeLinecap="round"/>
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-[var(--text-primary)] leading-tight">
+                              {(item as Expense).title}
+                            </p>
+                            <p className="text-[11px] text-[var(--text-tertiary)] mt-0.5">
+                              {new Date(item.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.
+                            </p>
+                          </div>
+                        </div>
+                        <p className="text-sm font-bold text-[var(--red)]">
+                          −฿{(item as Expense).amount.toLocaleString()}
+                        </p>
+                      </div>
+                    )
+                  )}
                 </div>
               </div>
-              <div className="grid gap-3 stagger">
-                {items.map(item => (
-                  activeTab === 'income' ? (
-                    <div key={item.id} onClick={() => { setSelectedItem(item); setIsModalOpen(true) }} className="active:scale-[0.98] transition-all cursor-pointer">
-                      <RecordCard record={item as Record} />
-                    </div>
-                  ) : (
-                    <div
-                      key={item.id}
-                      onClick={() => { setSelectedItem(item); setIsModalOpen(true) }}
-                      className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex justify-between items-center active:scale-[0.98] transition-all cursor-pointer"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-rose-50 rounded-xl flex items-center justify-center text-xl shadow-sm">💸</div>
-                        <div>
-                          <p className="text-sm font-black text-slate-900">{(item as Expense).title}</p>
-                          <p className="text-[10px] font-bold text-slate-400 mt-0.5 flex items-center gap-1.5">
-                            <span>🕒 {new Date(item.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.</span>
-                            {(item as Expense).note && (
-                              <span className="bg-slate-100 px-1.5 py-0.5 rounded text-[8px] uppercase text-slate-500">• {(item as Expense).note}</span>
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-base font-black text-rose-600">- ฿{(item as Expense).amount.toLocaleString()}</p>
-                        <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest">แตะเพื่อจัดการ</p>
-                      </div>
-                    </div>
-                  )
-                ))}
-              </div>
-            </div>
-          ))
+            )
+          })
         )}
       </div>
+
+      {error && (
+        <div className="fixed bottom-24 left-4 right-4 max-w-lg mx-auto p-3 rounded-[var(--radius-md)] bg-[var(--red)] text-white text-sm font-medium text-center fade-up">
+          {error}
+        </div>
+      )}
 
       <EditModal
         item={selectedItem}

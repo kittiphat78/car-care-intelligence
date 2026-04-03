@@ -12,19 +12,14 @@ interface EditModalProps {
 }
 
 export default function EditModal({ item, type, isOpen, onClose, onSave, onDelete }: EditModalProps) {
-  // Income states
-  const [plate, setPlate]               = useState('')
-  const [price, setPrice]               = useState('')
-  const [customerName, setCustomerName] = useState('')
-  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('paid')
-
-  // Expense states
-  const [title, setTitle]   = useState('')
-  const [amount, setAmount] = useState('')
-  const [note, setNote]     = useState('')
-
-  // Confirm delete state
-  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [plate, setPlate]                   = useState('')
+  const [price, setPrice]                   = useState('')
+  const [customerName, setCustomerName]     = useState('')
+  const [paymentStatus, setPaymentStatus]   = useState<PaymentStatus>('paid')
+  const [title, setTitle]                   = useState('')
+  const [amount, setAmount]                 = useState('')
+  const [note, setNote]                     = useState('')
+  const [confirmDelete, setConfirmDelete]   = useState(false)
 
   useEffect(() => {
     if (!item) return
@@ -48,145 +43,181 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
   const handleSave = () => {
     if (type === 'income') {
       onSave({
-        plate,
-        price:          parseInt(price),
-        customer_name:  customerName,
+        plate:          plate.trim(),
+        price:          parseInt(price) || 0,
+        customer_name:  customerName.trim(),
         payment_status: paymentStatus,
         services:       (item as Record).services,
       })
     } else {
-      onSave({ title, amount: parseInt(amount), note })
+      onSave({ title: title.trim(), amount: parseInt(amount) || 0, note: note.trim() })
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white w-full max-w-lg rounded-t-[40px] sm:rounded-[35px] p-8 shadow-2xl animate-slide-up">
+  const isIncome = type === 'income'
 
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-2xl font-black text-slate-900">
-            แก้ไข{type === 'income' ? 'รายรับ' : 'รายจ่าย'}
-          </h2>
-          <button onClick={onClose} className="text-slate-300 hover:text-slate-500 text-2xl transition-colors">✕</button>
+  return (
+    /* Backdrop */
+    <div
+      className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm fade-in flex items-end justify-center sm:items-center p-4"
+      onClick={e => e.target === e.currentTarget && onClose()}
+    >
+      {/* Sheet */}
+      <div className="bg-white w-full max-w-md rounded-t-[20px] sm:rounded-[20px] slide-up overflow-hidden">
+
+        {/* Handle bar (mobile) */}
+        <div className="flex justify-center pt-3 pb-1 sm:hidden">
+          <div className="w-10 h-1 rounded-full bg-[var(--border)]" />
         </div>
 
-        <div className="space-y-5">
-          {type === 'income' ? (
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)]">
+          <div>
+            <h3 className="text-base font-semibold text-[var(--text-primary)]">
+              แก้ไข{isIncome ? 'รายรับ' : 'รายจ่าย'}
+            </h3>
+            <p className="text-xs text-[var(--text-tertiary)] mt-0.5">
+              {isIncome ? (item as Record).plate : (item as Expense).title}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--surface-2)] transition-colors"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="px-5 py-5 space-y-4">
+          {isIncome ? (
             <>
-              {/* Plate */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">ทะเบียนรถ</label>
+              <div>
+                <label className="label">ทะเบียนรถ</label>
                 <input
                   type="text"
                   value={plate}
                   onChange={e => setPlate(e.target.value.toUpperCase())}
-                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-4 text-xl font-bold outline-none focus:border-blue-500 transition-all"
+                  className="input"
+                  placeholder="กข 1234"
                 />
               </div>
 
-              {/* Price + Status */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">ราคา (บาท)</label>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label">ราคา (บาท)</label>
                   <input
                     type="text"
                     inputMode="numeric"
                     value={price}
                     onChange={e => setPrice(e.target.value.replace(/\D/g, ''))}
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-4 text-xl font-bold outline-none focus:border-blue-500 transition-all"
+                    className="input"
+                    placeholder="0"
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">สถานะเงิน</label>
+                <div>
+                  <label className="label">สถานะ</label>
                   <select
                     value={paymentStatus}
                     onChange={e => setPaymentStatus(e.target.value as PaymentStatus)}
-                    className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-4 text-lg font-bold outline-none focus:border-blue-500 transition-all appearance-none"
+                    className="input appearance-none cursor-pointer"
                   >
-                    <option value="paid">จ่ายแล้ว ✅</option>
-                    <option value="unpaid">ค้างจ่าย ⏳</option>
+                    <option value="paid">จ่ายแล้ว</option>
+                    <option value="unpaid">ค้างจ่าย</option>
                   </select>
                 </div>
               </div>
 
-              {/* Customer Name (Polish only) */}
               {(item as Record).type === 'polish' && (
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-amber-600 uppercase tracking-widest px-1">ชื่อลูกค้า / เต็นท์รถ</label>
+                <div>
+                  <label className="label">ชื่อลูกค้า / เต็นท์</label>
                   <input
                     type="text"
                     value={customerName}
                     onChange={e => setCustomerName(e.target.value)}
-                    className="w-full bg-amber-50/50 border-2 border-amber-100 rounded-2xl px-5 py-4 text-lg font-bold outline-none focus:border-amber-400 transition-all"
+                    className="input"
+                    placeholder="ระบุชื่อ..."
                   />
                 </div>
               )}
             </>
           ) : (
             <>
-              {/* Title */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">รายการจ่าย</label>
+              <div>
+                <label className="label">รายการจ่าย</label>
                 <input
                   type="text"
                   value={title}
                   onChange={e => setTitle(e.target.value)}
-                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-4 text-xl font-bold outline-none focus:border-rose-500 transition-all"
+                  className="input"
+                  placeholder="ระบุรายการ..."
                 />
               </div>
-
-              {/* Amount */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">จำนวนเงิน (บาท)</label>
+              <div>
+                <label className="label">จำนวนเงิน (บาท)</label>
                 <input
                   type="text"
                   inputMode="numeric"
                   value={amount}
                   onChange={e => setAmount(e.target.value.replace(/\D/g, ''))}
-                  className="w-full bg-rose-50/50 border-2 border-rose-100 rounded-2xl px-5 py-4 text-3xl font-black text-rose-600 outline-none focus:border-rose-500 transition-all"
+                  className="input"
+                  placeholder="0"
                 />
               </div>
-
-              {/* Note */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">หมายเหตุ</label>
+              <div>
+                <label className="label">หมายเหตุ</label>
                 <input
                   type="text"
                   value={note}
                   onChange={e => setNote(e.target.value)}
-                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-5 py-4 text-lg font-bold outline-none focus:border-rose-500 transition-all"
+                  className="input"
+                  placeholder="ระบุหมายเหตุ (ถ้ามี)..."
                 />
               </div>
             </>
           )}
         </div>
 
-        {/* Confirm Delete Banner */}
+        {/* Confirm Delete */}
         {confirmDelete && (
-          <div className="mt-6 bg-rose-50 border border-rose-200 rounded-2xl p-4 animate-fade-up">
-            <p className="text-sm font-black text-rose-600 mb-3">ยืนยันลบรายการนี้?</p>
-            <div className="flex gap-3">
-              <button onClick={() => setConfirmDelete(false)} className="flex-1 py-3 rounded-xl font-black text-slate-500 bg-white border border-slate-200 text-sm">ยกเลิก</button>
-              <button onClick={() => onDelete(item.id)} className="flex-1 py-3 rounded-xl font-black text-white bg-rose-600 text-sm">ยืนยันลบ 🗑️</button>
+          <div className="mx-5 mb-4 p-4 rounded-[var(--radius-md)] bg-[var(--red-light)] border border-red-100">
+            <p className="text-sm font-semibold text-[var(--red)] mb-3">ยืนยันลบรายการนี้?</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmDelete(false)}
+                className="btn btn-ghost flex-1 py-2.5 text-sm"
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={() => onDelete(item.id)}
+                className="flex-1 py-2.5 rounded-[var(--radius-md)] text-sm font-semibold text-white bg-[var(--red)] transition-all active:scale-[0.97]"
+              >
+                ลบรายการ
+              </button>
             </div>
           </div>
         )}
 
         {/* Footer */}
         {!confirmDelete && (
-          <div className="grid grid-cols-2 gap-4 mt-8">
+          <div className="flex gap-2.5 px-5 pb-6 pt-1">
             <button
               onClick={() => setConfirmDelete(true)}
-              className="py-5 rounded-2xl font-black text-rose-500 border-2 border-rose-100 bg-rose-50/30 transition-all active:scale-95"
+              className="btn btn-danger py-3 text-sm"
             >
-              ลบรายการ 🗑️
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+                <path d="M2.5 4h10M5 4V2.5h5V4M6 7v4M9 7v4M3.5 4l.5 8.5h7L12 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              ลบ
             </button>
             <button
               onClick={handleSave}
-              className={`py-5 rounded-2xl font-black text-white shadow-lg transition-all active:scale-95 ${type === 'income' ? 'bg-slate-900 shadow-slate-200' : 'bg-rose-600 shadow-rose-200'}`}
+              className="btn btn-primary flex-1 py-3 text-sm"
             >
-              บันทึก ✅
+              บันทึกการแก้ไข
             </button>
           </div>
         )}
