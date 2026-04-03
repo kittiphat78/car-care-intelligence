@@ -29,12 +29,12 @@ export interface Expense {
 }
 
 export const CAR_TYPES = [
-  { id: 'sedan',      name: 'รถเก๋ง / Small',   icon: '🚗' },
+  { id: 'sedan',      name: 'รถเก๋ง',   icon: '🚗' },
   { id: 'suv',        name: 'SUV / MPV',         icon: '🚙' },
-  { id: 'pickup',     name: 'รถกระบะ / Truck',   icon: '🛻' },
+  { id: 'pickup',     name: 'รถกระบะ',   icon: '🛻' },
   { id: 'van',        name: 'รถตู้ / VIP',        icon: '🚐' },
   { id: 'motorcycle', name: 'มอเตอร์ไซค์',        icon: '🛵' },
-  { id: 'bigbike',    name: 'บิ๊กไบค์ / Big Bike', icon: '🏍️' },
+  { id: 'bigbike',    name: 'บิ๊กไบค์', icon: '🏍️' },
 ] as const
 
 export const CAR_BRANDS = [

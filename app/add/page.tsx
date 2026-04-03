@@ -32,6 +32,7 @@ export default function AddPage() {
   const [paymentStatus, setPaymentStatus]   = useState<PaymentStatus>('paid')
   const [note, setNote]                     = useState('')
   const [price, setPrice]                   = useState('')
+  const [savedCustomers, setSavedCustomers] = useState<string[]>([]) // ✅ State สำหรับจำชื่อลูกค้า
 
   // Expense states
   const [expenseTitle, setExpenseTitle]   = useState('')
@@ -40,6 +41,14 @@ export default function AddPage() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserId(data.user?.id ?? null))
+    
+    // ✅ ดึงชื่อลูกค้าที่เคยกรอกไว้จาก localStorage ตอนโหลดหน้าแรก
+    const stored = localStorage.getItem('recentCustomers')
+    if (stored) {
+      try {
+        setSavedCustomers(JSON.parse(stored))
+      } catch (e) {}
+    }
   }, [])
 
   // Drag-to-scroll for brand chips
@@ -89,16 +98,23 @@ export default function AddPage() {
       created_at: timestamp,
       created_by: userId,
       payment_method: 'cash',
-      customer_name: type === 'polish' ? customerName.trim() : '',
+      customer_name: customerName.trim(), // ✅ บันทึกชื่อลูกค้าสำหรับทุกประเภท (ไม่ต้องเช็ค type === polish แล้ว)
       payment_status: paymentStatus,
       job_status: 'done',
     })
 
     if (error) throw error
 
+    // ✅ อัปเดตรายชื่อลูกค้าลง LocalStorage ให้จำไว้ใช้คราวหน้า (เก็บไว้ 30 รายชื่อล่าสุด)
+    if (customerName.trim()) {
+      const updatedList = Array.from(new Set([customerName.trim(), ...savedCustomers])).slice(0, 30)
+      setSavedCustomers(updatedList)
+      localStorage.setItem('recentCustomers', JSON.stringify(updatedList))
+    }
+
     if (isBulk) {
       setSuccessMsg(`บันทึก ${plate.toUpperCase().trim()} สำเร็จ`)
-      setPlate(''); setPrice(''); setNote('')
+      setPlate(''); setPrice(''); setNote(''); setCustomerName('') // ✅ ล้างช่องชื่อลูกค้าด้วย
       window.scrollTo({ top: 0, behavior: 'smooth' })
       setTimeout(() => setSuccessMsg(''), 4000)
     } else {
@@ -138,6 +154,7 @@ export default function AddPage() {
   }
 
   return (
+    // ✅ FIX: ลบ pb-32 ออก — ClientLayout จัดการ pb-28 ให้แล้ว
     <div className="min-h-dvh px-4 pt-6 space-y-4">
 
       {/* ── Mode Toggle ──────────────────────────────────────────────── */}
@@ -366,22 +383,28 @@ export default function AddPage() {
             </div>
           </div>
 
-          {/* Optional fields */}
-          {type === 'polish' && (
-            <div className="card p-4">
-              <p className="text-xs font-semibold uppercase tracking-widest text-[var(--amber)] mb-2">ชื่อเต็นท์ / ลูกค้า</p>
-              <input
-                type="text"
-                value={customerName}
-                onChange={e => setCustomerName(e.target.value)}
-                placeholder="ระบุชื่อ..."
-                className="input text-sm"
-              />
-            </div>
-          )}
+          {/* ✅ Customer Name & Note Fields (เปิดให้ใช้งานทุกประเภท และมีระบบจำชื่อ) */}
+          <div className="card p-4">
+            <p className="text-xs text-[var(--text-tertiary)] font-semibold uppercase tracking-widest mb-2">ชื่อลูกค้า / เต็นท์รถ (ถ้ามี)</p>
+            <input
+              type="text"
+              list="saved-customers"
+              value={customerName}
+              onChange={e => setCustomerName(e.target.value)}
+              placeholder="แตะเพื่อพิมพ์หรือเลือกชื่อ..."
+              className="input text-sm"
+              autoComplete="off"
+            />
+            {/* ซ่อนลิสต์ไว้ให้โผล่มาเป็น Dropdown อัตโนมัติเมื่อพิมพ์ */}
+            <datalist id="saved-customers">
+              {savedCustomers.map((name, index) => (
+                <option key={index} value={name} />
+              ))}
+            </datalist>
+          </div>
 
           <div className="card p-4">
-            <p className="text-xs text-[var(--text-tertiary)] font-semibold uppercase tracking-widest mb-2">หมายเหตุ</p>
+            <p className="text-xs text-[var(--text-tertiary)] font-semibold uppercase tracking-widest mb-2">หมายเหตุเพิ่มเติม</p>
             <input
               type="text"
               value={note}
