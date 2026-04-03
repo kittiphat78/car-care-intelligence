@@ -15,7 +15,7 @@ const displayThaiDate = (isoDate: string) => {
 export default function AddPage() {
   const router = useRouter()
   const [userId, setUserId]           = useState<string | null>(null)
-  const [userEmail, setUserEmail]     = useState<string>('') // ✅ เก็บ Email ของคนบันทึก
+  const [userEmail, setUserEmail]     = useState<string>('')
   const [formMode, setFormMode]       = useState<FormMode>('income')
   const [date, setDate]               = useState(new Date().toISOString().split('T')[0])
   const [saving, setSaving]           = useState(false)
@@ -34,6 +34,9 @@ export default function AddPage() {
   const [note, setNote]                     = useState('')
   const [price, setPrice]                   = useState('')
   const [savedCustomers, setSavedCustomers] = useState<string[]>([]) 
+  
+  // ✅ State ใหม่: เก็บนับจำนวนครั้งที่ลูกค้ารถคันนี้เคยมา
+  const [visitCount, setVisitCount]         = useState<number>(0)
 
   // Expense states
   const [expenseTitle, setExpenseTitle]   = useState('')
@@ -43,7 +46,7 @@ export default function AddPage() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUserId(data.user?.id ?? null)
-      setUserEmail(data.user?.email ?? '') // ✅ ดึง Email ของผู้ใช้ปัจจุบัน
+      setUserEmail(data.user?.email ?? '')
     })
     
     const stored = localStorage.getItem('recentCustomers')
@@ -53,6 +56,28 @@ export default function AddPage() {
       } catch (e) {}
     }
   }, [])
+
+  // ✅ ฟีเจอร์ "จำลูกค้าประจำ": แอบเช็คฐานข้อมูลทันทีที่พิมพ์ทะเบียนรถ
+  useEffect(() => {
+    const checkPlate = plate.trim().toUpperCase()
+    // ถ้ายังพิมพ์ไม่ถึง 3 ตัวอักษร ให้รีเซ็ตค่า
+    if (checkPlate.length < 3) {
+      setVisitCount(0)
+      return
+    }
+
+    // ใช้ Debounce (หน่วงเวลา 600ms) เพื่อไม่ให้ยิง Database ถี่เกินไปตอนกำลังพิมพ์
+    const timer = setTimeout(async () => {
+      const { count } = await supabase
+        .from('records')
+        .select('*', { count: 'exact', head: true })
+        .eq('plate', checkPlate)
+      
+      setVisitCount(count ?? 0)
+    }, 600)
+
+    return () => clearTimeout(timer)
+  }, [plate])
 
   // Drag-to-scroll for brand chips
   const [isDown, setIsDown]       = useState(false)
@@ -100,7 +125,7 @@ export default function AddPage() {
       seq_number: (count ?? 0) + 1,
       created_at: timestamp,
       created_by: userId,
-      created_by_email: userEmail, // ✅ บันทึกชื่ออีเมลคนสร้าง
+      created_by_email: userEmail,
       payment_method: 'cash',
       customer_name: customerName.trim(), 
       payment_status: paymentStatus,
@@ -117,7 +142,7 @@ export default function AddPage() {
 
     if (isBulk) {
       setSuccessMsg(`บันทึก ${plate.toUpperCase().trim()} สำเร็จ`)
-      setPlate(''); setPrice(''); setNote(''); setCustomerName('') 
+      setPlate(''); setPrice(''); setNote(''); setCustomerName(''); setVisitCount(0) // ✅ รีเซ็ตค่านับประวัติด้วย
       window.scrollTo({ top: 0, behavior: 'smooth' })
       setTimeout(() => setSuccessMsg(''), 4000)
     } else {
@@ -135,7 +160,7 @@ export default function AddPage() {
       amount:     parseInt(expenseAmount),
       created_at: getTimestamp(),
       created_by: userId,
-      created_by_email: userEmail, // ✅ บันทึกชื่ออีเมลคนสร้าง
+      created_by_email: userEmail,
       note:       expenseNote.trim(),
     })
 
@@ -270,7 +295,9 @@ export default function AddPage() {
 
           {/* License Plate */}
           <div className="card p-4">
-            <p className="text-xs text-[var(--text-tertiary)] font-semibold uppercase tracking-widest mb-3">ป้ายทะเบียน</p>
+            <div className="flex justify-between items-end mb-3">
+              <p className="text-xs text-[var(--text-tertiary)] font-semibold uppercase tracking-widest">ป้ายทะเบียน</p>
+            </div>
             <div className="relative">
               <input
                 type="text"
@@ -282,20 +309,31 @@ export default function AddPage() {
               <span className="absolute top-2.5 left-2.5 w-2 h-2 rounded-full bg-[var(--border)] pointer-events-none" />
               <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-[var(--border)] pointer-events-none" />
             </div>
+            
+            {/* ✅ กล่องแสดงประวัติลูกค้าประจำ (จะเด้งขึ้นมาถ้ารถเคยมาล้าง) */}
+            {visitCount > 0 && (
+              <div className="mt-3 bg-[var(--amber-light)] border border-[var(--amber)] rounded-[var(--radius-md)] p-2.5 flex items-center justify-center gap-2 animate-kiosk">
+                <span className="text-xl">🌟</span>
+                <p className="text-sm font-bold text-[var(--amber)]">
+                  ลูกค้าประจำ! คันนี้มาครั้งที่ <span className="text-lg">{visitCount + 1}</span> แล้ว
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Price */}
           <div className="card p-4">
             <p className="text-xs text-[var(--text-tertiary)] font-semibold uppercase tracking-widest mb-3">ราคา (บาท)</p>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-semibold text-[var(--text-tertiary)]">฿</span>
+            <div className="relative flex items-center">
+              <span className="absolute left-5 text-xl font-semibold text-[var(--text-tertiary)]">฿</span>
               <input
                 type="text"
                 inputMode="numeric"
                 value={price}
                 onChange={e => setPrice(e.target.value.replace(/\D/g, ''))}
                 placeholder="0"
-                className="input !pl-12 w-full text-3xl font-bold text-[var(--text-primary)] py-4"
+                className="input w-full text-3xl font-bold text-[var(--text-primary)] py-4"
+                style={{ paddingLeft: '3.5rem' }}
               />
             </div>
           </div>
@@ -421,15 +459,16 @@ export default function AddPage() {
         <div className="space-y-3 fade-up delay-1">
           <div className="card p-4">
             <p className="text-xs font-semibold uppercase tracking-widest text-[var(--red)] mb-3">จำนวนเงิน (บาท)</p>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-semibold text-[var(--text-tertiary)]">฿</span>
+            <div className="relative flex items-center">
+              <span className="absolute left-5 text-xl font-semibold text-[var(--text-tertiary)]">฿</span>
               <input
                 type="text"
                 inputMode="numeric"
                 value={expenseAmount}
                 onChange={e => setExpenseAmount(e.target.value.replace(/\D/g, ''))}
                 placeholder="0"
-                className="input !pl-12 w-full text-3xl font-bold text-[var(--red)] py-4"
+                className="input w-full text-3xl font-bold text-[var(--red)] py-4"
+                style={{ paddingLeft: '3.5rem' }}
               />
             </div>
           </div>

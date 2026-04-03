@@ -209,7 +209,8 @@ export default function HistoryPage() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder={activeTab === 'income' ? 'ค้นหาทะเบียน หรือชื่อลูกค้า...' : 'ค้นหารายการจ่าย...'}
-            className="input pl-9 text-sm"
+            className="input text-sm w-full"
+            style={{ paddingLeft: '2.5rem' }} /* ✅ FIX: บังคับ Padding ซ้ายเพื่อดันข้อความหลบไอคอน */
           />
         </div>
 
