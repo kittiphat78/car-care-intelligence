@@ -8,6 +8,19 @@ import { useRouter } from 'next/navigation'
 
 type ChartMode = 'week' | 'month'
 
+interface WeatherData {
+  icon: string
+  condition: string
+  temp: number
+  prob: number
+  aqi: number
+  aqiStatus: { label: string, colorClass: string }
+  message: string
+  bgClass: string
+  textClass: string
+  badgeClass: string
+}
+
 export default function Dashboard() {
   const router = useRouter()
   const [userEmail, setUserEmail]           = useState('')
@@ -18,10 +31,11 @@ export default function Dashboard() {
   const [chartMode, setChartMode]           = useState<ChartMode>('week')
   const [loading, setLoading]               = useState(true)
 
-  // ✅ State สำหรับสมุดทวงหนี้
   const [totalUnpaidAmount, setTotalUnpaidAmount] = useState(0)
   const [unpaidRecords, setUnpaidRecords]         = useState<Record[]>([])
   const [isUnpaidModalOpen, setIsUnpaidModalOpen] = useState(false)
+
+  const [weather, setWeather] = useState<WeatherData | null>(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -37,8 +51,7 @@ export default function Dashboard() {
       supabase.from('records').select('*').gte('created_at', todayStart.toISOString()).order('created_at', { ascending: false }),
       supabase.from('records').select('*').gte('created_at', yesterdayStart.toISOString()).lt('created_at', todayStart.toISOString()),
       supabase.from('records').select('*').gte('created_at', thirtyDaysAgo.toISOString()).order('created_at', { ascending: true }),
-      supabase.from('expenses').select('*').gte('created_at', todayStart.toISOString()),
-      // ✅ ดึงข้อมูลค้างชำระทั้งหมดมาเต็มๆ (เพื่อเอามาโชว์ใน Modal)
+      supabase.from('expenses').select('*').gte('created_at', thirtyDaysAgo.toISOString()),
       supabase.from('records').select('*').eq('payment_status', 'unpaid').order('created_at', { ascending: true })
     ])
 
@@ -47,13 +60,92 @@ export default function Dashboard() {
     setAllRecords(allRes.data ?? [])
     setExpenses(expenseRes.data ?? [])
     
-    // คำนวณยอดค้างชำระทั้งหมด และเก็บลง State
     const unpaidData = unpaidRes.data ?? []
     setUnpaidRecords(unpaidData)
     setTotalUnpaidAmount(unpaidData.reduce((s, r) => s + r.price, 0))
     
     setLoading(false)
   }, [router])
+
+  // 🌤️ ระบบพยากรณ์ความวุ่นวาย + ฝุ่น
+  useEffect(() => {
+    const fetchWeather = async () => {
+      let icon = '☁️'; let condition = 'กำลังอัปเดตอากาศ...'; let temp = 0; let prob = 0;
+      let message = 'กำลังวิเคราะห์สภาพอากาศและฝุ่น...';
+      let aqiValue = 0;
+      let aqiStatus = { label: 'รอข้อมูล', colorClass: 'bg-gray-100 text-gray-500 border-gray-300' };
+      let bgClass = 'from-[#F0F9FF] to-[#E0F2FE] border-[#BAE6FD]';
+      let textClass = 'text-[#0369A1]';
+      let badgeClass = 'bg-[#BAE6FD] text-[#0284C7]';
+      let probTom = 0;
+
+      try {
+        const wRes = await fetch('https://api.open-meteo.com/v1/forecast?latitude=19.91&longitude=99.84&daily=weather_code,precipitation_probability_max,temperature_2m_max&timezone=Asia%2FBangkok&forecast_days=2');
+        if (wRes.ok) {
+          const data = await wRes.json();
+          const codeToday = data.daily?.weather_code?.[0] || 0;
+          prob = data.daily?.precipitation_probability_max?.[0] || 0;
+          temp = Math.round(data.daily?.temperature_2m_max?.[0] || 30);
+          probTom = data.daily?.precipitation_probability_max?.[1] || 0;
+
+          if (codeToday <= 1) { icon = '☀️'; condition = 'แดดจัด'; }
+          else if (codeToday <= 3) { icon = '⛅'; condition = 'มีเมฆบางส่วน'; }
+          else if (codeToday <= 67) { icon = '🌧️'; condition = 'ฝนตก'; }
+          else if (codeToday <= 82) { icon = '🌦️'; condition = 'ฝนตกหนัก'; }
+          else { icon = '⛈️'; condition = 'พายุเข้า'; }
+
+          if (codeToday <= 3) {
+            message = (probTom > 50) ? `วันนี้อากาศดี รีบทำรอบกอบโกยเต็มที่เลยครับ! (พรุ่งนี้มีแววฝนตก ${probTom}%)` : 'อากาศเป็นใจ ลูกค้าเข้าต่อเนื่องแน่นอน เตรียมกำลังคนและน้ำยาให้พร้อมลุย!';
+            bgClass = 'from-[#FFF7ED] to-[#FFEDD5] border-[#FED7AA]';
+            textClass = 'text-[#C2410C]';
+            badgeClass = 'bg-[#FED7AA] text-[#C2410C]';
+          } else {
+            message = `วันนี้ฟ้าฝนไม่เป็นใจ ลูกค้าน่าจะเงียบ ให้ลูกน้องสลับพักหรือเช็คสต๊อกน้ำยาได้เลยครับ`;
+            bgClass = 'from-[#F3F4F6] to-[#E5E7EB] border-[#D1D5DB]';
+            textClass = 'text-[#374151]';
+            badgeClass = 'bg-[#D1D5DB] text-[#4B5563]';
+          }
+        }
+      } catch (err) { 
+        console.error("โหลดอากาศไม่สำเร็จ แต่ระบบจะไม่พัง:", err) 
+      }
+
+      try {
+        const aqRes = await fetch('https://api.waqi.info/feed/geo:19.91;99.84/?token=demo');
+        if (aqRes.ok) {
+          const aqData = await aqRes.json();
+          if (aqData.status === 'ok') {
+            aqiValue = aqData.data.aqi;
+          }
+        }
+      } catch (err) { 
+        console.error("โหลดฝุ่นไม่สำเร็จ แต่ระบบจะไม่พัง:", err) 
+      }
+
+      if (aqiValue > 300) {
+        aqiStatus = { label: 'วิกฤต', colorClass: 'bg-[#4C0519] text-white border-[#881337]' };
+        message += ' 🚨 วิกฤตฝุ่นทะลุพิกัด อันตรายมากๆ ให้ช่างใส่หน้ากาก N95 ตลอดเวลา!';
+      } else if (aqiValue > 200) {
+        aqiStatus = { label: 'อันตรายมาก', colorClass: 'bg-purple-100 text-purple-800 border-purple-300' };
+        message += ' 🚨 ฝุ่นระดับสีม่วง (200+) อันตรายมาก ให้ช่างใส่หน้ากาก N95 ด้วยนะครับ!';
+      } else if (aqiValue > 150) {
+        aqiStatus = { label: 'อันตราย', colorClass: 'bg-red-100 text-red-700 border-red-300' };
+        message += ' 😷 ปล. วันนี้ฝุ่นแดง อย่าลืมให้ช่างใส่หน้ากากป้องกันตอนทำงานนะครับ';
+      } else if (aqiValue > 100) {
+        aqiStatus = { label: 'เริ่มมีผลกระทบ', colorClass: 'bg-orange-100 text-orange-700 border-orange-300' };
+      } else if (aqiValue > 50) {
+        aqiStatus = { label: 'ปานกลาง', colorClass: 'bg-yellow-100 text-yellow-800 border-yellow-300' };
+      } else if (aqiValue > 0) {
+        aqiStatus = { label: 'ดี', colorClass: 'bg-green-100 text-green-700 border-green-300' };
+      }
+
+      setWeather({
+        icon, condition, temp, prob, aqi: aqiValue, aqiStatus, message, bgClass, textClass, badgeClass
+      });
+    }
+
+    fetchWeather();
+  }, [])
 
   useEffect(() => {
     fetchData()
@@ -62,9 +154,8 @@ export default function Dashboard() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, fetchData)
       .subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, []) // ลบ fetchData ออกเพื่อความเสถียร
+  }, [fetchData]) 
 
-  // ✅ ฟังก์ชันสำหรับกดจ่ายเงินในหน้าต่างทวงหนี้
   async function markAllAsPaidByCustomer(customerName: string) {
     const confirmMsg = customerName 
       ? `ยืนยันว่าเต็นท์/ลูกค้า "${customerName}" ชำระเงินครบแล้วทั้งหมด?` 
@@ -83,17 +174,15 @@ export default function Dashboard() {
       .eq('payment_status', 'unpaid')
       .eq('customer_name', customerName)
 
-    if (!error) {
-      fetchData() // รีเฟรชข้อมูลใหม่ทั้งหมดทันที
-    } else {
-      alert('เกิดข้อผิดพลาด: ' + error.message)
-    }
+    if (!error) fetchData() 
+    else alert('เกิดข้อผิดพลาด: ' + error.message)
   }
 
+  const todayStartLocal  = new Date(); todayStartLocal.setHours(0,0,0,0)
   const todayTotalIncome = records.reduce((s,r) => s + r.price, 0)
   const todayPaid        = records.filter(r => r.payment_status === 'paid').reduce((s,r) => s + r.price, 0)
   const todayUnpaid      = records.filter(r => r.payment_status === 'unpaid').reduce((s,r) => s + r.price, 0)
-  const todayExpense     = expenses.reduce((s,e) => s + e.amount, 0)
+  const todayExpense     = expenses.filter(e => new Date(e.created_at) >= todayStartLocal).reduce((s,e) => s + e.amount, 0)
   const netProfit        = todayPaid - todayExpense
   const washCount        = records.filter(r => r.type === 'wash').length
   const polishCount      = records.filter(r => r.type === 'polish').length
@@ -144,11 +233,52 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {/* ✅ แถบแจ้งเตือนสมุดทวงหนี้ (คลิกแล้วเปิด Modal แทนการเปลี่ยนหน้า) */}
+      {/* ✅ แถบผู้จัดการร้านอัจฉริยะ */}
+      {weather && (
+        <div className={`card p-4 bg-gradient-to-br ${weather?.bgClass || 'from-gray-50 to-gray-100'} border fade-up delay-1 transition-colors duration-500`}>
+          <div className="flex justify-between items-start mb-3">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center text-3xl shrink-0">
+                {weather?.icon || '🌡️'}
+              </div>
+              <div>
+                <p className={`text-[10px] font-black uppercase tracking-widest mb-0.5 opacity-80 ${weather?.textClass || 'text-gray-700'}`}>
+                  เมืองเชียงราย วันนี้ 📍
+                </p>
+                <div className="flex items-center gap-2 flex-wrap mt-1">
+                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ${weather?.badgeClass || 'bg-gray-200 text-gray-700'}`}>
+                    {weather?.condition || '-'} {weather?.temp || 0}°C
+                  </span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${weather?.aqiStatus?.colorClass || 'bg-gray-100 text-gray-500'} flex items-center gap-1`}>
+                    🌫️ AQI: {weather?.aqi > 0 ? weather.aqi : '...'} ({weather?.aqiStatus?.label || '...'})
+                  </span>
+                </div>
+              </div>
+            </div>
+            {(weather?.prob ?? 0) > 0 && (
+              <div className="text-right shrink-0">
+                <p className={`text-[10px] font-bold opacity-70 ${weather?.textClass || 'text-gray-700'}`}>โอกาสฝนตก</p>
+                <p className={`text-sm font-black ${weather?.textClass || 'text-gray-700'}`}>{weather?.prob}%</p>
+              </div>
+            )}
+          </div>
+          
+          <div className="bg-white/70 rounded-lg p-2.5 border border-white/50 flex items-start gap-2 shadow-sm">
+            <span className={`shrink-0 mt-0.5 ${weather?.textClass || 'text-gray-700'}`}>
+              <svg width="16" height="16" viewBox="0 0 14 14" fill="none"><path d="M7 2v5l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.5"/></svg>
+            </span>
+            <p className={`text-xs font-bold leading-relaxed ${weather?.textClass || 'text-gray-700'}`}>
+              {weather?.message || 'กำลังวิเคราะห์สภาพอากาศ...'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* แถบแจ้งเตือนสมุดทวงหนี้ */}
       {totalUnpaidAmount > 0 && (
         <div 
           onClick={() => setIsUnpaidModalOpen(true)}
-          className="bg-[var(--red)] p-4 rounded-[var(--radius-lg)] flex items-center justify-between shadow-lg shadow-red-200 cursor-pointer active:scale-[0.98] transition-all fade-up"
+          className="bg-[var(--red)] p-4 rounded-[var(--radius-lg)] flex items-center justify-between shadow-lg shadow-red-200 cursor-pointer active:scale-[0.98] transition-all fade-up delay-1"
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-xl">📒</div>
@@ -164,7 +294,7 @@ export default function Dashboard() {
       )}
 
       {/* ── Net Profit Hero ── */}
-      <div className="card-dark p-5 fade-up delay-1">
+      <div className="card-dark p-5 fade-up delay-2">
         <p className="text-xs font-medium text-white/50 uppercase tracking-widest mb-3">
           กำไรสุทธิวันนี้
         </p>
@@ -191,9 +321,9 @@ export default function Dashboard() {
       </div>
 
       {/* ── Stats Row ── */}
-      <div className="grid grid-cols-3 gap-2.5 fade-up delay-2">
+      <div className="grid grid-cols-3 gap-2.5 fade-up delay-3">
         <div className="card p-3.5">
-          <p className="text-[10px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wide mb-2">รายจ่าย</p>
+          <p className="text-[10px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wide mb-2">รายจ่ายวันนี้</p>
           <p className="text-lg font-bold text-[var(--red)] leading-none">
             ฿{todayExpense.toLocaleString()}
           </p>
@@ -214,69 +344,74 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── Chart ── */}
-      <div className="card p-4 fade-up delay-3">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-[var(--text-primary)]">แนวโน้มรายได้</h3>
-          <div className="flex bg-[var(--surface-2)] p-1 rounded-[10px] gap-1">
-            {(['week','month'] as ChartMode[]).map(m => (
-              <button
-                key={m}
-                onClick={() => setChartMode(m)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  chartMode === m
-                    ? 'bg-white text-[var(--text-primary)] shadow-[var(--shadow-sm)]'
-                    : 'text-[var(--text-tertiary)]'
-                }`}
-              >
-                {m === 'week' ? '7 วัน' : '30 วัน'}
-              </button>
-            ))}
-          </div>
+      {/* ── Charts Section Header ── */}
+      <div className="flex items-center justify-between fade-up delay-4 mt-4 mb-2 px-1">
+        <h3 className="text-sm font-bold text-[var(--text-primary)] tracking-wide">ภาพรวมร้าน 📊</h3>
+        <div className="flex bg-[var(--surface-2)] p-1 rounded-[10px] gap-1">
+          {(['week','month'] as ChartMode[]).map(m => (
+            <button
+              key={m}
+              onClick={() => setChartMode(m)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                chartMode === m
+                  ? 'bg-white text-[var(--text-primary)] shadow-[var(--shadow-sm)]'
+                  : 'text-[var(--text-tertiary)]'
+              }`}
+            >
+              {m === 'week' ? '7 วัน' : '30 วัน'}
+            </button>
+          ))}
         </div>
-        <div className="h-40">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
-              <defs>
-                <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor="#2563EB" stopOpacity={0.15}/>
-                  <stop offset="95%" stopColor="#2563EB" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <XAxis
-                dataKey="label"
-                axisLine={false} tickLine={false}
-                tick={{ fill: '#9CA3AF', fontSize: 10, fontWeight: 500 }}
-                dy={8}
-              />
-              <Tooltip
-                formatter={(v: any) => [`฿${Number(v||0).toLocaleString()}`, 'รายได้']}
-                contentStyle={{
-                  borderRadius: '10px',
-                  border: '1px solid #E5E7EB',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  padding: '8px 14px',
-                }}
-              />
-              <Area
-                type="monotone"
-                dataKey="income"
-                stroke="#2563EB"
-                strokeWidth={2}
-                fillOpacity={1}
-                fill="url(#grad)"
-                dot={false}
-                activeDot={{ r: 5, fill: '#2563EB', stroke: '#fff', strokeWidth: 2 }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+      </div>
+
+      <div className="grid gap-3 fade-up delay-4">
+        {/* ── Income Area Chart ── */}
+        <div className="card p-4">
+          <h4 className="text-[10px] font-bold text-[var(--text-tertiary)] uppercase tracking-wider mb-4">แนวโน้มรายได้ (บาท)</h4>
+          <div className="h-40">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%"  stopColor="#2563EB" stopOpacity={0.15}/>
+                    <stop offset="95%" stopColor="#2563EB" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <XAxis
+                  dataKey="label"
+                  axisLine={false} tickLine={false}
+                  tick={{ fill: '#9CA3AF', fontSize: 10, fontWeight: 500 }}
+                  dy={8}
+                />
+                <Tooltip
+                  formatter={(v: any) => [`฿${Number(v||0).toLocaleString()}`, 'รายได้']}
+                  contentStyle={{
+                    borderRadius: '10px',
+                    border: '1px solid #E5E7EB',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    padding: '8px 14px',
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="income"
+                  stroke="#2563EB"
+                  strokeWidth={2}
+                  fillOpacity={1}
+                  fill="url(#grad)"
+                  dot={false}
+                  activeDot={{ r: 5, fill: '#2563EB', stroke: '#fff', strokeWidth: 2 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
 
       {/* ── Record List ── */}
-      <div className="fade-up delay-4">
+      <div className="fade-up delay-5 mt-6">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-semibold text-[var(--text-primary)]">รายการวันนี้</h3>
@@ -309,14 +444,13 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* ✅ UNPAID MODAL (สมุดทวงหนี้แบบป๊อปอัป) */}
+      {/* ✅ UNPAID MODAL */}
       {isUnpaidModalOpen && (
         <div 
           className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm fade-in flex items-end sm:items-center justify-center p-4"
           onClick={(e) => e.target === e.currentTarget && setIsUnpaidModalOpen(false)}
         >
           <div className="bg-white w-full max-w-lg rounded-[24px] slide-up overflow-hidden max-h-[85dvh] flex flex-col">
-            {/* Header ของ ป๊อปอัป */}
             <div className="flex items-center justify-between p-5 border-b border-[var(--border)] shrink-0">
               <h2 className="text-xl font-bold text-[var(--text-primary)]">สมุดทวงหนี้ 📒</h2>
               <button 
@@ -327,7 +461,6 @@ export default function Dashboard() {
               </button>
             </div>
 
-            {/* เนื้อหาข้างใน (เลื่อนขึ้นลงได้) */}
             <div className="overflow-y-auto p-5 space-y-4">
               <div className="card bg-[var(--red)] p-5 relative overflow-hidden">
                 <div className="absolute -right-4 -top-4 text-8xl opacity-10">🚨</div>
