@@ -28,7 +28,11 @@ export default function AddPage() {
   const [userId, setUserId]           = useState<string | null>(null)
   const [userEmail, setUserEmail]     = useState<string>('')
   const [formMode, setFormMode]       = useState<FormMode>('income')
-  const [date, setDate]               = useState(new Date().toISOString().split('T')[0])
+  
+  // ✅ แก้ไข: ใช้ฟังก์ชันดึงวันที่ปัจจุบันในฟอร์แมต YYYY-MM-DD
+  const getTodayStr = () => new Date().toLocaleDateString('en-CA')
+  const [date, setDate]               = useState(getTodayStr())
+  
   const [saving, setSaving]           = useState(false)
   const [error, setError]             = useState('')
   const [successMsg, setSuccessMsg]   = useState('')
@@ -59,6 +63,9 @@ export default function AddPage() {
       setUserEmail(data.user?.email ?? '')
     })
     
+    // ✅ แก้ไข: บังคับอัปเดตวันที่ให้เป็นปัจจุบันทุกครั้งที่เข้าหน้านี้
+    setDate(getTodayStr())
+
     const stored = localStorage.getItem('recentCustomers')
     if (stored) {
       try {
@@ -108,8 +115,8 @@ export default function AddPage() {
   }
 
   async function submitIncome(isBulk: boolean) {
-    if (!plate.trim())                    return setError('กรุณากรอกป้ายทะเบียน')
-    if (!selectedType)                    return setError('กรุณาเลือกประเภทรถ')
+    if (!plate.trim())                     return setError('กรุณากรอกป้ายทะเบียน')
+    if (!selectedType)                    return setError('กรุณาเลือกประเภทระ')
     if (!price || parseInt(price) <= 0)   return setError('กรุณากรอกราคา')
 
     const timestamp  = getTimestamp()
