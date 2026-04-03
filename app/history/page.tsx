@@ -73,12 +73,16 @@ export default function HistoryPage() {
           customer_name:  updatedFields.customer_name,
           payment_status: updatedFields.payment_status,
           created_at:     updatedFields.created_at,
+          updated_by_email: updatedFields.updated_by_email, // ✅ เพิ่มตรงนี้
+          updated_at:       updatedFields.updated_at,       // ✅ เพิ่มตรงนี้
         }
       : {
           title:      updatedFields.title,
           amount:     updatedFields.amount,
           note:       updatedFields.note,
           created_at: updatedFields.created_at,
+          updated_by_email: updatedFields.updated_by_email, // ✅ เพิ่มตรงนี้
+          updated_at:       updatedFields.updated_at,       // ✅ เพิ่มตรงนี้
         }
     const { error } = await supabase.from(table).update(updateData).eq('id', selectedItem.id)
     if (error) setError(error.message)
@@ -263,46 +267,66 @@ export default function HistoryPage() {
                   <div className="flex items-center gap-2.5">
                     <span className="text-xs font-semibold text-[var(--text-secondary)] shrink-0">{date}</span>
                     <div className="h-px flex-1 bg-[var(--border)]" />
-                    {activeTab === 'income' && (
-                      <span className="text-[10px] text-[var(--text-tertiary)] shrink-0">
-                        ล้าง {dayWashCount} · ขัด {dayPolishCount}
+                    <div className="flex items-center gap-2">
+                      {activeTab === 'income' && (
+                        <span className="text-[10px] text-[var(--text-tertiary)] shrink-0">
+                          ล้าง {dayWashCount} · ขัด {dayPolishCount}
+                        </span>
+                      )}
+                      <span className={`text-xs font-semibold shrink-0 ${activeTab === 'income' ? 'text-[var(--green)]' : 'text-[var(--red)]'}`}>
+                        ฿{dayTotal.toLocaleString()}
                       </span>
-                    )}
-                    <span className={`text-xs font-semibold shrink-0 ${activeTab === 'income' ? 'text-[var(--green)]' : 'text-[var(--red)]'}`}>
-                      ฿{dayTotal.toLocaleString()}
-                    </span>
+                    </div>
                   </div>
                 </div>
 
                 <div className="grid gap-2">
-                  {items.map(item =>
-                    activeTab === 'income' ? (
-                      <div key={item.id} onClick={() => { setSelectedItem(item); setIsModalOpen(true) }} className="cursor-pointer">
-                        <RecordCard record={item as Record} />
-                      </div>
-                    ) : (
-                      <div
-                        key={item.id}
-                        onClick={() => { setSelectedItem(item); setIsModalOpen(true) }}
-                        className="card flex items-center justify-between px-4 py-3.5 cursor-pointer hover:shadow-[var(--shadow-md)] transition-shadow active:scale-[0.985]"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-[10px] bg-[var(--red-light)] flex items-center justify-center shrink-0">
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                              <path d="M8 3v10M3 8h10" stroke="#DC2626" strokeWidth="1.5" strokeLinecap="round"/>
-                            </svg>
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-[var(--text-primary)] leading-tight">{(item as Expense).title}</p>
-                            <p className="text-[11px] text-[var(--text-tertiary)] mt-0.5">
-                              {new Date(item.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.
-                            </p>
-                          </div>
+                  {items.map(item => (
+                    // ✅ ใช้ Wrapper เพื่อจัดกลุ่ม Card กับข้อความ Audit Trail ไว้ด้วยกัน
+                    <div key={item.id} className="flex flex-col gap-1.5 mb-1.5">
+                      {activeTab === 'income' ? (
+                        <div onClick={() => { setSelectedItem(item); setIsModalOpen(true) }} className="cursor-pointer">
+                          <RecordCard record={item as Record} />
                         </div>
-                        <p className="text-sm font-bold text-[var(--red)]">−฿{(item as Expense).amount.toLocaleString()}</p>
-                      </div>
-                    )
-                  )}
+                      ) : (
+                        <div
+                          onClick={() => { setSelectedItem(item); setIsModalOpen(true) }}
+                          className="card flex items-center justify-between px-4 py-3.5 cursor-pointer hover:shadow-[var(--shadow-md)] transition-shadow active:scale-[0.985]"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-[10px] bg-[var(--red-light)] flex items-center justify-center shrink-0">
+                              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M8 3v10M3 8h10" stroke="#DC2626" strokeWidth="1.5" strokeLinecap="round"/>
+                              </svg>
+                            </div>
+                            <div>
+                              <p className="text-sm font-semibold text-[var(--text-primary)] leading-tight">{(item as Expense).title}</p>
+                              <p className="text-[11px] text-[var(--text-tertiary)] mt-0.5">
+                                {new Date(item.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.
+                              </p>
+                            </div>
+                          </div>
+                          <p className="text-sm font-bold text-[var(--red)]">−฿{(item as Expense).amount.toLocaleString()}</p>
+                        </div>
+                      )}
+                      
+                      {/* ✅ แสดงผู้เพิ่มและแก้ไขล่าสุด ใต้การ์ดแต่ละใบ */}
+                      {((item as Record | Expense).created_by_email || (item as Record | Expense).updated_by_email) && (
+                        <div className="flex items-center justify-end gap-3 px-2 text-[10px] font-medium text-[var(--text-tertiary)] opacity-60">
+                          {(item as Record | Expense).created_by_email && (
+                            <span className="flex items-center gap-1">
+                              ➕ เพิ่ม: {(item as Record | Expense).created_by_email?.split('@')[0]}
+                            </span>
+                          )}
+                          {(item as Record | Expense).updated_by_email && (
+                            <span className="flex items-center gap-1">
+                              ✏️ แก้ไข: {(item as Record | Expense).updated_by_email?.split('@')[0]}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
             )

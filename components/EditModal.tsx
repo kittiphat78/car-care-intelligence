@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
+import { supabase } from '@/lib/supabase'
 import { Record, Expense, PaymentStatus, CAR_TYPES, CAR_BRANDS } from '@/types'
 
 interface EditModalProps {
@@ -47,6 +48,9 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
   const [editDate, setEditDate] = useState('')
   const [editTime, setEditTime] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
+  
+  // ✅ ดึง Email ของผู้ใช้งาน ณ ตอนนี้
+  const [currentUserEmail, setCurrentUserEmail] = useState('')
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const [isDown, setIsDown]         = useState(false)
@@ -60,6 +64,10 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
     const x = e.pageX - (scrollRef.current?.offsetLeft || 0)
     if (scrollRef.current) scrollRef.current.scrollLeft = scrollLeftVal - (x - startX) * 2
   }
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setCurrentUserEmail(data.user?.email ?? 'ไม่ทราบชื่อผู้ใช้งาน'))
+  }, [])
 
   useEffect(() => {
     if (!item) return
@@ -90,6 +98,8 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
 
   const handleSave = () => {
     const created_at = mergeDateTime(editDate, editTime)
+    const now = new Date().toISOString()
+    
     if (type === 'income') {
       onSave({
         plate:          plate.trim(),
@@ -98,9 +108,18 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
         payment_status: paymentStatus,
         services:       [selectedType, selectedBrand, incomeNote.trim()],
         created_at,
+        updated_by_email: currentUserEmail, // ✅ แปะชื่อคนแก้ไปใน Database ด้วย
+        updated_at:       now,              // ✅ แปะเวลาแก้ไขไปใน Database ด้วย
       })
     } else {
-      onSave({ title: title.trim(), amount: parseInt(amount) || 0, note: note.trim(), created_at })
+      onSave({ 
+        title: title.trim(), 
+        amount: parseInt(amount) || 0, 
+        note: note.trim(), 
+        created_at,
+        updated_by_email: currentUserEmail, // ✅ แปะชื่อคนแก้ไปใน Database ด้วย
+        updated_at:       now,              // ✅ แปะเวลาแก้ไขไปใน Database ด้วย
+      })
     }
   }
 
@@ -187,7 +206,7 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
                       value={price}
                       onChange={e => setPrice(e.target.value.replace(/\D/g, ''))}
                       className="input font-bold w-full"
-                      style={{ paddingLeft: '2rem' }} /* ✅ FIX: บังคับ Padding ให้ดันตัวเลขหนีตัว ฿ */
+                      style={{ paddingLeft: '2rem' }}
                       placeholder="0"
                     />
                   </div>
@@ -284,7 +303,7 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
                 </div>
               </div>
 
-              {/* ชื่อลูกค้า / เต็นท์ (แก้ไขได้ทุกประเภท) */}
+              {/* ชื่อลูกค้า / เต็นท์ */}
               <div>
                 <label className="label">ชื่อลูกค้า / เต็นท์ (ถ้ามี)</label>
                 <input
@@ -333,7 +352,7 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
                     value={amount}
                     onChange={e => setAmount(e.target.value.replace(/\D/g, ''))}
                     className="input font-bold text-[var(--red)] w-full"
-                    style={{ paddingLeft: '2rem' }} /* ✅ FIX: บังคับ Padding ให้ดันตัวเลขหนีตัว ฿ */
+                    style={{ paddingLeft: '2rem' }}
                     placeholder="0"
                   />
                 </div>
@@ -352,6 +371,47 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
               </div>
             </>
           )}
+
+          {/* ✅ ส่วนแสดงบันทึกการกระทำ (Audit Trail) */}
+          <div className="mt-4 p-3 bg-[var(--surface-2)] rounded-[var(--radius-md)] flex flex-col gap-3 border border-[var(--border)]">
+            
+            {/* แสดงคนสร้าง */}
+            {(item as Record | Expense)?.created_by_email && (
+              <div className="flex items-center gap-3">
+                <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-[10px] border border-blue-200">➕</div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">เพิ่มเข้าระบบโดย</p>
+                  <p className="text-xs font-bold text-[var(--text-primary)]">{(item as Record | Expense).created_by_email}</p>
+                </div>
+              </div>
+            )}
+
+            {/* แสดงคนแก้ไขล่าสุด */}
+            {(item as Record | Expense)?.updated_by_email && (
+              <div className="flex items-center gap-3">
+                <div className="w-7 h-7 rounded-full bg-amber-100 flex items-center justify-center text-[10px] border border-amber-200">✏️</div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">แก้ไขล่าสุดโดย</p>
+                  <p className="text-xs font-bold text-[var(--text-primary)]">
+                    {(item as Record | Expense).updated_by_email} <span className="font-normal text-[10px] text-slate-400">({new Date((item as Record | Expense).updated_at!).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })})</span>
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="h-[1px] bg-[var(--border)] w-full my-1" />
+
+            {/* บัญชีปัจจุบันที่กำลังลบ/แก้ไข */}
+            <div className="flex items-center gap-3">
+              <div className="w-7 h-7 rounded-full bg-white flex items-center justify-center shadow-sm text-[10px] border border-[var(--border)]">👤</div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">บัญชีที่กำลังทำรายการ</p>
+                <p className="text-xs font-bold text-[var(--text-primary)]">{currentUserEmail || 'กำลังตรวจสอบ...'}</p>
+              </div>
+            </div>
+
+          </div>
+
         </div>
 
         {/* confirmDelete block */}

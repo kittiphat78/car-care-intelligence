@@ -4,28 +4,34 @@ export type PaymentStatus  = 'paid' | 'unpaid'
 export type JobStatus      = 'pending' | 'done'
 
 export interface Record {
-  id:             string
-  created_at:     string
-  type:           RecordType
-  plate:          string
-  services:       string[]        // Format ใหม่: [0: ประเภทรถ, 1: ยี่ห้อรถ, 2: หมายเหตุ]
-  price:          number
-  seq_number:     number
-  created_by?:    string
-  payment_method?: PaymentMethod
-  customer_name?: string          
-  payment_status: PaymentStatus
-  job_status:     JobStatus
-  note?:          string
+  id:               string
+  created_at:       string
+  type:             RecordType
+  plate:            string
+  services:         string[]
+  price:            number
+  seq_number:       number
+  created_by?:      string
+  created_by_email?: string  // ✅ เก็บอีเมลคนสร้าง
+  updated_by_email?: string  // ✅ เก็บอีเมลคนแก้ไข
+  updated_at?:      string   // ✅ เก็บเวลาแก้ไขล่าสุด
+  payment_method?:  PaymentMethod
+  customer_name?:   string          
+  payment_status:   PaymentStatus
+  job_status:       JobStatus
+  note?:            string
 }
 
 export interface Expense {
-  id:          string
-  created_at:  string
-  title:       string
-  amount:      number
-  note:        string | null
-  created_by?: string
+  id:               string
+  created_at:       string
+  title:            string
+  amount:           number
+  note:             string | null
+  created_by?:      string
+  created_by_email?: string  // ✅ เก็บอีเมลคนสร้าง
+  updated_by_email?: string  // ✅ เก็บอีเมลคนแก้ไข
+  updated_at?:      string   // ✅ เก็บเวลาแก้ไขล่าสุด
 }
 
 export const CAR_TYPES = [
