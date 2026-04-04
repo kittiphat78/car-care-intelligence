@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🚗 Car Wash Manager Pro (ระบบบริหารจัดการร้านล้างรถอัจฉริยะ)
 
-## Getting Started
+ระบบ Web Application สำหรับบริหารจัดการร้านล้างรถคาร์แคร์ขนาด SME ที่ถูกออกแบบมาเพื่อ **"ลดภาระ เพิ่มความสบาย และอุดรอยรั่ว"** ของธุรกิจครอบครัวโดยเฉพาะ 
 
-First, run the development server:
+UI/UX ถูกออกแบบมาให้เป็นมิตรกับผู้ใช้งานวัยผู้ใหญ่ (User-Friendly for Elderly) เน้นการกดเลือก (Tap) ลดการพิมพ์ (Typing) และมีการแสดงผลข้อมูลแบบ Real-time ที่หน้า Dashboard ทำให้เจ้าของร้านมองเห็นภาพรวมธุรกิจได้ในหน้าเดียว
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## ✨ Features (ฟีเจอร์เด่น)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+* 📊 **Real-time Dashboard:** สรุปยอดรายรับ รายจ่าย กำไรสุทธิ และเปรียบเทียบเปอร์เซ็นต์การเติบโตกับวันก่อนหน้าแบบอัตโนมัติ
+* 🌤️ **Smart Store Manager (ผู้จัดการร้าน AI):** * ดึงข้อมูลสภาพอากาศล่วงหน้าเพื่อแนะนำการเตรียมพร้อมรับมือลูกค้า
+    * ดึงข้อมูลฝุ่น PM2.5 (AQI) จากเซ็นเซอร์จริงในพื้นที่ (จ.เชียงราย) พร้อมระบบแจ้งเตือนให้พนักงานสวมหน้ากากอนามัยเมื่อค่าฝุ่นเกินมาตรฐาน
+* 📒 **Debt Tracking (สมุดทวงหนี้เต็นท์รถ):** ระบบบันทึกและติดตามยอดค้างชำระของลูกค้ากลุ่มเต็นท์รถ พร้อมปุ่ม "เคลียร์ยอด (จ่ายครบ)" ที่กดเพียงคลิกเดียวระบบจะอัปเดตสถานะรถทุกคันของลูกค้ารายนั้นให้ทันที
+* ⚡ **Quick Add & Loyalty System:**
+    * ระบบบันทึกรายการด่วน แยกล้างรถ / ขัดสี / รายจ่าย
+    * **Loyalty Tracker:** จดจำป้ายทะเบียนและแจ้งเตือน "ลูกค้าประจำ" ทันทีเมื่อกรอกป้ายทะเบียน
+    * **Quick Expense:** ปุ่มลัดสำหรับรายจ่ายที่ใช้บ่อย (เช่น ค่าน้ำยา, ค่าแรง) แบบเลื่อนปัดได้ (Drag-to-scroll)
+* 🔒 **Kiosk Mode Protection:** ระบบป้องกันการปัดหน้าจอรีเฟรช (Pull-to-refresh) โดยไม่ได้ตั้งใจ หากมีการรีเฟรช ระบบจะพากลับไปที่หน้า Dashboard ทันทีเพื่อความต่อเนื่องในการทำงาน
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 🛠️ Tech Stack (เครื่องมือที่ใช้พัฒนา)
 
-To learn more about Next.js, take a look at the following resources:
+* **Frontend:** [Next.js](https://nextjs.org/) (App Router), React, Tailwind CSS
+* **Backend & Database:** [Supabase](https://supabase.com/) (PostgreSQL, Authentication, Real-time Subscriptions)
+* **Data Visualization:** [Recharts](https://recharts.org/) (สำหรับกราฟสรุปรายได้)
+* **External APIs:** * [Open-Meteo API](https://open-meteo.com/) (พยากรณ์อากาศ)
+    * [WAQI API](https://aqicn.org/api/) (ข้อมูลคุณภาพอากาศ PM2.5 แบบ Real-time)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🚀 Getting Started (วิธีการรันโปรเจกต์)
 
-## Deploy on Vercel
+1. **Clone repository:**
+   ```bash
+   git clone [https://github.com/your-username/your-repo-name.git](https://github.com/your-username/your-repo-name.git)
+   cd your-repo-name
+   Install dependencies:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+2. **Install dependencies:**
+   ```bash
+   npm install
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+3. **Environment Variables:**
+   สร้างไฟล์ .env.local ที่ Root ของโปรเจกต์ และใส่ค่า API Keys ของ Supabase:
+   ```bash
+   NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+
+4. **Run the development server:**
+   ```bash
+   npm run dev
+
+เปิดเบราว์เซอร์ไปที่ http://localhost:3000 เพื่อดูผลลัพธ์
