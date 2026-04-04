@@ -12,6 +12,12 @@ const displayThaiDate = (isoDate: string) => {
   return `${d}/${m}/${parseInt(y) + 543}`
 }
 
+// ✅ ฟังก์ชันช่วยดึงวันที่ปัจจุบัน (เวลาท้องถิ่น/เวลาไทย)
+const getTodayStr = () => {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 // ✅ ลิสต์ "รายจ่ายด่วน" 
 const EXPENSE_PRESETS = [
   { icon: '💧', label: 'ค่าน้ำยา' },
@@ -28,11 +34,8 @@ export default function AddPage() {
   const [userId, setUserId]           = useState<string | null>(null)
   const [userEmail, setUserEmail]     = useState<string>('')
   const [formMode, setFormMode]       = useState<FormMode>('income')
-  
-  // ✅ แก้ไข: ใช้ฟังก์ชันดึงวันที่ปัจจุบันในฟอร์แมต YYYY-MM-DD
-  const getTodayStr = () => new Date().toLocaleDateString('en-CA')
+  // ✅ แก้ไข: ใช้ฟังก์ชัน getTodayStr() แทน toISOString() 
   const [date, setDate]               = useState(getTodayStr())
-  
   const [saving, setSaving]           = useState(false)
   const [error, setError]             = useState('')
   const [successMsg, setSuccessMsg]   = useState('')
@@ -58,14 +61,14 @@ export default function AddPage() {
   const [expenseNote, setExpenseNote]     = useState('')
 
   useEffect(() => {
+    // ✅ เพิ่ม: อัปเดตวันที่ให้เป็นปัจจุบันเสมอเมื่อเปิดหน้านี้
+    setDate(getTodayStr())
+
     supabase.auth.getUser().then(({ data }) => {
       setUserId(data.user?.id ?? null)
       setUserEmail(data.user?.email ?? '')
     })
     
-    // ✅ แก้ไข: บังคับอัปเดตวันที่ให้เป็นปัจจุบันทุกครั้งที่เข้าหน้านี้
-    setDate(getTodayStr())
-
     const stored = localStorage.getItem('recentCustomers')
     if (stored) {
       try {
@@ -115,8 +118,8 @@ export default function AddPage() {
   }
 
   async function submitIncome(isBulk: boolean) {
-    if (!plate.trim())                     return setError('กรุณากรอกป้ายทะเบียน')
-    if (!selectedType)                    return setError('กรุณาเลือกประเภทระ')
+    if (!plate.trim())                    return setError('กรุณากรอกป้ายทะเบียน')
+    if (!selectedType)                    return setError('กรุณาเลือกประเภทรถ')
     if (!price || parseInt(price) <= 0)   return setError('กรุณากรอกราคา')
 
     const timestamp  = getTimestamp()
