@@ -12,12 +12,24 @@ type FilterType = 'all' | 'wash' | 'polish'
 const START_YEAR   = new Date().getFullYear() - 5
 const YEAR_OPTIONS = Array.from({ length: 16 }, (_,i) => START_YEAR + i)
 
+// ✅ เพิ่มตัวเลือกเดือน
+const MONTH_OPTIONS = [
+  { value: 0, label: 'ตลอดทั้งปี' },
+  { value: 1, label: 'มกราคม' }, { value: 2, label: 'กุมภาพันธ์' },
+  { value: 3, label: 'มีนาคม' }, { value: 4, label: 'เมษายน' },
+  { value: 5, label: 'พฤษภาคม' }, { value: 6, label: 'มิถุนายน' },
+  { value: 7, label: 'กรกฎาคม' }, { value: 8, label: 'สิงหาคม' },
+  { value: 9, label: 'กันยายน' }, { value: 10, label: 'ตุลาคม' },
+  { value: 11, label: 'พฤศจิกายน' }, { value: 12, label: 'ธันวาคม' }
+]
+
 export default function HistoryPage() {
   const [activeTab, setActiveTab]       = useState<TabType>('income')
   const [records, setRecords]           = useState<Record[]>([])
   const [expenses, setExpenses]         = useState<Expense[]>([])
   const [search, setSearch]             = useState('')
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1) // ✅ เพิ่ม State เดือน (ค่าเริ่มต้นคือเดือนปัจจุบัน)
   const [filterType, setFilterType]     = useState<FilterType>('all')
   const [dateFrom, setDateFrom]         = useState('')
   const [dateTo, setDateTo]             = useState('')
@@ -67,37 +79,54 @@ export default function HistoryPage() {
     const table = activeTab === 'income' ? 'records' : 'expenses'
     const updateData = activeTab === 'income'
       ? {
+          type:           updatedFields.type, 
           plate:          updatedFields.plate,
           price:          updatedFields.price,
           services:       updatedFields.services,
           customer_name:  updatedFields.customer_name,
           payment_status: updatedFields.payment_status,
           created_at:     updatedFields.created_at,
-          updated_by_email: updatedFields.updated_by_email, // ✅ เพิ่มตรงนี้
-          updated_at:       updatedFields.updated_at,       // ✅ เพิ่มตรงนี้
+          updated_by_email: updatedFields.updated_by_email, 
+          updated_at:       updatedFields.updated_at,       
         }
       : {
           title:      updatedFields.title,
           amount:     updatedFields.amount,
           note:       updatedFields.note,
           created_at: updatedFields.created_at,
-          updated_by_email: updatedFields.updated_by_email, // ✅ เพิ่มตรงนี้
-          updated_at:       updatedFields.updated_at,       // ✅ เพิ่มตรงนี้
+          updated_by_email: updatedFields.updated_by_email, 
+          updated_at:       updatedFields.updated_at,       
         }
     const { error } = await supabase.from(table).update(updateData).eq('id', selectedItem.id)
     if (error) setError(error.message)
     else { setIsModalOpen(false); fetchAllData() }
   }
 
+  // ✅ กรองข้อมูลตามเดือนที่เลือก (สำหรับใช้สรุปยอด)
+  const currentMonthRecords = selectedMonth === 0 
+    ? records 
+    : records.filter(r => new Date(r.created_at).getMonth() + 1 === selectedMonth)
+
+  const currentMonthExpenses = selectedMonth === 0 
+    ? expenses 
+    : expenses.filter(e => new Date(e.created_at).getMonth() + 1 === selectedMonth)
+
+  // ✅ คำนวณยอดรวมจากข้อมูลที่กรองเดือนแล้ว
+  const totalIncome      = currentMonthRecords.reduce((s, r) => s + r.price, 0)
+  const totalExpense     = currentMonthExpenses.reduce((s, e) => s + e.amount, 0)
+  const totalWashCount   = currentMonthRecords.filter(r => r.type === 'wash').length
+  const totalPolishCount = currentMonthRecords.filter(r => r.type === 'polish').length
+
+  // ✅ กรองข้อมูลสำหรับแสดงผลใน List (เพิ่มเงื่อนไขช่อง Search)
   const filteredItems = activeTab === 'income'
-    ? records.filter(r => {
+    ? currentMonthRecords.filter(r => {
         const ms  = r.plate.toLowerCase().includes(search.toLowerCase()) || (r.customer_name || '').toLowerCase().includes(search.toLowerCase())
         const mt  = filterType === 'all' || r.type === filterType
         const mf  = !dateFrom || new Date(r.created_at) >= new Date(dateFrom)
         const mto = !dateTo   || new Date(r.created_at) <= new Date(dateTo + 'T23:59:59')
         return ms && mt && mf && mto
       })
-    : expenses.filter(e => {
+    : currentMonthExpenses.filter(e => {
         const ms  = e.title.toLowerCase().includes(search.toLowerCase())
         const mf  = !dateFrom || new Date(e.created_at) >= new Date(dateFrom)
         const mto = !dateTo   || new Date(e.created_at) <= new Date(dateTo + 'T23:59:59')
@@ -111,28 +140,35 @@ export default function HistoryPage() {
     return acc
   }, {} as {[date: string]: (Record | Expense)[]})
 
-  const totalIncome      = records.reduce((s, r) => s + r.price, 0)
-  const totalExpense     = expenses.reduce((s, e) => s + e.amount, 0)
-  const totalWashCount   = records.filter(r => r.type === 'wash').length
-  const totalPolishCount = records.filter(r => r.type === 'polish').length
-
   return (
-    // ✅ FIX: ลบ pb-32 ออก — ClientLayout จัดการ pb-28 ให้แล้ว
     <div className="min-h-dvh px-4 pt-6 space-y-4">
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between fade-up">
         <h1 className="text-xl font-bold text-[var(--text-primary)]">ประวัติ</h1>
-        <select
-          value={selectedYear}
-          onChange={e => setSelectedYear(parseInt(e.target.value))}
-          className="input py-2 px-3 text-sm w-auto appearance-none cursor-pointer"
-          style={{ width: 'auto' }}
-        >
-          {YEAR_OPTIONS.map(y => (
-            <option key={y} value={y}>พ.ศ. {y + 543}</option>
-          ))}
-        </select>
+        <div className="flex gap-1.5">
+          {/* ✅ เพิ่ม Dropdown เลือกเดือน */}
+          <select
+            value={selectedMonth}
+            onChange={e => setSelectedMonth(parseInt(e.target.value))}
+            className="input py-2 px-2 text-xs w-auto appearance-none cursor-pointer"
+            style={{ width: 'auto' }}
+          >
+            {MONTH_OPTIONS.map(m => (
+              <option key={m.value} value={m.value}>{m.label}</option>
+            ))}
+          </select>
+          <select
+            value={selectedYear}
+            onChange={e => setSelectedYear(parseInt(e.target.value))}
+            className="input py-2 px-2 text-xs w-auto appearance-none cursor-pointer"
+            style={{ width: 'auto' }}
+          >
+            {YEAR_OPTIONS.map(y => (
+              <option key={y} value={y}>{y + 543}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* ── Tab Toggle ── */}
@@ -163,7 +199,10 @@ export default function HistoryPage() {
       <div className="card-dark p-4 fade-up delay-1">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs text-white/50 mb-1">ยอดรวมทั้งปี</p>
+            {/* ✅ อัปเดตข้อความสรุปตามเดือนที่เลือก */}
+            <p className="text-xs text-white/50 mb-1">
+              {selectedMonth === 0 ? 'ยอดรวมทั้งปี' : `ยอดรวมเดือน${MONTH_OPTIONS.find(m => m.value === selectedMonth)?.label}`}
+            </p>
             <p className="text-2xl font-bold text-white">
               ฿{(activeTab === 'income' ? totalIncome : totalExpense).toLocaleString()}
             </p>
@@ -185,7 +224,7 @@ export default function HistoryPage() {
               </div>
             )}
             <button
-              onClick={() => exportToCSV(activeTab === 'income' ? records : expenses, `history-${activeTab}-${selectedYear}`)}
+              onClick={() => exportToCSV(activeTab === 'income' ? currentMonthRecords : currentMonthExpenses, `history-${activeTab}-${selectedYear}`)}
               className="flex items-center gap-2 text-xs font-semibold text-white/70 hover:text-white bg-white/10 hover:bg-white/15 border border-white/10 px-3 py-2.5 rounded-[var(--radius-md)] transition-all"
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -210,7 +249,7 @@ export default function HistoryPage() {
             onChange={e => setSearch(e.target.value)}
             placeholder={activeTab === 'income' ? 'ค้นหาทะเบียน หรือชื่อลูกค้า...' : 'ค้นหารายการจ่าย...'}
             className="input text-sm w-full"
-            style={{ paddingLeft: '2.5rem' }} /* ✅ FIX: บังคับ Padding ซ้ายเพื่อดันข้อความหลบไอคอน */
+            style={{ paddingLeft: '2.5rem' }} 
           />
         </div>
 
@@ -263,7 +302,6 @@ export default function HistoryPage() {
 
             return (
               <div key={date} className="mb-6">
-                {/* ✅ FIX: top-0 → top-2 เพื่อให้มี gap จาก viewport edge */}
                 <div className="sticky top-2 z-10 bg-[var(--bg)]/90 backdrop-blur-sm py-2 mb-2">
                   <div className="flex items-center gap-2.5">
                     <span className="text-xs font-semibold text-[var(--text-secondary)] shrink-0">{date}</span>
@@ -283,7 +321,6 @@ export default function HistoryPage() {
 
                 <div className="grid gap-2">
                   {items.map(item => (
-                    // ✅ ใช้ Wrapper เพื่อจัดกลุ่ม Card กับข้อความ Audit Trail ไว้ด้วยกัน
                     <div key={item.id} className="flex flex-col gap-1.5 mb-1.5">
                       {activeTab === 'income' ? (
                         <div onClick={() => { setSelectedItem(item); setIsModalOpen(true) }} className="cursor-pointer">
@@ -311,7 +348,6 @@ export default function HistoryPage() {
                         </div>
                       )}
                       
-                      {/* ✅ แสดงผู้เพิ่มและแก้ไขล่าสุด ใต้การ์ดแต่ละใบ */}
                       {((item as Record | Expense).created_by_email || (item as Record | Expense).updated_by_email) && (
                         <div className="flex items-center justify-end gap-3 px-2 text-[10px] font-medium text-[var(--text-tertiary)] opacity-60">
                           {(item as Record | Expense).created_by_email && (
@@ -336,7 +372,6 @@ export default function HistoryPage() {
       </div>
 
       {error && (
-        // ✅ FIX: bottom-24 → bottom-28 เพื่อไม่ซ้อนทับ BottomNav
         <div className="fixed bottom-28 left-4 right-4 max-w-lg mx-auto p-3 rounded-[var(--radius-md)] bg-[var(--red)] text-white text-sm font-medium text-center fade-up">
           {error}
         </div>
@@ -352,4 +387,4 @@ export default function HistoryPage() {
       />
     </div>
   )
-}
+}  

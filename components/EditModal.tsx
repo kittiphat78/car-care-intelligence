@@ -31,6 +31,7 @@ function mergeDateTime(date: string, time: string): string {
 
 export default function EditModal({ item, type, isOpen, onClose, onSave, onDelete }: EditModalProps) {
   // Income fields
+  const [recordType, setRecordType]     = useState<'wash' | 'polish'>('wash') // ✅ เพิ่ม State เก็บประเภทบริการ
   const [plate, setPlate]               = useState('')
   const [price, setPrice]               = useState('')
   const [customerName, setCustomerName] = useState('')
@@ -79,6 +80,7 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
 
     if (type === 'income') {
       const r = item as Record
+      setRecordType((r.type as 'wash' | 'polish') ?? 'wash') // ✅ เซ็ตค่าประเภทบริการเริ่มต้น
       setPlate(r.plate ?? '')
       setPrice(r.price?.toString() ?? '')
       setCustomerName(r.customer_name ?? '')
@@ -102,14 +104,15 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
     
     if (type === 'income') {
       onSave({
+        type:           recordType, // ✅ บันทึกประเภทบริการที่ถูกแก้ไข
         plate:          plate.trim(),
         price:          parseInt(price) || 0,
         customer_name:  customerName.trim(),
         payment_status: paymentStatus,
         services:       [selectedType, selectedBrand, incomeNote.trim()],
         created_at,
-        updated_by_email: currentUserEmail, // ✅ แปะชื่อคนแก้ไปใน Database ด้วย
-        updated_at:       now,              // ✅ แปะเวลาแก้ไขไปใน Database ด้วย
+        updated_by_email: currentUserEmail, 
+        updated_at:       now,              
       })
     } else {
       onSave({ 
@@ -117,14 +120,14 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
         amount: parseInt(amount) || 0, 
         note: note.trim(), 
         created_at,
-        updated_by_email: currentUserEmail, // ✅ แปะชื่อคนแก้ไปใน Database ด้วย
-        updated_at:       now,              // ✅ แปะเวลาแก้ไขไปใน Database ด้วย
+        updated_by_email: currentUserEmail, 
+        updated_at:       now,              
       })
     }
   }
 
   const isIncome = type === 'income'
-  const isPolish = isIncome && (item as Record).type === 'polish'
+  const isPolish = isIncome && recordType === 'polish' // ✅ อัปเดตเงื่อนไขให้ใช้ State ใหม่
 
   return (
     <div
@@ -182,6 +185,42 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
 
           {isIncome ? (
             <>
+              {/* ✅ เพิ่มปุ่มสลับประเภทบริการ ล้างรถ/ขัดสี */}
+              <div>
+                <label className="label">ประเภทบริการ</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setRecordType('wash')}
+                    className={`py-2.5 rounded-[var(--radius-md)] border text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+                      recordType === 'wash'
+                        ? 'bg-[var(--accent-light)] text-[var(--accent)] border-[var(--accent)]'
+                        : 'bg-white text-[var(--text-secondary)] border-[var(--border)] hover:bg-[var(--surface-2)]'
+                    }`}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M7 17a5 5 0 0 1 10 0"/><path d="M5 17H3a1 1 0 0 1-1-1V9l3-4h14l3 4v7a1 1 0 0 1-1 1h-2"/>
+                      <circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/>
+                    </svg>
+                    ล้างรถ
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRecordType('polish')}
+                    className={`py-2.5 rounded-[var(--radius-md)] border text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+                      recordType === 'polish'
+                        ? 'bg-[var(--amber-light)] text-[var(--amber)] border-[var(--amber)]'
+                        : 'bg-white text-[var(--text-secondary)] border-[var(--border)] hover:bg-[var(--surface-2)]'
+                    }`}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 3l1.9 5.8H20l-4.9 3.6 1.9 5.8L12 14.6l-5 3.6 1.9-5.8L4 8.8h6.1z"/>
+                    </svg>
+                    ขัดสี
+                  </button>
+                </div>
+              </div>
+
               {/* ทะเบียน */}
               <div>
                 <label className="label">ป้ายทะเบียน</label>
