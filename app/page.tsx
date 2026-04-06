@@ -233,44 +233,60 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {/* ✅ แถบผู้จัดการร้านอัจฉริยะ */}
+{/* ✅ แถบผู้จัดการร้านอัจฉริยะ (อัปเกรด UI + Glassmorphism) */}
       {weather && (
-        <div className={`card p-4 bg-gradient-to-br ${weather?.bgClass || 'from-gray-50 to-gray-100'} border fade-up delay-1 transition-colors duration-500`}>
-          <div className="flex justify-between items-start mb-3">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center text-3xl shrink-0">
+        <div className={`card p-4 bg-gradient-to-br ${weather?.bgClass || 'from-gray-50 to-gray-100'} border fade-up delay-1 transition-all duration-500 hover:shadow-md`}>
+          
+          {/* ส่วนบน: ข้อมูลสภาพอากาศและฝุ่น */}
+          <div className="flex justify-between items-start mb-4 gap-2">
+            
+            <div className="flex items-start sm:items-center gap-3">
+              {/* ไอคอนอากาศ (เพิ่ม shadow และขอบบางๆ ให้ดูมีมิติ) */}
+              <div className="w-12 h-12 rounded-full bg-white shadow-sm border border-white/50 flex items-center justify-center text-3xl shrink-0">
                 {weather?.icon || '🌡️'}
               </div>
+              
               <div>
-                <p className={`text-[10px] font-black uppercase tracking-widest mb-0.5 opacity-80 ${weather?.textClass || 'text-gray-700'}`}>
+                <p className={`text-[10px] font-black uppercase tracking-widest mb-1 opacity-80 ${weather?.textClass || 'text-gray-700'}`}>
                   เมืองเชียงราย วันนี้ 📍
                 </p>
-                <div className="flex items-center gap-2 flex-wrap mt-1">
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ${weather?.badgeClass || 'bg-gray-200 text-gray-700'}`}>
+                
+                {/* ป้ายสภาพอากาศ & AQI (ปรับทรงให้สวยขึ้น) */}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className={`text-xs font-bold px-2 py-1 rounded-[6px] shadow-sm ${weather?.badgeClass || 'bg-gray-200 text-gray-700'}`}>
                     {weather?.condition || '-'} {weather?.temp || 0}°C
                   </span>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${weather?.aqiStatus?.colorClass || 'bg-gray-100 text-gray-500'} flex items-center gap-1`}>
-                    🌫️ AQI: {weather?.aqi > 0 ? weather.aqi : '...'} ({weather?.aqiStatus?.label || '...'})
+                  <span className={`text-[10px] font-bold px-2 py-1 rounded-[6px] border shadow-sm ${weather?.aqiStatus?.colorClass || 'bg-gray-100 text-gray-500'} flex items-center gap-1`}>
+                    <span className="opacity-80">🌫️ AQI:</span> {weather?.aqi > 0 ? weather.aqi : '...'} ({weather?.aqiStatus?.label || '...'})
                   </span>
                 </div>
               </div>
             </div>
+
+            {/* โอกาสฝนตก (จัดใส่กล่องใสให้ดูพรีเมียม) */}
             {(weather?.prob ?? 0) > 0 && (
-              <div className="text-right shrink-0">
-                <p className={`text-[10px] font-bold opacity-70 ${weather?.textClass || 'text-gray-700'}`}>โอกาสฝนตก</p>
-                <p className={`text-sm font-black ${weather?.textClass || 'text-gray-700'}`}>{weather?.prob}%</p>
+              <div className="text-right shrink-0 bg-white/40 px-2.5 py-1.5 rounded-lg border border-white/50 shadow-sm">
+                <p className={`text-[9px] font-bold uppercase tracking-wider opacity-70 ${weather?.textClass || 'text-gray-700'}`}>โอกาสฝน</p>
+                <div className="flex items-baseline justify-end gap-0.5 mt-0.5">
+                  <p className={`text-base font-black leading-none ${weather?.textClass || 'text-gray-700'}`}>{weather?.prob}</p>
+                  <p className={`text-xs font-bold ${weather?.textClass || 'text-gray-700'}`}>%</p>
+                </div>
               </div>
             )}
           </div>
           
-          <div className="bg-white/70 rounded-lg p-2.5 border border-white/50 flex items-start gap-2 shadow-sm">
+          {/* ส่วนล่าง: ข้อความ AI แนะนำ (ใส่ลูกเล่นกระจกฝ้า Glassmorphism) */}
+          <div className="bg-white/60 backdrop-blur-md rounded-xl p-3 border border-white/60 flex items-start gap-2.5 shadow-sm">
             <span className={`shrink-0 mt-0.5 ${weather?.textClass || 'text-gray-700'}`}>
-              <svg width="16" height="16" viewBox="0 0 14 14" fill="none"><path d="M7 2v5l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.5"/></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>
+              </svg>
             </span>
             <p className={`text-xs font-bold leading-relaxed ${weather?.textClass || 'text-gray-700'}`}>
               {weather?.message || 'กำลังวิเคราะห์สภาพอากาศ...'}
             </p>
           </div>
+          
         </div>
       )}
 
