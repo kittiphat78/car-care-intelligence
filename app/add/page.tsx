@@ -23,6 +23,7 @@ const EXPENSE_PRESETS = [
   { icon: '💧', label: 'ค่าน้ำยา' },
   { icon: '👷', label: 'ค่าแรง' },
   { icon: '🍚', label: 'ค่าข้าว' },
+  { icon: '🏠', label: 'ค่าเช่า' },
   { icon: '⚡', label: 'ค่าไฟ' },
   { icon: '🚰', label: 'ค่าน้ำ' },
   { icon: '🗑️', label: 'ค่าขยะ' },
