@@ -67,10 +67,10 @@ export default function Dashboard() {
     setLoading(false)
   }, [router])
 
-  // 🌤️ ระบบพยากรณ์ความวุ่นวาย + ฝุ่น
+  // 🌤️ ระบบพยากรณ์ความวุ่นวาย + ฝุ่น (แก้ให้ Real-time แม่นยำขั้นสุด ทลาย Cache)
   useEffect(() => {
     const fetchWeather = async () => {
-      let icon = '☁️'; let condition = 'กำลังอัปเดตอากาศ...'; let temp = 0; let prob = 0;
+      let icon = '☁️'; let condition = 'กำลังอัปเดต...'; let temp = 0; let prob = 0;
       let message = 'กำลังวิเคราะห์สภาพอากาศและฝุ่น...';
       let aqiValue = 0;
       let aqiStatus = { label: 'รอข้อมูล', colorClass: 'bg-gray-100 text-gray-500 border-gray-300' };
@@ -79,28 +79,35 @@ export default function Dashboard() {
       let badgeClass = 'bg-[#BAE6FD] text-[#0284C7]';
       let probTom = 0;
 
+      // ✅ Cache-Buster: รหัสเวลาปัจจุบัน เพื่อบังคับให้ดึงข้อมูลใหม่สดๆ เท่านั้น
+      const timestamp = Date.now();
+
       try {
-        const wRes = await fetch('https://api.open-meteo.com/v1/forecast?latitude=19.91&longitude=99.84&daily=weather_code,precipitation_probability_max,temperature_2m_max&timezone=Asia%2FBangkok&forecast_days=2');
+        // 1. 📍 ดึงสภาพอากาศ "ปัจจุบัน" จริงๆ 
+        const wRes = await fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=19.91&longitude=99.84&current=temperature_2m,weather_code&daily=precipitation_probability_max&timezone=Asia%2FBangkok&forecast_days=2&_t=${timestamp}`,
+          { cache: 'no-store' }
+        );
         if (wRes.ok) {
           const data = await wRes.json();
-          const codeToday = data.daily?.weather_code?.[0] || 0;
-          prob = data.daily?.precipitation_probability_max?.[0] || 0;
-          temp = Math.round(data.daily?.temperature_2m_max?.[0] || 30);
-          probTom = data.daily?.precipitation_probability_max?.[1] || 0;
+          const currentCode = data.current?.weather_code ?? 0;
+          temp = Math.round(data.current?.temperature_2m ?? 30);
+          prob = data.daily?.precipitation_probability_max?.[0] ?? 0;
+          probTom = data.daily?.precipitation_probability_max?.[1] ?? 0;
 
-          if (codeToday <= 1) { icon = '☀️'; condition = 'แดดจัด'; }
-          else if (codeToday <= 3) { icon = '⛅'; condition = 'มีเมฆบางส่วน'; }
-          else if (codeToday <= 67) { icon = '🌧️'; condition = 'ฝนตก'; }
-          else if (codeToday <= 82) { icon = '🌦️'; condition = 'ฝนตกหนัก'; }
+          if (currentCode <= 1) { icon = '☀️'; condition = 'แดดจัด'; }
+          else if (currentCode <= 3) { icon = '⛅'; condition = 'มีเมฆบางส่วน'; }
+          else if (currentCode <= 67) { icon = '🌧️'; condition = 'ฝนตก'; }
+          else if (currentCode <= 82) { icon = '🌦️'; condition = 'ฝนตกหนัก'; }
           else { icon = '⛈️'; condition = 'พายุเข้า'; }
 
-          if (codeToday <= 3) {
-            message = (probTom > 50) ? `วันนี้อากาศดี รีบทำรอบกอบโกยเต็มที่เลยครับ! (พรุ่งนี้มีแววฝนตก ${probTom}%)` : 'อากาศเป็นใจ ลูกค้าเข้าต่อเนื่องแน่นอน เตรียมกำลังคนและน้ำยาให้พร้อมลุย!';
+          if (currentCode <= 3) {
+            message = (probTom > 50) ? `ตอนนี้อากาศดี รีบทำรอบกอบโกยเต็มที่เลยครับ! (พรุ่งนี้มีแววฝนตก ${probTom}%)` : 'ตอนนี้ฟ้าเปิด ลูกค้าเข้าต่อเนื่องแน่นอน เตรียมกำลังคนและน้ำยาให้พร้อมลุย!';
             bgClass = 'from-[#FFF7ED] to-[#FFEDD5] border-[#FED7AA]';
             textClass = 'text-[#C2410C]';
             badgeClass = 'bg-[#FED7AA] text-[#C2410C]';
           } else {
-            message = `วันนี้ฟ้าฝนไม่เป็นใจ ลูกค้าน่าจะเงียบ ให้ลูกน้องสลับพักหรือเช็คสต๊อกน้ำยาได้เลยครับ`;
+            message = `ตอนนี้ฟ้าฝนไม่เป็นใจ ลูกค้าน่าจะเงียบ ให้ลูกน้องสลับพักหรือเช็คสต๊อกน้ำยาได้เลยครับ`;
             bgClass = 'from-[#F3F4F6] to-[#E5E7EB] border-[#D1D5DB]';
             textClass = 'text-[#374151]';
             badgeClass = 'bg-[#D1D5DB] text-[#4B5563]';
@@ -111,17 +118,20 @@ export default function Dashboard() {
       }
 
       try {
-        const aqRes = await fetch('https://api.waqi.info/feed/geo:19.91;99.84/?token=demo');
+        // 2. 📍 ดึงข้อมูลฝุ่น US AQI จากดาวเทียม (แม่นกว่า WAQI demo แน่นอน)
+        const aqRes = await fetch(
+          `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=19.91&longitude=99.84&current=us_aqi&timezone=Asia%2FBangkok&_t=${timestamp}`,
+          { cache: 'no-store' }
+        );
         if (aqRes.ok) {
           const aqData = await aqRes.json();
-          if (aqData.status === 'ok') {
-            aqiValue = aqData.data.aqi;
-          }
+          aqiValue = Math.round(aqData.current?.us_aqi ?? 0);
         }
       } catch (err) { 
         console.error("โหลดฝุ่นไม่สำเร็จ แต่ระบบจะไม่พัง:", err) 
       }
 
+      // แปลผลค่า AQI มาตรฐานอเมริกา
       if (aqiValue > 300) {
         aqiStatus = { label: 'วิกฤต', colorClass: 'bg-[#4C0519] text-white border-[#881337]' };
         message += ' 🚨 วิกฤตฝุ่นทะลุพิกัด อันตรายมากๆ ให้ช่างใส่หน้ากาก N95 ตลอดเวลา!';
@@ -130,7 +140,7 @@ export default function Dashboard() {
         message += ' 🚨 ฝุ่นระดับสีม่วง (200+) อันตรายมาก ให้ช่างใส่หน้ากาก N95 ด้วยนะครับ!';
       } else if (aqiValue > 150) {
         aqiStatus = { label: 'อันตราย', colorClass: 'bg-red-100 text-red-700 border-red-300' };
-        message += ' 😷 ปล. วันนี้ฝุ่นแดง อย่าลืมให้ช่างใส่หน้ากากป้องกันตอนทำงานนะครับ';
+        message += ' 😷 ปล. ตอนนี้ฝุ่นเริ่มแดง อย่าลืมให้ช่างใส่หน้ากากป้องกันตอนทำงานนะครับ';
       } else if (aqiValue > 100) {
         aqiStatus = { label: 'เริ่มมีผลกระทบ', colorClass: 'bg-orange-100 text-orange-700 border-orange-300' };
       } else if (aqiValue > 50) {
@@ -144,7 +154,12 @@ export default function Dashboard() {
       });
     }
 
+    // ดึงข้อมูลครั้งแรก
     fetchWeather();
+    
+    // ✅ Auto-refresh: แอบอัปเดตข้อมูลเงียบๆ ทุกๆ 15 นาที
+    const intervalId = setInterval(fetchWeather, 15 * 60 * 1000);
+    return () => clearInterval(intervalId);
   }, [])
 
   useEffect(() => {
@@ -233,7 +248,7 @@ export default function Dashboard() {
         </button>
       </div>
 
-{/* ✅ แถบผู้จัดการร้านอัจฉริยะ (อัปเกรด UI + Glassmorphism) */}
+      {/* ✅ แถบผู้จัดการร้านอัจฉริยะ */}
       {weather && (
         <div className={`card p-4 bg-gradient-to-br ${weather?.bgClass || 'from-gray-50 to-gray-100'} border fade-up delay-1 transition-all duration-500 hover:shadow-md`}>
           
@@ -241,29 +256,29 @@ export default function Dashboard() {
           <div className="flex justify-between items-start mb-4 gap-2">
             
             <div className="flex items-start sm:items-center gap-3">
-              {/* ไอคอนอากาศ (เพิ่ม shadow และขอบบางๆ ให้ดูมีมิติ) */}
+              {/* ไอคอนอากาศ */}
               <div className="w-12 h-12 rounded-full bg-white shadow-sm border border-white/50 flex items-center justify-center text-3xl shrink-0">
                 {weather?.icon || '🌡️'}
               </div>
               
               <div>
                 <p className={`text-[10px] font-black uppercase tracking-widest mb-1 opacity-80 ${weather?.textClass || 'text-gray-700'}`}>
-                  เมืองเชียงราย วันนี้ 📍
+                  เมืองเชียงราย ตอนนี้ 📍
                 </p>
                 
-                {/* ป้ายสภาพอากาศ & AQI (ปรับทรงให้สวยขึ้น) */}
+                {/* ป้ายสภาพอากาศ & AQI */}
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className={`text-xs font-bold px-2 py-1 rounded-[6px] shadow-sm ${weather?.badgeClass || 'bg-gray-200 text-gray-700'}`}>
                     {weather?.condition || '-'} {weather?.temp || 0}°C
                   </span>
                   <span className={`text-[10px] font-bold px-2 py-1 rounded-[6px] border shadow-sm ${weather?.aqiStatus?.colorClass || 'bg-gray-100 text-gray-500'} flex items-center gap-1`}>
-                    <span className="opacity-80">🌫️ AQI:</span> {weather?.aqi > 0 ? weather.aqi : '...'} ({weather?.aqiStatus?.label || '...'})
+                    <span className="opacity-80">🌫️ AQI:</span> {(weather?.aqi ?? 0) > 0 ? weather.aqi : '...'} ({weather?.aqiStatus?.label || '...'})
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* โอกาสฝนตก (จัดใส่กล่องใสให้ดูพรีเมียม) */}
+            {/* โอกาสฝนตก */}
             {(weather?.prob ?? 0) > 0 && (
               <div className="text-right shrink-0 bg-white/40 px-2.5 py-1.5 rounded-lg border border-white/50 shadow-sm">
                 <p className={`text-[9px] font-bold uppercase tracking-wider opacity-70 ${weather?.textClass || 'text-gray-700'}`}>โอกาสฝน</p>
@@ -275,7 +290,7 @@ export default function Dashboard() {
             )}
           </div>
           
-          {/* ส่วนล่าง: ข้อความ AI แนะนำ (ใส่ลูกเล่นกระจกฝ้า Glassmorphism) */}
+          {/* ส่วนล่าง: ข้อความ AI แนะนำ */}
           <div className="bg-white/60 backdrop-blur-md rounded-xl p-3 border border-white/60 flex items-start gap-2.5 shadow-sm">
             <span className={`shrink-0 mt-0.5 ${weather?.textClass || 'text-gray-700'}`}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
