@@ -53,6 +53,8 @@ export const CAR_BRANDS = [
   { id: 'suzuki',     name: 'SUZUKI' },
   { id: 'ford',       name: 'FORD' },
   { id: 'mg',         name: 'MG' },
+  { id: 'chevrolet',  name: 'CHEVROLET' },
+  { id: 'deepal',     name: 'DEEPAL' },
   { id: 'byd',        name: 'BYD' },
   { id: 'ora',        name: 'ORA / GWM' },
   { id: 'neta',       name: 'NETA' },
