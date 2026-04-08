@@ -85,9 +85,12 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
       setPrice(r.price?.toString() ?? '')
       setCustomerName(r.customer_name ?? '')
       setPaymentStatus(r.payment_status ?? 'paid')
-      setSelectedType(r.services[0] ?? '')
-      setSelectedBrand(r.services[1] ?? '')
-      setIncomeNote(r.services[2] ?? '')
+      
+      // ✅ [FIX] เพิ่มเกราะป้องกัน ถ้ารายจ่ายเก่าไม่มี services ให้เป็น [] แทน เพื่อกัน Error "Cannot read properties of undefined"
+      const servicesArray = r.services || []
+      setSelectedType(servicesArray[0] ?? '')
+      setSelectedBrand(servicesArray[1] ?? '')
+      setIncomeNote(servicesArray[2] ?? '')
     } else {
       const e = item as Expense
       setTitle(e.title ?? '')

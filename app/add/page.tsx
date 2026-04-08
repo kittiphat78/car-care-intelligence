@@ -401,7 +401,7 @@ function IncomeForm({ states, setters }: any) {
         )}
       </div>
 
-      {/* Price - ✅ แก้ไขเพิ่ม Inline style บังคับดันตัวเลขหลบ ฿ */}
+      {/* Price */}
       <div className="card p-4">
         <p className="text-xs text-[var(--text-tertiary)] font-semibold uppercase tracking-widest mb-3">ราคา (บาท)</p>
         <div className="relative flex items-center">
@@ -480,7 +480,7 @@ function ExpenseForm({ states, setters }: any) {
   const dragScroll = useDraggableScroll()
   return (
     <div className="space-y-3 fade-up delay-1">
-      {/* Price - ✅ แก้ไขเพิ่ม Inline style บังคับดันตัวเลขหลบ ฿ */}
+      {/* Price */}
       <div className="card p-4">
         <p className="text-xs font-semibold uppercase tracking-widest text-[var(--red)] mb-3">จำนวนเงิน (บาท)</p>
         <div className="relative flex items-center">
@@ -501,13 +501,38 @@ function ExpenseForm({ states, setters }: any) {
         <div className="flex justify-between items-end mb-2">
           <p className="text-xs text-[var(--text-tertiary)] font-semibold uppercase tracking-widest">จ่ายค่าอะไร</p>
         </div>
-        <div {...dragScroll} className="flex gap-2 overflow-x-auto pb-3 mb-2 no-scrollbar cursor-grab active:cursor-grabbing">
-          {EXPENSE_PRESETS.map(preset => (
-            <button key={preset.label} type="button" onClick={() => setters.setTitle(preset.label)} className={`flex-shrink-0 px-3 py-1.5 rounded-[var(--radius-md)] border text-xs font-semibold transition-all ${states.title === preset.label ? 'bg-[var(--red)] text-white border-transparent' : 'bg-white text-[var(--text-secondary)] border-[var(--border)] hover:bg-[var(--red-light)] hover:text-[var(--red)] hover:border-transparent'}`}>
-              <span aria-hidden="true">{preset.icon}</span> {preset.label}
-            </button>
-          ))}
+        
+        {/* 🔥 [UI UPGRADE] เปลี่ยนจากปุ่มข้อความธรรมดา เป็น Pill/Chip Design ที่มีวงกลมล้อม Emoji */}
+        <div {...dragScroll} className="flex gap-2.5 overflow-x-auto pb-4 pt-1 mb-2 no-scrollbar cursor-grab active:cursor-grabbing snap-x snap-mandatory">
+          {EXPENSE_PRESETS.map(preset => {
+            const isSelected = states.title === preset.label;
+            return (
+              <button 
+                key={preset.label} 
+                type="button" 
+                onClick={() => setters.setTitle(preset.label)} 
+                className={`snap-start group relative flex-shrink-0 flex items-center gap-2.5 pr-4 pl-1.5 py-1.5 rounded-full border text-xs font-bold transition-all duration-300 ease-out active:scale-95 select-none
+                  ${isSelected 
+                    ? 'bg-[var(--red)] text-white border-[var(--red)] shadow-[0_4px_12px_rgba(220,38,38,0.25)]' 
+                    : 'bg-white text-[var(--text-secondary)] border-[var(--border)] shadow-sm hover:border-red-200 hover:bg-red-50 hover:text-[var(--red)] hover:shadow-md'
+                  }`}
+              >
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[14px] transition-all duration-300
+                  ${isSelected 
+                    ? 'bg-white/20 shadow-[inset_0_1px_2px_rgba(255,255,255,0.2)]' 
+                    : 'bg-[var(--surface-2)] group-hover:bg-white group-hover:shadow-sm'
+                  }`}
+                >
+                  <span aria-hidden="true" className={`transition-transform duration-300 ${isSelected ? 'scale-110 drop-shadow-sm' : 'group-hover:scale-110'}`}>
+                    {preset.icon}
+                  </span>
+                </div>
+                <span className="tracking-wide">{preset.label}</span>
+              </button>
+            )
+          })}
         </div>
+        
         <input type="text" value={states.title} onChange={e => setters.setTitle(e.target.value)} placeholder="พิมพ์หรือเลือกรายการจากด้านบน..." className="input text-sm" />
       </div>
 

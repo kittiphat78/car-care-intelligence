@@ -27,8 +27,22 @@ const MONTH_OPTIONS = [
   { value: 11, label: 'พฤศจิกายน' }, { value: 12, label: 'ธันวาคม' }
 ]
 
+// 🔥 ฟังก์ชันแปลงข้อความเป็น Emoji สำหรับรายจ่ายโดยเฉพาะ
+const getExpenseIcon = (title: string) => {
+  const t = title || '';
+  if (t.includes('น้ำยา')) return '💧';
+  if (t.includes('แรง')) return '👷';
+  if (t.includes('ข้าว') || t.includes('อาหาร')) return '🍚';
+  if (t.includes('เช่า')) return '🏠';
+  if (t.includes('ไฟ')) return '⚡';
+  if (t.includes('น้ำ')) return '🚰';
+  if (t.includes('ขยะ')) return '🗑️';
+  if (t.includes('อุปกรณ์')) return '🛒';
+  return '💸';
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// 2. Custom Hook (Logic Extraction)
+// 2. Custom Hook
 // ─────────────────────────────────────────────────────────────────────────────
 
 function useHistoryData(selectedYear: number, activeTab: TabType) {
@@ -59,15 +73,15 @@ function useHistoryData(selectedYear: number, activeTab: TabType) {
 
   useEffect(() => { fetchAllData() }, [fetchAllData])
 
-  const handleDelete = async (id: string, onCloseModal: () => void) => {
+  const handleDelete = useCallback(async (id: string, onCloseModal: () => void) => {
     setError('')
     const table = activeTab === 'income' ? 'records' : 'expenses'
     const { error } = await supabase.from(table).delete().eq('id', id)
     if (error) setError(error.message)
     else { onCloseModal(); fetchAllData() }
-  }
+  }, [activeTab, fetchAllData])
 
-  const handleSave = async (updatedFields: Partial<AppRecord & Expense>, id: string, onCloseModal: () => void) => {
+  const handleSave = useCallback(async (updatedFields: Partial<AppRecord & Expense>, id: string, onCloseModal: () => void) => {
     setError('')
     const table = activeTab === 'income' ? 'records' : 'expenses'
     
@@ -95,7 +109,7 @@ function useHistoryData(selectedYear: number, activeTab: TabType) {
     const { error } = await supabase.from(table).update(updateData).eq('id', id)
     if (error) setError(error.message)
     else { onCloseModal(); fetchAllData() }
-  }
+  }, [activeTab, fetchAllData])
 
   return { records, expenses, loading, error, setError, handleDelete, handleSave }
 }
@@ -105,29 +119,28 @@ function useHistoryData(selectedYear: number, activeTab: TabType) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function HistoryPage() {
-  // ── States ──
-  const [activeTab, setActiveTab]       = useState<TabType>('income')
-  const [search, setSearch]             = useState('')
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
+  const [activeTab, setActiveTab]         = useState<TabType>('income')
+  const [search, setSearch]               = useState('')
+  const [selectedYear, setSelectedYear]   = useState(new Date().getFullYear())
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
-  const [filterType, setFilterType]     = useState<FilterType>('all')
-  const [dateFrom, setDateFrom]         = useState('')
-  const [dateTo, setDateTo]             = useState('')
-  const [selectedItem, setSelectedItem] = useState<AppRecord | Expense | null>(null)
-  const [isModalOpen, setIsModalOpen]   = useState(false)
+  const [filterType, setFilterType]       = useState<FilterType>('all')
+  const [dateFrom, setDateFrom]           = useState('')
+  const [dateTo, setDateTo]               = useState('')
+  const [selectedItem, setSelectedItem]   = useState<AppRecord | Expense | null>(null)
+  const [isModalOpen, setIsModalOpen]     = useState(false)
 
-  // ── Logic Hook ──
   const { records, expenses, loading, error, handleDelete, handleSave } = useHistoryData(selectedYear, activeTab)
 
-  // ── Handlers ──
   const switchTab = useCallback((tab: TabType) => {
     setActiveTab(tab)
     setSearch(''); setDateFrom(''); setDateTo(''); setFilterType('all')
   }, [])
 
-  // ── Computations (Optimized with useMemo) ──
-  
-  // 1. กรองตามเดือนที่เลือก
+  const handleItemClick = useCallback((item: AppRecord | Expense) => {
+    setSelectedItem(item)
+    setIsModalOpen(true)
+  }, [])
+
   const currentMonthRecords = useMemo(() => 
     selectedMonth === 0 ? records : records.filter(r => new Date(r.created_at).getMonth() + 1 === selectedMonth)
   , [records, selectedMonth])
@@ -136,7 +149,10 @@ export default function HistoryPage() {
     selectedMonth === 0 ? expenses : expenses.filter(e => new Date(e.created_at).getMonth() + 1 === selectedMonth)
   , [expenses, selectedMonth])
 
-  // 2. คำนวณสรุปยอด
+  const handleExport = useCallback(() => {
+    exportToCSV(activeTab === 'income' ? currentMonthRecords : currentMonthExpenses, `history-${activeTab}-${selectedYear}`)
+  }, [activeTab, currentMonthRecords, currentMonthExpenses, selectedYear])
+
   const summary = useMemo(() => ({
     totalIncome: currentMonthRecords.reduce((s, r) => s + r.price, 0),
     totalExpense: currentMonthExpenses.reduce((s, e) => s + e.amount, 0),
@@ -144,27 +160,31 @@ export default function HistoryPage() {
     totalPolishCount: currentMonthRecords.filter(r => r.type === 'polish').length
   }), [currentMonthRecords, currentMonthExpenses])
 
-  // 3. กรองข้อมูลสำหรับ List (ค้นหา + วันที่)
   const filteredItems = useMemo(() => {
+    const fromTime = dateFrom ? new Date(dateFrom).getTime() : 0
+    const toTime = dateTo ? new Date(dateTo + 'T23:59:59').getTime() : Infinity
+    const searchLower = search.toLowerCase()
+
     if (activeTab === 'income') {
       return currentMonthRecords.filter(r => {
-        const ms  = r.plate.toLowerCase().includes(search.toLowerCase()) || (r.customer_name || '').toLowerCase().includes(search.toLowerCase())
+        const itemTime = new Date(r.created_at).getTime()
+        const ms  = r.plate.toLowerCase().includes(searchLower) || (r.customer_name || '').toLowerCase().includes(searchLower)
         const mt  = filterType === 'all' || r.type === filterType
-        const mf  = !dateFrom || new Date(r.created_at) >= new Date(dateFrom)
-        const mto = !dateTo   || new Date(r.created_at) <= new Date(dateTo + 'T23:59:59')
+        const mf  = !dateFrom || itemTime >= fromTime
+        const mto = !dateTo   || itemTime <= toTime
         return ms && mt && mf && mto
       })
     } else {
       return currentMonthExpenses.filter(e => {
-        const ms  = e.title.toLowerCase().includes(search.toLowerCase())
-        const mf  = !dateFrom || new Date(e.created_at) >= new Date(dateFrom)
-        const mto = !dateTo   || new Date(e.created_at) <= new Date(dateTo + 'T23:59:59')
+        const itemTime = new Date(e.created_at).getTime()
+        const ms  = e.title.toLowerCase().includes(searchLower)
+        const mf  = !dateFrom || itemTime >= fromTime
+        const mto = !dateTo   || itemTime <= toTime
         return ms && mf && mto
       })
     }
   }, [activeTab, currentMonthRecords, currentMonthExpenses, search, filterType, dateFrom, dateTo])
 
-  // 4. จัดกลุ่มตามวันที่
   const grouped = useMemo(() => {
     return filteredItems.reduce((acc, item) => {
       const date = new Date(item.created_at).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
@@ -299,12 +319,10 @@ function FilterSection({ activeTab, search, setSearch, dateFrom, setDateFrom, da
   return (
     <section className="card p-3.5 space-y-3 fade-up delay-2">
       <div className="relative">
-        {/* ✅ เติม pointer-events-none เพื่อไม่ให้บังการคลิกเมาส์ */}
         <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] pointer-events-none" width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
           <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.3"/>
           <path d="M10.5 10.5l3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
         </svg>
-        {/* ✅ ใช้ style={{ paddingLeft: '2.5rem' }} บังคับดันข้อความให้หลบแว่นขยาย */}
         <input 
           type="text" 
           value={search} 
@@ -381,9 +399,10 @@ function HistoryList({ loading, grouped, activeTab, onItemClick }: any) {
                       <div onClick={() => onItemClick(item)} className="card flex items-center justify-between px-4 py-3.5 cursor-pointer hover:shadow-[var(--shadow-md)] transition-shadow active:scale-[0.985]">
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 rounded-[10px] bg-[var(--red-light)] flex items-center justify-center shrink-0">
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                              <path d="M8 3v10M3 8h10" stroke="#DC2626" strokeWidth="1.5" strokeLinecap="round"/>
-                            </svg>
+                            {/* 🔥 [FIX] แสดง Emoji ไอคอนตรงนี้แทน SVG รูปบวก */}
+                            <span className="text-[1.15rem] leading-none" aria-hidden="true">
+                              {getExpenseIcon(item.title)}
+                            </span>
                           </div>
                           <div>
                             <p className="text-sm font-semibold text-[var(--text-primary)] leading-tight">{item.title}</p>
