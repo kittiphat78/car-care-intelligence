@@ -359,25 +359,72 @@ function IncomeForm({ states, setters }: any) {
 
   return (
     <div className="space-y-3 fade-up delay-1">
-      {/* Service type */}
-      <div className="grid grid-cols-2 gap-2.5">
-        <button type="button" onClick={() => setType('wash')} className={`card flex items-center gap-3 p-4 transition-all ${type === 'wash' ? 'border-[var(--accent)] bg-[var(--accent-light)]' : 'hover:shadow-[var(--shadow-md)]'}`}>
-          <div className={`w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 ${type === 'wash' ? 'bg-[var(--accent)] text-white' : 'bg-[var(--surface-2)] text-[var(--text-tertiary)]'}`}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M7 17a5 5 0 0 1 10 0"/><path d="M5 17H3a1 1 0 0 1-1-1V9l3-4h14l3 4v7a1 1 0 0 1-1 1h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/></svg>
+      
+      {/* 🔥 [UI UPGRADE] เปลี่ยนไอคอนปุ่ม ล้างรถ/ขัดสี ให้ดู Premium ยิ่งขึ้น */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* ── ปุ่มล้างรถ ── */}
+        <button 
+          type="button" 
+          onClick={() => setType('wash')} 
+          className={`relative flex items-center gap-3.5 p-3.5 rounded-[var(--radius-xl)] border-2 transition-all duration-300 ease-out active:scale-[0.97] overflow-hidden
+            ${type === 'wash' 
+              ? 'border-[var(--accent)] bg-blue-50 shadow-[0_4px_20px_-6px_rgba(59,130,246,0.3)]' 
+              : 'border-[var(--border)] bg-white hover:border-blue-200 hover:shadow-sm'
+            }`}
+        >
+          <div className={`w-11 h-11 rounded-[12px] flex items-center justify-center shrink-0 transition-all duration-300 z-10
+            ${type === 'wash' 
+              ? 'bg-[var(--accent)] text-white shadow-[0_4px_12px_rgba(59,130,246,0.4)] scale-105' 
+              : 'bg-[var(--surface-2)] text-[var(--text-tertiary)]'
+            }`}
+          >
+            {/* 🚗 ไอคอนรูปรถแบบใหม่ (ด้านข้าง) พร้อมหยดน้ำ */}
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a2 2 0 0 0-1.6-.8H9.3a2 2 0 0 0-1.6.8L5 11l-5.16.86a1 1 0 0 0-.84.99V16h3" />
+              <circle cx="6.5" cy="16.5" r="2.5" />
+              <circle cx="17.5" cy="16.5" r="2.5" />
+              <path d="M11 3.52s-2.5 3.5-2.5 5.48a2.5 2.5 0 0 0 5 0c0-1.98-2.5-5.48-2.5-5.48z" fill="currentColor" stroke="none" />
+            </svg>
           </div>
-          <div className="text-left">
-            <p className={`text-sm font-semibold ${type === 'wash' ? 'text-[var(--accent)]' : 'text-[var(--text-primary)]'}`}>ล้างรถ</p>
-            <p className="text-[10px] text-[var(--text-tertiary)]">ทั่วไป</p>
+          <div className="text-left z-10">
+            <p className={`text-[15px] font-bold tracking-tight leading-tight transition-colors ${type === 'wash' ? 'text-[var(--accent)]' : 'text-[var(--text-primary)]'}`}>ล้างรถ</p>
+            <p className="text-[11px] font-medium text-[var(--text-tertiary)] mt-0.5">บริการทั่วไป</p>
           </div>
+          {/* แสงเรืองรองด้านหลังเวลาเลือก */}
+          {type === 'wash' && <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-blue-100 rounded-full blur-2xl opacity-60 pointer-events-none" />}
         </button>
-        <button type="button" onClick={() => setType('polish')} className={`card flex items-center gap-3 p-4 transition-all ${type === 'polish' ? 'border-[var(--amber)] bg-[var(--amber-light)]' : 'hover:shadow-[var(--shadow-md)]'}`}>
-          <div className={`w-9 h-9 rounded-[10px] flex items-center justify-center shrink-0 ${type === 'polish' ? 'bg-[var(--amber)] text-white' : 'bg-[var(--surface-2)] text-[var(--text-tertiary)]'}`}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.8H20l-4.9 3.6 1.9 5.8L12 14.6l-5 3.6 1.9-5.8L4 8.8h6.1z"/></svg>
+
+        {/* ── ปุ่มขัดสี ── */}
+        <button 
+          type="button" 
+          onClick={() => setType('polish')} 
+          className={`relative flex items-center gap-3.5 p-3.5 rounded-[var(--radius-xl)] border-2 transition-all duration-300 ease-out active:scale-[0.97] overflow-hidden
+            ${type === 'polish' 
+              ? 'border-[var(--amber)] bg-amber-50 shadow-[0_4px_20px_-6px_rgba(245,158,11,0.3)]' 
+              : 'border-[var(--border)] bg-white hover:border-amber-200 hover:shadow-sm'
+            }`}
+        >
+          <div className={`w-11 h-11 rounded-[12px] flex items-center justify-center shrink-0 transition-all duration-300 z-10
+            ${type === 'polish' 
+              ? 'bg-[var(--amber)] text-white shadow-[0_4px_12px_rgba(245,158,11,0.4)] scale-105' 
+              : 'bg-[var(--surface-2)] text-[var(--text-tertiary)]'
+            }`}
+          >
+            {/* 🚗 ไอคอนรูปรถแบบใหม่ (ด้านข้าง) พร้อมประกายวิบวับ */}
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a2 2 0 0 0-1.6-.8H9.3a2 2 0 0 0-1.6.8L5 11l-5.16.86a1 1 0 0 0-.84.99V16h3" />
+              <circle cx="6.5" cy="16.5" r="2.5" />
+              <circle cx="17.5" cy="16.5" r="2.5" />
+              <path d="M19 8l-1.5 3-3 1.5 3 1.5 1.5 3 1.5-3 3-1.5-3-1.5z" fill="currentColor" stroke="none"/>
+              <path d="M7 5l-.75 1.5-1.5 .75 1.5 .75 .75 1.5 .75-1.5 1.5-.75-1.5-.75z" fill="currentColor" stroke="none"/>
+            </svg>
           </div>
-          <div className="text-left">
-            <p className={`text-sm font-semibold ${type === 'polish' ? 'text-[var(--amber)]' : 'text-[var(--text-primary)]'}`}>ขัดสี</p>
-            <p className="text-[10px] text-[var(--text-tertiary)]">เต็นท์รถ</p>
+          <div className="text-left z-10">
+            <p className={`text-[15px] font-bold tracking-tight leading-tight transition-colors ${type === 'polish' ? 'text-[var(--amber)]' : 'text-[var(--text-primary)]'}`}>ขัดสี</p>
+            <p className="text-[11px] font-medium text-[var(--text-tertiary)] mt-0.5">เต็นท์รถ</p>
           </div>
+          {/* แสงเรืองรองด้านหลังเวลาเลือก */}
+          {type === 'polish' && <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-amber-100 rounded-full blur-2xl opacity-60 pointer-events-none" />}
         </button>
       </div>
 
@@ -502,7 +549,6 @@ function ExpenseForm({ states, setters }: any) {
           <p className="text-xs text-[var(--text-tertiary)] font-semibold uppercase tracking-widest">จ่ายค่าอะไร</p>
         </div>
         
-        {/* 🔥 [UI UPGRADE] เปลี่ยนจากปุ่มข้อความธรรมดา เป็น Pill/Chip Design ที่มีวงกลมล้อม Emoji */}
         <div {...dragScroll} className="flex gap-2.5 overflow-x-auto pb-4 pt-1 mb-2 no-scrollbar cursor-grab active:cursor-grabbing snap-x snap-mandatory">
           {EXPENSE_PRESETS.map(preset => {
             const isSelected = states.title === preset.label;
