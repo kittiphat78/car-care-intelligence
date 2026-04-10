@@ -163,6 +163,12 @@ export default function AddPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  // ✅ เพิ่มฟังก์ชันล้างฟอร์มของรายจ่าย
+  const resetExpenseForm = () => {
+    setExpenseTitle(''); setExpenseAmount(''); setExpenseNote('');
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   const submitIncome = async (isBulk: boolean) => {
     if (!plate.trim()) return setError('กรุณากรอกป้ายทะเบียน')
     if (!selectedType) return setError('กรุณาเลือกประเภทรถ')
@@ -209,7 +215,8 @@ export default function AddPage() {
     }
   }
 
-  const submitExpense = async () => {
+  // ✅ รองรับ parameter isBulk สำหรับบันทึกแล้วทำต่อ
+  const submitExpense = async (isBulk: boolean) => {
     if (!expenseTitle.trim()) return setError('กรุณาระบุรายการจ่าย')
     if (!expenseAmount || parseInt(expenseAmount, 10) <= 0) return setError('กรุณากรอกจำนวนเงิน')
 
@@ -223,15 +230,22 @@ export default function AddPage() {
     })
 
     if (error) throw error
-    router.push('/')
-    router.refresh()
+
+    if (isBulk) {
+      setSuccessMsg(`บันทึกรายจ่าย ${expenseTitle.trim()} สำเร็จ`)
+      resetExpenseForm()
+      setTimeout(() => setSuccessMsg(''), 4000)
+    } else {
+      router.push('/')
+      router.refresh()
+    }
   }
 
   const handleSubmit = async (isBulk: boolean = false) => {
     setError(''); setSuccessMsg(''); setSaving(true)
     try {
       if (formMode === 'income') await submitIncome(isBulk)
-      else await submitExpense()
+      else await submitExpense(isBulk) // ✅ ส่ง isBulk ไปด้วย
     } catch (e: any) {
       setError('บันทึกไม่สำเร็จ: ' + (e.message || 'ลองใหม่อีกครั้ง'))
     } finally {
@@ -419,7 +433,6 @@ function IncomeForm({ states, setters }: any) {
         </button>
       </div>
 
-      {/* 🔥 [UI FIX] Plate & Price Row - ลดความใหญ่เทอะทะ จัดสมดุลให้เป๊ะ */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         
         <Card className="!bg-slate-50/50">
@@ -433,7 +446,6 @@ function IncomeForm({ states, setters }: any) {
               placeholder="กข 1234" 
               className="relative w-full text-center text-2xl font-black tracking-widest py-3.5 bg-white border-2 border-slate-800 rounded-xl outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/20 transition-all uppercase placeholder:font-medium placeholder:text-slate-300" 
             />
-            {/* Screws mockup */}
             <div className="absolute top-2.5 left-2.5 w-1.5 h-1.5 rounded-full bg-slate-800/20" />
             <div className="absolute top-2.5 right-2.5 w-1.5 h-1.5 rounded-full bg-slate-800/20" />
           </div>
@@ -465,7 +477,6 @@ function IncomeForm({ states, setters }: any) {
         </Card>
       </div>
 
-      {/* Car Type */}
       <Card>
         <SectionLabel>ประเภทรถ</SectionLabel>
         <div className="grid grid-cols-3 gap-2.5 mt-2">
@@ -487,7 +498,6 @@ function IncomeForm({ states, setters }: any) {
         </div>
       </Card>
 
-      {/* Car Brand (Horizontal Scroll) */}
       <Card>
         <SectionLabel>ยี่ห้อรถ</SectionLabel>
         <div {...dragScroll} className="flex gap-2.5 overflow-x-auto pb-2 mt-2 pt-1 no-scrollbar cursor-grab active:cursor-grabbing snap-x snap-mandatory">
@@ -508,7 +518,6 @@ function IncomeForm({ states, setters }: any) {
         </div>
       </Card>
 
-      {/* Payment Status */}
       <Card>
         <SectionLabel>สถานะการชำระ</SectionLabel>
         <div className="flex gap-3 mt-2">
@@ -539,7 +548,6 @@ function IncomeForm({ states, setters }: any) {
         </div>
       </Card>
 
-      {/* Optional Details: Name & Note */}
       <Card className="space-y-4">
         <div>
           <SectionLabel>ชื่อลูกค้า / เต็นท์รถ (ถ้ามี)</SectionLabel>
@@ -577,18 +585,17 @@ function ExpenseForm({ states, setters }: any) {
   return (
     <div className="space-y-4 animate-in fade-in duration-300">
       
-      {/* Price */}
       <Card>
         <SectionLabel>จำนวนเงินที่จ่าย (บาท)</SectionLabel>
-        <div className="relative flex items-center bg-rose-50/30 rounded-xl border-2 border-transparent focus-within:border-rose-500 focus-within:bg-white transition-all overflow-hidden mt-2">
-          <span className="absolute left-4 text-xl font-bold text-rose-300 select-none">฿</span>
+        <div className="relative flex items-center bg-rose-50/30 rounded-xl border-2 border-transparent focus-within:border-rose-500 focus-within:bg-white transition-all overflow-hidden mt-2 h-[64px]">
+          <span className="absolute left-4 text-lg font-bold text-rose-300 select-none">฿</span>
           <input 
             type="text" 
             inputMode="numeric" 
             value={states.amount} 
             onChange={e => setters.setAmount(e.target.value.replace(/\D/g, ''))} 
             placeholder="0" 
-            className="w-full text-right text-3xl font-black text-rose-600 py-3 pr-5 bg-transparent outline-none placeholder:text-rose-200" 
+            className="w-full text-right text-2xl font-black text-rose-600 py-3.5 pr-5 bg-transparent outline-none placeholder:text-rose-200" 
             style={{ paddingLeft: '2.5rem' }}
           />
         </div>
@@ -597,7 +604,6 @@ function ExpenseForm({ states, setters }: any) {
       <Card>
         <SectionLabel>จ่ายค่าอะไร</SectionLabel>
         
-        {/* Presets (Pill Design) */}
         <div {...dragScroll} className="flex gap-2.5 overflow-x-auto pb-4 pt-2 mb-2 no-scrollbar cursor-grab active:cursor-grabbing snap-x snap-mandatory mt-1">
           {EXPENSE_PRESETS.map(preset => {
             const isSelected = states.title === preset.label;
@@ -654,20 +660,20 @@ function ExpenseForm({ states, setters }: any) {
 function ActionButtons({ mode, saving, onSubmit }: { mode: FormMode, saving: boolean, onSubmit: (isBulk: boolean) => void }) {
   return (
     <div className="flex gap-3">
-      {mode === 'income' && (
-        <button 
-          onClick={() => onSubmit(true)} 
-          disabled={saving} 
-          className="flex-1 flex flex-col items-center justify-center gap-1 py-3.5 bg-white border-2 border-slate-200 rounded-2xl text-[13px] font-bold text-slate-600 hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100"
-        >
-          {saving ? (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="animate-spin text-slate-400"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-          ) : (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14m-7-7h14"/></svg>
-          )}
-          บันทึกแล้วทำต่อ
-        </button>
-      )}
+      {/* ✅ ลบเงื่อนไข mode === 'income' ออก เพื่อให้ปุ่มนี้แสดงในทุกหน้า (รายรับ และ รายจ่าย) */}
+      <button 
+        onClick={() => onSubmit(true)} 
+        disabled={saving} 
+        className="flex-1 flex flex-col items-center justify-center gap-1 py-3.5 bg-white border-2 border-slate-200 rounded-2xl text-[13px] font-bold text-slate-600 hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100"
+      >
+        {saving ? (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="animate-spin text-slate-400"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+        ) : (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14m-7-7h14"/></svg>
+        )}
+        บันทึกแล้วทำต่อ
+      </button>
+
       <button 
         onClick={() => onSubmit(false)} 
         disabled={saving} 
