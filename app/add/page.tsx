@@ -102,29 +102,6 @@ function useCustomerVisitCount(plate: string) {
   return visitCount
 }
 
-function useDraggableScroll() {
-  const ref = useRef<HTMLDivElement>(null)
-  const [isDown, setIsDown] = useState(false)
-  const [startX, setStartX] = useState(0)
-  const [scrollLeftVal, setScrollLeftVal] = useState(0)
-
-  const onMouseDown = (e: React.MouseEvent) => {
-    setIsDown(true)
-    setStartX(e.pageX - (ref.current?.offsetLeft || 0))
-    setScrollLeftVal(ref.current?.scrollLeft || 0)
-  }
-  const onMouseLeave = () => setIsDown(false)
-  const onMouseUp = () => setIsDown(false)
-  const onMouseMove = (e: React.MouseEvent) => {
-    if (!isDown) return
-    e.preventDefault()
-    const x = e.pageX - (ref.current?.offsetLeft || 0)
-    if (ref.current) ref.current.scrollLeft = scrollLeftVal - (x - startX) * 2
-  }
-
-  return { ref, onMouseDown, onMouseLeave, onMouseUp, onMouseMove }
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // 3. Main Component
 // ─────────────────────────────────────────────────────────────────────────────
@@ -254,8 +231,23 @@ export default function AddPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-slate-50/50 pb-20 font-sans">
-      <div className="max-w-xl mx-auto px-4 pt-6 space-y-5">
+    <div className="min-h-dvh bg-[var(--bg)] pb-4">
+
+      {/* ── Sticky Header ── */}
+      <div className="sticky top-0 z-30 glass border-b border-[var(--border)]">
+        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+          <button 
+            onClick={() => router.push('/')} 
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--surface-2)] transition-colors active:scale-95"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <h1 className="text-lg font-extrabold text-[var(--text-primary)] tracking-tight">บันทึกรายการ</h1>
+          <div className="w-10" /> {/* spacer */}
+        </div>
+      </div>
+      
+      <div className="max-w-2xl mx-auto px-4 pt-5 space-y-5">
         
         <ModeToggle 
           mode={formMode} 
@@ -278,54 +270,59 @@ export default function AddPage() {
           />
         )}
 
-        <div className="pt-2 pb-6">
-          <ErrorBanner error={error} />
+        <ErrorBanner error={error} />
+
+      </div>
+
+      {/* ── Sticky Bottom Actions ── */}
+      <div className="sticky bottom-0 z-30 glass border-t border-[var(--border)] safe-bottom mt-6">
+        <div className="max-w-2xl mx-auto px-4 py-3">
           <ActionButtons 
             mode={formMode} 
             saving={saving} 
             onSubmit={handleSubmit} 
           />
         </div>
-
       </div>
+
     </div>
   )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 4. Sub-Components (Clean UI Architecture)
+// 4. Sub-Components
 // ─────────────────────────────────────────────────────────────────────────────
 
 const SectionLabel = ({ children }: { children: React.ReactNode }) => (
-  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2.5">
+  <label className="block text-[12px] font-bold text-[var(--text-tertiary)] uppercase tracking-widest mb-2.5">
     {children}
   </label>
 )
 
 const Card = ({ children, className = '' }: { children: React.ReactNode, className?: string }) => (
-  <div className={`bg-white rounded-2xl p-5 shadow-[0_2px_12px_rgba(0,0,0,0.03)] border border-slate-100/80 ${className}`}>
+  <div className={`bg-white rounded-[var(--radius-xl)] p-5 shadow-[var(--shadow-sm)] border border-[var(--border)] ${className}`}>
     {children}
   </div>
 )
 
 const ModeToggle = memo(function ModeToggle({ mode, onChange }: { mode: FormMode, onChange: (m: FormMode) => void }) {
   return (
-    <div className="flex bg-slate-200/60 p-1.5 rounded-[18px] gap-1 relative z-10 backdrop-blur-sm">
+    <div className="flex bg-[var(--surface-2)] p-1.5 rounded-2xl gap-1.5 relative z-10">
       <button
         onClick={() => onChange('income')}
-        className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all duration-250 ease-out active:scale-[0.98] ${
-          mode === 'income' ? 'bg-white text-blue-600 shadow-[0_2px_8px_rgba(0,0,0,0.06)]' : 'text-slate-500 hover:text-slate-700'
+        className={`flex-1 py-3.5 rounded-xl text-base font-bold transition-all duration-250 ease-out active:scale-[0.98] ${
+          mode === 'income' ? 'bg-white text-[var(--accent)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
         }`}
       >
-        รายรับ
+        💰 รายรับ
       </button>
       <button
         onClick={() => onChange('expense')}
-        className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all duration-250 ease-out active:scale-[0.98] ${
-          mode === 'expense' ? 'bg-white text-red-600 shadow-[0_2px_8px_rgba(0,0,0,0.06)]' : 'text-slate-500 hover:text-slate-700'
+        className={`flex-1 py-3.5 rounded-xl text-base font-bold transition-all duration-250 ease-out active:scale-[0.98] ${
+          mode === 'expense' ? 'bg-white text-[var(--red)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
         }`}
       >
-        รายจ่าย
+        💸 รายจ่าย
       </button>
     </div>
   )
@@ -334,11 +331,11 @@ const ModeToggle = memo(function ModeToggle({ mode, onChange }: { mode: FormMode
 const SuccessBanner = memo(function SuccessBanner({ message }: { message: string }) {
   if (!message) return null
   return (
-    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] w-fit max-w-[90vw] px-5 py-3.5 bg-emerald-500/95 backdrop-blur-md rounded-2xl shadow-xl shadow-emerald-500/20 text-white flex items-center gap-3 animate-in slide-in-from-top-4 fade-in duration-300">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] w-fit max-w-[90vw] px-6 py-4 bg-[var(--green)] rounded-2xl shadow-xl shadow-emerald-500/20 text-white flex items-center gap-3 slide-down">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
         <polyline points="20 6 9 17 4 12"></polyline>
       </svg>
-      <span className="text-sm font-bold tracking-wide">{message}</span>
+      <span className="text-base font-bold">{message}</span>
     </div>
   )
 })
@@ -346,7 +343,7 @@ const SuccessBanner = memo(function SuccessBanner({ message }: { message: string
 const ErrorBanner = memo(function ErrorBanner({ error }: { error: string }) {
   if (!error) return null
   return (
-    <div className="mb-4 w-full p-3.5 rounded-xl bg-red-50 border border-red-100 text-red-600 text-xs font-bold text-center animate-in slide-in-from-bottom-2 fade-in" role="alert">
+    <div className="w-full p-4 rounded-[var(--radius-md)] bg-[var(--red-light)] border-2 border-red-200 text-[var(--red)] text-sm font-bold text-center fade-up" role="alert">
       🚨 {error}
     </div>
   )
@@ -355,18 +352,18 @@ const ErrorBanner = memo(function ErrorBanner({ error }: { error: string }) {
 const DatePicker = memo(function DatePicker({ date, onChange }: { date: string, onChange: (d: string) => void }) {
   const ref = useRef<HTMLInputElement>(null)
   return (
-    <Card className="flex items-center justify-between cursor-pointer group hover:border-blue-200 transition-colors" >
+    <Card className="flex items-center justify-between cursor-pointer group hover:border-[var(--accent)] hover:border-opacity-30 transition-colors">
       <div onClick={() => ref.current?.showPicker()} className="flex-1">
         <SectionLabel>วันที่ทำรายการ</SectionLabel>
-        <span className="text-2xl font-black text-slate-800 tracking-tight">
+        <span className="text-2xl font-extrabold text-[var(--text-primary)] tracking-tight">
           {displayThaiDate(date)}
         </span>
       </div>
       <div 
         onClick={() => ref.current?.showPicker()}
-        className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors"
+        className="w-12 h-12 rounded-2xl bg-[var(--surface-2)] flex items-center justify-center text-[var(--text-tertiary)] group-hover:bg-[var(--accent-light)] group-hover:text-[var(--accent)] transition-colors"
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
       </div>
       <input ref={ref} type="date" value={date} onChange={e => onChange(e.target.value)} className="absolute opacity-0 w-0 h-0 pointer-events-none" />
     </Card>
@@ -376,23 +373,31 @@ const DatePicker = memo(function DatePicker({ date, onChange }: { date: string, 
 function IncomeForm({ states, setters }: any) {
   const { type, plate, selectedType, selectedBrand, customerName, paymentStatus, note, price, visitCount, savedCustomers } = states
   const { setType, setPlate, setSelectedType, setSelectedBrand, setCustomerName, setPaymentStatus, setNote, setPrice } = setters
-  const dragScroll = useDraggableScroll()
+  const [brandSearch, setBrandSearch] = useState('')
+  const [showAllBrands, setShowAllBrands] = useState(false)
+  const [showExtra, setShowExtra] = useState(false)
+
+  const filteredBrands = CAR_BRANDS.filter(b => 
+    b.name.toLowerCase().includes(brandSearch.toLowerCase())
+  )
+  const displayedBrands = showAllBrands ? filteredBrands : filteredBrands.slice(0, 8)
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-300">
+    <div className="space-y-4 fade-up">
       
+      {/* ── Service Type ── */}
       <div className="grid grid-cols-2 gap-3">
         <button 
           type="button" 
           onClick={() => setType('wash')} 
-          className={`relative flex items-center gap-3.5 p-4 rounded-[20px] border-2 transition-all duration-300 ease-out active:scale-[0.97] overflow-hidden
+          className={`relative flex items-center gap-3.5 p-4 rounded-[var(--radius-xl)] border-2 transition-all duration-300 ease-out active:scale-[0.97] overflow-hidden
             ${type === 'wash' 
-              ? 'border-blue-500 bg-blue-50/50 shadow-[0_4px_20px_-6px_rgba(59,130,246,0.25)]' 
-              : 'border-slate-100 bg-white hover:border-blue-200 hover:shadow-sm'
+              ? 'border-[var(--accent)] bg-[var(--accent-light)] shadow-[0_4px_20px_-6px_rgba(37,99,235,0.2)]' 
+              : 'border-[var(--border)] bg-white hover:border-blue-200 hover:shadow-sm'
             }`}
         >
           <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-300 z-10
-            ${type === 'wash' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 scale-105' : 'bg-slate-50 text-slate-400'}`}
+            ${type === 'wash' ? 'bg-[var(--accent)] text-white shadow-lg shadow-blue-500/30 scale-105' : 'bg-[var(--surface-2)] text-[var(--text-tertiary)]'}`}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a2 2 0 0 0-1.6-.8H9.3a2 2 0 0 0-1.6.8L5 11l-5.16.86a1 1 0 0 0-.84.99V16h3" />
@@ -402,22 +407,22 @@ function IncomeForm({ states, setters }: any) {
             </svg>
           </div>
           <div className="text-left z-10">
-            <p className={`text-base font-bold tracking-tight leading-tight transition-colors ${type === 'wash' ? 'text-blue-700' : 'text-slate-700'}`}>ล้างรถ</p>
-            <p className="text-xs font-medium text-slate-400 mt-0.5">บริการทั่วไป</p>
+            <p className={`text-base font-extrabold tracking-tight leading-tight transition-colors ${type === 'wash' ? 'text-[var(--accent)]' : 'text-[var(--text-primary)]'}`}>ล้างรถ</p>
+            <p className="text-xs font-medium text-[var(--text-tertiary)] mt-0.5">บริการทั่วไป</p>
           </div>
         </button>
 
         <button 
           type="button" 
           onClick={() => setType('polish')} 
-          className={`relative flex items-center gap-3.5 p-4 rounded-[20px] border-2 transition-all duration-300 ease-out active:scale-[0.97] overflow-hidden
+          className={`relative flex items-center gap-3.5 p-4 rounded-[var(--radius-xl)] border-2 transition-all duration-300 ease-out active:scale-[0.97] overflow-hidden
             ${type === 'polish' 
-              ? 'border-amber-500 bg-amber-50/50 shadow-[0_4px_20px_-6px_rgba(245,158,11,0.25)]' 
-              : 'border-slate-100 bg-white hover:border-amber-200 hover:shadow-sm'
+              ? 'border-[var(--amber)] bg-[var(--amber-light)] shadow-[0_4px_20px_-6px_rgba(217,119,6,0.2)]' 
+              : 'border-[var(--border)] bg-white hover:border-amber-200 hover:shadow-sm'
             }`}
         >
           <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-300 z-10
-            ${type === 'polish' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30 scale-105' : 'bg-slate-50 text-slate-400'}`}
+            ${type === 'polish' ? 'bg-[var(--amber)] text-white shadow-lg shadow-amber-500/30 scale-105' : 'bg-[var(--surface-2)] text-[var(--text-tertiary)]'}`}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a2 2 0 0 0-1.6-.8H9.3a2 2 0 0 0-1.6.8L5 11l-5.16.86a1 1 0 0 0-.84.99V16h3" />
@@ -427,34 +432,34 @@ function IncomeForm({ states, setters }: any) {
             </svg>
           </div>
           <div className="text-left z-10">
-            <p className={`text-base font-bold tracking-tight leading-tight transition-colors ${type === 'polish' ? 'text-amber-600' : 'text-slate-700'}`}>ขัดสี</p>
-            <p className="text-xs font-medium text-slate-400 mt-0.5">เต็นท์รถ</p>
+            <p className={`text-base font-extrabold tracking-tight leading-tight transition-colors ${type === 'polish' ? 'text-[var(--amber)]' : 'text-[var(--text-primary)]'}`}>ขัดสี</p>
+            <p className="text-xs font-medium text-[var(--text-tertiary)] mt-0.5">เต็นท์รถ</p>
           </div>
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        
-        <Card className="!bg-slate-50/50">
+      {/* ── Plate + Price ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Card>
           <SectionLabel>ป้ายทะเบียน</SectionLabel>
           <div className="relative mt-2">
-            <div className="absolute inset-0 bg-gradient-to-b from-slate-200 to-slate-300 rounded-xl transform translate-y-[3px]"></div>
+            <div className="absolute inset-0 bg-gradient-to-b from-[var(--text-primary)] to-[#2D2923] rounded-xl transform translate-y-[3px] opacity-20"></div>
             <input 
               type="text" 
               value={plate} 
               onChange={e => setPlate(e.target.value.toUpperCase())} 
               placeholder="กข 1234" 
-              className="relative w-full text-center text-2xl font-black tracking-widest py-3.5 bg-white border-2 border-slate-800 rounded-xl outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-500/20 transition-all uppercase placeholder:font-medium placeholder:text-slate-300" 
+              className="relative w-full text-center text-2xl font-extrabold tracking-widest py-4 bg-white border-2 border-[var(--text-primary)] rounded-xl outline-none focus:border-[var(--accent)] focus:ring-4 focus:ring-blue-500/15 transition-all uppercase placeholder:font-medium placeholder:text-[var(--text-tertiary)] placeholder:tracking-normal" 
             />
-            <div className="absolute top-2.5 left-2.5 w-1.5 h-1.5 rounded-full bg-slate-800/20" />
-            <div className="absolute top-2.5 right-2.5 w-1.5 h-1.5 rounded-full bg-slate-800/20" />
+            <div className="absolute top-3 left-3 w-1.5 h-1.5 rounded-full bg-[var(--text-primary)] opacity-20" />
+            <div className="absolute top-3 right-3 w-1.5 h-1.5 rounded-full bg-[var(--text-primary)] opacity-20" />
           </div>
           
           {visitCount > 0 && (
-            <div className="mt-3 bg-amber-100/80 border border-amber-200 rounded-xl p-2.5 flex items-center justify-center gap-2.5 animate-in zoom-in-95 duration-300">
+            <div className="mt-3 bg-[var(--amber-light)] border-2 border-amber-200 rounded-xl p-3 flex items-center justify-center gap-2.5 scale-in">
               <span className="text-lg leading-none" aria-hidden="true">🎉</span>
-              <p className="text-[13px] font-bold text-amber-700">
-                ลูกค้าประจำ! เข้ามาครั้งที่ <span className="text-base text-amber-600 bg-white px-1.5 py-0.5 rounded-md shadow-sm ml-0.5">{visitCount + 1}</span>
+              <p className="text-[14px] font-bold text-[var(--amber)]">
+                ลูกค้าประจำ! เข้ามาครั้งที่ <span className="text-base text-amber-600 bg-white px-2 py-0.5 rounded-lg shadow-sm ml-0.5 font-extrabold">{visitCount + 1}</span>
               </p>
             </div>
           )}
@@ -462,21 +467,22 @@ function IncomeForm({ states, setters }: any) {
 
         <Card>
           <SectionLabel>ราคา (บาท)</SectionLabel>
-          <div className="relative flex items-center bg-slate-50 rounded-xl border-2 border-transparent focus-within:border-blue-500 focus-within:bg-white transition-all overflow-hidden mt-2 h-[64px]">
-            <span className="absolute left-4 text-lg font-bold text-slate-400 select-none">฿</span>
+          <div className="relative flex items-center bg-[var(--surface-2)] rounded-xl border-2 border-transparent focus-within:border-[var(--accent)] focus-within:bg-white transition-all overflow-hidden mt-2 h-[64px]">
+            <span className="absolute left-4 text-xl font-bold text-[var(--text-tertiary)] select-none">฿</span>
             <input 
               type="text" 
               inputMode="numeric" 
               value={price} 
               onChange={e => setPrice(e.target.value.replace(/\D/g, ''))} 
               placeholder="0" 
-              className="w-full text-right text-2xl font-black text-slate-800 py-3.5 pr-5 bg-transparent outline-none placeholder:text-slate-200" 
+              className="w-full text-right text-2xl font-extrabold text-[var(--text-primary)] py-3.5 pr-5 bg-transparent outline-none placeholder:text-[var(--text-tertiary)] placeholder:opacity-30" 
               style={{ paddingLeft: '2.5rem' }} 
             />
           </div>
         </Card>
       </div>
 
+      {/* ── Car Type ── */}
       <Card>
         <SectionLabel>ประเภทรถ</SectionLabel>
         <div className="grid grid-cols-3 gap-2.5 mt-2">
@@ -485,95 +491,153 @@ function IncomeForm({ states, setters }: any) {
               key={t.id} 
               type="button" 
               onClick={() => setSelectedType((prev: string) => prev === t.id ? '' : t.id)} 
-              className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all duration-200 active:scale-95
+              className={`flex flex-col items-center gap-2 p-3.5 rounded-2xl border-2 transition-all duration-200 active:scale-95
                 ${selectedType === t.id 
-                  ? 'border-blue-600 bg-blue-50/50 text-blue-700 shadow-sm' 
-                  : 'border-slate-100 bg-slate-50/50 text-slate-500 hover:bg-slate-100 hover:border-slate-200'
+                  ? 'border-[var(--accent)] bg-[var(--accent-light)] text-[var(--accent)] shadow-sm' 
+                  : 'border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-secondary)] hover:bg-white hover:border-[var(--text-tertiary)]'
                 }`}
             >
-              <span className={`text-[28px] leading-none ${selectedType === t.id ? 'text-blue-600' : 'text-slate-400'}`}>{t.icon}</span>
-              <span className="text-[11px] font-bold tracking-wide truncate w-full text-center">{t.name}</span>
+              <span className={`text-[30px] leading-none ${selectedType === t.id ? '' : 'opacity-60'}`}>{t.icon}</span>
+              <span className="text-[12px] font-bold tracking-wide truncate w-full text-center">{t.name}</span>
             </button>
           ))}
         </div>
       </Card>
 
+      {/* ── Car Brand (Search + Chip Grid) ── */}
       <Card>
         <SectionLabel>ยี่ห้อรถ</SectionLabel>
-        <div {...dragScroll} className="flex gap-2.5 overflow-x-auto pb-2 mt-2 pt-1 no-scrollbar cursor-grab active:cursor-grabbing snap-x snap-mandatory">
-          {CAR_BRANDS.map(b => (
+        
+        {/* Search */}
+        <div className="relative mt-2 mb-3">
+          <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] pointer-events-none" width="16" height="16" viewBox="0 0 15 15" fill="none">
+            <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.3"/>
+            <path d="M10.5 10.5l3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+          </svg>
+          <input 
+            type="text" 
+            value={brandSearch} 
+            onChange={e => setBrandSearch(e.target.value)} 
+            placeholder="ค้นหายี่ห้อ..." 
+            className="input text-sm !min-h-[44px]" 
+            style={{ paddingLeft: '2.5rem' }}
+          />
+        </div>
+
+        {/* Chip Grid */}
+        <div className="flex flex-wrap gap-2">
+          {displayedBrands.map(b => (
             <button 
               key={b.id} 
               type="button" 
               onClick={() => setSelectedBrand((prev: string) => prev === b.id ? '' : b.id)} 
-              className={`snap-start flex-shrink-0 px-5 py-2.5 rounded-full border-2 text-sm font-bold transition-all duration-200 active:scale-95
+              className={`px-4 py-2.5 rounded-xl border-2 text-sm font-bold transition-all duration-200 active:scale-95
                 ${selectedBrand === b.id 
-                  ? 'border-blue-600 bg-blue-600 text-white shadow-md shadow-blue-500/20' 
-                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+                  ? 'border-[var(--accent)] bg-[var(--accent)] text-white shadow-md shadow-blue-500/15' 
+                  : 'border-[var(--border)] bg-white text-[var(--text-secondary)] hover:bg-[var(--surface-2)] hover:border-[var(--text-tertiary)]'
                 }`}
             >
               {b.name}
             </button>
           ))}
         </div>
+
+        {!showAllBrands && filteredBrands.length > 8 && (
+          <button 
+            type="button" 
+            onClick={() => setShowAllBrands(true)} 
+            className="mt-3 text-sm font-bold text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors"
+          >
+            ดูทั้งหมด ({filteredBrands.length}) →
+          </button>
+        )}
+        {showAllBrands && (
+          <button 
+            type="button" 
+            onClick={() => setShowAllBrands(false)} 
+            className="mt-3 text-sm font-bold text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors"
+          >
+            ← แสดงน้อยลง
+          </button>
+        )}
       </Card>
 
+      {/* ── Payment Status ── */}
       <Card>
         <SectionLabel>สถานะการชำระ</SectionLabel>
         <div className="flex gap-3 mt-2">
           <button 
             type="button" 
             onClick={() => setPaymentStatus('paid')} 
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 text-sm font-bold transition-all active:scale-[0.98]
+            className={`flex-1 flex items-center justify-center gap-2.5 py-3.5 rounded-xl border-2 text-base font-bold transition-all active:scale-[0.98]
               ${paymentStatus === 'paid' 
-                ? 'border-emerald-500 bg-emerald-50 text-emerald-700 shadow-[0_2px_10px_rgba(16,185,129,0.15)]' 
-                : 'border-slate-100 bg-slate-50 text-slate-500 hover:bg-slate-100'
+                ? 'border-[var(--green)] bg-[var(--green-light)] text-[var(--green)] shadow-sm' 
+                : 'border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-secondary)] hover:bg-white'
               }`}
           >
-            <svg width="16" height="16" viewBox="0 0 14 14" fill="none"><path d="M12 3.5L5.5 10 2 6.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <svg width="18" height="18" viewBox="0 0 14 14" fill="none"><path d="M12 3.5L5.5 10 2 6.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
             ชำระแล้ว
           </button>
           <button 
             type="button" 
             onClick={() => setPaymentStatus('unpaid')} 
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border-2 text-sm font-bold transition-all active:scale-[0.98]
+            className={`flex-1 flex items-center justify-center gap-2.5 py-3.5 rounded-xl border-2 text-base font-bold transition-all active:scale-[0.98]
               ${paymentStatus === 'unpaid' 
-                ? 'border-rose-500 bg-rose-50 text-rose-700 shadow-[0_2px_10px_rgba(244,63,94,0.15)]' 
-                : 'border-slate-100 bg-slate-50 text-slate-500 hover:bg-slate-100'
+                ? 'border-[var(--red)] bg-[var(--red-light)] text-[var(--red)] shadow-sm' 
+                : 'border-[var(--border)] bg-[var(--surface-2)] text-[var(--text-secondary)] hover:bg-white'
               }`}
           >
-            <svg width="16" height="16" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.5"/><path d="M7 4v3.5l2 1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+            <svg width="18" height="18" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.5"/><path d="M7 4v3.5l2 1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
             ค้างชำระ
           </button>
         </div>
       </Card>
 
-      <Card className="space-y-4">
-        <div>
-          <SectionLabel>ชื่อลูกค้า / เต็นท์รถ (ถ้ามี)</SectionLabel>
-          <input 
-            type="text" 
-            list="saved-customers" 
-            value={customerName} 
-            onChange={e => setCustomerName(e.target.value)} 
-            placeholder="พิมพ์เพื่อค้นหาประวัติ..." 
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all mt-2" 
-            autoComplete="off" 
-          />
-          <datalist id="saved-customers">
-            {savedCustomers.map((name: string, index: number) => <option key={index} value={name} />)}
-          </datalist>
-        </div>
-        <div>
-          <SectionLabel>หมายเหตุเพิ่มเติม (ถ้ามี)</SectionLabel>
-          <input 
-            type="text" 
-            value={note} 
-            onChange={e => setNote(e.target.value)} 
-            placeholder="เช่น ล้างห้องเครื่อง, ขัดไฟหน้า..." 
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 outline-none focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all mt-2" 
-          />
-        </div>
+      {/* ── Extra Info (Collapsible) ── */}
+      <Card>
+        <button 
+          type="button" 
+          onClick={() => setShowExtra(!showExtra)} 
+          className="flex items-center justify-between w-full"
+        >
+          <SectionLabel>ข้อมูลเพิ่มเติม (ถ้ามี)</SectionLabel>
+          <svg 
+            width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            className={`transition-transform duration-300 ${showExtra ? 'rotate-180' : ''}`}
+          >
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+        
+        {showExtra && (
+          <div className="space-y-4 mt-4 fade-up">
+            <div>
+              <label className="text-sm font-bold text-[var(--text-secondary)] mb-1.5 block">ชื่อลูกค้า / เต็นท์รถ</label>
+              <input 
+                type="text" 
+                list="saved-customers" 
+                value={customerName} 
+                onChange={e => setCustomerName(e.target.value)} 
+                placeholder="พิมพ์เพื่อค้นหาประวัติ..." 
+                className="input" 
+                autoComplete="off" 
+              />
+              <datalist id="saved-customers">
+                {savedCustomers.map((name: string, index: number) => <option key={index} value={name} />)}
+              </datalist>
+            </div>
+            <div>
+              <label className="text-sm font-bold text-[var(--text-secondary)] mb-1.5 block">หมายเหตุ</label>
+              <input 
+                type="text" 
+                value={note} 
+                onChange={e => setNote(e.target.value)} 
+                placeholder="เช่น ล้างห้องเครื่อง, ขัดไฟหน้า..." 
+                className="input" 
+              />
+            </div>
+          </div>
+        )}
       </Card>
       
     </div>
@@ -581,21 +645,20 @@ function IncomeForm({ states, setters }: any) {
 }
 
 function ExpenseForm({ states, setters }: any) {
-  const dragScroll = useDraggableScroll()
   return (
-    <div className="space-y-4 animate-in fade-in duration-300">
+    <div className="space-y-4 fade-up">
       
       <Card>
         <SectionLabel>จำนวนเงินที่จ่าย (บาท)</SectionLabel>
-        <div className="relative flex items-center bg-rose-50/30 rounded-xl border-2 border-transparent focus-within:border-rose-500 focus-within:bg-white transition-all overflow-hidden mt-2 h-[64px]">
-          <span className="absolute left-4 text-lg font-bold text-rose-300 select-none">฿</span>
+        <div className="relative flex items-center bg-red-50/50 rounded-xl border-2 border-transparent focus-within:border-[var(--red)] focus-within:bg-white transition-all overflow-hidden mt-2 h-[64px]">
+          <span className="absolute left-4 text-xl font-bold text-red-300 select-none">฿</span>
           <input 
             type="text" 
             inputMode="numeric" 
             value={states.amount} 
             onChange={e => setters.setAmount(e.target.value.replace(/\D/g, ''))} 
             placeholder="0" 
-            className="w-full text-right text-2xl font-black text-rose-600 py-3.5 pr-5 bg-transparent outline-none placeholder:text-rose-200" 
+            className="w-full text-right text-2xl font-extrabold text-[var(--red)] py-3.5 pr-5 bg-transparent outline-none placeholder:text-red-200" 
             style={{ paddingLeft: '2.5rem' }}
           />
         </div>
@@ -604,7 +667,7 @@ function ExpenseForm({ states, setters }: any) {
       <Card>
         <SectionLabel>จ่ายค่าอะไร</SectionLabel>
         
-        <div {...dragScroll} className="flex gap-2.5 overflow-x-auto pb-4 pt-2 mb-2 no-scrollbar cursor-grab active:cursor-grabbing snap-x snap-mandatory mt-1">
+        <div className="flex flex-wrap gap-2 mt-2 mb-3">
           {EXPENSE_PRESETS.map(preset => {
             const isSelected = states.title === preset.label;
             return (
@@ -612,23 +675,14 @@ function ExpenseForm({ states, setters }: any) {
                 key={preset.label} 
                 type="button" 
                 onClick={() => setters.setTitle(states.title === preset.label ? '' : preset.label)} 
-                className={`snap-start group relative flex-shrink-0 flex items-center gap-2.5 pr-4 pl-1.5 py-1.5 rounded-full border-2 text-[13px] font-bold transition-all duration-300 ease-out active:scale-95 select-none
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 text-sm font-bold transition-all duration-200 active:scale-95
                   ${isSelected 
-                    ? 'bg-rose-500 text-white border-rose-500 shadow-[0_4px_12px_rgba(244,63,94,0.25)]' 
-                    : 'bg-white text-slate-600 border-slate-100 shadow-sm hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600'
+                    ? 'bg-[var(--red)] text-white border-[var(--red)] shadow-md shadow-red-500/15' 
+                    : 'bg-white text-[var(--text-secondary)] border-[var(--border)] hover:bg-red-50 hover:border-red-200'
                   }`}
               >
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[15px] transition-all duration-300
-                  ${isSelected 
-                    ? 'bg-white/20 shadow-[inset_0_1px_2px_rgba(255,255,255,0.2)]' 
-                    : 'bg-slate-50 group-hover:bg-white group-hover:shadow-sm'
-                  }`}
-                >
-                  <span aria-hidden="true" className={`transition-transform duration-300 ${isSelected ? 'scale-110 drop-shadow-sm' : 'group-hover:scale-110'}`}>
-                    {preset.icon}
-                  </span>
-                </div>
-                <span className="tracking-wide">{preset.label}</span>
+                <span className="text-base">{preset.icon}</span>
+                {preset.label}
               </button>
             )
           })}
@@ -639,7 +693,7 @@ function ExpenseForm({ states, setters }: any) {
           value={states.title} 
           onChange={e => setters.setTitle(e.target.value)} 
           placeholder="หรือพิมพ์ชื่อรายการเอง..." 
-          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 outline-none focus:bg-white focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 transition-all" 
+          className="input" 
         />
       </Card>
 
@@ -650,7 +704,7 @@ function ExpenseForm({ states, setters }: any) {
           value={states.note} 
           onChange={e => setters.setNote(e.target.value)} 
           placeholder="..." 
-          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-900 outline-none focus:bg-white focus:border-slate-500 focus:ring-4 focus:ring-slate-500/10 transition-all mt-2" 
+          className="input mt-2" 
         />
       </Card>
     </div>
@@ -660,14 +714,13 @@ function ExpenseForm({ states, setters }: any) {
 function ActionButtons({ mode, saving, onSubmit }: { mode: FormMode, saving: boolean, onSubmit: (isBulk: boolean) => void }) {
   return (
     <div className="flex gap-3">
-      {/* ✅ ลบเงื่อนไข mode === 'income' ออก เพื่อให้ปุ่มนี้แสดงในทุกหน้า (รายรับ และ รายจ่าย) */}
       <button 
         onClick={() => onSubmit(true)} 
         disabled={saving} 
-        className="flex-1 flex flex-col items-center justify-center gap-1 py-3.5 bg-white border-2 border-slate-200 rounded-2xl text-[13px] font-bold text-slate-600 hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100"
+        className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-white border-2 border-[var(--border)] rounded-2xl text-[15px] font-bold text-[var(--text-secondary)] hover:border-[var(--text-tertiary)] hover:bg-[var(--surface-2)] active:scale-[0.98] transition-all disabled:opacity-50"
       >
         {saving ? (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="animate-spin text-slate-400"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+          <span className="w-5 h-5 border-2 border-[var(--border)] border-t-[var(--text-tertiary)] rounded-full spinner" />
         ) : (
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14m-7-7h14"/></svg>
         )}
@@ -677,11 +730,11 @@ function ActionButtons({ mode, saving, onSubmit }: { mode: FormMode, saving: boo
       <button 
         onClick={() => onSubmit(false)} 
         disabled={saving} 
-        className={`flex-[1.5] flex flex-col items-center justify-center gap-1 py-3.5 rounded-2xl text-[14px] font-bold text-white shadow-lg active:scale-[0.98] transition-all disabled:opacity-70 disabled:active:scale-100
-          ${mode === 'expense' ? 'bg-rose-600 shadow-rose-600/30 hover:bg-rose-700' : 'bg-blue-600 shadow-blue-600/30 hover:bg-blue-700'}`}
+        className={`flex-[1.5] flex items-center justify-center gap-2 py-3.5 rounded-2xl text-[15px] font-bold text-white shadow-lg active:scale-[0.98] transition-all disabled:opacity-70
+          ${mode === 'expense' ? 'bg-[var(--red)] shadow-red-500/20 hover:bg-[#B91C1C]' : 'bg-[var(--accent)] shadow-blue-500/20 hover:bg-[var(--accent-hover)]'}`}
       >
         {saving ? (
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+          <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full spinner" />
         ) : (
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
         )}

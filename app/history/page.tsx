@@ -196,7 +196,7 @@ export default function HistoryPage() {
 
 
   return (
-    <div className="min-h-dvh px-4 pt-6 space-y-4">
+    <div className="min-h-dvh px-4 pt-6 space-y-4 pb-28">
       
       <Header 
         selectedMonth={selectedMonth} setSelectedMonth={setSelectedMonth} 
@@ -243,18 +243,18 @@ export default function HistoryPage() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 4. Sub-Components (Clean UI Architecture)
+// 4. Sub-Components
 // ─────────────────────────────────────────────────────────────────────────────
 
 const Header = memo(function Header({ selectedMonth, setSelectedMonth, selectedYear, setSelectedYear }: any) {
   return (
     <header className="flex items-center justify-between fade-up">
-      <h1 className="text-xl font-bold text-[var(--text-primary)]">ประวัติ</h1>
-      <div className="flex gap-1.5">
-        <select value={selectedMonth} onChange={e => setSelectedMonth(parseInt(e.target.value))} className="input py-2 px-2 text-xs w-auto appearance-none cursor-pointer">
+      <h1 className="text-2xl font-extrabold text-[var(--text-primary)] tracking-tight">ประวัติ</h1>
+      <div className="flex gap-2">
+        <select value={selectedMonth} onChange={e => setSelectedMonth(parseInt(e.target.value))} className="input py-2.5 px-3 text-sm w-auto appearance-none cursor-pointer !min-h-[44px] font-bold">
           {MONTH_OPTIONS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
         </select>
-        <select value={selectedYear} onChange={e => setSelectedYear(parseInt(e.target.value))} className="input py-2 px-2 text-xs w-auto appearance-none cursor-pointer">
+        <select value={selectedYear} onChange={e => setSelectedYear(parseInt(e.target.value))} className="input py-2.5 px-3 text-sm w-auto appearance-none cursor-pointer !min-h-[44px] font-bold">
           {YEAR_OPTIONS.map(y => <option key={y} value={y}>{y + 543}</option>)}
         </select>
       </div>
@@ -264,12 +264,12 @@ const Header = memo(function Header({ selectedMonth, setSelectedMonth, selectedY
 
 const TabToggle = memo(function TabToggle({ activeTab, switchTab }: { activeTab: TabType, switchTab: (t: TabType) => void }) {
   return (
-    <div className="flex bg-[var(--surface-2)] p-1.5 rounded-[var(--radius-lg)] gap-1.5 fade-up delay-1">
-      <button onClick={() => switchTab('income')} className={`flex-1 py-2.5 rounded-[var(--radius-md)] text-sm font-semibold transition-all ${activeTab === 'income' ? 'bg-white text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}>
-        รายรับ
+    <div className="flex bg-[var(--surface-2)] p-1.5 rounded-2xl gap-1.5 fade-up delay-1">
+      <button onClick={() => switchTab('income')} className={`flex-1 py-3.5 rounded-xl text-base font-bold transition-all ${activeTab === 'income' ? 'bg-white text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'}`}>
+        💰 รายรับ
       </button>
-      <button onClick={() => switchTab('expense')} className={`flex-1 py-2.5 rounded-[var(--radius-md)] text-sm font-semibold transition-all ${activeTab === 'expense' ? 'bg-white text-[var(--red)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}>
-        รายจ่าย
+      <button onClick={() => switchTab('expense')} className={`flex-1 py-3.5 rounded-xl text-base font-bold transition-all ${activeTab === 'expense' ? 'bg-white text-[var(--red)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'}`}>
+        💸 รายจ่าย
       </button>
     </div>
   )
@@ -277,34 +277,34 @@ const TabToggle = memo(function TabToggle({ activeTab, switchTab }: { activeTab:
 
 const SummaryCard = memo(function SummaryCard({ activeTab, selectedMonth, summary, onExport }: any) {
   return (
-    <section className="card-dark p-4 fade-up delay-1">
+    <section className="card-dark p-5 fade-up delay-1">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs text-white/50 mb-1">
+          <p className="text-[13px] text-white/50 mb-1.5 font-medium">
             {selectedMonth === 0 ? 'ยอดรวมทั้งปี' : `ยอดรวมเดือน${MONTH_OPTIONS.find(m => m.value === selectedMonth)?.label}`}
           </p>
-          <p className="text-2xl font-bold text-white">
+          <p className="text-3xl font-extrabold text-white">
             ฿{(activeTab === 'income' ? summary.totalIncome : summary.totalExpense).toLocaleString()}
           </p>
         </div>
         <div className="flex items-center gap-3">
           {activeTab === 'income' && (
-            <div className="flex items-center gap-2 bg-white/10 border border-white/10 rounded-[var(--radius-md)] px-3 py-2">
+            <div className="flex items-center gap-2.5 bg-white/10 border border-white/10 rounded-[var(--radius-md)] px-3.5 py-2.5">
               <div className="text-center">
-                <p className="text-[10px] text-white/50 leading-none mb-1">ล้างรถ</p>
-                <p className="text-sm font-bold text-white leading-none">{summary.totalWashCount.toLocaleString()}</p>
-                <p className="text-[9px] text-white/40 leading-none mt-0.5">คัน</p>
+                <p className="text-[11px] text-white/50 leading-none mb-1">ล้างรถ</p>
+                <p className="text-base font-extrabold text-white leading-none">{summary.totalWashCount.toLocaleString()}</p>
+                <p className="text-[10px] text-white/40 leading-none mt-0.5">คัน</p>
               </div>
-              <div className="w-px h-7 bg-white/15" />
+              <div className="w-px h-8 bg-white/15" />
               <div className="text-center">
-                <p className="text-[10px] text-white/50 leading-none mb-1">ขัดสี</p>
-                <p className="text-sm font-bold text-white leading-none">{summary.totalPolishCount.toLocaleString()}</p>
-                <p className="text-[9px] text-white/40 leading-none mt-0.5">คัน</p>
+                <p className="text-[11px] text-white/50 leading-none mb-1">ขัดสี</p>
+                <p className="text-base font-extrabold text-white leading-none">{summary.totalPolishCount.toLocaleString()}</p>
+                <p className="text-[10px] text-white/40 leading-none mt-0.5">คัน</p>
               </div>
             </div>
           )}
-          <button onClick={onExport} className="flex items-center gap-2 text-xs font-semibold text-white/70 hover:text-white bg-white/10 hover:bg-white/15 border border-white/10 px-3 py-2.5 rounded-[var(--radius-md)] transition-all">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <button onClick={onExport} className="flex items-center gap-2 text-sm font-bold text-white/70 hover:text-white bg-white/10 hover:bg-white/15 border border-white/10 px-3.5 py-3 rounded-[var(--radius-md)] transition-all">
+            <svg width="16" height="16" viewBox="0 0 14 14" fill="none">
               <path d="M7 1v8M4 6l3 3 3-3M2 10v1.5a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5V10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
             CSV
@@ -317,9 +317,9 @@ const SummaryCard = memo(function SummaryCard({ activeTab, selectedMonth, summar
 
 function FilterSection({ activeTab, search, setSearch, dateFrom, setDateFrom, dateTo, setDateTo, filterType, setFilterType }: any) {
   return (
-    <section className="card p-3.5 space-y-3 fade-up delay-2">
+    <section className="card p-4 space-y-3 fade-up delay-2">
       <div className="relative">
-        <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] pointer-events-none" width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+        <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] pointer-events-none" width="16" height="16" viewBox="0 0 15 15" fill="none" aria-hidden="true">
           <circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.3"/>
           <path d="M10.5 10.5l3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
         </svg>
@@ -328,21 +328,21 @@ function FilterSection({ activeTab, search, setSearch, dateFrom, setDateFrom, da
           value={search} 
           onChange={e => setSearch(e.target.value)} 
           placeholder={activeTab === 'income' ? 'ค้นหาทะเบียน หรือชื่อลูกค้า...' : 'ค้นหารายการจ่าย...'} 
-          className="input text-sm w-full" 
-          style={{ paddingLeft: '2.5rem' }} 
+          className="input text-[15px] w-full" 
+          style={{ paddingLeft: '2.75rem' }} 
         />
       </div>
 
       <div className="flex items-center gap-2">
-        <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="input flex-1 text-sm py-2.5 text-center cursor-pointer" />
-        <span className="text-[var(--text-tertiary)] text-sm font-medium shrink-0">—</span>
-        <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="input flex-1 text-sm py-2.5 text-center cursor-pointer" />
+        <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="input flex-1 text-sm py-2.5 text-center cursor-pointer !min-h-[44px]" />
+        <span className="text-[var(--text-tertiary)] text-base font-bold shrink-0">—</span>
+        <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="input flex-1 text-sm py-2.5 text-center cursor-pointer !min-h-[44px]" />
       </div>
 
       {activeTab === 'income' && (
         <div className="flex gap-2">
           {(['all','wash','polish'] as FilterType[]).map(t => (
-            <button key={t} onClick={() => setFilterType(t)} className={`flex-1 py-2 rounded-[var(--radius-md)] text-xs font-semibold transition-all border ${filterType === t ? (t === 'all' ? 'bg-[var(--text-primary)] text-white border-transparent' : t === 'wash' ? 'bg-[var(--accent-light)] text-[var(--accent)] border-blue-100' : 'bg-[var(--amber-light)] text-[var(--amber)] border-amber-100') : 'bg-white text-[var(--text-secondary)] border-[var(--border)] hover:bg-[var(--surface-2)]'}`}>
+            <button key={t} onClick={() => setFilterType(t)} className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all border-2 ${filterType === t ? (t === 'all' ? 'bg-[var(--text-primary)] text-white border-transparent' : t === 'wash' ? 'bg-[var(--accent-light)] text-[var(--accent)] border-blue-200' : 'bg-[var(--amber-light)] text-[var(--amber)] border-amber-200') : 'bg-white text-[var(--text-secondary)] border-[var(--border)] hover:bg-[var(--surface-2)]'}`}>
               {t === 'all' ? 'ทั้งหมด' : t === 'wash' ? 'ล้างรถ' : 'ขัดสี'}
             </button>
           ))}
@@ -356,14 +356,14 @@ function HistoryList({ loading, grouped, activeTab, onItemClick }: any) {
   return (
     <section className="fade-up delay-3">
       {loading ? (
-        <div className="space-y-2.5">
-          {[1,2,3].map(i => <div key={i} className="h-[68px] bg-[var(--surface-2)] rounded-[var(--radius-lg)] animate-pulse" />)}
+        <div className="space-y-3">
+          {[1,2,3].map(i => <div key={i} className="h-[76px] skeleton" />)}
         </div>
       ) : Object.keys(grouped).length === 0 ? (
-        <div className="card p-12 text-center border-dashed">
-          <p className="text-3xl mb-3 opacity-20" aria-hidden="true">📂</p>
-          <p className="text-sm font-semibold text-[var(--text-primary)]">ไม่พบรายการ</p>
-          <p className="text-xs text-[var(--text-tertiary)] mt-1">ลองเปลี่ยนตัวกรองดูครับ</p>
+        <div className="card p-14 text-center border-dashed border-2">
+          <p className="text-4xl mb-3 opacity-20" aria-hidden="true">📂</p>
+          <p className="text-base font-bold text-[var(--text-primary)]">ไม่พบรายการ</p>
+          <p className="text-sm text-[var(--text-tertiary)] mt-1.5">ลองเปลี่ยนตัวกรองดูครับ</p>
         </div>
       ) : (
         Object.entries(grouped).map(([date, items]: [string, any]) => {
@@ -373,22 +373,22 @@ function HistoryList({ loading, grouped, activeTab, onItemClick }: any) {
 
           return (
             <div key={date} className="mb-6">
-              <div className="sticky top-2 z-10 bg-[var(--bg)]/90 backdrop-blur-sm py-2 mb-2">
+              <div className="sticky top-2 z-10 glass py-2.5 mb-2.5 rounded-xl px-1">
                 <div className="flex items-center gap-2.5">
-                  <span className="text-xs font-semibold text-[var(--text-secondary)] shrink-0">{date}</span>
+                  <span className="text-sm font-bold text-[var(--text-secondary)] shrink-0">{date}</span>
                   <div className="h-px flex-1 bg-[var(--border)]" />
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2.5">
                     {activeTab === 'income' && (
-                      <span className="text-[10px] text-[var(--text-tertiary)] shrink-0">ล้าง {dayWashCount} · ขัด {dayPolishCount}</span>
+                      <span className="text-[11px] text-[var(--text-tertiary)] font-medium shrink-0">ล้าง {dayWashCount} · ขัด {dayPolishCount}</span>
                     )}
-                    <span className={`text-xs font-semibold shrink-0 ${activeTab === 'income' ? 'text-[var(--green)]' : 'text-[var(--red)]'}`}>
+                    <span className={`text-sm font-bold shrink-0 ${activeTab === 'income' ? 'text-[var(--green)]' : 'text-[var(--red)]'}`}>
                       ฿{dayTotal.toLocaleString()}
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="grid gap-2">
+              <div className="grid gap-2.5">
                 {items.map((item: any) => (
                   <div key={item.id} className="flex flex-col gap-1.5 mb-1.5">
                     {activeTab === 'income' ? (
@@ -396,28 +396,28 @@ function HistoryList({ loading, grouped, activeTab, onItemClick }: any) {
                         <RecordCard record={item as AppRecord} />
                       </div>
                     ) : (
-                      <div onClick={() => onItemClick(item)} className="card flex items-center justify-between px-4 py-3.5 cursor-pointer hover:shadow-[var(--shadow-md)] transition-shadow active:scale-[0.985]">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-[10px] bg-[var(--red-light)] flex items-center justify-center shrink-0">
+                      <div onClick={() => onItemClick(item)} className="card flex items-center justify-between px-5 py-4 cursor-pointer hover:shadow-[var(--shadow-md)] transition-all active:scale-[0.985]">
+                        <div className="flex items-center gap-3.5">
+                          <div className="w-11 h-11 rounded-2xl bg-[var(--red-light)] flex items-center justify-center shrink-0">
                             {/* 🔥 [FIX] แสดง Emoji ไอคอนตรงนี้แทน SVG รูปบวก */}
-                            <span className="text-[1.15rem] leading-none" aria-hidden="true">
+                            <span className="text-xl leading-none" aria-hidden="true">
                               {getExpenseIcon(item.title)}
                             </span>
                           </div>
                           <div>
-                            <p className="text-sm font-semibold text-[var(--text-primary)] leading-tight">{item.title}</p>
-                            <p className="text-[11px] text-[var(--text-tertiary)] mt-0.5">
+                            <p className="text-base font-bold text-[var(--text-primary)] leading-tight">{item.title}</p>
+                            <p className="text-[12px] text-[var(--text-tertiary)] mt-0.5 font-medium">
                               {new Date(item.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.
                             </p>
                           </div>
                         </div>
-                        <p className="text-sm font-bold text-[var(--red)]">−฿{item.amount.toLocaleString()}</p>
+                        <p className="text-base font-extrabold text-[var(--red)]">−฿{item.amount.toLocaleString()}</p>
                       </div>
                     )}
                     
                     {/* Audit Trail Preview (ใครเพิ่ม/แก้) */}
                     {(item.created_by_email || item.updated_by_email) && (
-                      <div className="flex items-center justify-end gap-3 px-2 text-[10px] font-medium text-[var(--text-tertiary)] opacity-60">
+                      <div className="flex items-center justify-end gap-3 px-2 text-[11px] font-semibold text-[var(--text-tertiary)] opacity-60">
                         {item.created_by_email && (
                           <span className="flex items-center gap-1">➕ เพิ่ม: {item.created_by_email.split('@')[0]}</span>
                         )}
@@ -440,7 +440,7 @@ function HistoryList({ loading, grouped, activeTab, onItemClick }: any) {
 const ErrorBanner = memo(function ErrorBanner({ error }: { error: string }) {
   if (!error) return null
   return (
-    <div className="fixed bottom-28 left-4 right-4 max-w-lg mx-auto p-3 rounded-[var(--radius-md)] bg-[var(--red)] text-white text-sm font-medium text-center fade-up" role="alert">
+    <div className="fixed bottom-28 left-4 right-4 max-w-2xl mx-auto p-4 rounded-[var(--radius-md)] bg-[var(--red)] text-white text-base font-bold text-center fade-up" role="alert">
       {error}
     </div>
   )

@@ -137,40 +137,40 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
       className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm fade-in flex items-end justify-center sm:items-center p-4"
       onClick={e => e.target === e.currentTarget && onClose()}
     >
-      <div className="bg-white w-full max-w-md rounded-t-[20px] sm:rounded-[20px] slide-up overflow-hidden max-h-[90dvh] flex flex-col">
+      <div className="bg-white w-full max-w-md rounded-t-[28px] sm:rounded-[28px] slide-up overflow-hidden max-h-[90dvh] flex flex-col">
 
         {/* Handle bar */}
         <div className="flex justify-center pt-3 pb-1 sm:hidden shrink-0">
-          <div className="w-10 h-1 rounded-full bg-[var(--border)]" />
+          <div className="w-10 h-1.5 rounded-full bg-[var(--border)]" />
         </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border)] shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)] shrink-0">
           <div>
-            <h3 className="text-base font-semibold text-[var(--text-primary)]">
+            <h3 className="text-lg font-extrabold text-[var(--text-primary)]">
               แก้ไข{isIncome ? 'รายรับ' : 'รายจ่าย'}
             </h3>
-            <p className="text-xs text-[var(--text-tertiary)] mt-0.5">
+            <p className="text-sm text-[var(--text-tertiary)] mt-0.5 font-medium">
               {isIncome ? (item as Record).plate : (item as Expense).title}
             </p>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--surface-2)] transition-colors"
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-[var(--text-secondary)] hover:bg-[var(--surface-2)] transition-colors"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              <path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
             </svg>
           </button>
         </div>
 
         {/* Body — scrollable */}
-        <div className="overflow-y-auto flex-1 px-5 py-5 space-y-4">
+        <div className="overflow-y-auto flex-1 px-6 py-5 space-y-5">
 
           {/* ── วันที่ + เวลา (ทุก type) ── */}
           <div>
             <label className="label">วันที่และเวลา</label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2.5">
               <input
                 type="date"
                 value={editDate}
@@ -191,35 +191,28 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
               {/* ✅ เพิ่มปุ่มสลับประเภทบริการ ล้างรถ/ขัดสี */}
               <div>
                 <label className="label">ประเภทบริการ</label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2.5">
                   <button
                     type="button"
                     onClick={() => setRecordType('wash')}
-                    className={`py-2.5 rounded-[var(--radius-md)] border text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+                    className={`py-3 rounded-[var(--radius-md)] border-2 text-[15px] font-bold transition-all flex items-center justify-center gap-2 ${
                       recordType === 'wash'
                         ? 'bg-[var(--accent-light)] text-[var(--accent)] border-[var(--accent)]'
                         : 'bg-white text-[var(--text-secondary)] border-[var(--border)] hover:bg-[var(--surface-2)]'
                     }`}
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M7 17a5 5 0 0 1 10 0"/><path d="M5 17H3a1 1 0 0 1-1-1V9l3-4h14l3 4v7a1 1 0 0 1-1 1h-2"/>
-                      <circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/>
-                    </svg>
-                    ล้างรถ
+                    🚗 ล้างรถ
                   </button>
                   <button
                     type="button"
                     onClick={() => setRecordType('polish')}
-                    className={`py-2.5 rounded-[var(--radius-md)] border text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+                    className={`py-3 rounded-[var(--radius-md)] border-2 text-[15px] font-bold transition-all flex items-center justify-center gap-2 ${
                       recordType === 'polish'
                         ? 'bg-[var(--amber-light)] text-[var(--amber)] border-[var(--amber)]'
                         : 'bg-white text-[var(--text-secondary)] border-[var(--border)] hover:bg-[var(--surface-2)]'
                     }`}
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 3l1.9 5.8H20l-4.9 3.6 1.9 5.8L12 14.6l-5 3.6 1.9-5.8L4 8.8h6.1z"/>
-                    </svg>
-                    ขัดสี
+                    ✨ ขัดสี
                   </button>
                 </div>
               </div>
@@ -231,7 +224,7 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
                   type="text"
                   value={plate}
                   onChange={e => setPlate(e.target.value.toUpperCase())}
-                  className="input text-center text-2xl font-bold tracking-widest"
+                  className="input text-center text-2xl font-extrabold tracking-widest"
                   placeholder="กข 1234"
                 />
               </div>
@@ -241,13 +234,13 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
                 <div>
                   <label className="label">ราคา (บาท)</label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-[var(--text-tertiary)]">฿</span>
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-base font-bold text-[var(--text-tertiary)]">฿</span>
                     <input
                       type="text"
                       inputMode="numeric"
                       value={price}
                       onChange={e => setPrice(e.target.value.replace(/\D/g, ''))}
-                      className="input font-bold w-full"
+                      className="input font-extrabold w-full"
                       style={{ paddingLeft: '2rem' }}
                       placeholder="0"
                     />
@@ -255,30 +248,28 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
                 </div>
                 <div>
                   <label className="label">สถานะ</label>
-                  <div className="flex flex-col gap-1.5">
+                  <div className="flex flex-col gap-2">
                     <button
                       type="button"
                       onClick={() => setPaymentStatus('paid')}
-                      className={`flex items-center justify-center gap-1.5 py-2 rounded-[var(--radius-md)] border text-xs font-semibold transition-all ${
+                      className={`flex items-center justify-center gap-2 py-2.5 rounded-[var(--radius-md)] border-2 text-sm font-bold transition-all ${
                         paymentStatus === 'paid'
                           ? 'bg-[var(--green-light)] text-[var(--green)] border-[var(--green)]'
                           : 'bg-white text-[var(--text-secondary)] border-[var(--border)] hover:bg-[var(--surface-2)]'
                       }`}
                     >
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M10 3L4.5 8.5 2 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      ชำระแล้ว
+                      ✅ ชำระแล้ว
                     </button>
                     <button
                       type="button"
                       onClick={() => setPaymentStatus('unpaid')}
-                      className={`flex items-center justify-center gap-1.5 py-2 rounded-[var(--radius-md)] border text-xs font-semibold transition-all ${
+                      className={`flex items-center justify-center gap-2 py-2.5 rounded-[var(--radius-md)] border-2 text-sm font-bold transition-all ${
                         paymentStatus === 'unpaid'
                           ? 'bg-[var(--red-light)] text-[var(--red)] border-[var(--red)]'
                           : 'bg-white text-[var(--text-secondary)] border-[var(--border)] hover:bg-[var(--surface-2)]'
                       }`}
                     >
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" strokeWidth="1.3"/><path d="M6 3.5v3l1.5 1.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
-                      ค้างชำระ
+                      ⏳ ค้างชำระ
                     </button>
                   </div>
                 </div>
@@ -298,7 +289,7 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
                   <button
                     type="button"
                     onClick={() => setSelectedBrand('')}
-                    className={`flex-shrink-0 px-3 py-1.5 rounded-[var(--radius-md)] border text-xs font-semibold transition-all ${
+                    className={`flex-shrink-0 px-3.5 py-2 rounded-[var(--radius-md)] border-2 text-sm font-bold transition-all ${
                       selectedBrand === ''
                         ? 'bg-[var(--text-primary)] text-white border-transparent'
                         : 'bg-white text-[var(--text-secondary)] border-[var(--border)] hover:bg-[var(--surface-2)]'
@@ -311,7 +302,7 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
                       key={b.id}
                       type="button"
                       onClick={() => setSelectedBrand(b.name)}
-                      className={`flex-shrink-0 px-3 py-1.5 rounded-[var(--radius-md)] border text-xs font-semibold transition-all ${
+                      className={`flex-shrink-0 px-3.5 py-2 rounded-[var(--radius-md)] border-2 text-sm font-bold transition-all ${
                         selectedBrand === b.name
                           ? 'bg-[var(--text-primary)] text-white border-transparent'
                           : 'bg-white text-[var(--text-secondary)] border-[var(--border)] hover:bg-[var(--surface-2)]'
@@ -332,13 +323,13 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
                       key={t.id}
                       type="button"
                       onClick={() => setSelectedType(t.name)}
-                      className={`flex items-center gap-2 px-3 py-2.5 rounded-[var(--radius-md)] border text-xs font-semibold transition-all ${
+                      className={`flex items-center gap-2 px-3 py-3 rounded-[var(--radius-md)] border-2 text-sm font-bold transition-all ${
                         selectedType === t.name
                           ? 'bg-[var(--text-primary)] text-white border-transparent'
                           : 'bg-white text-[var(--text-secondary)] border-[var(--border)] hover:bg-[var(--surface-2)]'
                       }`}
                     >
-                      <span className="text-sm leading-none">{t.icon}</span>
+                      <span className="text-base leading-none">{t.icon}</span>
                       <span className="truncate">{t.name.split(' /')[0]}</span>
                     </button>
                   ))}
@@ -387,13 +378,13 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
               <div>
                 <label className="label">จำนวนเงิน (บาท)</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-[var(--text-tertiary)]">฿</span>
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-base font-bold text-[var(--text-tertiary)]">฿</span>
                   <input
                     type="text"
                     inputMode="numeric"
                     value={amount}
                     onChange={e => setAmount(e.target.value.replace(/\D/g, ''))}
-                    className="input font-bold text-[var(--red)] w-full"
+                    className="input font-extrabold text-[var(--red)] w-full"
                     style={{ paddingLeft: '2rem' }}
                     placeholder="0"
                   />
@@ -415,15 +406,15 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
           )}
 
           {/* ✅ ส่วนแสดงบันทึกการกระทำ (Audit Trail) */}
-          <div className="mt-4 p-3 bg-[var(--surface-2)] rounded-[var(--radius-md)] flex flex-col gap-3 border border-[var(--border)]">
+          <div className="mt-5 p-4 bg-[var(--surface-2)] rounded-[var(--radius-lg)] flex flex-col gap-3.5 border border-[var(--border)]">
             
             {/* แสดงคนสร้าง */}
             {(item as Record | Expense)?.created_by_email && (
               <div className="flex items-center gap-3">
-                <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-[10px] border border-blue-200">➕</div>
+                <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center text-[11px] border border-blue-200">➕</div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">เพิ่มเข้าระบบโดย</p>
-                  <p className="text-xs font-bold text-[var(--text-primary)]">{(item as Record | Expense).created_by_email}</p>
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">เพิ่มเข้าระบบโดย</p>
+                  <p className="text-sm font-bold text-[var(--text-primary)]">{(item as Record | Expense).created_by_email}</p>
                 </div>
               </div>
             )}
@@ -431,11 +422,11 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
             {/* แสดงคนแก้ไขล่าสุด */}
             {(item as Record | Expense)?.updated_by_email && (
               <div className="flex items-center gap-3">
-                <div className="w-7 h-7 rounded-full bg-amber-100 flex items-center justify-center text-[10px] border border-amber-200">✏️</div>
+                <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center text-[11px] border border-amber-200">✏️</div>
                 <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">แก้ไขล่าสุดโดย</p>
-                  <p className="text-xs font-bold text-[var(--text-primary)]">
-                    {(item as Record | Expense).updated_by_email} <span className="font-normal text-[10px] text-slate-400">({new Date((item as Record | Expense).updated_at!).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })})</span>
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">แก้ไขล่าสุดโดย</p>
+                  <p className="text-sm font-bold text-[var(--text-primary)]">
+                    {(item as Record | Expense).updated_by_email} <span className="font-normal text-[11px] text-[var(--text-tertiary)]">({new Date((item as Record | Expense).updated_at!).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })})</span>
                   </p>
                 </div>
               </div>
@@ -445,10 +436,10 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
 
             {/* บัญชีปัจจุบันที่กำลังลบ/แก้ไข */}
             <div className="flex items-center gap-3">
-              <div className="w-7 h-7 rounded-full bg-white flex items-center justify-center shadow-sm text-[10px] border border-[var(--border)]">👤</div>
+              <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center shadow-sm text-[11px] border border-[var(--border)]">👤</div>
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">บัญชีที่กำลังทำรายการ</p>
-                <p className="text-xs font-bold text-[var(--text-primary)]">{currentUserEmail || 'กำลังตรวจสอบ...'}</p>
+                <p className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">บัญชีที่กำลังทำรายการ</p>
+                <p className="text-sm font-bold text-[var(--text-primary)]">{currentUserEmail || 'กำลังตรวจสอบ...'}</p>
               </div>
             </div>
 
@@ -458,18 +449,18 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
 
         {/* confirmDelete block */}
         {confirmDelete && (
-          <div className="mx-5 mb-4 p-4 rounded-[var(--radius-md)] bg-[var(--red-light)] border border-red-100 shrink-0 border-t border-[var(--border)] pt-4 mt-1">
-            <p className="text-sm font-semibold text-[var(--red)] mb-3">ยืนยันลบรายการนี้?</p>
-            <div className="flex gap-2">
+          <div className="mx-6 mb-4 p-5 rounded-[var(--radius-lg)] bg-[var(--red-light)] border-2 border-red-200 shrink-0">
+            <p className="text-base font-bold text-[var(--red)] mb-3">ยืนยันลบรายการนี้?</p>
+            <div className="flex gap-2.5">
               <button
                 onClick={() => setConfirmDelete(false)}
-                className="btn btn-ghost flex-1 py-2.5 text-sm"
+                className="btn btn-ghost flex-1 py-3 text-[15px]"
               >
                 ยกเลิก
               </button>
               <button
                 onClick={() => onDelete(item.id)}
-                className="flex-1 py-2.5 rounded-[var(--radius-md)] text-sm font-semibold text-white bg-[var(--red)] transition-all active:scale-[0.97]"
+                className="flex-1 py-3 rounded-[var(--radius-md)] text-[15px] font-bold text-white bg-[var(--red)] transition-all active:scale-[0.97]"
               >
                 ลบรายการ
               </button>
@@ -479,19 +470,16 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
 
         {/* Action Buttons */}
         {!confirmDelete && (
-          <div className="flex gap-2.5 px-5 pb-8 pt-3 shrink-0 border-t border-[var(--border)]">
+          <div className="flex gap-3 px-6 pb-8 pt-4 shrink-0 border-t border-[var(--border)]">
             <button
               onClick={() => setConfirmDelete(true)}
-              className="btn btn-danger py-3 text-sm"
+              className="btn btn-danger py-3.5 text-[15px]"
             >
-              <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
-                <path d="M2.5 4h10M5 4V2.5h5V4M6 7v4M9 7v4M3.5 4l.5 8.5h7L12 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              ลบ
+              🗑️ ลบ
             </button>
             <button
               onClick={handleSave}
-              className="btn btn-primary flex-1 py-3 text-sm"
+              className="btn btn-primary flex-1 py-3.5 text-[15px]"
             >
               บันทึกการแก้ไข
             </button>

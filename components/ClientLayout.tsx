@@ -14,7 +14,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   return (
     <>
       <main 
-        className={`relative w-full max-w-lg mx-auto block ${isLoginPage ? 'pb-0' : 'pb-28'}`}
+        className={`relative w-full max-w-2xl mx-auto block ${isLoginPage ? 'pb-0' : 'pb-24'}`}
       >
         {children}
       </main>
