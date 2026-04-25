@@ -3,107 +3,64 @@
 import { memo } from 'react'
 import { Record, CAR_TYPES } from '@/types'
 
-// ✅ ใช้ React.memo เพื่อป้องกันการ Re-render ซ้ำซ้อนเมื่ออยู่ใน List ยาวๆ
 const RecordCard = memo(function RecordCard({ record }: { record: Record }) {
-  // 🛡️ Safe Destructuring & Default Values ป้องกันค่า undefined
-  const { 
-    type, 
-    payment_status, 
-    created_at, 
-    services = [], 
-    seq_number, 
-    plate, 
-    customer_name, 
-    price 
+  const {
+    type, payment_status, created_at, services = [],
+    seq_number, plate, customer_name, price,
   } = record
 
   const isWash = type === 'wash'
   const isPaid = payment_status === 'paid'
-
-  // แยกค่าใน services อย่างปลอดภัย เผื่อกรณีข้อมูลเก่าใน DB มี Array ไม่ครบ
   const [serviceName = '', carBrand = '', note = ''] = services
 
-  const time = new Date(created_at).toLocaleTimeString('th-TH', { 
-    hour: '2-digit', 
-    minute: '2-digit' 
-  })
-
+  const time = new Date(created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
   const carTypeIcon = CAR_TYPES.find(t => t.name === serviceName)?.icon ?? (isWash ? '🧼' : '✨')
-
-  // 🎨 แยก Class Logic ออกมาให้ดูสะอาดตา
-  const accentColor = !isPaid 
-    ? 'var(--red)' 
-    : isWash 
-      ? 'var(--accent)' 
-      : 'var(--amber)'
-
-  const iconBgClass = isWash ? 'bg-blue-50' : 'bg-amber-50'
+  const accentColor = !isPaid ? 'var(--red)' : isWash ? 'var(--accent)' : 'var(--amber)'
 
   return (
-    <article 
-      className="card bg-white group cursor-pointer transition-all duration-200 hover:shadow-[var(--shadow-md)] hover:-translate-y-0.5 active:scale-[0.985] active:shadow-[var(--shadow-sm)] overflow-hidden"
+    <article
+      role="button"
+      tabIndex={0}
+      aria-label={`${isWash ? 'ล้างรถ' : 'ขัดสี'} ${plate} ราคา ${price} บาท ${!isPaid ? 'ค้างชำระ' : ''}`}
+      className="card bg-white cursor-pointer transition-all duration-150 active:scale-[0.985] overflow-hidden"
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); (e.target as HTMLElement).click() } }}
     >
-      {/* Top accent line */}
-      <div className="h-[3px] w-full" style={{ background: accentColor }} />
+      {/* Accent bar */}
+      <div className="h-[3px] w-full" style={{ background: accentColor }} aria-hidden="true" />
 
       <div className="flex items-center gap-3.5 px-4 py-4 sm:px-5">
-
-        {/* ── Icon ── */}
-        <div 
+        {/* Icon */}
+        <div
           aria-hidden="true"
-          className={`w-12 h-12 min-w-[48px] rounded-2xl flex items-center justify-center text-xl shrink-0 ${iconBgClass} transition-transform group-hover:scale-105`}
+          className={`w-12 h-12 min-w-[48px] rounded-2xl flex items-center justify-center text-xl shrink-0 ${
+            isWash ? 'bg-blue-50' : 'bg-amber-50'
+          }`}
         >
           {carTypeIcon}
         </div>
 
-        {/* ── Info ── */}
+        {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-            <span className={`badge ${isWash ? 'badge-wash' : 'badge-polish'}`}>
-              {isWash ? 'ล้าง' : 'ขัดสี'}
-            </span>
-            
-            {!isPaid && (
-              <span className="badge badge-unpaid">ค้างจ่าย</span>
-            )}
-            
-            <span className="text-[11px] text-[var(--text-tertiary)] font-semibold">
-              #{seq_number}
-            </span>
+            <span className={`badge ${isWash ? 'badge-wash' : 'badge-polish'}`}>{isWash ? 'ล้าง' : 'ขัดสี'}</span>
+            {!isPaid && <span className="badge badge-unpaid">ค้างจ่าย</span>}
+            <span className="text-[11px] text-[var(--text-tertiary)] font-semibold">#{seq_number}</span>
           </div>
-
           <p className="font-extrabold text-[var(--text-primary)] text-[17px] tracking-wide leading-tight truncate">
             {plate}
-            {carBrand && (
-              <span className="ml-2 text-[12px] font-semibold text-[var(--text-secondary)] tracking-normal">
-                {carBrand}
-              </span>
-            )}
+            {carBrand && <span className="ml-2 text-[12px] font-semibold text-[var(--text-secondary)] tracking-normal">{carBrand}</span>}
           </p>
-
-          {customer_name && (
-            <p className="text-[12px] text-[var(--text-secondary)] font-medium mt-0.5 truncate">
-              {customer_name}
-            </p>
-          )}
-          
-          {note && (
-            <p className="text-[12px] text-[var(--text-tertiary)] mt-0.5 truncate italic">
-              {note}
-            </p>
-          )}
+          {customer_name && <p className="text-[12px] text-[var(--text-secondary)] font-medium mt-0.5 truncate">{customer_name}</p>}
+          {note && <p className="text-[12px] text-[var(--text-tertiary)] mt-0.5 truncate italic">{note}</p>}
         </div>
 
-        {/* ── Price + Time ── */}
+        {/* Price */}
         <div className="text-right shrink-0">
           <p className={`text-lg font-extrabold leading-tight ${!isPaid ? 'text-[var(--red)]' : 'text-[var(--text-primary)]'}`}>
             ฿{price.toLocaleString()}
           </p>
-          <p className="text-[12px] text-[var(--text-tertiary)] mt-1 font-medium">
-            {time} น.
-          </p>
+          <p className="text-[12px] text-[var(--text-tertiary)] mt-1 font-medium">{time} น.</p>
         </div>
-
       </div>
     </article>
   )
