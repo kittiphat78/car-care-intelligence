@@ -484,7 +484,7 @@ function IncomeForm({ states, setters }: any) {
             <button 
               key={t.id} 
               type="button" 
-              onClick={() => setSelectedType(t.id)} 
+              onClick={() => setSelectedType((prev: string) => prev === t.id ? '' : t.id)} 
               className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all duration-200 active:scale-95
                 ${selectedType === t.id 
                   ? 'border-blue-600 bg-blue-50/50 text-blue-700 shadow-sm' 
@@ -505,7 +505,7 @@ function IncomeForm({ states, setters }: any) {
             <button 
               key={b.id} 
               type="button" 
-              onClick={() => setSelectedBrand(b.id)} 
+              onClick={() => setSelectedBrand((prev: string) => prev === b.id ? '' : b.id)} 
               className={`snap-start flex-shrink-0 px-5 py-2.5 rounded-full border-2 text-sm font-bold transition-all duration-200 active:scale-95
                 ${selectedBrand === b.id 
                   ? 'border-blue-600 bg-blue-600 text-white shadow-md shadow-blue-500/20' 
@@ -611,7 +611,7 @@ function ExpenseForm({ states, setters }: any) {
               <button 
                 key={preset.label} 
                 type="button" 
-                onClick={() => setters.setTitle(preset.label)} 
+                onClick={() => setters.setTitle(states.title === preset.label ? '' : preset.label)} 
                 className={`snap-start group relative flex-shrink-0 flex items-center gap-2.5 pr-4 pl-1.5 py-1.5 rounded-full border-2 text-[13px] font-bold transition-all duration-300 ease-out active:scale-95 select-none
                   ${isSelected 
                     ? 'bg-rose-500 text-white border-rose-500 shadow-[0_4px_12px_rgba(244,63,94,0.25)]' 
