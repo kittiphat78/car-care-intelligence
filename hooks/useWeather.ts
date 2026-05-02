@@ -34,8 +34,58 @@ function mapWeatherCode(code: number, isNight: boolean): { icon: string; conditi
   return { icon: '⛈️', condition: 'พายุฝนฟ้าคะนอง', group: 'storm' }
 }
 
-// ── สีพื้นหลังตามกลุ่มสภาพอากาศ ──
-function getWeatherTheme(group: string) {
+// ── สีพื้นหลังตามกลุ่มสภาพอากาศ + กลางวัน/กลางคืน ──
+function getWeatherTheme(group: string, isNight: boolean) {
+  // 🌙 ธีมกลางคืน — โทนเข้ม ดูพรีเมียม
+  if (isNight) {
+    switch (group) {
+      case 'clear':
+        return {
+          bgClass: 'from-[#1E1B4B] to-[#312E81] border-[#4338CA]',
+          textClass: 'text-[#E0E7FF]',
+          badgeClass: 'bg-[#3730A3]/50 text-[#C7D2FE]',
+        }
+      case 'cloudy':
+        return {
+          bgClass: 'from-[#1E293B] to-[#334155] border-[#475569]',
+          textClass: 'text-[#CBD5E1]',
+          badgeClass: 'bg-[#475569]/50 text-[#E2E8F0]',
+        }
+      case 'fog':
+        return {
+          bgClass: 'from-[#1E293B] to-[#374151] border-[#4B5563]',
+          textClass: 'text-[#E5E7EB]',
+          badgeClass: 'bg-[#4B5563]/50 text-[#F3F4F6]',
+        }
+      case 'drizzle':
+        return {
+          bgClass: 'from-[#0C4A6E] to-[#164E63] border-[#155E75]',
+          textClass: 'text-[#BAE6FD]',
+          badgeClass: 'bg-[#155E75]/50 text-[#E0F2FE]',
+        }
+      case 'rain':
+      case 'heavyrain':
+        return {
+          bgClass: 'from-[#1E293B] to-[#0F172A] border-[#334155]',
+          textClass: 'text-[#E2E8F0]',
+          badgeClass: 'bg-[#334155]/50 text-[#F1F5F9]',
+        }
+      case 'storm':
+        return {
+          bgClass: 'from-[#2E1065] to-[#1E1B4B] border-[#5B21B6]',
+          textClass: 'text-[#EDE9FE]',
+          badgeClass: 'bg-[#4C1D95]/50 text-[#F5F3FF]',
+        }
+      default:
+        return {
+          bgClass: 'from-[#1E293B] to-[#334155] border-[#475569]',
+          textClass: 'text-[#CBD5E1]',
+          badgeClass: 'bg-[#475569]/50 text-[#E2E8F0]',
+        }
+    }
+  }
+
+  // ☀️ ธีมกลางวัน
   switch (group) {
     case 'clear':
       return {
@@ -62,11 +112,16 @@ function getWeatherTheme(group: string) {
         badgeClass: 'bg-[#BAE6FD] text-[#0284C7]',
       }
     case 'rain':
+      return {
+        bgClass: 'from-[#E0E7FF] to-[#C7D2FE] border-[#A5B4FC]',
+        textClass: 'text-[#3730A3]',
+        badgeClass: 'bg-[#C7D2FE] text-[#4338CA]',
+      }
     case 'heavyrain':
       return {
-        bgClass: 'from-[#F3F4F6] to-[#E5E7EB] border-[#D1D5DB]',
-        textClass: 'text-[#374151]',
-        badgeClass: 'bg-[#D1D5DB] text-[#4B5563]',
+        bgClass: 'from-[#DBEAFE] to-[#BFDBFE] border-[#93C5FD]',
+        textClass: 'text-[#1E40AF]',
+        badgeClass: 'bg-[#BFDBFE] text-[#1D4ED8]',
       }
     case 'storm':
       return {
@@ -222,7 +277,7 @@ export function useWeather() {
 
     // ── 5. สร้างข้อความ + theme ──
     let message = buildWeatherMessage(weatherGroup, prob, probTom, temp, humidity);
-    const theme = getWeatherTheme(weatherGroup);
+    const theme = getWeatherTheme(weatherGroup, isNight);
 
     // เพิ่มคำเตือน AQI ถ้าสูง
     if (aqiValue > 200) {
