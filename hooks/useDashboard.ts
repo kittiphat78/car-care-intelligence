@@ -216,7 +216,8 @@ export function useDashboard() {
     return Object.entries(grouped)
       .map(([name, items]) => ({
         customerName: name,
-        items,
+        // เรียงจากค้างนานสุด → ใหม่สุด ภายในแต่ละลูกค้า
+        items: items.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
         total: items.reduce((s, r) => s + r.price, 0)
       }))
       // Sort ให้ลูกค้าที่ค้างเยอะสุดอยู่บนสุด (Optional UX Upgrade)

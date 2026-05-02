@@ -269,10 +269,33 @@ const RecordListSection = memo(function RecordListSection({ dash }: { dash: Retu
 })
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Unpaid Modal
+   Unpaid Modal — พร้อมแสดงวันที่ค้างชำระ & จำนวนวันค้าง
    ═══════════════════════════════════════════════════════════════════════════ */
 
 interface UnpaidGroup { customerName: string; items: AppRecord[]; total: number }
+
+/** คำนวณจำนวนวันค้างชำระจาก created_at ถึงวันนี้ */
+function getOverdueDays(createdAt: string): number {
+  const created = new Date(createdAt)
+  created.setHours(0, 0, 0, 0)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return Math.max(0, Math.floor((today.getTime() - created.getTime()) / (1000 * 60 * 60 * 24)))
+}
+
+/** จัดรูปแบบวันที่เป็นภาษาไทย */
+function formatThaiDate(dateStr: string): string {
+  const d = new Date(dateStr)
+  return d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' })
+}
+
+/** เลือกสีตาม severity ของจำนวนวันค้าง */
+function getOverdueBadgeStyle(days: number): { bg: string; text: string; border: string } {
+  if (days >= 14) return { bg: 'bg-red-50', text: 'text-red-600', border: 'border-red-200' }
+  if (days >= 7)  return { bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-200' }
+  if (days >= 3)  return { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-200' }
+  return { bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-200' }
+}
 
 const UnpaidModal = memo(function UnpaidModal({ unpaidData, totalAmount, onClose, onMarkPaid }: {
   unpaidData: UnpaidGroup[]; totalAmount: number; onClose: () => void; onMarkPaid: (name: string) => void
@@ -306,35 +329,64 @@ const UnpaidModal = memo(function UnpaidModal({ unpaidData, totalAmount, onClose
             <p className="text-white/70 text-sm mt-2 relative z-10 font-medium">รวมทั้งหมด {unpaidData.reduce((a, c) => a + c.items.length, 0)} คัน</p>
           </div>
 
-          {unpaidData.map(({ customerName, items, total }) => (
-            <article key={customerName} className="card p-5 border-2 border-red-100">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-lg font-extrabold text-[var(--red)]">{customerName}</h3>
-                  <p className="text-sm font-semibold text-[var(--text-tertiary)] mt-0.5">ค้างชำระ {items.length} คัน</p>
-                </div>
-                <p className="text-xl font-extrabold text-[var(--red)]">฿{total.toLocaleString()}</p>
-              </div>
-              <div className="bg-[var(--surface-2)] rounded-[var(--radius-md)] p-4 mb-4 space-y-2.5">
-                {items.map((item, idx) => (
-                  <div key={item.id} className="flex justify-between items-center text-[15px]">
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-[var(--text-tertiary)] text-sm font-medium">{idx + 1}.</span>
-                      <span className="font-bold text-[var(--text-primary)]">{item.plate}</span>
-                    </div>
-                    <span className="font-bold text-[var(--text-secondary)]">฿{item.price}</span>
+          {unpaidData.map(({ customerName, items, total }) => {
+            // หาจำนวนวันค้างนานสุดของลูกค้ารายนี้
+            const maxOverdueDays = Math.max(...items.map(i => getOverdueDays(i.created_at)))
+            const maxStyle = getOverdueBadgeStyle(maxOverdueDays)
+
+            return (
+              <article key={customerName} className="card p-5 border-2 border-red-100">
+                <div className="flex justify-between items-start mb-3">
+                  <div>
+                    <h3 className="text-lg font-extrabold text-[var(--red)]">{customerName}</h3>
+                    <p className="text-sm font-semibold text-[var(--text-tertiary)] mt-0.5">ค้างชำระ {items.length} คัน</p>
                   </div>
-                ))}
-              </div>
-              <button
-                onClick={() => onMarkPaid(customerName)}
-                className="w-full py-3.5 rounded-[var(--radius-md)] bg-[var(--green-light)] text-[var(--green)] font-bold text-base border-2 border-[var(--green)] active:scale-[0.98] transition-transform flex justify-center items-center gap-2"
-                aria-label={`เคลียร์ยอดชำระ ${customerName}`}
-              >
-                <CheckMarkIcon /> เคลียร์ยอดชำระแล้ว
-              </button>
-            </article>
-          ))}
+                  <p className="text-xl font-extrabold text-[var(--red)]">฿{total.toLocaleString()}</p>
+                </div>
+
+                {/* แสดงสรุปจำนวนวันค้างนานสุด */}
+                <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border mb-4 ${maxStyle.bg} ${maxStyle.border}`}>
+                  <ClockIcon />
+                  <span className={`text-[13px] font-bold ${maxStyle.text}`}>
+                    ค้างนานสุด {maxOverdueDays} วัน
+                  </span>
+                </div>
+
+                <div className="bg-[var(--surface-2)] rounded-[var(--radius-md)] p-4 mb-4 space-y-3">
+                  {items.map((item, idx) => {
+                    const days = getOverdueDays(item.created_at)
+                    const style = getOverdueBadgeStyle(days)
+                    return (
+                      <div key={item.id} className="space-y-1">
+                        <div className="flex justify-between items-center text-[15px]">
+                          <div className="flex items-center gap-2.5">
+                            <span className="text-[var(--text-tertiary)] text-sm font-medium">{idx + 1}.</span>
+                            <span className="font-bold text-[var(--text-primary)]">{item.plate}</span>
+                          </div>
+                          <span className="font-bold text-[var(--text-secondary)]">฿{item.price}</span>
+                        </div>
+                        <div className="flex items-center gap-2 ml-6">
+                          <span className="text-[12px] text-[var(--text-tertiary)] font-medium">
+                            📅 {formatThaiDate(item.created_at)}
+                          </span>
+                          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${style.bg} ${style.text} ${style.border}`}>
+                            ค้าง {days} วัน
+                          </span>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+                <button
+                  onClick={() => onMarkPaid(customerName)}
+                  className="w-full py-3.5 rounded-[var(--radius-md)] bg-[var(--green-light)] text-[var(--green)] font-bold text-base border-2 border-[var(--green)] active:scale-[0.98] transition-transform flex justify-center items-center gap-2"
+                  aria-label={`เคลียร์ยอดชำระ ${customerName}`}
+                >
+                  <CheckMarkIcon /> เคลียร์ยอดชำระแล้ว
+                </button>
+              </article>
+            )
+          })}
         </div>
       </div>
     </div>
@@ -349,3 +401,4 @@ const AISparklesIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fi
 const RefreshIcon = () => (<svg width="16" height="16" viewBox="0 0 13 13" fill="none" aria-hidden="true"><path d="M11 6.5A4.5 4.5 0 1 1 6.5 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><path d="M6.5 2l1.5 1.5L6.5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>)
 const CloseIcon = () => (<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>)
 const CheckMarkIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>)
+const ClockIcon = () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/><path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>)
