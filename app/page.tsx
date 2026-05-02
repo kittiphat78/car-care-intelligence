@@ -101,7 +101,13 @@ const WeatherWidget = memo(function WeatherWidget({ weather }: { weather: Weathe
         <div className="flex items-start sm:items-center gap-3.5">
           <div className="w-14 h-14 rounded-2xl bg-white shadow-sm border border-white/50 flex items-center justify-center text-3xl shrink-0" aria-hidden="true">{weather.icon}</div>
           <div>
-            <p className={`text-[11px] font-extrabold uppercase tracking-widest mb-1.5 opacity-80 ${weather.textClass}`}>เมืองเชียงราย ตอนนี้ 📍</p>
+            <div className="flex items-center gap-2 mb-1.5">
+              <p className={`text-[11px] font-extrabold uppercase tracking-widest opacity-80 ${weather.textClass}`}>เมืองเชียงราย 📍</p>
+              <span className="flex items-center gap-1 bg-white/50 px-2 py-0.5 rounded-full border border-white/60">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" aria-hidden="true" />
+                <span className={`text-[10px] font-bold opacity-60 ${weather.textClass}`}>อัปเดต {weather.lastUpdated} น.</span>
+              </span>
+            </div>
             <div className="flex flex-wrap items-center gap-1.5">
               <span className={`text-[13px] font-bold px-2.5 py-1 rounded-lg shadow-sm ${weather.badgeClass}`}>{weather.condition} {weather.temp}°C</span>
               <span className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border shadow-sm ${weather.aqiStatus.colorClass} flex items-center gap-1`}>
@@ -120,6 +126,23 @@ const WeatherWidget = memo(function WeatherWidget({ weather }: { weather: Weathe
           </div>
         )}
       </div>
+
+      {/* แถวข้อมูลเพิ่มเติม: รู้สึกเหมือน, ความชื้น, ลม */}
+      <div className="flex gap-2 mb-4">
+        <div className="flex-1 bg-white/40 rounded-xl px-3 py-2 border border-white/50 text-center">
+          <p className={`text-[10px] font-bold opacity-60 ${weather.textClass}`}>รู้สึกเหมือน</p>
+          <p className={`text-sm font-extrabold ${weather.textClass}`}>{weather.feelsLike}°C</p>
+        </div>
+        <div className="flex-1 bg-white/40 rounded-xl px-3 py-2 border border-white/50 text-center">
+          <p className={`text-[10px] font-bold opacity-60 ${weather.textClass}`}>💧 ความชื้น</p>
+          <p className={`text-sm font-extrabold ${weather.textClass}`}>{weather.humidity}%</p>
+        </div>
+        <div className="flex-1 bg-white/40 rounded-xl px-3 py-2 border border-white/50 text-center">
+          <p className={`text-[10px] font-bold opacity-60 ${weather.textClass}`}>💨 ลม</p>
+          <p className={`text-sm font-extrabold ${weather.textClass}`}>{weather.windSpeed} km/h</p>
+        </div>
+      </div>
+
       <div className="bg-white/60 backdrop-blur-md rounded-2xl p-3.5 border border-white/60 flex items-start gap-3 shadow-sm">
         <span className={`shrink-0 mt-0.5 ${weather.textClass}`} aria-hidden="true"><AISparklesIcon /></span>
         <p className={`text-[13px] font-bold leading-relaxed ${weather.textClass}`}>{weather.message}</p>
