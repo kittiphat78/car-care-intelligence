@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, memo, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { RecordType, CAR_TYPES, CAR_BRANDS, PaymentStatus } from '@/types'
+import { z } from 'zod'
+import DOMPurify from 'isomorphic-dompurify'
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Constants & Utilities (no logic changes)
@@ -128,9 +130,34 @@ export default function AddPage() {
   }, [])
 
   const submitIncome = async (isBulk: boolean) => {
-    if (!plate.trim()) return setError('กรุณากรอกป้ายทะเบียน')
-    if (!selectedType) return setError('กรุณาเลือกประเภทรถ')
-    if (!price || parseInt(price, 10) <= 0) return setError('กรุณากรอกราคา')
+    // 1. กำหนด Schema ด้วย Zod สำหรับ Income
+    const incomeSchema = z.object({
+      plate: z.string().min(1, 'กรุณากรอกป้ายทะเบียน').max(20, 'ป้ายทะเบียนยาวเกินไป'),
+      selectedType: z.string().min(1, 'กรุณาเลือกประเภทรถ'),
+      price: z.number().min(0, 'ราคาต้องมากกว่าหรือเท่ากับ 0'),
+      customerName: z.string().max(50, 'ชื่อลูกค้ายาวเกินไป').optional(),
+      note: z.string().max(200, 'หมายเหตุยาวเกินไป').optional()
+    })
+
+    // 2. Validate ข้อมูลด้วย Zod
+    const validationResult = incomeSchema.safeParse({
+      plate: plate.trim(),
+      selectedType,
+      price: price ? parseInt(price, 10) : -1, // ส่ง -1 ไปให้ Zod ตีตกถ้าราคาว่าง
+      customerName: customerName.trim(),
+      note: note.trim()
+    })
+
+    if (!validationResult.success) {
+      // ดึง Error ตัวแรกมาแสดง
+      return setError(validationResult.error.issues[0].message)
+    }
+
+    // 3. Sanitize ข้อมูลป้องกัน XSS
+    const safePlate = DOMPurify.sanitize(validationResult.data.plate).toUpperCase()
+    const safeCustomerName = DOMPurify.sanitize(validationResult.data.customerName || '')
+    const safeNote = DOMPurify.sanitize(validationResult.data.note || '')
+    const safePrice = validationResult.data.price
 
     const timestamp = generateTimestamp(date)
     const dayStart = new Date(date); dayStart.setHours(0, 0, 0, 0)
@@ -141,33 +168,53 @@ export default function AddPage() {
 
     const typeName  = CAR_TYPES.find(t => t.id === selectedType)?.name || ''
     const brandName = CAR_BRANDS.find(b => b.id === selectedBrand)?.name || ''
-    const services  = [typeName, brandName, note.trim()]
+    const services  = [typeName, brandName, safeNote]
 
     const { error } = await supabase.from('records').insert({
-      type, plate: plate.toUpperCase().trim(), services, price: parseInt(price, 10),
+      type, plate: safePlate, services, price: safePrice,
       seq_number: (count ?? 0) + 1, created_at: timestamp, created_by: userId,
-      created_by_email: userEmail, payment_method: 'cash', customer_name: customerName.trim(),
+      created_by_email: userEmail, payment_method: 'cash', customer_name: safeCustomerName,
       payment_status: paymentStatus, job_status: 'done',
     })
     if (error) throw error
-    if (customerName.trim()) addCustomer(customerName)
+    if (safeCustomerName) addCustomer(safeCustomerName)
     if (isBulk) {
-      setSuccessMsg(`บันทึก ${plate.toUpperCase().trim()} สำเร็จ`)
+      setSuccessMsg(`บันทึก ${safePlate} สำเร็จ`)
       resetIncomeForm(); setTimeout(() => setSuccessMsg(''), 4000)
     } else { router.push('/'); router.refresh() }
   }
 
   const submitExpense = async (isBulk: boolean) => {
-    if (!expenseTitle.trim()) return setError('กรุณาระบุรายการจ่าย')
-    if (!expenseAmount || parseInt(expenseAmount, 10) <= 0) return setError('กรุณากรอกจำนวนเงิน')
+    // 1. Zod Schema สำหรับ Expense
+    const expenseSchema = z.object({
+      title: z.string().min(1, 'กรุณาระบุรายการจ่าย').max(100, 'รายการยาวเกินไป'),
+      amount: z.number().min(1, 'จำนวนเงินต้องมากกว่า 0'),
+      note: z.string().max(200, 'หมายเหตุยาวเกินไป').optional()
+    })
+
+    const validationResult = expenseSchema.safeParse({
+      title: expenseTitle.trim(),
+      amount: expenseAmount ? parseInt(expenseAmount, 10) : -1,
+      note: expenseNote.trim()
+    })
+
+    if (!validationResult.success) {
+      return setError(validationResult.error.issues[0].message)
+    }
+
+    // 2. Sanitize ข้อมูลป้องกัน XSS
+    const safeTitle = DOMPurify.sanitize(validationResult.data.title)
+    const safeNote = DOMPurify.sanitize(validationResult.data.note || '')
+    const safeAmount = validationResult.data.amount
+
     const { error } = await supabase.from('expenses').insert({
-      title: expenseTitle.trim(), amount: parseInt(expenseAmount, 10),
+      title: safeTitle, amount: safeAmount,
       created_at: generateTimestamp(date), created_by: userId, created_by_email: userEmail,
-      note: expenseNote.trim(),
+      note: safeNote,
     })
     if (error) throw error
     if (isBulk) {
-      setSuccessMsg(`บันทึกรายจ่าย ${expenseTitle.trim()} สำเร็จ`)
+      setSuccessMsg(`บันทึกรายจ่าย ${safeTitle} สำเร็จ`)
       resetExpenseForm(); setTimeout(() => setSuccessMsg(''), 4000)
     } else { router.push('/'); router.refresh() }
   }
