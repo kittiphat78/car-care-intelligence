@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState, useMemo, memo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Record as AppRecord, Expense } from '@/types'
 import RecordCard from '@/components/RecordCard'
-import { exportToCSV } from '@/lib/export'
+import { exportToExcel } from '@/lib/export'
 import EditModal from '@/components/EditModal'
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -100,6 +100,7 @@ export default function HistoryPage() {
   const [dateTo, setDateTo]               = useState('')
   const [selectedItem, setSelectedItem]   = useState<AppRecord | Expense | null>(null)
   const [isModalOpen, setIsModalOpen]     = useState(false)
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false)
 
   const { records, expenses, loading, error, handleDelete, handleSave } = useHistoryData(selectedYear, activeTab)
 
@@ -153,13 +154,40 @@ export default function HistoryPage() {
   const openModal = useCallback((item: AppRecord | Expense) => { setSelectedItem(item); setIsModalOpen(true) }, [])
   const closeModal = useCallback(() => setIsModalOpen(false), [])
 
+  const handleExport = useCallback(async (startYear: number, startMonth: number, endYear: number, endMonth: number) => {
+    // คำนวณวันที่เริ่ม (วันที่ 1 ของเดือนที่เริ่ม)
+    const startDate = new Date(startYear, startMonth - 1, 1).toISOString()
+    
+    // คำนวณวันที่สุดท้าย (วันที่ 1 ของเดือนถัดไปจากเดือนที่สิ้นสุด เพื่อใช้ lt)
+    const endDate = new Date(endYear, endMonth, 1).toISOString()
+    
+    const table = activeTab === 'income' ? 'records' : 'expenses'
+    const { data } = await supabase.from(table).select('*').gte('created_at', startDate).lt('created_at', endDate).order('created_at', { ascending: false })
+    
+    if (data && data.length > 0) {
+      const getMonthName = (m: number) => MONTH_OPTIONS.find(opt => opt.value === m)?.label || ''
+      const typeLabel = activeTab === 'income' ? 'สรุปรายรับ' : 'สรุปรายจ่าย'
+      const startStr = `${getMonthName(startMonth)}${startYear + 543}`
+      const endStr = `${getMonthName(endMonth)}${endYear + 543}`
+
+      const fileName = startStr === endStr 
+        ? `${typeLabel}_${startStr}`
+        : `${typeLabel}_ตั้งแต่${startStr}_ถึง${endStr}`
+        
+      exportToExcel(data, fileName)
+    } else {
+      alert('ไม่พบข้อมูลในช่วงเวลาที่เลือก')
+    }
+    setIsExportModalOpen(false)
+  }, [activeTab])
+
   return (
     <div className="min-h-dvh px-4 pt-6 space-y-4">
       <Header selectedMonth={selectedMonth} setSelectedMonth={setSelectedMonth} selectedYear={selectedYear} setSelectedYear={setSelectedYear} />
       <TabToggle activeTab={activeTab} switchTab={switchTab} />
       <SummaryCard
         activeTab={activeTab} selectedMonth={selectedMonth} summary={summary}
-        onExport={() => exportToCSV(activeTab === 'income' ? currentMonthRecords : currentMonthExpenses, `history-${activeTab}-${selectedYear}`)}
+        onExport={() => setIsExportModalOpen(true)}
       />
       <FilterSection
         activeTab={activeTab} search={search} setSearch={setSearch}
@@ -173,6 +201,15 @@ export default function HistoryPage() {
         onSave={(fields) => handleSave(fields, selectedItem!.id, closeModal)}
         onDelete={(id) => handleDelete(id, closeModal)}
       />
+      {isExportModalOpen && (
+        <ExportModal
+          activeTab={activeTab}
+          defaultYear={selectedYear}
+          defaultMonth={selectedMonth === 0 ? new Date().getMonth() + 1 : selectedMonth}
+          onClose={() => setIsExportModalOpen(false)}
+          onExport={handleExport}
+        />
+      )}
     </div>
   )
 }
@@ -236,9 +273,9 @@ const SummaryCard = memo(function SummaryCard({ activeTab, selectedMonth, summar
               </div>
             </div>
           )}
-          <button onClick={onExport} className="flex items-center gap-2 text-sm font-bold text-white/70 bg-white/10 border border-white/10 px-3.5 py-3 rounded-[var(--radius-md)] active:scale-95 transition-transform" aria-label="ดาวน์โหลด CSV">
-            <svg width="16" height="16" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M7 1v8M4 6l3 3 3-3M2 10v1.5a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5V10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            CSV
+          <button onClick={onExport} className="flex items-center gap-2 text-sm font-bold text-white/70 bg-white/10 border border-white/10 px-3.5 py-3 rounded-[var(--radius-md)] active:scale-95 transition-transform" aria-label="ดาวน์โหลด Excel">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h2"/><path d="M8 17h2"/><path d="M14 13h2"/><path d="M14 17h2"/></svg>
+            Excel
           </button>
         </div>
       </div>
@@ -369,3 +406,77 @@ const ErrorBanner = memo(function ErrorBanner({ error }: { error: string }) {
     </div>
   )
 })
+
+function ExportModal({ activeTab, defaultYear, defaultMonth, onClose, onExport }: any) {
+  const [startYear, setStartYear] = useState(defaultYear)
+  const [startMonth, setStartMonth] = useState(defaultMonth)
+  const [endYear, setEndYear] = useState(defaultYear)
+  const [endMonth, setEndMonth] = useState(defaultMonth)
+  const [isExporting, setIsExporting] = useState(false)
+
+  const EXPORT_MONTH_OPTIONS = MONTH_OPTIONS.filter(m => m.value !== 0)
+
+  const handleConfirm = async () => {
+    // Validate range
+    const start = new Date(startYear, startMonth - 1, 1).getTime()
+    const end = new Date(endYear, endMonth - 1, 1).getTime()
+    if (end < start) {
+      alert('เดือนที่สิ้นสุดต้องอยู่หลังจากเดือนที่เริ่มต้น')
+      return
+    }
+
+    setIsExporting(true)
+    await onExport(startYear, startMonth, endYear, endMonth)
+    setIsExporting(false)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 fade-in" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="bg-white w-full max-w-md rounded-[28px] p-6 slide-up shadow-2xl">
+        <h2 className="text-xl font-extrabold text-[var(--text-primary)] mb-4 text-center">
+          ส่งออกข้อมูล (Excel)
+        </h2>
+        <p className="text-sm font-medium text-[var(--text-tertiary)] mb-6 text-center">
+          เลือกระยะเวลาที่ต้องการดาวน์โหลดข้อมูล{activeTab === 'income' ? 'รายรับ' : 'รายจ่าย'}
+        </p>
+
+        <div className="space-y-4 mb-6 relative">
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 w-[2px] h-[40px] bg-[var(--border)] -z-10 hidden sm:block" />
+          
+          <div className="card bg-[var(--surface-2)] p-4 border border-[var(--border)] relative z-0">
+            <label className="block text-[13px] font-bold text-[var(--text-secondary)] mb-2">ตั้งแต่ (เริ่มต้น)</label>
+            <div className="flex gap-2">
+              <select value={startMonth} onChange={e => setStartMonth(parseInt(e.target.value))} className="input py-2.5 px-3 text-sm flex-1 font-bold">
+                {EXPORT_MONTH_OPTIONS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+              </select>
+              <select value={startYear} onChange={e => setStartYear(parseInt(e.target.value))} className="input py-2.5 px-3 text-sm flex-1 font-bold">
+                {YEAR_OPTIONS.map(y => <option key={y} value={y}>{y + 543}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="card bg-[var(--surface-2)] p-4 border border-[var(--border)] relative z-0">
+            <label className="block text-[13px] font-bold text-[var(--text-secondary)] mb-2">ถึง (สิ้นสุด)</label>
+            <div className="flex gap-2">
+              <select value={endMonth} onChange={e => setEndMonth(parseInt(e.target.value))} className="input py-2.5 px-3 text-sm flex-1 font-bold">
+                {EXPORT_MONTH_OPTIONS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+              </select>
+              <select value={endYear} onChange={e => setEndYear(parseInt(e.target.value))} className="input py-2.5 px-3 text-sm flex-1 font-bold">
+                {YEAR_OPTIONS.map(y => <option key={y} value={y}>{y + 543}</option>)}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-2">
+          <button onClick={onClose} className="flex-1 py-3.5 rounded-xl font-bold text-[var(--text-secondary)] bg-[var(--surface-2)] active:scale-95 transition-transform">
+            ยกเลิก
+          </button>
+          <button onClick={handleConfirm} disabled={isExporting} className="flex-1 py-3.5 rounded-xl font-bold text-white bg-[var(--accent)] active:scale-95 transition-transform flex justify-center items-center gap-2">
+            {isExporting ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'ดาวน์โหลด'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
