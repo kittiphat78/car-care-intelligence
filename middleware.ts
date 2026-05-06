@@ -29,14 +29,24 @@ export async function middleware(request: NextRequest) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
-  const isLoginPage = request.nextUrl.pathname.startsWith('/login')
+  const path = request.nextUrl.pathname
+  const isLoginPage = path.startsWith('/login')
 
-  // ไม่ได้ login → redirect ไป /login
-  if (!user && !isLoginPage) {
+  // กำหนด Route ที่ต้องการป้องกัน (รวมหน้า / ซึ่งก็คือ Dashboard ปัจจุบัน)
+  const protectedRoutes = ['/', '/dashboard', '/history', '/finance', '/export', '/add']
+  
+  // เช็คว่า path ปัจจุบันอยู่ในรายการที่ต้องป้องกันหรือไม่
+  const isProtectedRoute = protectedRoutes.some(route => {
+    if (route === '/') return path === '/'
+    return path.startsWith(route)
+  })
+
+  // ถ้ายังไม่ได้ login และพยายามเข้าหน้า Protected Route → redirect ไป /login
+  if (!user && isProtectedRoute) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // login อยู่แล้ว แต่เข้า /login → redirect ไปหน้าหลัก
+  // ถ้า login อยู่แล้ว แต่ตั้งใจจะเข้า /login → redirect ไปหน้าหลัก
   if (user && isLoginPage) {
     return NextResponse.redirect(new URL('/', request.url))
   }
