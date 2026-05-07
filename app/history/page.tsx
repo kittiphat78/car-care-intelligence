@@ -162,7 +162,7 @@ export default function HistoryPage() {
     const endDate = new Date(endYear, endMonth, 1).toISOString()
     
     const table = activeTab === 'income' ? 'records' : 'expenses'
-    const { data } = await supabase.from(table).select('*').gte('created_at', startDate).lt('created_at', endDate).order('created_at', { ascending: false })
+    const { data } = await supabase.from(table).select('*').gte('created_at', startDate).lt('created_at', endDate).order('created_at', { ascending: true })
     
     if (data && data.length > 0) {
       const getMonthName = (m: number) => MONTH_OPTIONS.find(opt => opt.value === m)?.label || ''

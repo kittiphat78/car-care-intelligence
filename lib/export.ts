@@ -17,20 +17,21 @@ export async function exportToExcel(data: AppRecord[] | Expense[], fileName: str
   // ✅ 1. กำหนดโครงสร้างคอลัมน์ (ใส่ width ชั่วคราวไปก่อน เดี๋ยวคำนวณใหม่ทีหลัง)
   if (isExpenseMode) {
     worksheet.columns = [
+      { header: 'ลำดับ', key: 'no' },
       { header: 'วันที่', key: 'date' },
       { header: 'รายการจ่าย', key: 'title' },
-      { header: 'จำนวนเงิน (บาท)', key: 'amount' },
-      { header: 'หมายเหตุ', key: 'note' }
+      { header: 'หมายเหตุ', key: 'note' },
+      { header: 'จำนวนเงิน (บาท)', key: 'amount' }
     ]
   } else {
     worksheet.columns = [
-      { header: 'ลำดับคิว', key: 'seq' },
+      { header: 'ลำดับ', key: 'no' },
       { header: 'วันที่', key: 'date' },
-      { header: 'ประเภทงาน', key: 'type' },
       { header: 'ป้ายทะเบียน', key: 'plate' },
+      { header: 'ชื่อลูกค้า', key: 'customer' },
+      { header: 'ประเภทงาน', key: 'type' },
       { header: 'ยี่ห้อรถ', key: 'brand' },
       { header: 'ประเภทรถ', key: 'carType' },
-      { header: 'ชื่อลูกค้า', key: 'customer' },
       { header: 'สถานะ', key: 'status' },
       { header: 'หมายเหตุ', key: 'note' },
       { header: 'ราคา (บาท)', key: 'price' }
@@ -59,6 +60,8 @@ export async function exportToExcel(data: AppRecord[] | Expense[], fileName: str
   }
 
   let totalAmount = 0
+  let totalWashCount = 0
+  let totalPolishCount = 0
   const monthlyTotals: globalThis.Record<string, number> = {}
 
   data.forEach((item, index) => {
@@ -71,23 +74,26 @@ export async function exportToExcel(data: AppRecord[] | Expense[], fileName: str
       totalAmount += item.amount || 0
       monthlyTotals[monthKey] = (monthlyTotals[monthKey] || 0) + (item.amount || 0)
       rowValues = {
+        no: index + 1,
         date: dateStr,
         title: item.title || '-',
-        amount: item.amount || 0,
-        note: item.note || '-'
+        note: item.note || '-',
+        amount: item.amount || 0
       }
     } else {
       totalAmount += item.price || 0
       monthlyTotals[monthKey] = (monthlyTotals[monthKey] || 0) + (item.price || 0)
+      if (item.type === 'wash') totalWashCount++
+      if (item.type === 'polish') totalPolishCount++
       const services = item.services || []
       rowValues = {
-        seq: item.seq_number || '-',
+        no: index + 1,
         date: dateStr,
-        type: item.type === 'wash' ? 'ล้างรถ' : 'ขัดสี',
         plate: item.plate || '-',
+        customer: item.customer_name || '-',
+        type: item.type === 'wash' ? 'ล้างรถ' : 'ขัดสี',
         brand: services[1] || '-',
         carType: services[0] || '-',
-        customer: item.customer_name || '-',
         status: item.payment_status === 'paid' ? 'ชำระแล้ว' : 'ค้างชำระ',
         note: services[2] || '-',
         price: item.price || 0
@@ -114,7 +120,7 @@ export async function exportToExcel(data: AppRecord[] | Expense[], fileName: str
     if (!isExpenseMode) {
       row.getCell('status').alignment = { horizontal: 'center', vertical: 'middle' }
       row.getCell('type').alignment = { horizontal: 'center', vertical: 'middle' }
-      row.getCell('seq').alignment = { horizontal: 'center', vertical: 'middle' }
+      row.getCell('no').alignment = { horizontal: 'center', vertical: 'middle' }
     }
   })
 
@@ -148,6 +154,15 @@ export async function exportToExcel(data: AppRecord[] | Expense[], fileName: str
 
   // ✅ 5. แถวสรุปยอดรวม (Grand Total)
   worksheet.addRow([]) // เว้นบรรทัด
+
+  if (!isExpenseMode) {
+    const countRow = worksheet.addRow({ note: `ล้างรถ: ${totalWashCount} คัน | ขัดสี: ${totalPolishCount} คัน`, price: '' })
+    countRow.font = { name: 'Arial', bold: true, size: 11, color: { argb: 'FF374151' } }
+    countRow.alignment = { vertical: 'middle', horizontal: 'right' }
+    countRow.getCell('price').value = '' // Clear price cell if any
+    worksheet.mergeCells(`A${countRow.number}:H${countRow.number}`)
+  }
+
   const summaryRow = worksheet.addRow(
     isExpenseMode 
       ? { title: 'ยอดรวมทั้งสิ้น:', amount: totalAmount }
