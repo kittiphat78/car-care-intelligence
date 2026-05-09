@@ -6,6 +6,7 @@ import { Record as AppRecord, Expense } from '@/types'
 import RecordCard from '@/components/RecordCard'
 import { exportToExcel } from '@/lib/export'
 import EditModal from '@/components/EditModal'
+import { generateCashBill } from '@/lib/generateBill'
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Constants & Types
@@ -102,6 +103,13 @@ export default function HistoryPage() {
   const [isModalOpen, setIsModalOpen]     = useState(false)
   const [isExportModalOpen, setIsExportModalOpen] = useState(false)
 
+  // Bill Mode
+  const [billMode, setBillMode] = useState(false)
+  const [billSelectedIds, setBillSelectedIds] = useState<Set<string>>(new Set())
+  const [billCustomerName, setBillCustomerName] = useState('')
+  const [showBillNameModal, setShowBillNameModal] = useState(false)
+  const [generatingBill, setGeneratingBill] = useState(false)
+
   const { records, expenses, loading, error, handleDelete, handleSave } = useHistoryData(selectedYear, activeTab)
 
   const switchTab = useCallback((tab: TabType) => {
@@ -181,6 +189,53 @@ export default function HistoryPage() {
     setIsExportModalOpen(false)
   }, [activeTab])
 
+  // Bill Mode helpers
+  const toggleBillSelect = useCallback((id: string) => {
+    setBillSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }, [])
+
+  const toggleBillSelectDay = useCallback((items: (AppRecord | Expense)[]) => {
+    const incomeItems = items.filter((i): i is AppRecord => 'price' in i)
+    const ids = incomeItems.map(i => i.id)
+    const allSelected = ids.every(id => billSelectedIds.has(id))
+    setBillSelectedIds(prev => {
+      const next = new Set(prev)
+      if (allSelected) ids.forEach(id => next.delete(id))
+      else ids.forEach(id => next.add(id))
+      return next
+    })
+  }, [billSelectedIds])
+
+  const billSelectedRecords = useMemo(() => {
+    if (activeTab !== 'income') return []
+    return currentMonthRecords.filter(r => billSelectedIds.has(r.id))
+  }, [activeTab, currentMonthRecords, billSelectedIds])
+
+  const handleBillGenerate = useCallback(async () => {
+    if (billSelectedRecords.length === 0) return
+    if (!billCustomerName.trim()) return alert('กรุณาระบุชื่อลูกค้า')
+    setGeneratingBill(true)
+    try {
+      await generateCashBill(billSelectedRecords, billCustomerName.trim())
+      setShowBillNameModal(false)
+    } catch (e) {
+      console.error(e)
+      alert('ไม่สามารถสร้างบิลได้')
+    } finally {
+      setGeneratingBill(false)
+    }
+  }, [billSelectedRecords, billCustomerName])
+
+  const exitBillMode = useCallback(() => {
+    setBillMode(false)
+    setBillSelectedIds(new Set())
+    setBillCustomerName('')
+  }, [])
+
   return (
     <div className="min-h-dvh px-4 pt-6 space-y-4">
       <Header selectedMonth={selectedMonth} setSelectedMonth={setSelectedMonth} selectedYear={selectedYear} setSelectedYear={setSelectedYear} />
@@ -188,14 +243,84 @@ export default function HistoryPage() {
       <SummaryCard
         activeTab={activeTab} selectedMonth={selectedMonth} summary={summary}
         onExport={() => setIsExportModalOpen(true)}
+        billMode={billMode}
+        onBillModeToggle={() => billMode ? exitBillMode() : setBillMode(true)}
       />
       <FilterSection
         activeTab={activeTab} search={search} setSearch={setSearch}
         dateFrom={dateFrom} setDateFrom={setDateFrom} dateTo={dateTo} setDateTo={setDateTo}
         filterType={filterType} setFilterType={setFilterType}
       />
-      <HistoryList loading={loading} grouped={grouped} activeTab={activeTab} onItemClick={openModal} />
+      <HistoryList
+        loading={loading} grouped={grouped} activeTab={activeTab} onItemClick={openModal}
+        billMode={billMode && activeTab === 'income'}
+        billSelectedIds={billSelectedIds}
+        onBillToggle={toggleBillSelect}
+        onBillToggleDay={toggleBillSelectDay}
+      />
       {error && <ErrorBanner error={error} />}
+
+      {/* Bill Mode Floating Action Bar */}
+      {billMode && activeTab === 'income' && (
+        <div className="fixed bottom-[5.5rem] left-4 right-4 z-[60] slide-up">
+          <div className="max-w-lg mx-auto bg-[var(--text-primary)] rounded-2xl shadow-2xl shadow-black/20 overflow-hidden">
+            {/* Progress bar */}
+            <div className="h-1 bg-white/10">
+              <div className="h-full bg-[var(--accent)] transition-all duration-300" style={{ width: billSelectedRecords.length > 0 ? '100%' : '0%' }} />
+            </div>
+            <div className="px-5 py-4 flex items-center justify-between gap-3">
+              <button onClick={exitBillMode} className="text-white/50 active:scale-95 transition-transform p-1" aria-label="ปิดโหมดสร้างบิล">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              </button>
+              <div className="text-center flex-1">
+                {billSelectedRecords.length === 0 ? (
+                  <p className="text-sm font-bold text-white/50">เลือกรายการเพื่อสร้างบิล</p>
+                ) : (
+                  <>
+                    <p className="text-sm font-bold text-white">{billSelectedRecords.length} รายการ</p>
+                    <p className="text-xs font-extrabold text-[var(--accent)]">฿{billSelectedRecords.reduce((s, r) => s + r.price, 0).toLocaleString()}</p>
+                  </>
+                )}
+              </div>
+              <button
+                onClick={() => { if (billSelectedRecords.length > 0) { setBillCustomerName(''); setShowBillNameModal(true) } }}
+                disabled={billSelectedRecords.length === 0}
+                className="bg-[var(--accent)] text-white font-bold px-4 py-2.5 rounded-xl text-sm active:scale-95 transition-all disabled:opacity-30 disabled:scale-100 flex items-center gap-1.5"
+              >
+                🧾 สร้างบิล
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bill Customer Name Modal */}
+      {showBillNameModal && (
+        <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm fade-in flex items-center justify-center p-4"
+          onClick={(e) => e.target === e.currentTarget && setShowBillNameModal(false)}
+        >
+          <div className="bg-white w-full max-w-sm rounded-[24px] p-6 slide-up shadow-2xl">
+            <h3 className="text-lg font-extrabold text-[var(--text-primary)] mb-1">สร้างบิลเงินสด 🧾</h3>
+            <p className="text-sm text-[var(--text-tertiary)] mb-4">{billSelectedRecords.length} รายการ · ฿{billSelectedRecords.reduce((s, r) => s + r.price, 0).toLocaleString()}</p>
+            <label className="text-sm font-bold text-[var(--text-secondary)] block mb-2">ชื่อลูกค้า (สำหรับใส่ในบิล)</label>
+            <input
+              type="text" value={billCustomerName} onChange={e => setBillCustomerName(e.target.value)}
+              placeholder="พิมพ์ชื่อลูกค้า..."
+              className="input w-full mb-4" autoFocus
+              onKeyDown={e => e.key === 'Enter' && handleBillGenerate()}
+            />
+            <div className="flex gap-3">
+              <button onClick={() => setShowBillNameModal(false)} className="flex-1 py-3 rounded-xl bg-[var(--surface-2)] text-[var(--text-secondary)] font-bold text-sm">ยกเลิก</button>
+              <button
+                onClick={handleBillGenerate} disabled={generatingBill || !billCustomerName.trim()}
+                className="flex-1 py-3 rounded-xl bg-[var(--accent)] text-white font-bold text-sm active:scale-95 transition-transform disabled:opacity-40"
+              >
+                {generatingBill ? 'กำลังสร้าง...' : 'ดาวน์โหลดบิล'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <EditModal
         item={selectedItem} type={activeTab} isOpen={isModalOpen} onClose={closeModal}
         onSave={(fields) => handleSave(fields, selectedItem!.id, closeModal)}
@@ -247,7 +372,7 @@ const TabToggle = memo(function TabToggle({ activeTab, switchTab }: { activeTab:
   )
 })
 
-const SummaryCard = memo(function SummaryCard({ activeTab, selectedMonth, summary, onExport }: any) {
+const SummaryCard = memo(function SummaryCard({ activeTab, selectedMonth, summary, onExport, billMode, onBillModeToggle }: any) {
   return (
     <section className="card-dark p-5 fade-up delay-1" aria-label="สรุปยอดรวม">
       <div className="flex items-start justify-between gap-4">
@@ -273,10 +398,25 @@ const SummaryCard = memo(function SummaryCard({ activeTab, selectedMonth, summar
               </div>
             </div>
           )}
-          <button onClick={onExport} className="flex items-center gap-2 text-sm font-bold text-white/70 bg-white/10 border border-white/10 px-3.5 py-3 rounded-[var(--radius-md)] active:scale-95 transition-transform" aria-label="ดาวน์โหลด Excel">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h2"/><path d="M8 17h2"/><path d="M14 13h2"/><path d="M14 17h2"/></svg>
-            Excel
-          </button>
+          <div className="flex items-center gap-2">
+            {activeTab === 'income' && (
+              <button
+                onClick={onBillModeToggle}
+                className={`flex items-center gap-1.5 text-sm font-bold px-3.5 py-3 rounded-[var(--radius-md)] active:scale-95 transition-all ${
+                  billMode
+                    ? 'bg-white text-[var(--text-primary)] shadow-sm'
+                    : 'text-white/70 bg-white/10 border border-white/10'
+                }`}
+                aria-label="สร้างบิลเงินสด"
+              >
+                🧾 {billMode ? 'ยกเลิก' : 'บิล'}
+              </button>
+            )}
+            <button onClick={onExport} className="flex items-center gap-2 text-sm font-bold text-white/70 bg-white/10 border border-white/10 px-3.5 py-3 rounded-[var(--radius-md)] active:scale-95 transition-transform" aria-label="ดาวน์โหลด Excel">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h2"/><path d="M8 17h2"/><path d="M14 13h2"/><path d="M14 17h2"/></svg>
+              Excel
+            </button>
+          </div>
         </div>
       </div>
     </section>
@@ -317,7 +457,7 @@ function FilterSection({ activeTab, search, setSearch, dateFrom, setDateFrom, da
   )
 }
 
-function HistoryList({ loading, grouped, activeTab, onItemClick }: any) {
+function HistoryList({ loading, grouped, activeTab, onItemClick, billMode, billSelectedIds, onBillToggle, onBillToggleDay }: any) {
   if (loading) {
     return (
       <section className="space-y-3 fade-up delay-3" aria-busy="true" aria-label="กำลังโหลดรายการ">
@@ -344,11 +484,20 @@ function HistoryList({ loading, grouped, activeTab, onItemClick }: any) {
         const dayTotal = items.reduce((s: number, i: any) => s + ('price' in i ? i.price : i.amount), 0)
         const dayWash  = items.filter((i: any) => 'type' in i && i.type === 'wash').length
         const dayPol   = items.filter((i: any) => 'type' in i && i.type === 'polish').length
+        const incomeItems = items.filter((i: any) => 'price' in i)
+        const allDaySelected = billMode && incomeItems.length > 0 && incomeItems.every((i: any) => billSelectedIds.has(i.id))
 
         return (
           <div key={date} className="mb-6">
             <div className="sticky top-2 z-10 glass py-2.5 mb-2.5 rounded-xl px-1">
               <div className="flex items-center gap-2.5">
+                {billMode && activeTab === 'income' && (
+                  <button onClick={() => onBillToggleDay(items)} className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${
+                    allDaySelected ? 'bg-[var(--accent)] border-[var(--accent)]' : 'border-gray-300'
+                  }`}>
+                    {allDaySelected && <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                  </button>
+                )}
                 <span className="text-sm font-bold text-[var(--text-secondary)] shrink-0">{date}</span>
                 <div className="h-px flex-1 bg-[var(--border)]" aria-hidden="true" />
                 <div className="flex items-center gap-2.5">
@@ -358,10 +507,33 @@ function HistoryList({ loading, grouped, activeTab, onItemClick }: any) {
               </div>
             </div>
             <div className="grid gap-2.5">
-              {items.map((item: any) => (
+              {items.map((item: any) => {
+                const isIncome = 'price' in item
+                const isSelected = billMode && isIncome && billSelectedIds.has(item.id)
+                return (
                 <div key={item.id}>
                   {activeTab === 'income' ? (
-                    <div onClick={() => onItemClick(item)} className="cursor-pointer"><RecordCard record={item as AppRecord} /></div>
+                    <div className="flex items-stretch gap-0">
+                      {billMode && isIncome && (
+                        <button
+                          onClick={() => onBillToggle(item.id)}
+                          className={`flex items-center justify-center w-10 shrink-0 transition-all rounded-l-2xl ${
+                            isSelected ? 'bg-[var(--accent)]' : 'bg-gray-100'
+                          }`}
+                        >
+                          {isSelected ? (
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          ) : (
+                            <div className="w-5 h-5 rounded-md border-2 border-gray-300 bg-white" />
+                          )}
+                        </button>
+                      )}
+                      <div className={`flex-1 min-w-0 ${billMode ? (isSelected ? 'opacity-100' : 'opacity-70') : 'cursor-pointer'}`}
+                        onClick={() => billMode ? onBillToggle(item.id) : onItemClick(item)}
+                      >
+                        <RecordCard record={item as AppRecord} />
+                      </div>
+                    </div>
                   ) : (
                     <div onClick={() => onItemClick(item)} role="button" tabIndex={0} onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && onItemClick(item)}
                       className="card flex items-center justify-between px-5 py-4 cursor-pointer active:scale-[0.985] transition-transform"
@@ -381,7 +553,6 @@ function HistoryList({ loading, grouped, activeTab, onItemClick }: any) {
                       <p className="text-base font-extrabold text-[var(--red)]">−฿{item.amount.toLocaleString()}</p>
                     </div>
                   )}
-                  {/* Audit Trail */}
                   {(item.created_by_email || item.updated_by_email) && (
                     <div className="flex items-center justify-end gap-3 px-2 mt-1.5 text-[11px] font-semibold text-[var(--text-tertiary)] opacity-60">
                       {item.created_by_email && <span>➕ {item.created_by_email.split('@')[0]}</span>}
@@ -389,7 +560,8 @@ function HistoryList({ loading, grouped, activeTab, onItemClick }: any) {
                     </div>
                   )}
                 </div>
-              ))}
+              )})}
+
             </div>
           </div>
         )
