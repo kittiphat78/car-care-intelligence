@@ -375,7 +375,7 @@ const TabToggle = memo(function TabToggle({ activeTab, switchTab }: { activeTab:
 const SummaryCard = memo(function SummaryCard({ activeTab, selectedMonth, summary, onExport, billMode, onBillModeToggle }: any) {
   return (
     <section className="card-dark p-5 fade-up delay-1" aria-label="สรุปยอดรวม">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-[13px] text-white/50 mb-1.5 font-medium">
             {selectedMonth === 0 ? 'ยอดรวมทั้งปี' : `ยอดรวมเดือน${MONTH_OPTIONS.find((m: any) => m.value === selectedMonth)?.label}`}
@@ -384,7 +384,7 @@ const SummaryCard = memo(function SummaryCard({ activeTab, selectedMonth, summar
             ฿{(activeTab === 'income' ? summary.totalIncome : summary.totalExpense).toLocaleString()}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           {activeTab === 'income' && (
             <div className="flex items-center gap-2.5 bg-white/10 border border-white/10 rounded-[var(--radius-md)] px-3.5 py-2.5">
               <div className="text-center">
