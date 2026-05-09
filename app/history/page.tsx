@@ -404,7 +404,7 @@ const SummaryCard = memo(function SummaryCard({ activeTab, selectedMonth, summar
                 onClick={onBillModeToggle}
                 className={`flex items-center gap-1.5 text-sm font-bold px-3.5 py-3 rounded-[var(--radius-md)] active:scale-95 transition-all ${
                   billMode
-                    ? 'bg-white text-[var(--text-primary)] shadow-sm'
+                    ? 'bg-[var(--accent)] text-white shadow-sm'
                     : 'text-white/70 bg-white/10 border border-white/10'
                 }`}
                 aria-label="สร้างบิลเงินสด"
