@@ -536,21 +536,38 @@ function HistoryList({ loading, grouped, activeTab, onItemClick, billMode, billS
                     </div>
                   ) : (
                     <div onClick={() => onItemClick(item)} role="button" tabIndex={0} onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && onItemClick(item)}
-                      className="card flex items-center justify-between px-5 py-4 cursor-pointer active:scale-[0.985] transition-transform"
+                      className="card bg-white cursor-pointer transition-all duration-150 active:scale-[0.985] overflow-hidden"
                       aria-label={`${item.title} ${item.amount} บาท`}
                     >
-                      <div className="flex items-center gap-3.5">
-                        <div className="w-11 h-11 rounded-2xl bg-[var(--red-light)] flex items-center justify-center shrink-0" aria-hidden="true">
-                          <span className="text-xl leading-none">{getExpenseIcon(item.title)}</span>
+                      {/* Accent bar */}
+                      <div className="h-[3px] w-full bg-[var(--red)]" aria-hidden="true" />
+
+                      <div className="flex items-center gap-3.5 px-4 py-4 sm:px-5">
+                        {/* Icon */}
+                        <div className="w-12 h-12 min-w-[48px] rounded-2xl bg-[var(--red-light)] flex items-center justify-center text-xl shrink-0" aria-hidden="true">
+                          {getExpenseIcon(item.title)}
                         </div>
-                        <div>
-                          <p className="text-base font-bold text-[var(--text-primary)] leading-tight">{item.title}</p>
-                          <p className="text-[12px] text-[var(--text-tertiary)] mt-0.5 font-medium">
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <span className="badge badge-unpaid">รายจ่าย</span>
+                          </div>
+                          <p className="font-extrabold text-[var(--text-primary)] text-[17px] tracking-wide leading-tight truncate">
+                            {item.title}
+                          </p>
+                        </div>
+
+                        {/* Price */}
+                        <div className="text-right shrink-0">
+                          <p className="text-lg font-extrabold leading-tight text-[var(--red)]">
+                            −฿{item.amount.toLocaleString()}
+                          </p>
+                          <p className="text-[12px] text-[var(--text-tertiary)] mt-1 font-medium">
                             {new Date(item.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.
                           </p>
                         </div>
                       </div>
-                      <p className="text-base font-extrabold text-[var(--red)]">−฿{item.amount.toLocaleString()}</p>
                     </div>
                   )}
                   {(item.created_by_email || item.updated_by_email) && (
