@@ -29,12 +29,13 @@ async function loadFont(doc: jsPDF, url: string, fontName: string, fontStyle: st
    สร้างเลขที่บิลอัตโนมัติ (RMyyMMdd-xxx)
    ═══════════════════════════════════════════════════════════════════════════ */
 function generateBillNumber(): string {
-  const now = new Date()
-  const yy = (now.getFullYear() + 543).toString().slice(-2)
-  const mm = (now.getMonth() + 1).toString().padStart(2, '0')
-  const dd = now.getDate().toString().padStart(2, '0')
-  const rand = Math.floor(Math.random() * 999).toString().padStart(3, '0')
-  return `RM${yy}${mm}${dd}-${rand}`
+  if (typeof window !== 'undefined') {
+    const lastNum = localStorage.getItem('last_bill_number')
+    const nextNum = lastNum ? parseInt(lastNum) + 1 : 1
+    localStorage.setItem('last_bill_number', nextNum.toString())
+    return nextNum.toString().padStart(6, '0')
+  }
+  return '000001'
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -44,6 +45,44 @@ function line(doc: jsPDF, x1: number, y: number, x2: number, width = 0.2, color 
   doc.setDrawColor(color)
   doc.setLineWidth(width)
   doc.line(x1, y, x2, y)
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Helper: แปลงจำนวนเงินเป็นตัวหนังสือไทย
+   ═══════════════════════════════════════════════════════════════════════════ */
+function bahtText(num: number): string {
+  const numbers = ["ศูนย์", "หนึ่ง", "สอง", "สาม", "สี่", "ห้า", "หก", "เจ็ด", "แปด", "เก้า"];
+  const units = ["", "สิบ", "ร้อย", "พัน", "หมื่น", "แสน", "ล้าน"];
+
+  if (num === 0) return "ศูนย์บาทถ้วน";
+
+  let text = "";
+  const str = Math.floor(num).toString();
+  const len = str.length;
+
+  for (let i = 0; i < len; i++) {
+    const digit = parseInt(str[i]);
+    const pos = len - 1 - i;
+
+    if (digit !== 0) {
+      if (pos % 6 === 1 && digit === 1) {
+        text += "";
+      } else if (pos % 6 === 1 && digit === 2) {
+        text += "ยี่";
+      } else if (pos % 6 === 0 && digit === 1 && i > 0) {
+        text += "เอ็ด";
+      } else {
+        text += numbers[digit];
+      }
+      text += units[pos % 6];
+    }
+
+    if (pos % 6 === 0 && pos > 0) {
+      text += "ล้าน";
+    }
+  }
+
+  return text + "บาทถ้วน";
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -245,9 +284,18 @@ export async function generateCashBill(
   doc.setFont('Sarabun', 'bold')
   doc.setFontSize(12)
   doc.setTextColor(255, 255, 255)
-  doc.text('รวมเงินทั้งสิ้น', col.unit - 4, totalRowY + 8, { align: 'right' })
+  doc.text('รวมเงินทั้งสิ้น', col.desc + col.descW / 2, totalRowY + 8, { align: 'center' })
+  
   doc.setFontSize(14)
-  doc.text(`฿${grandTotal.toLocaleString()}`, col.amount + col.amountW - 4, totalRowY + 8, { align: 'right' })
+  const priceStr = `฿${grandTotal.toLocaleString()}`
+  doc.text(priceStr, col.amount + col.amountW - 4, totalRowY + 8, { align: 'right' })
+  
+  // คำนวณความกว้างของตัวเลขเพื่อวางตัวหนังสือไทยข้างๆ
+  const priceWidth = doc.getTextWidth(priceStr)
+  
+  doc.setFont('Sarabun', 'normal')
+  doc.setFontSize(10)
+  doc.text(`(${bahtText(grandTotal)})`, col.amount + col.amountW - 4 - priceWidth - 3, totalRowY + 7.5, { align: 'right' })
 
   // ═════════════════════════════════════════════════════════════════════════
   //  6. หมายเหตุ (ถ้ามี)
@@ -313,6 +361,7 @@ export async function generateCashBill(
   doc.setTextColor(60, 60, 60)
   doc.setFont('Sarabun', 'normal')
   doc.setFontSize(11)
+  doc.text('กฤตพร รัตนศรีไพบูลย์', margin + 40, sigY + 8, { align: 'center' })
   line(doc, margin + 10, sigY + 10, margin + 70, 0.3, 150)
   doc.text('ผู้รับเงิน', margin + 40, sigY + 16, { align: 'center' })
 
