@@ -371,7 +371,7 @@ const UnpaidModal = memo(function UnpaidModal({ unpaidData, totalAmount, onClose
         </header>
 
         {/* ── Content ── */}
-        <div className="overflow-y-auto flex-1 p-5 space-y-4">
+        <div className="overflow-y-auto flex-1 p-3.5 sm:p-5 space-y-4">
           {unpaidData.map(({ customerName, items, total }, groupIdx) => {
             const maxOverdueDays = Math.max(...items.map(i => getOverdueDays(i.created_at)))
             const maxStyle = getOverdueBadgeStyle(maxOverdueDays)
@@ -380,7 +380,7 @@ const UnpaidModal = memo(function UnpaidModal({ unpaidData, totalAmount, onClose
             return (
               <article key={customerName} className="card p-0 overflow-hidden border border-[var(--border)] shadow-sm">
                 {/* Customer Header */}
-                <div className="px-5 pt-5 pb-4">
+                <div className="px-4 pt-4 pb-3 sm:px-5 sm:pt-5 sm:pb-4">
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-3">
                       <div className="w-11 h-11 rounded-2xl bg-red-50 flex items-center justify-center text-lg shrink-0 border border-red-100">
@@ -406,12 +406,12 @@ const UnpaidModal = memo(function UnpaidModal({ unpaidData, totalAmount, onClose
                 </div>
 
                 {/* Items List */}
-                <div className="mx-5 mb-4 bg-[var(--surface-2)] rounded-2xl overflow-hidden">
+                <div className="mx-3 mb-3 sm:mx-5 sm:mb-4 bg-[var(--surface-2)] rounded-2xl overflow-hidden">
                   {items.map((item, idx) => {
                     const days = getOverdueDays(item.created_at)
                     const style = getOverdueBadgeStyle(days)
                     return (
-                      <div key={item.id} className={`flex items-center justify-between px-4 py-3.5 ${idx > 0 ? 'border-t border-[var(--border)]' : ''}`}>
+                      <div key={item.id} className={`flex items-center justify-between px-3.5 py-3 sm:px-4 sm:py-3.5 ${idx > 0 ? 'border-t border-[var(--border)]' : ''}`}>
                         <div className="flex items-center gap-3 min-w-0">
                           <span className="w-6 h-6 rounded-lg bg-white flex items-center justify-center text-[12px] font-bold text-[var(--text-tertiary)] shrink-0 shadow-sm border border-[var(--border)]">
                             {idx + 1}
