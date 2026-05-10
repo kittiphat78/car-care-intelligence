@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, memo, useCallback } from 'react'
-import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts'
+import { useState, memo, useCallback, useMemo, useEffect } from 'react'
+import { Area, AreaChart, BarChart, Bar, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from 'recharts'
 import RecordCard from '@/components/RecordCard'
 import { useWeather, WeatherData } from '@/hooks/useWeather'
 import { useDashboard, DashboardStats } from '@/hooks/useDashboard'
@@ -13,10 +13,10 @@ import { Record as AppRecord } from '@/types'
 
 export default function Dashboard() {
   const weather = useWeather()
-  const dash    = useDashboard()
+  const dash = useDashboard()
   const [isUnpaidModalOpen, setIsUnpaidModalOpen] = useState(false)
 
-  const openUnpaid  = useCallback(() => setIsUnpaidModalOpen(true), [])
+  const openUnpaid = useCallback(() => setIsUnpaidModalOpen(true), [])
   const closeUnpaid = useCallback(() => setIsUnpaidModalOpen(false), [])
 
   if (dash.loading) return <LoadingSkeleton />
@@ -28,6 +28,7 @@ export default function Dashboard() {
       {dash.totalUnpaidAmount > 0 && <UnpaidAlert totalAmount={dash.totalUnpaidAmount} onClick={openUnpaid} />}
       <NetProfitHero stats={dash.stats} />
       <StatsRow stats={dash.stats} />
+      <AIInsights dash={dash} />
       <ChartsSection dash={dash} />
       <RecordListSection dash={dash} />
 
@@ -61,11 +62,11 @@ const LoadingSkeleton = memo(function LoadingSkeleton() {
       <div className="skeleton h-40 rounded-[var(--radius-xl)]" />
       {/* Stats skeleton */}
       <div className="grid grid-cols-3 gap-3">
-        {[1,2,3].map(i => <div key={i} className="skeleton h-20 rounded-[var(--radius-lg)]" />)}
+        {[1, 2, 3].map(i => <div key={i} className="skeleton h-20 rounded-[var(--radius-lg)]" />)}
       </div>
       {/* Records skeleton */}
       <div className="space-y-3 mt-4">
-        {[1,2,3].map(i => <div key={i} className="skeleton h-[76px] rounded-[var(--radius-lg)]" />)}
+        {[1, 2, 3].map(i => <div key={i} className="skeleton h-[76px] rounded-[var(--radius-lg)]" />)}
       </div>
     </div>
   )
@@ -206,24 +207,125 @@ const NetProfitHero = memo(function NetProfitHero({ stats }: { stats: DashboardS
 const StatsRow = memo(function StatsRow({ stats }: { stats: DashboardStats }) {
   return (
     <section className="grid grid-cols-3 gap-3 fade-up delay-3" aria-label="สถิติวันนี้">
-      <div className="card p-4">
-        <p className="text-[11px] font-bold text-[var(--text-tertiary)] uppercase tracking-wide mb-2.5">รายจ่ายวันนี้</p>
-        <p className="text-xl font-extrabold text-[var(--red)] leading-none">฿{stats.todayExpense.toLocaleString()}</p>
-      </div>
-      <div className="card p-4">
-        <p className="text-[11px] font-bold text-[var(--text-tertiary)] uppercase tracking-wide mb-2.5">ล้างรถ</p>
-        <div className="flex items-baseline gap-1">
-          <p className="text-xl font-extrabold text-[var(--text-primary)] leading-none">{stats.washCount}</p>
-          <span className="text-sm text-[var(--text-tertiary)] font-medium">คัน</span>
+      {/* รายจ่าย */}
+      <div className="card p-4 flex flex-col justify-between h-32">
+        <div className="w-9 h-9 rounded-2xl bg-red-50 flex items-center justify-center text-[var(--red)] border border-red-100 shrink-0">
+          <ExpenseIcon />
+        </div>
+        <div>
+          <p className="text-lg font-extrabold text-[var(--red)] leading-tight">฿{stats.todayExpense.toLocaleString()}</p>
+          <p className="text-[11px] font-bold text-[var(--text-tertiary)] uppercase tracking-wide mt-1">รายจ่าย</p>
         </div>
       </div>
-      <div className="card p-4">
-        <p className="text-[11px] font-bold text-[var(--text-tertiary)] uppercase tracking-wide mb-2.5">ขัดสี</p>
-        <div className="flex items-baseline gap-1">
-          <p className="text-xl font-extrabold text-[var(--text-primary)] leading-none">{stats.polishCount}</p>
-          <span className="text-sm text-[var(--text-tertiary)] font-medium">คัน</span>
+
+      {/* ล้างรถ */}
+      <div className="card p-4 flex flex-col justify-between h-32">
+        <div className="w-9 h-9 rounded-2xl bg-blue-50 flex items-center justify-center text-[var(--accent)] border border-blue-100 shrink-0">
+          <WashIcon />
+        </div>
+        <div>
+          <div className="flex items-baseline gap-0.5">
+            <p className="text-lg font-extrabold text-[var(--text-primary)] leading-tight">{stats.washCount}</p>
+            <span className="text-xs text-[var(--text-tertiary)] font-bold">คัน</span>
+          </div>
+          <p className="text-[11px] font-bold text-[var(--text-tertiary)] uppercase tracking-wide mt-1">ล้างรถ</p>
         </div>
       </div>
+
+      {/* ขัดสี */}
+      <div className="card p-4 flex flex-col justify-between h-32">
+        <div className="w-9 h-9 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600 border border-purple-100 shrink-0">
+          <AISparklesIcon />
+        </div>
+        <div>
+          <div className="flex items-baseline gap-0.5">
+            <p className="text-lg font-extrabold text-[var(--text-primary)] leading-tight">{stats.polishCount}</p>
+            <span className="text-xs text-[var(--text-tertiary)] font-bold">คัน</span>
+          </div>
+          <p className="text-[11px] font-bold text-[var(--text-tertiary)] uppercase tracking-wide mt-1">ขัดสี</p>
+        </div>
+      </div>
+    </section>
+  )
+})
+
+const AIInsights = memo(function AIInsights({ dash }: { dash: any }) {
+  const { stats, groupedUnpaid } = dash
+  const [insightsText, setInsightsText] = useState<string>('')
+  const [loading, setLoading] = useState<boolean>(true)
+  const [expanded, setExpanded] = useState<boolean>(false)
+
+  useEffect(() => {
+    async function fetchInsights() {
+      setLoading(true)
+      try {
+        const unpaidTotal = groupedUnpaid.reduce((s: number, g: any) => s + g.total, 0)
+        const response = await fetch('/api/insights', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            todayTotalIncome: stats.todayTotalIncome,
+            todayExpense: stats.todayExpense,
+            netProfit: stats.netProfit,
+            washCount: stats.washCount,
+            polishCount: stats.polishCount,
+            unpaidCount: groupedUnpaid.length,
+            unpaidTotal: unpaidTotal,
+          }),
+        })
+        const data = await response.json()
+        setInsightsText(data.text)
+      } catch (error) {
+        setInsightsText('ไม่สามารถเชื่อมต่อกับ AI ได้')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchInsights()
+  }, [stats, groupedUnpaid])
+
+  const insights = useMemo(() => {
+    return insightsText.split('\n').filter(t => t.trim() !== '').map(t => t.replace(/^✦\s*/, ''))
+  }, [insightsText])
+
+  return (
+    <section className="card bg-gradient-to-br from-purple-50 to-pink-50 border-purple-100 p-5 fade-up delay-3" aria-label="สรุปวิเคราะห์ข้อมูล">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center">
+            <AISparklesIcon />
+          </div>
+          <h3 className="text-base font-bold text-[var(--text-primary)]">วิเคราะห์ภาพรวมโดย AI</h3>
+        </div>
+        {insights.length > 1 && (
+          <button 
+            onClick={() => setExpanded(!expanded)} 
+            className="text-xs text-purple-600 font-bold hover:text-purple-700 active:scale-95 transition-transform flex items-center gap-1"
+          >
+            {expanded ? 'แสดงน้อยลง ↑' : 'ดูเพิ่มเติม ↓'}
+          </button>
+        )}
+      </div>
+      {loading ? (
+        <div className="space-y-2">
+          <div className="skeleton h-4 w-3/4" />
+          <div className="skeleton h-4 w-1/2" />
+        </div>
+      ) : (
+        <ul className="space-y-2.5">
+          {(expanded ? insights : insights.slice(0, 1)).map((text, idx) => (
+            <li key={idx} className="flex items-start gap-2 text-sm text-[var(--text-secondary)]">
+              <span className="text-purple-500 mt-0.5">✦</span>
+              <span>
+                {text.split('**').map((part, i) => 
+                  i % 2 === 1 ? <strong key={i} className="text-[var(--text-primary)] font-bold">{part}</strong> : part
+                )}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   )
 })
@@ -234,13 +336,12 @@ const ChartsSection = memo(function ChartsSection({ dash }: { dash: ReturnType<t
       <div className="flex items-center justify-between fade-up delay-4 mt-5 mb-2.5 px-1">
         <h3 className="text-base font-bold text-[var(--text-primary)] tracking-tight">ภาพรวมร้าน 📊</h3>
         <div className="flex bg-[var(--surface-2)] p-1 rounded-xl gap-1">
-          {(['week','month'] as const).map(m => (
+          {(['week', 'month'] as const).map(m => (
             <button
               key={m}
               onClick={() => dash.setChartMode(m)}
-              className={`px-3.5 py-2 rounded-lg text-sm font-bold transition-all duration-150 ${
-                dash.chartMode === m ? 'bg-white text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-tertiary)]'
-              }`}
+              className={`px-3.5 py-2 rounded-lg text-sm font-bold transition-all duration-150 ${dash.chartMode === m ? 'bg-white text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-tertiary)]'
+                }`}
               aria-pressed={dash.chartMode === m}
             >
               {m === 'week' ? '7 วัน' : '30 วัน'}
@@ -248,24 +349,22 @@ const ChartsSection = memo(function ChartsSection({ dash }: { dash: ReturnType<t
           ))}
         </div>
       </div>
-      <section className="card p-5 fade-up delay-4" aria-label="กราฟแนวโน้มรายได้">
-        <h4 className="text-[11px] font-bold text-[var(--text-tertiary)] uppercase tracking-wider mb-5">แนวโน้มรายได้ (บาท)</h4>
-        <div className="h-44">
+      <section className="card p-5 fade-up delay-4" aria-label="กราฟรายรับ-รายจ่าย">
+        <h4 className="text-[11px] font-bold text-[var(--text-tertiary)] uppercase tracking-wider mb-5">รายรับ - รายจ่าย (บาท)</h4>
+        <div className="h-48">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={dash.chartData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
-              <defs>
-                <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#2563EB" stopOpacity={0.15}/>
-                  <stop offset="95%" stopColor="#2563EB" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
+            <BarChart data={dash.chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
               <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: '#8A847C', fontSize: 11, fontWeight: 600 }} dy={8} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#8A847C', fontSize: 11, fontWeight: 600 }} dx={-5} />
               <Tooltip
-                formatter={(value: any) => [`฿${(Number(value) || 0).toLocaleString()}`, 'รายได้']}
+                formatter={(value: any, name?: any) => [`฿${(Number(value) || 0).toLocaleString()}`, name === 'income' ? 'รายรับ' : 'รายจ่าย']}
                 contentStyle={{ borderRadius: '14px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-md)', fontSize: '14px', fontWeight: 700, padding: '10px 16px' }}
               />
-              <Area type="monotone" dataKey="income" stroke="#2563EB" strokeWidth={2.5} fillOpacity={1} fill="url(#incomeGrad)" dot={false} activeDot={{ r: 6, fill: '#2563EB', stroke: '#fff', strokeWidth: 2 }} />
-            </AreaChart>
+              <Legend verticalAlign="top" align="right" iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 600, paddingBottom: '15px' }} />
+              <Bar dataKey="income" fill="#8B5CF6" radius={[4, 4, 0, 0]} name="รายรับ" barSize={16} />
+              <Bar dataKey="expense" fill="#EC4899" radius={[4, 4, 0, 0]} name="รายจ่าย" barSize={16} />
+            </BarChart>
           </ResponsiveContainer>
         </div>
       </section>
@@ -322,8 +421,8 @@ function formatThaiDate(dateStr: string): string {
 /** เลือกสีตาม severity ของจำนวนวันค้าง */
 function getOverdueBadgeStyle(days: number): { bg: string; text: string; border: string } {
   if (days >= 14) return { bg: 'bg-red-50', text: 'text-red-600', border: 'border-red-200' }
-  if (days >= 7)  return { bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-200' }
-  if (days >= 3)  return { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-200' }
+  if (days >= 7) return { bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-200' }
+  if (days >= 3) return { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-200' }
   return { bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-200' }
 }
 
@@ -461,9 +560,11 @@ const UnpaidModal = memo(function UnpaidModal({ unpaidData, totalAmount, onClose
    SVG Icons
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const AISparklesIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>)
-const RefreshIcon = () => (<svg width="16" height="16" viewBox="0 0 13 13" fill="none" aria-hidden="true"><path d="M11 6.5A4.5 4.5 0 1 1 6.5 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><path d="M6.5 2l1.5 1.5L6.5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>)
-const CloseIcon = () => (<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>)
-const CheckMarkIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>)
-const CheckMarkSmallIcon = () => (<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6L9 17L4 12" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>)
-const ClockIcon = () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/><path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>)
+const ExpenseIcon = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" /></svg>)
+const WashIcon = () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" /></svg>)
+const AISparklesIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v2" /><path d="M12 20v2" /><path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" /><path d="M2 12h2" /><path d="M20 12h2" /><path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" /></svg>)
+const RefreshIcon = () => (<svg width="16" height="16" viewBox="0 0 13 13" fill="none" aria-hidden="true"><path d="M11 6.5A4.5 4.5 0 1 1 6.5 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /><path d="M6.5 2l1.5 1.5L6.5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>)
+const CloseIcon = () => (<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>)
+const CheckMarkIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>)
+const CheckMarkSmallIcon = () => (<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6L9 17L4 12" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /></svg>)
+const ClockIcon = () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" /><path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>)

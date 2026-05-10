@@ -193,15 +193,21 @@ export function useDashboard() {
         const t = new Date(r.created_at).getTime()
         return t >= d.getTime() && t < nextD.getTime()
       })
+
+      const dayExpenses = expenses.filter(e => {
+        const t = new Date(e.created_at).getTime()
+        return t >= d.getTime() && t < nextD.getTime()
+      })
       
       return {
         label: chartMode === 'week' 
           ? d.toLocaleDateString('th-TH', { weekday: 'short' }) 
           : d.toLocaleDateString('th-TH', { day: 'numeric' }),
         income: dayRecs.reduce((s, r) => s + r.price, 0),
+        expense: dayExpenses.reduce((s, e) => s + e.amount, 0),
       }
     })
-  }, [allRecords, chartMode])
+  }, [allRecords, expenses, chartMode])
 
   // 3. จัดกลุ่มสมุดทวงหนี้ตามลูกค้า
   const groupedUnpaid = useMemo(() => {
