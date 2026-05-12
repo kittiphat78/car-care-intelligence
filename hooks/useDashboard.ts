@@ -58,19 +58,29 @@ export function useDashboard() {
     const yesterdayIso = yesterday.toISOString()
     const thirtyDaysAgoIso = thirtyDaysAgo.toISOString()
 
-    // 3. Parallel Fetching
-    const [todayRes, yesterdayRes, allRes, expenseRes, unpaidRes] = await Promise.all([
-      supabase.from('records').select('*').gte('created_at', todayIso).order('created_at', { ascending: false }),
-      supabase.from('records').select('*').gte('created_at', yesterdayIso).lt('created_at', todayIso),
+    // 3. Parallel Fetching (Optimized: Fetch 30 days once)
+    const [allRecordsRes, expenseRes, unpaidRes] = await Promise.all([
       supabase.from('records').select('*').gte('created_at', thirtyDaysAgoIso).order('created_at', { ascending: true }),
       supabase.from('expenses').select('*').gte('created_at', thirtyDaysAgoIso),
       supabase.from('records').select('*').eq('payment_status', 'unpaid').order('created_at', { ascending: true })
     ])
 
-    // 4. State updates (Fallback to empty array to prevent crash)
-    setRecords(todayRes.data ?? [])
-    setYesterdayRecords(yesterdayRes.data ?? [])
-    setAllRecords(allRes.data ?? [])
+    const fetchedRecords = allRecordsRes.data ?? []
+    
+    // 4. In-memory filtering
+    const todayStartMs = today.getTime()
+    const yesterdayStartMs = yesterday.getTime()
+    
+    const todayRecords = fetchedRecords.filter(r => new Date(r.created_at).getTime() >= todayStartMs)
+    const yesterdayRecords = fetchedRecords.filter(r => {
+      const t = new Date(r.created_at).getTime()
+      return t >= yesterdayStartMs && t < todayStartMs
+    })
+
+    // 5. State updates (Fallback to empty array to prevent crash)
+    setRecords([...todayRecords].reverse()) // Reverse to keep descending order for today's records
+    setYesterdayRecords(yesterdayRecords)
+    setAllRecords(fetchedRecords)
     setExpenses(expenseRes.data ?? [])
     setUnpaidRecords(unpaidRes.data ?? [])
     
@@ -177,27 +187,28 @@ export function useDashboard() {
     startDate.setDate(startDate.getDate() - (days - 1))
     startDate.setHours(0,0,0,0)
 
-    // ตัดข้อมูล records ที่ไม่อยู่ใน range ออกก่อน ค่อย map วนลูป
-    const relevantRecords = allRecords.filter(r => {
-      const t = new Date(r.created_at).getTime()
-      return t >= startDate.getTime() && t < endDate.getTime()
+    // 1. จัดกลุ่ม records และ expenses ตามวันที่ (YYYY-MM-DD) เพื่อลด Complexity จาก O(N*D) เป็น O(N+D)
+    const recordsByDate: globalThis.Record<string, AppRecord[]> = {}
+    allRecords.forEach(r => {
+      const dateStr = new Date(r.created_at).toLocaleDateString('en-CA')
+      if (!recordsByDate[dateStr]) recordsByDate[dateStr] = []
+      recordsByDate[dateStr].push(r)
+    })
+
+    const expensesByDate: globalThis.Record<string, Expense[]> = {}
+    expenses.forEach(e => {
+      const dateStr = new Date(e.created_at).toLocaleDateString('en-CA')
+      if (!expensesByDate[dateStr]) expensesByDate[dateStr] = []
+      expensesByDate[dateStr].push(e)
     })
 
     return Array.from({ length: days }, (_, i) => {
       const d = new Date(startDate)
       d.setDate(d.getDate() + i)
-      const nextD = new Date(d)
-      nextD.setDate(nextD.getDate() + 1)
+      const dateStr = d.toLocaleDateString('en-CA')
       
-      const dayRecs = relevantRecords.filter(r => {
-        const t = new Date(r.created_at).getTime()
-        return t >= d.getTime() && t < nextD.getTime()
-      })
-
-      const dayExpenses = expenses.filter(e => {
-        const t = new Date(e.created_at).getTime()
-        return t >= d.getTime() && t < nextD.getTime()
-      })
+      const dayRecs = recordsByDate[dateStr] || []
+      const dayExpenses = expensesByDate[dateStr] || []
       
       return {
         label: chartMode === 'week' 
