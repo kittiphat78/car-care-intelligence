@@ -60,7 +60,7 @@ function useRecentCustomers() {
   const [savedCustomers, setSavedCustomers] = useState<string[]>([])
   useEffect(() => {
     const stored = localStorage.getItem('recentCustomers')
-    if (stored) { try { setSavedCustomers(JSON.parse(stored)) } catch {} }
+    if (stored) { try { setSavedCustomers(JSON.parse(stored)) } catch { } }
   }, [])
   const addCustomer = useCallback((name: string) => {
     const trimmed = name.trim()
@@ -98,27 +98,27 @@ export default function AddPage() {
   const { id: userId, email: userEmail } = useAuthUser()
   const { savedCustomers, addCustomer } = useRecentCustomers()
 
-  const [formMode, setFormMode]           = useState<FormMode>('income')
-  const [date, setDate]                   = useState(getTodayStr())
-  const [saving, setSaving]               = useState(false)
-  const [error, setError]                 = useState('')
-  const [successMsg, setSuccessMsg]       = useState('')
+  const [formMode, setFormMode] = useState<FormMode>('income')
+  const [date, setDate] = useState(getTodayStr())
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [successMsg, setSuccessMsg] = useState('')
 
   // Income
-  const [type, setType]                   = useState<RecordType>('wash')
-  const [plate, setPlate]                 = useState('')
-  const [selectedType, setSelectedType]   = useState('')
+  const [type, setType] = useState<RecordType>('wash')
+  const [plate, setPlate] = useState('')
+  const [selectedType, setSelectedType] = useState('')
   const [selectedBrand, setSelectedBrand] = useState('')
-  const [customerName, setCustomerName]   = useState('')
+  const [customerName, setCustomerName] = useState('')
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('paid')
-  const [note, setNote]                   = useState('')
-  const [price, setPrice]                 = useState('')
+  const [note, setNote] = useState('')
+  const [price, setPrice] = useState('')
   const visitCount = useCustomerVisitCount(plate)
 
   // Expense
-  const [expenseTitle, setExpenseTitle]   = useState('')
+  const [expenseTitle, setExpenseTitle] = useState('')
   const [expenseAmount, setExpenseAmount] = useState('')
-  const [expenseNote, setExpenseNote]     = useState('')
+  const [expenseNote, setExpenseNote] = useState('')
 
   const resetIncomeForm = useCallback(() => {
     setPlate(''); setPrice(''); setNote(''); setCustomerName('')
@@ -166,9 +166,9 @@ export default function AddPage() {
     const { count } = await supabase.from('records').select('*', { count: 'exact', head: true })
       .gte('created_at', dayStart.toISOString()).lte('created_at', dayEnd.toISOString())
 
-    const typeName  = CAR_TYPES.find(t => t.id === selectedType)?.name || ''
+    const typeName = CAR_TYPES.find(t => t.id === selectedType)?.name || ''
     const brandName = CAR_BRANDS.find(b => b.id === selectedBrand)?.name || ''
-    const services  = [typeName, brandName, safeNote]
+    const services = [typeName, brandName, safeNote]
 
     const { error } = await supabase.from('records').insert({
       type, plate: safePlate, services, price: safePrice,
@@ -236,7 +236,7 @@ export default function AddPage() {
       <div className="sticky top-0 z-30 glass border-b border-[var(--border)]">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <button onClick={() => router.push('/')} className="w-10 h-10 rounded-xl flex items-center justify-center text-[var(--text-secondary)] active:scale-90 transition-transform" aria-label="กลับหน้าหลัก">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
           </button>
           <h1 className="text-lg font-extrabold text-[var(--text-primary)] tracking-tight">บันทึกรายการ</h1>
           <div className="w-10" aria-hidden="true" />
@@ -294,16 +294,14 @@ const ModeToggle = memo(function ModeToggle({ mode, onChange }: { mode: FormMode
       <button
         role="tab" aria-selected={mode === 'income'} aria-controls="income-panel"
         onClick={() => onChange('income')}
-        className={`flex-1 py-3.5 rounded-xl text-base font-bold transition-all duration-150 active:scale-[0.98] ${
-          mode === 'income' ? 'bg-white text-[var(--accent)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-tertiary)]'
-        }`}
+        className={`flex-1 py-3.5 rounded-xl text-base font-bold transition-all duration-150 active:scale-[0.98] ${mode === 'income' ? 'bg-white text-[var(--accent)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-tertiary)]'
+          }`}
       >💰 รายรับ</button>
       <button
         role="tab" aria-selected={mode === 'expense'} aria-controls="expense-panel"
         onClick={() => onChange('expense')}
-        className={`flex-1 py-3.5 rounded-xl text-base font-bold transition-all duration-150 active:scale-[0.98] ${
-          mode === 'expense' ? 'bg-white text-[var(--red)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-tertiary)]'
-        }`}
+        className={`flex-1 py-3.5 rounded-xl text-base font-bold transition-all duration-150 active:scale-[0.98] ${mode === 'expense' ? 'bg-white text-[var(--red)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-tertiary)]'
+          }`}
       >💸 รายจ่าย</button>
     </div>
   )
@@ -349,7 +347,7 @@ const DatePicker = memo(function DatePicker({ date, onChange }: { date: string; 
         </div>
       </div>
       <div className="w-12 h-12 rounded-2xl bg-[var(--surface-2)] flex items-center justify-center text-[var(--text-tertiary)]" aria-hidden="true">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
       </div>
       <input ref={ref} type="date" value={date} onChange={e => onChange(e.target.value)} className="absolute opacity-0 w-0 h-0 pointer-events-none" tabIndex={-1} aria-hidden="true" />
     </Card>
@@ -472,7 +470,7 @@ function IncomeForm({ states, setters }: any) {
       <Card>
         <SectionLabel>ยี่ห้อรถ</SectionLabel>
         <div className="relative mt-2 mb-3">
-          <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] pointer-events-none" width="16" height="16" viewBox="0 0 15 15" fill="none" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.3"/><path d="M10.5 10.5l3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+          <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] pointer-events-none" width="16" height="16" viewBox="0 0 15 15" fill="none" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.3" /><path d="M10.5 10.5l3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>
           <input
             type="text"
             value={brandSearch}
@@ -570,7 +568,7 @@ function IncomeForm({ states, setters }: any) {
             onClick={() => setShowExtraFields(true)}
             className="flex items-center gap-2 w-full py-3 px-4 rounded-xl border-2 border-dashed border-[var(--border)] text-sm font-bold text-[var(--text-tertiary)] transition-all duration-150 active:scale-[0.98]"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14m-7-7h14"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14m-7-7h14" /></svg>
             {quickPickNames.length > 0 ? 'พิมพ์ชื่อเอง / เพิ่มหมายเหตุ' : 'เพิ่มชื่อลูกค้า / หมายเหตุ'}
           </button>
         )}
@@ -726,7 +724,7 @@ function ServiceTypeButton({ active, onClick, icon, label, sublabel, color }: {
       onClick={onClick}
       className={`relative flex items-center gap-3.5 p-4 rounded-[var(--radius-xl)] border-2 transition-all duration-150 active:scale-[0.97]
         ${active ? `${colors.border} ${colors.bg}` : 'border-[var(--border)] bg-white'
-      }`}
+        }`}
       aria-pressed={active}
       aria-label={`${label} ${sublabel}`}
     >
@@ -743,8 +741,24 @@ function ServiceTypeButton({ active, onClick, icon, label, sublabel, color }: {
    SVG Icons
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const WashIcon = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 2.5C12 2.5 8 7.5 8 10.5a4 4 0 0 0 8 0c0-3-4-8-4-8z" fill="currentColor" stroke="none"/><path d="M7 18c-1.5 0-3-1-3-2.5S5.5 13 7 13s3 1 3 2.5S8.5 18 7 18z" fill="currentColor" opacity="0.3" stroke="none"/><path d="M17 20c-1 0-2-.7-2-1.7s.9-1.8 2-1.8 2 .7 2 1.7S18 20 17 20z" fill="currentColor" opacity="0.2" stroke="none"/><path d="M3 20.5c1-1 2.5-1 3.5 0" /><path d="M8.5 20.5c1-1 2.5-1 3.5 0" /><path d="M14 20.5c1-1 2.5-1 3.5 0" /><path d="M19.5 20.5c1-1 1.5-1 2.5 0" /></svg>)
-const PolishIcon = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 2l2.4 4.8 5.3.8-3.8 3.7.9 5.3L12 14.1l-4.8 2.5.9-5.3-3.8-3.7 5.3-.8z" fill="currentColor" opacity="0.15" stroke="currentColor" /><circle cx="19" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="5" cy="19" r="1" fill="currentColor" stroke="none"/><path d="M19 8v2" /><path d="M18 9h2" /><path d="M6 16v2" /><path d="M5 17h2" /></svg>)
-const PlusSmIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14m-7-7h14"/></svg>)
-const SaveIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>)
+const WashIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
+  </svg>
+);
+
+const PolishIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <line x1="12" y1="2" x2="12" y2="5" />
+    <line x1="12" y1="19" x2="12" y2="22" />
+    <line x1="2" y1="12" x2="5" y2="12" />
+    <line x1="19" y1="12" x2="22" y2="12" />
+    <line x1="4.93" y1="4.93" x2="7.05" y2="7.05" />
+    <line x1="16.95" y1="16.95" x2="19.07" y2="19.07" />
+    <line x1="4.93" y1="19.07" x2="7.05" y2="16.95" />
+    <line x1="16.95" y1="6.34" x2="19.07" y2="4.22" />
+  </svg>
+);
+const PlusSmIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14m-7-7h14" /></svg>)
+const SaveIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /><path d="M17 21v-8H7v8M7 3v5h8" /></svg>)
 const Spinner = ({ white }: { white?: boolean }) => (<span className={`w-5 h-5 border-2 rounded-full spinner ${white ? 'border-white/30 border-t-white' : 'border-[var(--border)] border-t-[var(--text-tertiary)]'}`} aria-hidden="true" />)
