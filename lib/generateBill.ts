@@ -284,18 +284,17 @@ export async function generateCashBill(
   doc.setFont('Sarabun', 'bold')
   doc.setFontSize(12)
   doc.setTextColor(255, 255, 255)
-  doc.text('รวมเงินทั้งสิ้น', col.desc + col.descW / 2, totalRowY + 8, { align: 'center' })
+  // ย้ายมาชิดซ้าย
+  doc.text('รวมเงินทั้งสิ้น', margin + 4, totalRowY + 8, { align: 'left' })
   
   doc.setFontSize(14)
   const priceStr = `฿${grandTotal.toLocaleString()}`
   doc.text(priceStr, col.amount + col.amountW - 4, totalRowY + 8, { align: 'right' })
   
-  // คำนวณความกว้างของตัวเลขเพื่อวางตัวหนังสือไทยข้างๆ
-  const priceWidth = doc.getTextWidth(priceStr)
-  
-  doc.setFont('Sarabun', 'normal')
-  doc.setFontSize(10)
-  doc.text(`(${bahtText(grandTotal)})`, col.amount + col.amountW - 4 - priceWidth - 3, totalRowY + 7.5, { align: 'right' })
+  // ย้ายมาตรงกลางช่องรายการ และขยายฟ้อนให้ใหญ่ขึ้น
+  doc.setFont('Sarabun', 'bold')
+  doc.setFontSize(12)
+  doc.text(`(${bahtText(grandTotal)})`, col.desc + col.descW / 2, totalRowY + 8, { align: 'center' })
 
   // ═════════════════════════════════════════════════════════════════════════
   //  6. หมายเหตุ (ถ้ามี)
