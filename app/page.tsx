@@ -28,7 +28,6 @@ export default function Dashboard() {
       {dash.totalUnpaidAmount > 0 && <UnpaidAlert totalAmount={dash.totalUnpaidAmount} onClick={openUnpaid} />}
       <NetProfitHero stats={dash.stats} />
       <StatsRow stats={dash.stats} />
-      <AIInsights dash={dash} />
       <ChartsSection dash={dash} />
       <RecordListSection dash={dash} />
 
@@ -249,86 +248,7 @@ const StatsRow = memo(function StatsRow({ stats }: { stats: DashboardStats }) {
   )
 })
 
-const AIInsights = memo(function AIInsights({ dash }: { dash: any }) {
-  const { stats, groupedUnpaid } = dash
-  const [insightsText, setInsightsText] = useState<string>('')
-  const [loading, setLoading] = useState<boolean>(true)
-  const [expanded, setExpanded] = useState<boolean>(false)
 
-  useEffect(() => {
-    async function fetchInsights() {
-      setLoading(true)
-      try {
-        const unpaidTotal = groupedUnpaid.reduce((s: number, g: any) => s + g.total, 0)
-        const response = await fetch('/api/insights', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            todayTotalIncome: stats.todayTotalIncome,
-            todayExpense: stats.todayExpense,
-            netProfit: stats.netProfit,
-            washCount: stats.washCount,
-            polishCount: stats.polishCount,
-            unpaidCount: groupedUnpaid.length,
-            unpaidTotal: unpaidTotal,
-          }),
-        })
-        const data = await response.json()
-        setInsightsText(data.text)
-      } catch (error) {
-        setInsightsText('ไม่สามารถเชื่อมต่อกับ AI ได้')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchInsights()
-  }, [stats, groupedUnpaid])
-
-  const insights = useMemo(() => {
-    return insightsText.split('\n').filter(t => t.trim() !== '').map(t => t.replace(/^✦\s*/, ''))
-  }, [insightsText])
-
-  return (
-    <section className="card bg-gradient-to-br from-purple-50 to-pink-50 border-purple-100 p-5 fade-up delay-3" aria-label="สรุปวิเคราะห์ข้อมูล">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center">
-            <AISparklesIcon />
-          </div>
-          <h3 className="text-base font-bold text-[var(--text-primary)]">วิเคราะห์ภาพรวมโดย AI</h3>
-        </div>
-        {insights.length > 1 && (
-          <button 
-            onClick={() => setExpanded(!expanded)} 
-            className="text-xs text-purple-600 font-bold hover:text-purple-700 active:scale-95 transition-transform flex items-center gap-1"
-          >
-            {expanded ? 'แสดงน้อยลง ↑' : 'ดูเพิ่มเติม ↓'}
-          </button>
-        )}
-      </div>
-      {loading ? (
-        <div className="space-y-2">
-          <div className="skeleton h-4 w-3/4" />
-          <div className="skeleton h-4 w-1/2" />
-        </div>
-      ) : (
-        <ul className="space-y-2.5">
-          {(expanded ? insights : insights.slice(0, 1)).map((text, idx) => (
-            <li key={idx} className="flex items-start gap-2 text-sm text-[var(--text-secondary)]">
-              <span className="text-purple-500 mt-0.5">✦</span>
-              <span>
-                {text.split('**').map((part, i) => 
-                  i % 2 === 1 ? <strong key={i} className="text-[var(--text-primary)] font-bold">{part}</strong> : part
-                )}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  )
-})
 
 const ChartsSection = memo(function ChartsSection({ dash }: { dash: ReturnType<typeof useDashboard> }) {
   return (
