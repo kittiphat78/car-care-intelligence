@@ -124,12 +124,19 @@ export default function HistoryPage() {
     selectedMonth === 0 ? expenses : expenses.filter(e => new Date(e.created_at).getMonth() + 1 === selectedMonth)
   , [expenses, selectedMonth])
 
-  const summary = useMemo(() => ({
-    totalIncome: currentMonthRecords.reduce((s, r) => s + r.price, 0),
-    totalExpense: currentMonthExpenses.reduce((s, e) => s + e.amount, 0),
-    totalWashCount: currentMonthRecords.filter(r => r.type === 'wash').length,
-    totalPolishCount: currentMonthRecords.filter(r => r.type === 'polish').length,
-  }), [currentMonthRecords, currentMonthExpenses])
+  const summary = useMemo(() => {
+    const washRecords = currentMonthRecords.filter(r => r.type === 'wash')
+    const polishRecords = currentMonthRecords.filter(r => r.type === 'polish')
+    
+    return {
+      totalIncome: currentMonthRecords.reduce((s, r) => s + r.price, 0),
+      totalExpense: currentMonthExpenses.reduce((s, e) => s + e.amount, 0),
+      totalWashCount: washRecords.length,
+      totalPolishCount: polishRecords.length,
+      totalWashRevenue: washRecords.reduce((s, r) => s + r.price, 0),
+      totalPolishRevenue: polishRecords.reduce((s, r) => s + r.price, 0),
+    }
+  }, [currentMonthRecords, currentMonthExpenses])
 
   const filteredItems = useMemo(() => {
     const fromTime = dateFrom ? new Date(dateFrom).getTime() : 0
@@ -373,6 +380,8 @@ const TabToggle = memo(function TabToggle({ activeTab, switchTab }: { activeTab:
 })
 
 const SummaryCard = memo(function SummaryCard({ activeTab, selectedMonth, summary, onExport, billMode, onBillModeToggle }: any) {
+  const [showRevenue, setShowRevenue] = useState(false)
+
   return (
     <section className="card-dark p-5 fade-up delay-1" aria-label="สรุปยอดรวม">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -385,33 +394,38 @@ const SummaryCard = memo(function SummaryCard({ activeTab, selectedMonth, summar
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          {activeTab === 'income' && (
-            <div className="flex items-center gap-2.5 bg-white/10 border border-white/10 rounded-[var(--radius-md)] px-3.5 py-2.5">
-              <div className="text-center">
-                <p className="text-[11px] text-white/50 leading-none mb-1">ล้างรถ</p>
-                <p className="text-base font-extrabold text-white leading-none">{summary.totalWashCount}</p>
-              </div>
-              <div className="w-px h-8 bg-white/15" aria-hidden="true" />
-              <div className="text-center">
-                <p className="text-[11px] text-white/50 leading-none mb-1">ขัดสี</p>
-                <p className="text-base font-extrabold text-white leading-none">{summary.totalPolishCount}</p>
-              </div>
+          <div 
+            className={`flex items-center gap-2.5 bg-white/10 border border-white/10 rounded-[var(--radius-md)] px-3.5 py-2.5 cursor-pointer hover:bg-white/15 transition-colors ${activeTab !== 'income' ? 'opacity-0 pointer-events-none' : ''}`}
+            onClick={() => setShowRevenue(!showRevenue)}
+            role="button"
+            aria-label="สลับการแสดงผลจำนวนคันและรายได้"
+          >
+            <div className="text-center">
+              <p className="text-[11px] text-white/50 leading-none mb-1">ล้างรถ</p>
+              <p className="text-base font-extrabold text-white leading-none">
+                {showRevenue ? `฿${(summary.totalWashRevenue || 0).toLocaleString()}` : summary.totalWashCount}
+              </p>
             </div>
-          )}
+            <div className="w-px h-8 bg-white/15" aria-hidden="true" />
+            <div className="text-center">
+              <p className="text-[11px] text-white/50 leading-none mb-1">ขัดสี</p>
+              <p className="text-base font-extrabold text-white leading-none">
+                {showRevenue ? `฿${(summary.totalPolishRevenue || 0).toLocaleString()}` : summary.totalPolishCount}
+              </p>
+            </div>
+          </div>
           <div className="flex items-center gap-2">
-            {activeTab === 'income' && (
-              <button
-                onClick={onBillModeToggle}
-                className={`flex items-center gap-1.5 text-sm font-bold px-3.5 py-3 rounded-[var(--radius-md)] active:scale-95 transition-all ${
-                  billMode
-                    ? 'bg-[var(--accent)] text-white shadow-sm'
-                    : 'text-white/70 bg-white/10 border border-white/10'
-                }`}
-                aria-label="สร้างบิลเงินสด"
-              >
-                🧾 {billMode ? 'ยกเลิก' : 'บิล'}
-              </button>
-            )}
+            <button
+              onClick={onBillModeToggle}
+              className={`flex items-center gap-1.5 text-sm font-bold px-3.5 py-3 rounded-[var(--radius-md)] active:scale-95 transition-all ${
+                billMode
+                  ? 'bg-[var(--accent)] text-white shadow-sm'
+                  : 'text-white/70 bg-white/10 border border-white/10'
+              } ${activeTab !== 'income' ? 'opacity-0 pointer-events-none' : ''}`}
+              aria-label="สร้างบิลเงินสด"
+            >
+              🧾 {billMode ? 'ยกเลิก' : 'บิล'}
+            </button>
             <button onClick={onExport} className="flex items-center gap-2 text-sm font-bold text-white/70 bg-white/10 border border-white/10 px-3.5 py-3 rounded-[var(--radius-md)] active:scale-95 transition-transform" aria-label="ดาวน์โหลด Excel">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h2"/><path d="M8 17h2"/><path d="M14 13h2"/><path d="M14 17h2"/></svg>
               Excel

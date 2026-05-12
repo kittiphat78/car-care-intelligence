@@ -45,7 +45,7 @@ export async function exportToExcel(data: AppRecord[] | Expense[], fileName: str
     type: 'pattern',
     pattern: 'solid',
     // ใช้สีพรีเมียมเข้มๆ แดงก่ำสำหรับรายจ่าย, น้ำเงินอมเขียว(Teal) สำหรับรายรับ
-    fgColor: { argb: isExpenseMode ? 'FF991B1B' : 'FF0F766E' } 
+    fgColor: { argb: isExpenseMode ? 'FF991B1B' : 'FF0F766E' }
   }
   headerRow.alignment = { vertical: 'middle', horizontal: 'center' }
   headerRow.height = 30
@@ -115,7 +115,7 @@ export async function exportToExcel(data: AppRecord[] | Expense[], fileName: str
     const amtCell = isExpenseMode ? row.getCell('amount') : row.getCell('price')
     amtCell.numFmt = '#,##0.00'
     amtCell.alignment = { horizontal: 'right', vertical: 'middle' }
-    
+
     // สถานะจัดกึ่งกลาง
     if (!isExpenseMode) {
       row.getCell('status').alignment = { horizontal: 'center', vertical: 'middle' }
@@ -144,7 +144,7 @@ export async function exportToExcel(data: AppRecord[] | Expense[], fileName: str
       // ตัวอักษรไทยใช้พื้นที่น้อยกว่าตัวอังกฤษนิดหน่อย แต่เผื่อไว้ก่อน
       let length = val.length
       if (typeof cell.value === 'number') {
-         length = 12 // เผื่อสำหรับตัวเลขที่มี comma
+        length = 12 // เผื่อสำหรับตัวเลขที่มี comma
       }
       if (length > maxLength) maxLength = length
     })
@@ -164,16 +164,16 @@ export async function exportToExcel(data: AppRecord[] | Expense[], fileName: str
   }
 
   const summaryRow = worksheet.addRow(
-    isExpenseMode 
+    isExpenseMode
       ? { title: 'ยอดรวมทั้งสิ้น:', amount: totalAmount }
       : { note: 'ยอดรวมทั้งสิ้น:', price: totalAmount }
   )
-  
+
   summaryRow.font = { name: 'Arial', bold: true, size: 12, color: { argb: 'FF1F2937' } }
   summaryRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3F4F6' } } // สีเทาสว่าง
   summaryRow.height = 30
   summaryRow.alignment = { vertical: 'middle' }
-  
+
   const totalCell = isExpenseMode ? summaryRow.getCell('amount') : summaryRow.getCell('price')
   totalCell.numFmt = '#,##0.00'
   totalCell.alignment = { horizontal: 'right' }
@@ -183,7 +183,7 @@ export async function exportToExcel(data: AppRecord[] | Expense[], fileName: str
   if (monthKeys.length > 1) {
     worksheet.addRow([])
     worksheet.addRow([])
-    
+
     const mSumHeader = worksheet.addRow(['สรุปยอดรายเดือน', 'ยอดรวม (บาท)'])
     mSumHeader.font = { name: 'Arial', bold: true, color: { argb: 'FFFFFFFF' } }
     mSumHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF059669' } } // สีเขียวหรู (Emerald)
@@ -197,7 +197,7 @@ export async function exportToExcel(data: AppRecord[] | Expense[], fileName: str
       row.getCell(2).numFmt = '#,##0.00'
       row.getCell(2).alignment = { horizontal: 'right', vertical: 'middle' }
       row.getCell(1).alignment = { vertical: 'middle' }
-      
+
       // ใส่เส้นขอบ
       row.eachCell({ includeEmpty: false }, (cell) => {
         cell.border = {
