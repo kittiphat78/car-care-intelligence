@@ -129,7 +129,7 @@ export default function AddPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [])
 
-  const submitIncome = async (isBulk: boolean) => {
+  const submitIncome = useCallback(async (isBulk: boolean) => {
     // 1. กำหนด Schema ด้วย Zod สำหรับ Income
     const incomeSchema = z.object({
       plate: z.string().min(1, 'กรุณากรอกป้ายทะเบียน').max(20, 'ป้ายทะเบียนยาวเกินไป'),
@@ -182,9 +182,9 @@ export default function AddPage() {
       setSuccessMsg(`บันทึก ${safePlate} สำเร็จ`)
       resetIncomeForm(); setTimeout(() => setSuccessMsg(''), 4000)
     } else { router.push('/'); router.refresh() }
-  }
+  }, [plate, selectedType, price, customerName, note, date, type, selectedBrand, paymentStatus, userId, userEmail, addCustomer, resetIncomeForm, router])
 
-  const submitExpense = async (isBulk: boolean) => {
+  const submitExpense = useCallback(async (isBulk: boolean) => {
     // 1. Zod Schema สำหรับ Expense
     const expenseSchema = z.object({
       title: z.string().min(1, 'กรุณาระบุรายการจ่าย').max(100, 'รายการยาวเกินไป'),
@@ -217,17 +217,18 @@ export default function AddPage() {
       setSuccessMsg(`บันทึกรายจ่าย ${safeTitle} สำเร็จ`)
       resetExpenseForm(); setTimeout(() => setSuccessMsg(''), 4000)
     } else { router.push('/'); router.refresh() }
-  }
+  }, [expenseTitle, expenseAmount, expenseNote, date, userId, userEmail, resetExpenseForm, router])
 
   const handleSubmit = useCallback(async (isBulk: boolean = false) => {
     setError(''); setSuccessMsg(''); setSaving(true)
     try {
       if (formMode === 'income') await submitIncome(isBulk)
       else await submitExpense(isBulk)
-    } catch (e: any) {
-      setError('บันทึกไม่สำเร็จ: ' + (e.message || 'ลองใหม่อีกครั้ง'))
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'ลองใหม่อีกครั้ง'
+      setError('บันทึกไม่สำเร็จ: ' + message)
     } finally { setSaving(false) }
-  }, [formMode, plate, selectedType, price, type, selectedBrand, note, customerName, paymentStatus, date, expenseTitle, expenseAmount, expenseNote, userId, userEmail])
+  }, [formMode, submitIncome, submitExpense])
 
   return (
     <div className="min-h-dvh bg-[var(--bg)]">
@@ -358,7 +359,32 @@ const DatePicker = memo(function DatePicker({ date, onChange }: { date: string; 
    Income Form
    ═══════════════════════════════════════════════════════════════════════════ */
 
-function IncomeForm({ states, setters }: any) {
+interface IncomeFormProps {
+  states: {
+    type: import('@/types').RecordType
+    plate: string
+    selectedType: string
+    selectedBrand: string
+    customerName: string
+    paymentStatus: import('@/types').PaymentStatus
+    note: string
+    price: string
+    visitCount: number
+    savedCustomers: string[]
+  }
+  setters: {
+    setType: (v: import('@/types').RecordType) => void
+    setPlate: (v: string) => void
+    setSelectedType: (v: string | ((prev: string) => string)) => void
+    setSelectedBrand: (v: string | ((prev: string) => string)) => void
+    setCustomerName: (v: string) => void
+    setPaymentStatus: (v: import('@/types').PaymentStatus) => void
+    setNote: (v: string) => void
+    setPrice: (v: string) => void
+  }
+}
+
+function IncomeForm({ states, setters }: IncomeFormProps) {
   const { type, plate, selectedType, selectedBrand, customerName, paymentStatus, note, price, visitCount, savedCustomers } = states
   const { setType, setPlate, setSelectedType, setSelectedBrand, setCustomerName, setPaymentStatus, setNote, setPrice } = setters
   const [brandSearch, setBrandSearch] = useState('')
@@ -617,7 +643,12 @@ function IncomeForm({ states, setters }: any) {
    Expense Form
    ═══════════════════════════════════════════════════════════════════════════ */
 
-function ExpenseForm({ states, setters }: any) {
+interface ExpenseFormProps {
+  states: { title: string; amount: string; note: string }
+  setters: { setTitle: (v: string) => void; setAmount: (v: string) => void; setNote: (v: string) => void }
+}
+
+function ExpenseForm({ states, setters }: ExpenseFormProps) {
   return (
     <div className="space-y-4 fade-up" id="expense-panel" role="tabpanel">
       <Card>

@@ -235,16 +235,16 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
 
           {/* Audit Trail */}
           <div className="mt-5 p-4 bg-[var(--surface-2)] rounded-[var(--radius-lg)] flex flex-col gap-3.5 border border-[var(--border)]">
-            {(item as any)?.created_by_email && (
+            {item.created_by_email && (
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center text-[11px] border border-blue-200" aria-hidden="true">➕</div>
-                <div><p className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">เพิ่มโดย</p><p className="text-sm font-bold text-[var(--text-primary)]">{(item as any).created_by_email}</p></div>
+                <div><p className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">เพิ่มโดย</p><p className="text-sm font-bold text-[var(--text-primary)]">{item.created_by_email}</p></div>
               </div>
             )}
-            {(item as any)?.updated_by_email && (
+            {item.updated_by_email && (
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center text-[11px] border border-amber-200" aria-hidden="true">✏️</div>
-                <div><p className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">แก้ไขล่าสุดโดย</p><p className="text-sm font-bold text-[var(--text-primary)]">{(item as any).updated_by_email} <span className="font-normal text-[11px] text-[var(--text-tertiary)]">({new Date((item as any).updated_at!).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })})</span></p></div>
+                <div><p className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">แก้ไขล่าสุดโดย</p><p className="text-sm font-bold text-[var(--text-primary)]">{item.updated_by_email} {item.updated_at && <span className="font-normal text-[11px] text-[var(--text-tertiary)]">({new Date(item.updated_at).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })})</span>}</p></div>
               </div>
             )}
             <div className="h-[1px] bg-[var(--border)] w-full my-1" aria-hidden="true" />

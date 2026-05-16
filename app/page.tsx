@@ -278,7 +278,7 @@ const ChartsSection = memo(function ChartsSection({ dash }: { dash: ReturnType<t
               <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: '#8A847C', fontSize: 11, fontWeight: 600 }} dy={8} />
               <YAxis axisLine={false} tickLine={false} tick={{ fill: '#8A847C', fontSize: 11, fontWeight: 600 }} dx={-5} />
               <Tooltip
-                formatter={(value: any, name?: any) => [`฿${(Number(value) || 0).toLocaleString()}`, name === 'income' ? 'รายรับ' : 'รายจ่าย']}
+                formatter={(value, name) => [`฿${(Number(value) || 0).toLocaleString()}`, name === 'income' ? 'รายรับ' : 'รายจ่าย']}
                 contentStyle={{ borderRadius: '14px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-md)', fontSize: '14px', fontWeight: 700, padding: '10px 16px' }}
               />
               <Legend verticalAlign="top" align="right" iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 600, paddingBottom: '15px' }} />
@@ -300,7 +300,7 @@ const RecordListSection = memo(function RecordListSection({ dash }: { dash: Retu
           <h3 className="text-base font-bold text-[var(--text-primary)]">รายการวันนี้</h3>
           <span className="badge text-[13px]" style={{ background: 'var(--surface-2)', color: 'var(--text-secondary)' }}>{dash.records.length}</span>
         </div>
-        <button onClick={dash.refresh} className="flex items-center gap-2 text-sm text-[var(--accent)] font-bold py-1.5 active:scale-95 transition-transform" aria-label="รีเฟรชข้อมูล">
+        <button onClick={() => dash.refresh()} className="flex items-center gap-2 text-sm text-[var(--accent)] font-bold py-1.5 active:scale-95 transition-transform" aria-label="รีเฟรชข้อมูล">
           <RefreshIcon /> รีเฟรช
         </button>
       </div>
@@ -349,8 +349,16 @@ function getOverdueBadgeStyle(days: number): { bg: string; text: string; border:
 const UnpaidModal = memo(function UnpaidModal({ unpaidData, totalAmount, onClose, onMarkPaid }: {
   unpaidData: UnpaidGroup[]; totalAmount: number; onClose: () => void; onMarkPaid: (name: string) => void
 }) {
-  if (typeof document !== 'undefined') document.body.classList.add('modal-open')
-  const handleClose = () => { document.body.classList.remove('modal-open'); onClose() }
+  // ✅ ใช้ useEffect แทนการเรียก side effect ตรงใน render body
+  useEffect(() => {
+    document.body.classList.add('modal-open')
+    return () => { document.body.classList.remove('modal-open') }
+  }, [])
+
+  const handleClose = useCallback(() => {
+    document.body.classList.remove('modal-open')
+    onClose()
+  }, [onClose])
   const totalCars = unpaidData.reduce((a, c) => a + c.items.length, 0)
 
   return (
@@ -486,5 +494,4 @@ const AISparklesIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fi
 const RefreshIcon = () => (<svg width="16" height="16" viewBox="0 0 13 13" fill="none" aria-hidden="true"><path d="M11 6.5A4.5 4.5 0 1 1 6.5 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /><path d="M6.5 2l1.5 1.5L6.5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>)
 const CloseIcon = () => (<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>)
 const CheckMarkIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>)
-const CheckMarkSmallIcon = () => (<svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6L9 17L4 12" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /></svg>)
 const ClockIcon = () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" /><path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>)

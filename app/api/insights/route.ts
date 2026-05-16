@@ -3,6 +3,15 @@ import { NextResponse } from 'next/server'
 export async function POST(request: Request) {
   try {
     const data = await request.json()
+
+    // ✅ Input validation — ตรวจสอบว่า body มีข้อมูลที่ต้องการ
+    const requiredFields = ['todayTotalIncome', 'todayExpense', 'netProfit', 'washCount', 'polishCount'] as const
+    for (const field of requiredFields) {
+      if (typeof data[field] !== 'number') {
+        return NextResponse.json({ text: `✦ ข้อมูลไม่ครบ: ${field} ต้องเป็นตัวเลข` }, { status: 400 })
+      }
+    }
+
     const apiKey = process.env.GEMINI_API_KEY
 
     if (!apiKey) {
@@ -19,7 +28,7 @@ export async function POST(request: Request) {
       - กำไรสุทธิ: ${data.netProfit} บาท
       - ล้างรถ: ${data.washCount} คัน
       - ขัดสี: ${data.polishCount} คัน
-      - ลูกค้าค้างชำระ: ${data.unpaidCount} คน (รวม ${data.unpaidTotal} บาท)
+      - ลูกค้าค้างชำระ: ${data.unpaidCount ?? 0} คน (รวม ${data.unpaidTotal ?? 0} บาท)
       
       กฎการตอบกลับ:
       - ตอบเฉพาะข้อความที่เป็นข้อๆ เริ่มต้นแต่ละข้อด้วย ✦ 
@@ -51,7 +60,7 @@ export async function POST(request: Request) {
     const text = resData.candidates?.[0]?.content?.parts?.[0]?.text || '✦ ไม่สามารถวิเคราะห์ข้อมูลได้ในขณะนี้'
 
     return NextResponse.json({ text })
-  } catch (error: any) {
+  } catch {
     return NextResponse.json({ text: 'เกิดข้อผิดพลาดในการเชื่อมต่อกับ AI' }, { status: 500 })
   }
 }
