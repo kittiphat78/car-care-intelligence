@@ -231,8 +231,8 @@ export function useWeather() {
         
         fetchSuccess = true;
       }
-    } catch (err: any) { 
-      if (err.name !== 'AbortError') console.error("โหลดอากาศไม่สำเร็จ:", err) 
+    } catch (err: unknown) { 
+      if (err instanceof Error && err.name !== 'AbortError') console.error("โหลดอากาศไม่สำเร็จ:", err) 
     }
 
     // ── 2. ดึงข้อมูลคุณภาพอากาศ (AQI) ──
@@ -246,8 +246,8 @@ export function useWeather() {
         aqiValue = Math.round(aqData.current?.us_aqi ?? 0);
         fetchSuccess = true;
       }
-    } catch (err: any) { 
-      if (err.name !== 'AbortError') console.error("โหลดฝุ่นไม่สำเร็จ:", err) 
+    } catch (err: unknown) { 
+      if (err instanceof Error && err.name !== 'AbortError') console.error("โหลดฝุ่นไม่สำเร็จ:", err) 
     }
 
     // ── 3. ถ้าดึงไม่สำเร็จเลย → retry ──

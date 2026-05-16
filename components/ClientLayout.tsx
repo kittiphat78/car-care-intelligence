@@ -7,7 +7,6 @@ import { useKioskMode } from '@/hooks/useKioskMode'
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const isLoginPage = pathname === '/login'
-  const isAddPage = pathname === '/add'
 
   // 🛡️ ดักจับการรีเฟรชหน้าจอ (Kiosk Mode Protection)
   useKioskMode()

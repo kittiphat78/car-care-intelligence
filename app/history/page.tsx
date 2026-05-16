@@ -350,7 +350,14 @@ export default function HistoryPage() {
    Sub-Components
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const Header = memo(function Header({ selectedMonth, setSelectedMonth, selectedYear, setSelectedYear }: any) {
+interface HistoryHeaderProps {
+  selectedMonth: number
+  setSelectedMonth: (v: number) => void
+  selectedYear: number
+  setSelectedYear: (v: number) => void
+}
+
+const Header = memo(function Header({ selectedMonth, setSelectedMonth, selectedYear, setSelectedYear }: HistoryHeaderProps) {
   return (
     <header className="flex items-center justify-between fade-up">
       <h1 className="text-2xl font-extrabold text-[var(--text-primary)] tracking-tight">ประวัติ</h1>
@@ -379,7 +386,23 @@ const TabToggle = memo(function TabToggle({ activeTab, switchTab }: { activeTab:
   )
 })
 
-const SummaryCard = memo(function SummaryCard({ activeTab, selectedMonth, summary, onExport, billMode, onBillModeToggle }: any) {
+interface SummaryCardProps {
+  activeTab: TabType
+  selectedMonth: number
+  summary: {
+    totalIncome: number
+    totalExpense: number
+    totalWashCount: number
+    totalPolishCount: number
+    totalWashRevenue: number
+    totalPolishRevenue: number
+  }
+  onExport: () => void
+  billMode: boolean
+  onBillModeToggle: () => void
+}
+
+const SummaryCard = memo(function SummaryCard({ activeTab, selectedMonth, summary, onExport, billMode, onBillModeToggle }: SummaryCardProps) {
   const [showRevenue, setShowRevenue] = useState(false)
 
   return (
@@ -387,7 +410,7 @@ const SummaryCard = memo(function SummaryCard({ activeTab, selectedMonth, summar
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-[13px] text-white/50 mb-1.5 font-medium">
-            {selectedMonth === 0 ? 'ยอดรวมทั้งปี' : `ยอดรวมเดือน${MONTH_OPTIONS.find((m: any) => m.value === selectedMonth)?.label}`}
+            {selectedMonth === 0 ? 'ยอดรวมทั้งปี' : `ยอดรวมเดือน${MONTH_OPTIONS.find(m => m.value === selectedMonth)?.label}`}
           </p>
           <p className="text-3xl font-extrabold text-white" aria-live="polite">
             ฿{(activeTab === 'income' ? summary.totalIncome : summary.totalExpense).toLocaleString()}
@@ -437,7 +460,19 @@ const SummaryCard = memo(function SummaryCard({ activeTab, selectedMonth, summar
   )
 })
 
-function FilterSection({ activeTab, search, setSearch, dateFrom, setDateFrom, dateTo, setDateTo, filterType, setFilterType }: any) {
+interface FilterSectionProps {
+  activeTab: TabType
+  search: string
+  setSearch: (v: string) => void
+  dateFrom: string
+  setDateFrom: (v: string) => void
+  dateTo: string
+  setDateTo: (v: string) => void
+  filterType: FilterType
+  setFilterType: (v: FilterType) => void
+}
+
+function FilterSection({ activeTab, search, setSearch, dateFrom, setDateFrom, dateTo, setDateTo, filterType, setFilterType }: FilterSectionProps) {
   return (
     <section className="card p-4 space-y-3 fade-up delay-2" aria-label="ตัวกรอง">
       <div className="relative">
@@ -471,7 +506,18 @@ function FilterSection({ activeTab, search, setSearch, dateFrom, setDateFrom, da
   )
 }
 
-function HistoryList({ loading, grouped, activeTab, onItemClick, billMode, billSelectedIds, onBillToggle, onBillToggleDay }: any) {
+interface HistoryListProps {
+  loading: boolean
+  grouped: globalThis.Record<string, (AppRecord | Expense)[]>
+  activeTab: TabType
+  onItemClick: (item: AppRecord | Expense) => void
+  billMode: boolean
+  billSelectedIds: Set<string>
+  onBillToggle: (id: string) => void
+  onBillToggleDay: (items: (AppRecord | Expense)[]) => void
+}
+
+function HistoryList({ loading, grouped, activeTab, onItemClick, billMode, billSelectedIds, onBillToggle, onBillToggleDay }: HistoryListProps) {
   if (loading) {
     return (
       <section className="space-y-3 fade-up delay-3" aria-busy="true" aria-label="กำลังโหลดรายการ">
@@ -610,7 +656,15 @@ const ErrorBanner = memo(function ErrorBanner({ error }: { error: string }) {
   )
 })
 
-function ExportModal({ activeTab, defaultYear, defaultMonth, onClose, onExport }: any) {
+interface ExportModalProps {
+  activeTab: TabType
+  defaultYear: number
+  defaultMonth: number
+  onClose: () => void
+  onExport: (startYear: number, startMonth: number, endYear: number, endMonth: number) => Promise<void>
+}
+
+function ExportModal({ activeTab, defaultYear, defaultMonth, onClose, onExport }: ExportModalProps) {
   const [startYear, setStartYear] = useState(defaultYear)
   const [startMonth, setStartMonth] = useState(defaultMonth)
   const [endYear, setEndYear] = useState(defaultYear)

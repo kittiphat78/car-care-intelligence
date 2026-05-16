@@ -42,6 +42,13 @@ export async function GET(request: Request) {
     })
   }
 
+  // 🛡️ Cleanup: ลบ entries ที่หมดอายุแล้ว เพื่อป้องกัน memory leak
+  if (rateLimitMap.size > 100) {
+    for (const [key, val] of rateLimitMap) {
+      if (currentTime >= val.resetTime) rateLimitMap.delete(key)
+    }
+  }
+
   /* ═══════════════════════════════════════════════════════════════════════════
      ส่วนของการดึงข้อมูลและการเขียนไฟล์ Excel หรือ Business Logic จะอยู่ตรงนี้
      (ในโปรเจกต์ของคุณ การ Export ตอนนี้ทำที่ฝั่ง Client แต่ถ้าจะย้ายมาทำที่ API ก็ทำในส่วนนี้ครับ)

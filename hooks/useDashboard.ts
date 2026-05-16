@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Record as AppRecord, Expense } from '@/types' // ✅ alias `AppRecord` เพื่อไม่ให้ซ้ำกับ TypeScript `Record<K,T>`
@@ -32,16 +32,18 @@ export function useDashboard() {
   const [unpaidRecords, setUnpaidRecords]       = useState<AppRecord[]>([])
 
   // ── Data Fetching ──
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (skipAuth = false) => {
     setLoading(true)
     
     // 1. Auth check
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { 
-      router.push('/login')
-      return 
+    if (!skipAuth) {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { 
+        router.push('/login')
+        return 
+      }
+      setUserEmail(user.email ?? '')
     }
-    setUserEmail(user.email ?? '')
 
     // 2. Date boundaries (ใช้ Local Time ให้เป๊ะ)
     const today = new Date()
@@ -52,12 +54,12 @@ export function useDashboard() {
     
     const thirtyDaysAgo = new Date(today)
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-
+ 
     // แปลงเป็น ISO String ครั้งเดียว
     const todayIso = today.toISOString()
     const yesterdayIso = yesterday.toISOString()
     const thirtyDaysAgoIso = thirtyDaysAgo.toISOString()
-
+ 
     // 3. Parallel Fetching
     const [todayRes, yesterdayRes, allRes, expenseRes, unpaidRes] = await Promise.all([
       supabase.from('records').select('*').gte('created_at', todayIso).order('created_at', { ascending: false }),
@@ -66,7 +68,7 @@ export function useDashboard() {
       supabase.from('expenses').select('*').gte('created_at', thirtyDaysAgoIso),
       supabase.from('records').select('*').eq('payment_status', 'unpaid').order('created_at', { ascending: true })
     ])
-
+ 
     // 4. State updates (Fallback to empty array to prevent crash)
     setRecords(todayRes.data ?? [])
     setYesterdayRecords(yesterdayRes.data ?? [])
@@ -76,16 +78,24 @@ export function useDashboard() {
     
     setLoading(false)
   }, [router])
-
-  // ── Real-time Subscriptions ──
+ 
+  // ── Real-time Subscriptions (debounced เพื่อป้องกัน rapid-fire re-fetch) ──
+  const realtimeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
     fetchData()
+    const debouncedFetch = () => {
+      if (realtimeTimerRef.current) clearTimeout(realtimeTimerRef.current)
+      realtimeTimerRef.current = setTimeout(() => fetchData(true), 300)
+    }
     const channel = supabase.channel('dashboard-updates')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'records' }, fetchData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'records' }, debouncedFetch)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, debouncedFetch)
       .subscribe()
       
-    return () => { supabase.removeChannel(channel) }
+    return () => {
+      supabase.removeChannel(channel)
+      if (realtimeTimerRef.current) clearTimeout(realtimeTimerRef.current)
+    }
   }, [fetchData])
 
   // ── Actions ──
@@ -163,12 +173,11 @@ export function useDashboard() {
     }
   }, [records, expenses, yesterdayRecords])
 
-  // 2. ข้อมูลกราฟ
+  // 2. ข้อมูลกราฟ (ใช้ bucket map เพื่อ O(n) แทน O(days × records))
   const chartData = useMemo(() => {
     const now = new Date()
     const days = chartMode === 'week' ? 7 : 30
     
-    // คำนวณขอบเขตเวลาทั้งหมดครั้งเดียว
     const endDate = new Date(now)
     endDate.setDate(endDate.getDate() + 1)
     endDate.setHours(0,0,0,0)
@@ -177,34 +186,38 @@ export function useDashboard() {
     startDate.setDate(startDate.getDate() - (days - 1))
     startDate.setHours(0,0,0,0)
 
-    // ตัดข้อมูล records ที่ไม่อยู่ใน range ออกก่อน ค่อย map วนลูป
-    const relevantRecords = allRecords.filter(r => {
-      const t = new Date(r.created_at).getTime()
-      return t >= startDate.getTime() && t < endDate.getTime()
-    })
+    const startMs = startDate.getTime()
+    const endMs = endDate.getTime()
+    const dayMs = 24 * 60 * 60 * 1000
 
-    return Array.from({ length: days }, (_, i) => {
+    // Bucket map: index → { income, expense }
+    const buckets = Array.from({ length: days }, () => ({ income: 0, expense: 0 }))
+
+    // O(n) — วนรอบเดียว, หาว่าตกอยู่ใน bucket ไหน
+    for (const r of allRecords) {
+      const t = new Date(r.created_at).getTime()
+      if (t >= startMs && t < endMs) {
+        const idx = Math.floor((t - startMs) / dayMs)
+        if (idx >= 0 && idx < days) buckets[idx].income += r.price
+      }
+    }
+    for (const e of expenses) {
+      const t = new Date(e.created_at).getTime()
+      if (t >= startMs && t < endMs) {
+        const idx = Math.floor((t - startMs) / dayMs)
+        if (idx >= 0 && idx < days) buckets[idx].expense += e.amount
+      }
+    }
+
+    return buckets.map((b, i) => {
       const d = new Date(startDate)
       d.setDate(d.getDate() + i)
-      const nextD = new Date(d)
-      nextD.setDate(nextD.getDate() + 1)
-      
-      const dayRecs = relevantRecords.filter(r => {
-        const t = new Date(r.created_at).getTime()
-        return t >= d.getTime() && t < nextD.getTime()
-      })
-
-      const dayExpenses = expenses.filter(e => {
-        const t = new Date(e.created_at).getTime()
-        return t >= d.getTime() && t < nextD.getTime()
-      })
-      
       return {
         label: chartMode === 'week' 
           ? d.toLocaleDateString('th-TH', { weekday: 'short' }) 
           : d.toLocaleDateString('th-TH', { day: 'numeric' }),
-        income: dayRecs.reduce((s, r) => s + r.price, 0),
-        expense: dayExpenses.reduce((s, e) => s + e.amount, 0),
+        income: b.income,
+        expense: b.expense,
       }
     })
   }, [allRecords, expenses, chartMode])

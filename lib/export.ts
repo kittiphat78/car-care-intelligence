@@ -68,7 +68,7 @@ export async function exportToExcel(data: AppRecord[] | Expense[], fileName: str
     const dateStr = formatDate(item.created_at)
     const d = new Date(item.created_at)
     const monthKey = d.toLocaleString('th-TH', { month: 'long', year: 'numeric' })
-    let rowValues: any = {}
+    let rowValues: globalThis.Record<string, string | number> = {}
 
     if (isExpenseRecord(item)) {
       totalAmount += item.amount || 0
@@ -139,7 +139,7 @@ export async function exportToExcel(data: AppRecord[] | Expense[], fileName: str
   // ✅ 4.5 จัดความกว้างคอลัมน์อัตโนมัติ (Auto-fit)
   worksheet.columns.forEach((column) => {
     let maxLength = 0
-    column.eachCell!({ includeEmpty: true }, (cell) => {
+    column.eachCell?.({ includeEmpty: true }, (cell) => {
       const val = cell.value ? cell.value.toString() : ''
       // ตัวอักษรไทยใช้พื้นที่น้อยกว่าตัวอังกฤษนิดหน่อย แต่เผื่อไว้ก่อน
       let length = val.length
