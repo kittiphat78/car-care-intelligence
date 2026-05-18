@@ -169,32 +169,35 @@ export default function HistoryPage() {
   const openModal = useCallback((item: AppRecord | Expense) => { setSelectedItem(item); setIsModalOpen(true) }, [])
   const closeModal = useCallback(() => setIsModalOpen(false), [])
 
-  const handleExport = useCallback(async (startYear: number, startMonth: number, endYear: number, endMonth: number) => {
+  const handleExport = useCallback(async (startYear: number, startMonth: number, endYear: number, endMonth: number, mode: 'bank' | 'internal') => {
     // คำนวณวันที่เริ่ม (วันที่ 1 ของเดือนที่เริ่ม)
     const startDate = new Date(startYear, startMonth - 1, 1).toISOString()
     
     // คำนวณวันที่สุดท้าย (วันที่ 1 ของเดือนถัดไปจากเดือนที่สิ้นสุด เพื่อใช้ lt)
     const endDate = new Date(endYear, endMonth, 1).toISOString()
     
-    const table = activeTab === 'income' ? 'records' : 'expenses'
-    const { data } = await supabase.from(table).select('*').gte('created_at', startDate).lt('created_at', endDate).order('created_at', { ascending: true })
-    
-    if (data && data.length > 0) {
-      const getMonthName = (m: number) => MONTH_OPTIONS.find(opt => opt.value === m)?.label || ''
-      const typeLabel = activeTab === 'income' ? 'สรุปรายรับ' : 'สรุปรายจ่าย'
-      const startStr = `${getMonthName(startMonth)}${startYear + 543}`
-      const endStr = `${getMonthName(endMonth)}${endYear + 543}`
+    const getMonthName = (m: number) => MONTH_OPTIONS.find(opt => opt.value === m)?.label || ''
+    const startStr = `${getMonthName(startMonth)}${startYear + 543}`
+    const endStr = `${getMonthName(endMonth)}${endYear + 543}`
+    const rangeLabel = startStr === endStr ? startStr : `ตั้งแต่${startStr}_ถึง${endStr}`
 
-      const fileName = startStr === endStr 
-        ? `${typeLabel}_${startStr}`
-        : `${typeLabel}_ตั้งแต่${startStr}_ถึง${endStr}`
-        
-      exportToExcel(data, fileName)
-    } else {
+    const [{ data: records }, { data: expenses }] = await Promise.all([
+      supabase.from('records').select('*').gte('created_at', startDate).lt('created_at', endDate).order('created_at', { ascending: true }),
+      supabase.from('expenses').select('*').gte('created_at', startDate).lt('created_at', endDate).order('created_at', { ascending: true })
+    ])
+    
+    if ((!records || records.length === 0) && (!expenses || expenses.length === 0)) {
       alert('ไม่พบข้อมูลในช่วงเวลาที่เลือก')
+      setIsExportModalOpen(false)
+      return
     }
+
+    const exportData = { records: records || [], expenses: expenses || [] }
+    const fileName = mode === 'internal' ? `รายงานภายใน_${rangeLabel}` : `สรุปรายรับและรายจ่าย_${rangeLabel}`
+
+    exportToExcel(exportData, fileName, mode)
     setIsExportModalOpen(false)
-  }, [activeTab])
+  }, [])
 
   // Bill Mode helpers
   const toggleBillSelect = useCallback((id: string) => {
@@ -449,10 +452,12 @@ const SummaryCard = memo(function SummaryCard({ activeTab, selectedMonth, summar
             >
               🧾 {billMode ? 'ยกเลิก' : 'บิล'}
             </button>
-            <button onClick={onExport} className="flex items-center gap-2 text-sm font-bold text-white/70 bg-white/10 border border-white/10 px-3.5 py-3 rounded-[var(--radius-md)] active:scale-95 transition-transform" aria-label="ดาวน์โหลด Excel">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h2"/><path d="M8 17h2"/><path d="M14 13h2"/><path d="M14 17h2"/></svg>
-              Excel
-            </button>
+            {activeTab === 'income' && (
+              <button onClick={onExport} className="flex items-center gap-2 text-sm font-bold text-white/70 bg-white/10 border border-white/10 px-3.5 py-3 rounded-[var(--radius-md)] active:scale-95 transition-transform" aria-label="ดาวน์โหลด Excel">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h2"/><path d="M8 17h2"/><path d="M14 13h2"/><path d="M14 17h2"/></svg>
+                Excel
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -661,7 +666,7 @@ interface ExportModalProps {
   defaultYear: number
   defaultMonth: number
   onClose: () => void
-  onExport: (startYear: number, startMonth: number, endYear: number, endMonth: number) => Promise<void>
+  onExport: (startYear: number, startMonth: number, endYear: number, endMonth: number, mode: 'bank' | 'internal') => Promise<void>
 }
 
 function ExportModal({ activeTab, defaultYear, defaultMonth, onClose, onExport }: ExportModalProps) {
@@ -669,6 +674,7 @@ function ExportModal({ activeTab, defaultYear, defaultMonth, onClose, onExport }
   const [startMonth, setStartMonth] = useState(defaultMonth)
   const [endYear, setEndYear] = useState(defaultYear)
   const [endMonth, setEndMonth] = useState(defaultMonth)
+  const [exportMode, setExportMode] = useState<'bank' | 'internal'>('bank')
   const [isExporting, setIsExporting] = useState(false)
 
   const EXPORT_MONTH_OPTIONS = MONTH_OPTIONS.filter(m => m.value !== 0)
@@ -683,7 +689,7 @@ function ExportModal({ activeTab, defaultYear, defaultMonth, onClose, onExport }
     }
 
     setIsExporting(true)
-    await onExport(startYear, startMonth, endYear, endMonth)
+    await onExport(startYear, startMonth, endYear, endMonth, exportMode)
     setIsExporting(false)
   }
 
@@ -693,8 +699,15 @@ function ExportModal({ activeTab, defaultYear, defaultMonth, onClose, onExport }
         <h2 className="text-xl font-extrabold text-[var(--text-primary)] mb-4 text-center">
           ส่งออกข้อมูล (Excel)
         </h2>
+
+        {/* Mode Selection */}
+        <div className="flex bg-[var(--surface-2)] p-1 rounded-xl gap-1 mb-5">
+          <button onClick={() => setExportMode('bank')} className={`flex-1 py-2 rounded-lg text-[13px] font-bold transition-all ${exportMode === 'bank' ? 'bg-white text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-tertiary)]'}`}>ฉบับให้ธนาคารดู</button>
+          <button onClick={() => setExportMode('internal')} className={`flex-1 py-2 rounded-lg text-[13px] font-bold transition-all ${exportMode === 'internal' ? 'bg-white text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-tertiary)]'}`}>ฉบับดูภายใน (Dashboard)</button>
+        </div>
+
         <p className="text-sm font-medium text-[var(--text-tertiary)] mb-6 text-center">
-          เลือกระยะเวลาที่ต้องการดาวน์โหลดข้อมูล{activeTab === 'income' ? 'รายรับ' : 'รายจ่าย'}
+          {exportMode === 'bank' ? `เลือกระยะเวลาที่ต้องการดาวน์โหลดข้อมูล${activeTab === 'income' ? 'รายรับ' : 'รายจ่าย'}` : 'ดาวน์โหลดรายงานสรุปภาพรวมพร้อมข้อมูลดิบ'}
         </p>
 
         <div className="space-y-4 mb-6 relative">
