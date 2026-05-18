@@ -103,6 +103,7 @@ export async function exportToExcel(
 
       const r = ws.addRow(rowValues)
       r.font = { name: 'Arial', size: 11 }
+      r.height = 22
       r.alignment = { vertical: 'middle' }
       if (idx % 2 === 1) r.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF9FAFB' } }
       else r.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } }
@@ -130,16 +131,22 @@ export async function exportToExcel(
       })
     })
 
-    // จัดความกว้างคอลัมน์อัตโนมัติ
-    ws.columns.forEach((column) => {
-      let maxLength = 0
+    // จัดความกว้างคอลัมน์อัตโนมัติ (คำนวณอย่างละเอียด)
+    ws.columns.forEach((column, colIndex) => {
+      let maxCharWidth = 0
       column.eachCell?.({ includeEmpty: true }, (cell) => {
-        const val = cell.value ? cell.value.toString() : ''
-        let length = val.length
-        if (typeof cell.value === 'number') length = 12
-        if (length > maxLength) maxLength = length
+        if (!cell.value) return
+        const val = cell.value.toString()
+        // Thai chars are wider visually — weight them ~1.5x vs ASCII
+        let w = 0
+        for (const ch of val) {
+          w += ch.charCodeAt(0) > 127 ? 1.8 : 1
+        }
+        if (typeof cell.value === 'number') w = Math.max(w, 14) // numbers need comma+decimal space
+        if (w > maxCharWidth) maxCharWidth = w
       })
-      column.width = maxLength < 10 ? 12 : maxLength + 6
+      // Clamp: min 8, max 40, add comfortable padding
+      column.width = Math.min(Math.max(Math.ceil(maxCharWidth) + 4, 8), 40)
     })
 
     // แถวสรุปยอดรวมแต่ละ Sheet (สำหรับ Bank mode ให้แสดงด้วยเพื่อความสะดวก)
@@ -173,89 +180,173 @@ export async function exportToExcel(
      MODE: INTERNAL (ดูเอง - Dashboard สรุปผลภาพรวม)
      ═══════════════════════════════════════════════════════════════════════════ */
   if (mode === 'internal') {
-    // 1. 📊 Sheet: Dashboard
     const dashSheet = workbook.addWorksheet('Dashboard สรุปผล')
     
     let totalIncome = 0
     let totalWash = 0
     let totalPolish = 0
-    const monthlyIncome: globalThis.Record<string, number> = {}
-    const monthlyCount: globalThis.Record<string, number> = {}
+    
+    interface MonthData {
+      income: number
+      expense: number
+      wash: number
+      polish: number
+      label: string
+    }
+    const monthlyDataMap: globalThis.Record<string, MonthData> = {}
 
     records.forEach(r => {
       totalIncome += r.price || 0
       const d = new Date(r.created_at)
-      const mk = d.toLocaleString('th-TH', { month: 'short', year: '2-digit' }) // e.g., ม.ค. 67
-      monthlyIncome[mk] = (monthlyIncome[mk] || 0) + (r.price || 0)
-      monthlyCount[mk] = (monthlyCount[mk] || 0) + 1
-      if (r.type === 'wash') totalWash++
-      if (r.type === 'polish') totalPolish++
+      const sortKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      if (!monthlyDataMap[sortKey]) {
+         monthlyDataMap[sortKey] = { income: 0, expense: 0, wash: 0, polish: 0, label: d.toLocaleString('th-TH', { month: 'short', year: '2-digit' }) }
+      }
+      monthlyDataMap[sortKey].income += (r.price || 0)
+      if (r.type === 'wash') {
+         totalWash++
+         monthlyDataMap[sortKey].wash++
+      }
+      if (r.type === 'polish') {
+         totalPolish++
+         monthlyDataMap[sortKey].polish++
+      }
     })
 
     let totalExpense = 0
-    const monthlyExpense: globalThis.Record<string, number> = {}
     expenses.forEach(e => {
       totalExpense += e.amount || 0
       const d = new Date(e.created_at)
-      const mk = d.toLocaleString('th-TH', { month: 'short', year: '2-digit' })
-      monthlyExpense[mk] = (monthlyExpense[mk] || 0) + (e.amount || 0)
+      const sortKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      if (!monthlyDataMap[sortKey]) {
+         monthlyDataMap[sortKey] = { income: 0, expense: 0, wash: 0, polish: 0, label: d.toLocaleString('th-TH', { month: 'short', year: '2-digit' }) }
+      }
+      monthlyDataMap[sortKey].expense += (e.amount || 0)
     })
 
     const netProfit = totalIncome - totalExpense
+    const avgTicketSize = (totalWash + totalPolish) > 0 ? totalIncome / (totalWash + totalPolish) : 0
+    const profitMargin = totalIncome > 0 ? (netProfit / totalIncome) : 0
 
-    dashSheet.columns = [{ width: 22 }, { width: 20 }, { width: 20 }, { width: 20 }, { width: 20 }]
+    // คอลัมน์ Dashboard: ปรับตามเนื้อหาแต่ละ column อย่างละเอียด
+    // A=เดือน/KPI  B=รายรับ  C=รายจ่าย  D=กำไร  E=∆กำไร(บาท)  F=∆กำไร(%)  G=ล้างรถ  H=∆ล้างรถ  I=ขัดสี  J=∆ขัดสี
+    dashSheet.columns = [
+       { width: 14 }, // A: เดือน/KPI label
+       { width: 17 }, // B: รายรับ (number + comma)
+       { width: 17 }, // C: รายจ่าย
+       { width: 17 }, // D: กำไรสุทธิ
+       { width: 18 }, // E: ∆ กำไร (บาท)
+       { width: 14 }, // F: ∆ กำไร (%)
+       { width: 10 }, // G: ล้างรถ (count)
+       { width: 11 }, // H: ∆ ล้างรถ
+       { width: 10 }, // I: ขัดสี
+       { width: 11 }, // J: ∆ ขัดสี
+    ]
     
-    dashSheet.mergeCells('A1:E1')
-    dashSheet.getCell('A1').value = '📊 Dashboard ภาพรวมธุรกิจ (รายงานภายใน)'
+    dashSheet.mergeCells('A1:J1')
+    dashSheet.getCell('A1').value = '📊 Dashboard วิเคราะห์ธุรกิจ (รายงานภายใน)'
     dashSheet.getCell('A1').font = { name: 'Arial', size: 16, bold: true, color: { argb: 'FFFFFFFF' } }
     dashSheet.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F766E' } }
     dashSheet.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' }
     dashSheet.getRow(1).height = 40
 
-    dashSheet.addRow(['ยอดรายรับรวม', 'ยอดรายจ่ายรวม', 'กำไรสุทธิ', 'ล้างรถรวม (คัน)', 'ขัดสีรวม (คัน)'])
+    dashSheet.addRow(['ยอดรายรับรวม', 'ยอดรายจ่ายรวม', 'กำไรสุทธิ', 'ล้างรถ (คัน)', 'ขัดสี (คัน)', 'รายรับเฉลี่ย/คัน', 'อัตรากำไร (%)', '', '', ''])
     dashSheet.getRow(2).font = { name: 'Arial', size: 12, bold: true }
     dashSheet.getRow(2).alignment = { horizontal: 'center', vertical: 'middle' }
     dashSheet.getRow(2).height = 25
+    dashSheet.mergeCells('G2:J2')
     
-    dashSheet.addRow([totalIncome, totalExpense, netProfit, totalWash, totalPolish])
+    dashSheet.addRow([totalIncome, totalExpense, netProfit, totalWash, totalPolish, avgTicketSize, profitMargin, '', '', ''])
     const r3 = dashSheet.getRow(3)
+    dashSheet.mergeCells('G3:J3')
     r3.font = { name: 'Arial', size: 14, bold: true }
     r3.getCell(1).numFmt = '#,##0.00'; r3.getCell(1).font = { color: { argb: 'FF059669' }, size: 14, bold: true }
     r3.getCell(2).numFmt = '#,##0.00'; r3.getCell(2).font = { color: { argb: 'FFDC2626' }, size: 14, bold: true }
     r3.getCell(3).numFmt = '#,##0.00'; r3.getCell(3).font = { color: { argb: netProfit >= 0 ? 'FF059669' : 'FFDC2626' }, size: 14, bold: true }
     r3.getCell(4).alignment = { horizontal: 'center' }
     r3.getCell(5).alignment = { horizontal: 'center' }
+    r3.getCell(6).numFmt = '#,##0.00'; r3.getCell(6).alignment = { horizontal: 'center' }
+    r3.getCell(7).numFmt = '0.00%'; r3.getCell(7).alignment = { horizontal: 'center' }; r3.getCell(7).font = { color: { argb: profitMargin >= 0.2 ? 'FF059669' : 'FFD97706' }, size: 14, bold: true }
     r3.height = 35
 
     dashSheet.addRow([])
 
-    dashSheet.mergeCells('A5:E5')
-    dashSheet.getCell('A5').value = '📈 สรุปเปรียบเทียบรายเดือน'
+    dashSheet.mergeCells('A5:J5')
+    dashSheet.getCell('A5').value = '📈 สรุปเปรียบเทียบรายเดือน (Month-over-Month)'
     dashSheet.getCell('A5').font = { name: 'Arial', size: 12, bold: true }
     dashSheet.getCell('A5').alignment = { vertical: 'middle' }
     dashSheet.getRow(5).height = 25
 
-    const th = dashSheet.addRow(['เดือน/ปี', 'รายรับ', 'รายจ่าย', 'กำไรสุทธิ', 'จำนวนรถ'])
+    const th = dashSheet.addRow(['เดือน/ปี', 'รายรับ', 'รายจ่าย', 'กำไรสุทธิ', '∆ กำไร (บาท)', '∆ กำไร (%)', 'ล้างรถ', '∆ ล้างรถ', 'ขัดสี', '∆ ขัดสี'])
     th.font = { bold: true, color: { argb: 'FFFFFFFF' } }
     th.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF374151' } }
     th.alignment = { horizontal: 'center', vertical: 'middle' }
-    th.height = 25
+    th.height = 30
 
-    const allMonthsSet = new Set([...Object.keys(monthlyIncome), ...Object.keys(monthlyExpense)])
-    const allMonths = Array.from(allMonthsSet)
+    const sortedKeys = Object.keys(monthlyDataMap).sort()
     
-    allMonths.forEach(m => {
-      const inc = monthlyIncome[m] || 0
-      const exp = monthlyExpense[m] || 0
-      const prof = inc - exp
-      const cnt = monthlyCount[m] || 0
-      const r = dashSheet.addRow([m, inc, exp, prof, cnt])
-      r.getCell(1).alignment = { horizontal: 'center' }
-      r.getCell(2).numFmt = '#,##0.00'
-      r.getCell(3).numFmt = '#,##0.00'
+    sortedKeys.forEach((key, index) => {
+      const current = monthlyDataMap[key]
+      const currentProfit = current.income - current.expense
+      
+      let profitDiffVal = 0
+      let profitDiffPct = 0
+      let washDiff = 0
+      let polishDiff = 0
+      let hasPrev = false
+
+      if (index > 0) {
+        hasPrev = true
+        const prev = monthlyDataMap[sortedKeys[index - 1]]
+        const prevProfit = prev.income - prev.expense
+        profitDiffVal = currentProfit - prevProfit
+        profitDiffPct = prevProfit !== 0 ? (profitDiffVal / Math.abs(prevProfit)) : 0
+        washDiff = current.wash - prev.wash
+        polishDiff = current.polish - prev.polish
+      }
+
+      const r = dashSheet.addRow([
+        current.label,
+        current.income,
+        current.expense,
+        currentProfit,
+        hasPrev ? profitDiffVal : '-',
+        hasPrev ? profitDiffPct : '-',
+        current.wash,
+        hasPrev ? washDiff : '-',
+        current.polish,
+        hasPrev ? polishDiff : '-'
+      ])
+      r.height = 22
+      r.font = { name: 'Arial', size: 11 }
+      
+      r.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }
+      r.getCell(2).numFmt = '#,##0.00'; r.getCell(2).alignment = { horizontal: 'right', vertical: 'middle' }
+      r.getCell(3).numFmt = '#,##0.00'; r.getCell(3).alignment = { horizontal: 'right', vertical: 'middle' }
       r.getCell(4).numFmt = '#,##0.00'
-      r.getCell(4).font = { bold: true, color: { argb: prof >= 0 ? 'FF059669' : 'FFDC2626' } }
-      r.getCell(5).alignment = { horizontal: 'center' }
+      r.getCell(4).alignment = { horizontal: 'right', vertical: 'middle' }
+      r.getCell(4).font = { name: 'Arial', bold: true, size: 11, color: { argb: currentProfit >= 0 ? 'FF059669' : 'FFDC2626' } }
+      
+      if (hasPrev) {
+         r.getCell(5).numFmt = '+#,##0.00;-#,##0.00;0.00'
+         r.getCell(5).alignment = { horizontal: 'right', vertical: 'middle' }
+         r.getCell(5).font = { name: 'Arial', size: 11, color: { argb: profitDiffVal > 0 ? 'FF059669' : (profitDiffVal < 0 ? 'FFDC2626' : 'FF6B7280') } }
+         
+         r.getCell(6).numFmt = '+0.00%;-0.00%;0.00%'
+         r.getCell(6).alignment = { horizontal: 'center', vertical: 'middle' }
+         r.getCell(6).font = { name: 'Arial', bold: true, size: 11, color: { argb: profitDiffPct > 0 ? 'FF059669' : (profitDiffPct < 0 ? 'FFDC2626' : 'FF6B7280') } }
+
+         r.getCell(8).numFmt = '+0;-0;0'
+         r.getCell(8).alignment = { horizontal: 'center', vertical: 'middle' }
+         r.getCell(8).font = { name: 'Arial', size: 11, color: { argb: washDiff > 0 ? 'FF059669' : (washDiff < 0 ? 'FFDC2626' : 'FF6B7280') } }
+
+         r.getCell(10).numFmt = '+0;-0;0'
+         r.getCell(10).alignment = { horizontal: 'center', vertical: 'middle' }
+         r.getCell(10).font = { name: 'Arial', size: 11, color: { argb: polishDiff > 0 ? 'FF059669' : (polishDiff < 0 ? 'FFDC2626' : 'FF6B7280') } }
+      }
+
+      r.getCell(7).alignment = { horizontal: 'center', vertical: 'middle' }
+      r.getCell(9).alignment = { horizontal: 'center', vertical: 'middle' }
     })
 
     const dashRowsCount = dashSheet.rowCount
