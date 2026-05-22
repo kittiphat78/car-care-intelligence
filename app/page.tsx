@@ -4,7 +4,7 @@ import { useState, memo, useCallback, useMemo, useEffect } from 'react'
 import { Area, AreaChart, BarChart, Bar, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from 'recharts'
 import RecordCard from '@/components/RecordCard'
 import { useWeather, WeatherData } from '@/hooks/useWeather'
-import { useDashboard, DashboardStats } from '@/hooks/useDashboard'
+import { useDashboard, DashboardStats, CustomerBreakdownItem, BreakdownMode } from '@/hooks/useDashboard'
 import { Record as AppRecord } from '@/types'
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -29,6 +29,11 @@ export default function Dashboard() {
       <NetProfitHero stats={dash.stats} />
       <StatsRow stats={dash.stats} />
       <ChartsSection dash={dash} />
+      <CustomerBreakdownSection
+        data={dash.customerBreakdown}
+        mode={dash.breakdownMode}
+        setMode={dash.setBreakdownMode}
+      />
       <RecordListSection dash={dash} />
 
       {isUnpaidModalOpen && (
@@ -314,6 +319,223 @@ const RecordListSection = memo(function RecordListSection({ dash }: { dash: Retu
         <div className="grid gap-3">{dash.records.map(r => <RecordCard key={r.id} record={r} />)}</div>
       )}
     </section>
+  )
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CustomerBreakdownSection — รายรับตามลูกค้า แยก ล้างรถ / ขัดสี
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const BREAKDOWN_MODES: { key: BreakdownMode; label: string }[] = [
+  { key: 'week',     label: '1 อาทิตย์' },
+  { key: 'month',    label: '1 เดือน' },
+  { key: 'quarter',  label: '3 เดือน' },
+  { key: 'halfyear', label: '6 เดือน' },
+  { key: 'year',     label: '1 ปี' },
+]
+
+const TOP_N = 5
+
+const CustomerBreakdownSection = memo(function CustomerBreakdownSection({
+  data,
+  mode,
+  setMode,
+}: {
+  data: CustomerBreakdownItem[]
+  mode: BreakdownMode
+  setMode: (m: BreakdownMode) => void
+}) {
+  const [showAll, setShowAll] = useState(false)
+  const displayed = showAll ? data : data.slice(0, TOP_N)
+  const hasMore = data.length > TOP_N
+
+  return (
+    <section className="fade-up delay-5 mt-6" aria-label="รายรับตามลูกค้า">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3 px-1">
+        <div className="flex items-center gap-2">
+          <h3 className="text-base font-bold text-[var(--text-primary)] tracking-tight">รายรับตามลูกค้า 👥</h3>
+          {data.length > 0 && (
+            <span className="badge text-[12px]" style={{ background: 'var(--surface-2)', color: 'var(--text-secondary)' }}>
+              {data.length}
+            </span>
+          )}
+        </div>
+        <div className="flex bg-[var(--surface-2)] p-1 rounded-xl gap-0.5 overflow-x-auto max-w-[60vw] shrink-0">
+          {BREAKDOWN_MODES.map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => { setShowAll(false); setMode(key) }}
+              className={`px-2.5 py-1.5 rounded-lg text-[12px] font-bold transition-all duration-150 whitespace-nowrap ${
+                mode === key
+                  ? 'bg-white text-[var(--text-primary)] shadow-[var(--shadow-sm)]'
+                  : 'text-[var(--text-tertiary)]'
+              }`}
+              aria-pressed={mode === key}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {data.length === 0 ? (
+        <div className="card p-10 text-center border-dashed border-2">
+          <p className="text-3xl mb-2 opacity-20" aria-hidden="true">👥</p>
+          <p className="text-sm font-bold text-[var(--text-tertiary)]">ยังไม่มีข้อมูลในช่วงนี้</p>
+        </div>
+      ) : (
+        <>
+          <div className="grid gap-3">
+            {displayed.map((item, idx) => (
+              <CustomerBreakdownCard key={item.customerName} item={item} rank={idx + 1} />
+            ))}
+          </div>
+
+          {hasMore && (
+            <button
+              onClick={() => setShowAll(v => !v)}
+              className="w-full mt-3 py-3 rounded-2xl border-2 border-dashed border-[var(--border)] text-[13px] font-bold text-[var(--text-tertiary)] active:scale-[0.98] transition-all hover:border-[var(--accent)] hover:text-[var(--accent)]"
+            >
+              {showAll ? '▲ ย่อรายการ' : `▼ ดูทั้งหมด ${data.length} ราย`}
+            </button>
+          )}
+        </>
+      )}
+    </section>
+  )
+})
+
+const CustomerBreakdownCard = memo(function CustomerBreakdownCard({
+  item,
+  rank,
+}: {
+  item: CustomerBreakdownItem
+  rank: number
+}) {
+  const isTop = rank === 1
+  const customerInitial = item.customerName === 'ลูกค้าทั่วไป'
+    ? '👤'
+    : item.customerName.charAt(0)
+
+  return (
+    <article
+      className="card p-0 overflow-hidden"
+      aria-label={`รายรับจาก ${item.customerName}`}
+    >
+      {/* Top accent bar — gradient ตาม theme */}
+      {isTop && (
+        <div
+          className="h-[3px]"
+          style={{ background: 'linear-gradient(90deg, var(--accent), var(--amber))' }}
+          aria-hidden="true"
+        />
+      )}
+
+      <div className="px-4 pt-4 pb-4 sm:px-5">
+        {/* Customer header row */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-10 h-10 rounded-2xl flex items-center justify-center text-base font-black shrink-0"
+              style={
+                isTop
+                  ? { background: 'var(--accent)', color: '#fff', boxShadow: '0 2px 8px rgba(37,99,235,0.25)' }
+                  : { background: 'var(--surface-2)', color: 'var(--text-secondary)', border: '1px solid var(--border)' }
+              }
+            >
+              {customerInitial}
+            </div>
+            <div>
+              <p className="font-extrabold text-[15px] text-[var(--text-primary)] leading-tight">
+                {item.customerName}
+              </p>
+              <p className="text-[12px] text-[var(--text-tertiary)] font-medium mt-0.5">
+                {item.washCount + item.polishCount} คัน รวม
+              </p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p
+              className="text-xl font-black leading-tight"
+              style={{ color: isTop ? 'var(--accent)' : 'var(--text-primary)' }}
+            >
+              ฿{item.total.toLocaleString()}
+            </p>
+          </div>
+        </div>
+
+        {/* Service pills — ใช้ badge classes ของ design system */}
+        <div className="flex flex-wrap gap-2">
+          {item.washCount > 0 && (
+            <div
+              className="flex items-center gap-2 rounded-xl px-3 py-2"
+              style={{ background: 'var(--accent-light)', border: '1px solid rgba(37,99,235,0.15)' }}
+            >
+              <span style={{ color: 'var(--accent)' }} aria-hidden="true">💧</span>
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-wide leading-none mb-0.5" style={{ color: 'var(--accent)' }}>
+                  ล้างรถ
+                </p>
+                <p className="text-[13px] font-extrabold leading-none" style={{ color: 'var(--accent-hover)' }}>
+                  {item.washCount} คัน · ฿{item.washAmount.toLocaleString()}
+                </p>
+              </div>
+            </div>
+          )}
+          {item.polishCount > 0 && (
+            <div
+              className="flex items-center gap-2 rounded-xl px-3 py-2"
+              style={{ background: 'var(--amber-light)', border: '1px solid rgba(217,119,6,0.2)' }}
+            >
+              <span style={{ color: 'var(--amber)' }} aria-hidden="true">✨</span>
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-wide leading-none mb-0.5" style={{ color: 'var(--amber)' }}>
+                  ขัดสี
+                </p>
+                <p className="text-[13px] font-extrabold leading-none" style={{ color: '#92400E' }}>
+                  {item.polishCount} คัน · ฿{item.polishAmount.toLocaleString()}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Progress bar: สัดส่วน wash vs polish */}
+        {item.washCount > 0 && item.polishCount > 0 && (
+          <div className="mt-3">
+            <div className="h-1.5 rounded-full overflow-hidden flex" style={{ background: 'var(--surface-2)' }}>
+              <div
+                className="h-full transition-all duration-500"
+                style={{
+                  width: `${Math.round((item.washAmount / item.total) * 100)}%`,
+                  background: 'var(--accent)',
+                  borderRadius: '999px 0 0 999px',
+                }}
+                aria-hidden="true"
+              />
+              <div
+                className="h-full transition-all duration-500"
+                style={{
+                  width: `${Math.round((item.polishAmount / item.total) * 100)}%`,
+                  background: 'var(--amber)',
+                  borderRadius: '0 999px 999px 0',
+                }}
+                aria-hidden="true"
+              />
+            </div>
+            <div className="flex justify-between mt-1">
+              <span className="text-[10px] font-bold" style={{ color: 'var(--accent)' }}>
+                ล้าง {Math.round((item.washAmount / item.total) * 100)}%
+              </span>
+              <span className="text-[10px] font-bold" style={{ color: 'var(--amber)' }}>
+                ขัด {Math.round((item.polishAmount / item.total) * 100)}%
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+    </article>
   )
 })
 
