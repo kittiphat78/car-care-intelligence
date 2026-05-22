@@ -4,6 +4,16 @@ import { supabase } from '@/lib/supabase'
 import { Record as AppRecord, Expense } from '@/types' // ✅ alias `AppRecord` เพื่อไม่ให้ซ้ำกับ TypeScript `Record<K,T>`
 
 export type ChartMode = 'week' | 'month'
+export type BreakdownMode = 'week' | 'month' | 'quarter' | 'halfyear' | 'year'
+
+export interface CustomerBreakdownItem {
+  customerName: string
+  washCount: number
+  washAmount: number
+  polishCount: number
+  polishAmount: number
+  total: number
+}
 
 export interface DashboardStats {
   todayTotalIncome: number
@@ -28,8 +38,10 @@ export function useDashboard() {
   const [expenses, setExpenses]                 = useState<Expense[]>([])
   const [yesterdayRecords, setYesterdayRecords] = useState<AppRecord[]>([])
   const [chartMode, setChartMode]               = useState<ChartMode>('week')
+  const [breakdownMode, setBreakdownMode]       = useState<BreakdownMode>('week')
   const [loading, setLoading]                   = useState(true)
   const [unpaidRecords, setUnpaidRecords]       = useState<AppRecord[]>([])
+  const [yearRecords, setYearRecords]           = useState<AppRecord[]>([])
 
   // ── Data Fetching ──
   const fetchData = useCallback(async (skipAuth = false) => {
@@ -54,19 +66,24 @@ export function useDashboard() {
     
     const thirtyDaysAgo = new Date(today)
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+    const oneYearAgo = new Date(today)
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
  
     // แปลงเป็น ISO String ครั้งเดียว
     const todayIso = today.toISOString()
     const yesterdayIso = yesterday.toISOString()
     const thirtyDaysAgoIso = thirtyDaysAgo.toISOString()
+    const oneYearAgoIso = oneYearAgo.toISOString()
  
     // 3. Parallel Fetching
-    const [todayRes, yesterdayRes, allRes, expenseRes, unpaidRes] = await Promise.all([
+    const [todayRes, yesterdayRes, allRes, expenseRes, unpaidRes, yearRes] = await Promise.all([
       supabase.from('records').select('*').gte('created_at', todayIso).order('created_at', { ascending: false }),
       supabase.from('records').select('*').gte('created_at', yesterdayIso).lt('created_at', todayIso),
       supabase.from('records').select('*').gte('created_at', thirtyDaysAgoIso).order('created_at', { ascending: true }),
       supabase.from('expenses').select('*').gte('created_at', thirtyDaysAgoIso),
-      supabase.from('records').select('*').eq('payment_status', 'unpaid').order('created_at', { ascending: true })
+      supabase.from('records').select('*').eq('payment_status', 'unpaid').order('created_at', { ascending: true }),
+      supabase.from('records').select('id,created_at,type,price,customer_name').gte('created_at', oneYearAgoIso).order('created_at', { ascending: true })
     ])
  
     // 4. State updates (Fallback to empty array to prevent crash)
@@ -75,6 +92,7 @@ export function useDashboard() {
     setAllRecords(allRes.data ?? [])
     setExpenses(expenseRes.data ?? [])
     setUnpaidRecords(unpaidRes.data ?? [])
+    setYearRecords((yearRes.data ?? []) as AppRecord[])
     
     setLoading(false)
   }, [router])
@@ -249,6 +267,52 @@ export function useDashboard() {
     [unpaidRecords]
   )
 
+  // 5. รายรับตามลูกค้า แยก wash/polish (กรองตาม breakdownMode)
+  const customerBreakdown = useMemo<CustomerBreakdownItem[]>(() => {
+    const now = new Date()
+    const d = new Date(now)
+    d.setHours(0, 0, 0, 0)
+
+    if (breakdownMode === 'week') {
+      d.setDate(d.getDate() - 6)
+    } else if (breakdownMode === 'month') {
+      d.setDate(d.getDate() - 29)
+    } else if (breakdownMode === 'quarter') {
+      d.setMonth(d.getMonth() - 3)
+    } else if (breakdownMode === 'halfyear') {
+      d.setMonth(d.getMonth() - 6)
+    } else {
+      // year
+      d.setFullYear(d.getFullYear() - 1)
+    }
+    const cutoffMs = d.getTime()
+
+    const filtered = yearRecords.filter(
+      r => new Date(r.created_at).getTime() >= cutoffMs
+    )
+
+    const grouped = filtered.reduce((acc, r) => {
+      const name = (r.customer_name || '').trim() || 'ลูกค้าทั่วไป'
+      if (!acc[name]) acc[name] = { washCount: 0, washAmount: 0, polishCount: 0, polishAmount: 0 }
+      if (r.type === 'wash') {
+        acc[name].washCount++
+        acc[name].washAmount += r.price
+      } else {
+        acc[name].polishCount++
+        acc[name].polishAmount += r.price
+      }
+      return acc
+    }, {} as globalThis.Record<string, { washCount: number; washAmount: number; polishCount: number; polishAmount: number }>)
+
+    return Object.entries(grouped)
+      .map(([customerName, v]) => ({
+        customerName,
+        ...v,
+        total: v.washAmount + v.polishAmount,
+      }))
+      .sort((a, b) => b.total - a.total)
+  }, [yearRecords, breakdownMode])
+
   return {
     userEmail,
     loading,
@@ -259,6 +323,9 @@ export function useDashboard() {
     totalUnpaidAmount,
     chartMode,
     setChartMode,
+    customerBreakdown,
+    breakdownMode,
+    setBreakdownMode,
     refresh: fetchData,
     logout,
     markAllAsPaidByCustomer
