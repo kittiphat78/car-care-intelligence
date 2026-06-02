@@ -4,15 +4,19 @@ import { supabase } from '@/lib/supabase'
 import { Record as AppRecord, Expense } from '@/types' // ✅ alias `AppRecord` เพื่อไม่ให้ซ้ำกับ TypeScript `Record<K,T>`
 
 export type ChartMode = 'week' | 'month'
-export type BreakdownMode = 'week' | 'month' | 'quarter' | 'halfyear' | 'year'
-
-export interface CustomerBreakdownItem {
-  customerName: string
+export interface CustomerTimePeriod {
   washCount: number
   washAmount: number
   polishCount: number
   polishAmount: number
   total: number
+}
+
+export interface CustomerBreakdownItem {
+  customerName: string
+  week: CustomerTimePeriod
+  month: CustomerTimePeriod
+  year: CustomerTimePeriod
 }
 
 export interface DashboardStats {
@@ -38,7 +42,7 @@ export function useDashboard() {
   const [expenses, setExpenses]                 = useState<Expense[]>([])
   const [yesterdayRecords, setYesterdayRecords] = useState<AppRecord[]>([])
   const [chartMode, setChartMode]               = useState<ChartMode>('week')
-  const [breakdownMode, setBreakdownMode]       = useState<BreakdownMode>('week')
+
   const [loading, setLoading]                   = useState(true)
   const [unpaidRecords, setUnpaidRecords]       = useState<AppRecord[]>([])
   const [yearRecords, setYearRecords]           = useState<AppRecord[]>([])
@@ -267,51 +271,61 @@ export function useDashboard() {
     [unpaidRecords]
   )
 
-  // 5. รายรับตามลูกค้า แยก wash/polish (กรองตาม breakdownMode)
+  // 5. รายรับตามลูกค้า แยก wash/polish — คำนวณ 3 ช่วงเวลา (week/month/year) ในรอบเดียว
   const customerBreakdown = useMemo<CustomerBreakdownItem[]>(() => {
     const now = new Date()
-    const d = new Date(now)
-    d.setHours(0, 0, 0, 0)
+    const today = new Date(now)
+    today.setHours(0, 0, 0, 0)
 
-    if (breakdownMode === 'week') {
-      d.setDate(d.getDate() - 6)
-    } else if (breakdownMode === 'month') {
-      d.setDate(d.getDate() - 29)
-    } else if (breakdownMode === 'quarter') {
-      d.setMonth(d.getMonth() - 3)
-    } else if (breakdownMode === 'halfyear') {
-      d.setMonth(d.getMonth() - 6)
-    } else {
-      // year
-      d.setFullYear(d.getFullYear() - 1)
-    }
-    const cutoffMs = d.getTime()
+    // Cutoff dates
+    const weekStart = new Date(today)
+    weekStart.setDate(weekStart.getDate() - 6)
+    const weekMs = weekStart.getTime()
 
-    const filtered = yearRecords.filter(
-      r => new Date(r.created_at).getTime() >= cutoffMs
-    )
+    const monthStart = new Date(today)
+    monthStart.setDate(monthStart.getDate() - 29)
+    const monthMs = monthStart.getTime()
 
-    const grouped = filtered.reduce((acc, r) => {
+    const yearStart = new Date(today)
+    yearStart.setFullYear(yearStart.getFullYear() - 1)
+    const yearMs = yearStart.getTime()
+
+    const emptyPeriod = (): CustomerTimePeriod => ({ washCount: 0, washAmount: 0, polishCount: 0, polishAmount: 0, total: 0 })
+
+    const grouped: globalThis.Record<string, { week: CustomerTimePeriod; month: CustomerTimePeriod; year: CustomerTimePeriod }> = {}
+
+    for (const r of yearRecords) {
       const name = (r.customer_name || '').trim() || 'ลูกค้าทั่วไป'
-      if (!acc[name]) acc[name] = { washCount: 0, washAmount: 0, polishCount: 0, polishAmount: 0 }
-      if (r.type === 'wash') {
-        acc[name].washCount++
-        acc[name].washAmount += r.price
-      } else {
-        acc[name].polishCount++
-        acc[name].polishAmount += r.price
+      const t = new Date(r.created_at).getTime()
+      if (t < yearMs) continue
+
+      if (!grouped[name]) grouped[name] = { week: emptyPeriod(), month: emptyPeriod(), year: emptyPeriod() }
+      const g = grouped[name]
+
+      // Accumulate into applicable periods
+      const periods: CustomerTimePeriod[] = [g.year]
+      if (t >= monthMs) periods.push(g.month)
+      if (t >= weekMs) periods.push(g.week)
+
+      for (const p of periods) {
+        if (r.type === 'wash') {
+          p.washCount++
+          p.washAmount += r.price
+        } else {
+          p.polishCount++
+          p.polishAmount += r.price
+        }
+        p.total += r.price
       }
-      return acc
-    }, {} as globalThis.Record<string, { washCount: number; washAmount: number; polishCount: number; polishAmount: number }>)
+    }
 
     return Object.entries(grouped)
       .map(([customerName, v]) => ({
         customerName,
         ...v,
-        total: v.washAmount + v.polishAmount,
       }))
-      .sort((a, b) => b.total - a.total)
-  }, [yearRecords, breakdownMode])
+      .sort((a, b) => b.month.total - a.month.total)
+  }, [yearRecords])
 
   return {
     userEmail,
@@ -324,8 +338,6 @@ export function useDashboard() {
     chartMode,
     setChartMode,
     customerBreakdown,
-    breakdownMode,
-    setBreakdownMode,
     refresh: fetchData,
     logout,
     markAllAsPaidByCustomer

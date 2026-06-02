@@ -4,7 +4,7 @@ import { useState, memo, useCallback, useMemo, useEffect } from 'react'
 import { Area, AreaChart, BarChart, Bar, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from 'recharts'
 import RecordCard from '@/components/RecordCard'
 import { useWeather, WeatherData } from '@/hooks/useWeather'
-import { useDashboard, DashboardStats, CustomerBreakdownItem, BreakdownMode } from '@/hooks/useDashboard'
+import { useDashboard, DashboardStats, CustomerBreakdownItem, CustomerTimePeriod } from '@/hooks/useDashboard'
 import { Record as AppRecord } from '@/types'
 import { generateCashBill } from '@/lib/generateBill'
 
@@ -30,11 +30,7 @@ export default function Dashboard() {
       <NetProfitHero stats={dash.stats} />
       <StatsRow stats={dash.stats} />
       <ChartsSection dash={dash} />
-      <CustomerBreakdownSection
-        data={dash.customerBreakdown}
-        mode={dash.breakdownMode}
-        setMode={dash.setBreakdownMode}
-      />
+      <CustomerBreakdownSection data={dash.customerBreakdown} />
       <RecordListSection dash={dash} />
 
       {isUnpaidModalOpen && (
@@ -327,26 +323,15 @@ const RecordListSection = memo(function RecordListSection({ dash }: { dash: Retu
    CustomerBreakdownSection — รายรับตามลูกค้า แยก ล้างรถ / ขัดสี
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const BREAKDOWN_MODES: { key: BreakdownMode; label: string }[] = [
-  { key: 'week', label: '1 อาทิตย์' },
-  { key: 'month', label: '1 เดือน' },
-  { key: 'quarter', label: '3 เดือน' },
-  { key: 'halfyear', label: '6 เดือน' },
-  { key: 'year', label: '1 ปี' },
-]
-
 const TOP_N = 5
 
 const CustomerBreakdownSection = memo(function CustomerBreakdownSection({
   data,
-  mode,
-  setMode,
 }: {
   data: CustomerBreakdownItem[]
-  mode: BreakdownMode
-  setMode: (m: BreakdownMode) => void
 }) {
   const [showAll, setShowAll] = useState(false)
+  const activeCustomers = data.filter(d => d.month.total > 0)
   const displayed = showAll ? data : data.slice(0, TOP_N)
   const hasMore = data.length > TOP_N
 
@@ -356,26 +341,11 @@ const CustomerBreakdownSection = memo(function CustomerBreakdownSection({
       <div className="flex items-center justify-between mb-3 px-1">
         <div className="flex items-center gap-2">
           <h3 className="text-base font-bold text-[var(--text-primary)] tracking-tight">รายรับตามลูกค้า</h3>
-          {data.length > 0 && (
+          {activeCustomers.length > 0 && (
             <span className="badge text-[12px]" style={{ background: 'var(--surface-2)', color: 'var(--text-secondary)' }}>
-              {data.length}
+              {activeCustomers.length} ราย
             </span>
           )}
-        </div>
-        <div className="flex bg-[var(--surface-2)] p-1 rounded-xl gap-0.5 overflow-x-auto max-w-[60vw] shrink-0">
-          {BREAKDOWN_MODES.map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => { setShowAll(false); setMode(key) }}
-              className={`px-2.5 py-1.5 rounded-lg text-[12px] font-bold transition-all duration-150 whitespace-nowrap ${mode === key
-                ? 'bg-white text-[var(--text-primary)] shadow-[var(--shadow-sm)]'
-                : 'text-[var(--text-tertiary)]'
-                }`}
-              aria-pressed={mode === key}
-            >
-              {label}
-            </button>
-          ))}
         </div>
       </div>
 
@@ -406,6 +376,48 @@ const CustomerBreakdownSection = memo(function CustomerBreakdownSection({
   )
 })
 
+const TIME_PERIODS: { key: 'week' | 'month' | 'year'; label: string; icon: string }[] = [
+  { key: 'week', label: 'สัปดาห์นี้', icon: '📅' },
+  { key: 'month', label: 'เดือนนี้', icon: '📆' },
+  { key: 'year', label: 'ปีนี้', icon: '📊' },
+]
+
+const PeriodRow = memo(function PeriodRow({ label, icon, period }: { label: string; icon: string; period: CustomerTimePeriod }) {
+  if (period.total === 0) return null
+  return (
+    <div className="py-3 border-t border-[var(--border)]">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[13px] font-bold text-[var(--text-secondary)]">{icon} {label}</span>
+        <span className="text-[15px] font-black text-[var(--text-primary)]">฿{period.total.toLocaleString()}</span>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {period.washCount > 0 && (
+          <div
+            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5"
+            style={{ background: 'var(--accent-light)', border: '1px solid rgba(37,99,235,0.12)' }}
+          >
+            <span className="text-[11px]" aria-hidden="true">💧</span>
+            <span className="text-[12px] font-bold" style={{ color: 'var(--accent)' }}>
+              ล้าง {period.washCount} คัน · ฿{period.washAmount.toLocaleString()}
+            </span>
+          </div>
+        )}
+        {period.polishCount > 0 && (
+          <div
+            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5"
+            style={{ background: 'var(--amber-light)', border: '1px solid rgba(217,119,6,0.15)' }}
+          >
+            <span className="text-[11px]" aria-hidden="true">✨</span>
+            <span className="text-[12px] font-bold" style={{ color: '#92400E' }}>
+              ขัดสี {period.polishCount} คัน · ฿{period.polishAmount.toLocaleString()}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+})
+
 const CustomerBreakdownCard = memo(function CustomerBreakdownCard({
   item,
   rank,
@@ -413,17 +425,20 @@ const CustomerBreakdownCard = memo(function CustomerBreakdownCard({
   item: CustomerBreakdownItem
   rank: number
 }) {
+  const [expanded, setExpanded] = useState(false)
   const isTop = rank === 1
   const customerInitial = item.customerName === 'ลูกค้าทั่วไป'
     ? '👤'
     : item.customerName.charAt(0)
+  const monthData = item.month
+  const totalCars = monthData.washCount + monthData.polishCount
 
   return (
     <article
       className="card p-0 overflow-hidden"
       aria-label={`รายรับจาก ${item.customerName}`}
     >
-      {/* Top accent bar — gradient ตาม theme */}
+      {/* Top accent bar */}
       {isTop && (
         <div
           className="h-[3px]"
@@ -432,9 +447,13 @@ const CustomerBreakdownCard = memo(function CustomerBreakdownCard({
         />
       )}
 
-      <div className="px-4 pt-4 pb-4 sm:px-5">
-        {/* Customer header row */}
-        <div className="flex items-center justify-between mb-3">
+      {/* Clickable header */}
+      <button
+        onClick={() => setExpanded(v => !v)}
+        className="w-full px-4 pt-4 pb-4 sm:px-5 text-left active:bg-[var(--surface-2)] transition-colors duration-100"
+        aria-expanded={expanded}
+      >
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div
               className="w-10 h-10 rounded-2xl flex items-center justify-center text-base font-black shrink-0"
@@ -451,89 +470,91 @@ const CustomerBreakdownCard = memo(function CustomerBreakdownCard({
                 {item.customerName}
               </p>
               <p className="text-[12px] text-[var(--text-tertiary)] font-medium mt-0.5">
-                {item.washCount + item.polishCount} คัน รวม
+                เดือนนี้ {totalCars} คัน
               </p>
             </div>
           </div>
-          <div className="text-right">
-            <p
-              className="text-xl font-black leading-tight"
-              style={{ color: isTop ? 'var(--accent)' : 'var(--text-primary)' }}
+          <div className="flex items-center gap-2">
+            <div className="text-right">
+              <p
+                className="text-xl font-black leading-tight"
+                style={{ color: isTop ? 'var(--accent)' : 'var(--text-primary)' }}
+              >
+                ฿{monthData.total.toLocaleString()}
+              </p>
+              <p className="text-[11px] text-[var(--text-tertiary)] font-medium mt-0.5">เดือนนี้</p>
+            </div>
+            <svg
+              className={`w-5 h-5 text-[var(--text-tertiary)] transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
+              fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
             >
-              ฿{item.total.toLocaleString()}
-            </p>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
           </div>
         </div>
 
-        {/* Service pills — ใช้ badge classes ของ design system */}
-        <div className="flex flex-wrap gap-2">
-          {item.washCount > 0 && (
-            <div
-              className="flex items-center gap-2 rounded-xl px-3 py-2"
-              style={{ background: 'var(--accent-light)', border: '1px solid rgba(37,99,235,0.15)' }}
-            >
-              <span style={{ color: 'var(--accent)' }} aria-hidden="true">💧</span>
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-wide leading-none mb-0.5" style={{ color: 'var(--accent)' }}>
-                  ล้างรถ
-                </p>
-                <p className="text-[13px] font-extrabold leading-none" style={{ color: 'var(--accent-hover)' }}>
-                  {item.washCount} คัน · ฿{item.washAmount.toLocaleString()}
-                </p>
-              </div>
-            </div>
-          )}
-          {item.polishCount > 0 && (
-            <div
-              className="flex items-center gap-2 rounded-xl px-3 py-2"
-              style={{ background: 'var(--amber-light)', border: '1px solid rgba(217,119,6,0.2)' }}
-            >
-              <span style={{ color: 'var(--amber)' }} aria-hidden="true">✨</span>
-              <div>
-                <p className="text-[11px] font-bold uppercase tracking-wide leading-none mb-0.5" style={{ color: 'var(--amber)' }}>
-                  ขัดสี
-                </p>
-                <p className="text-[13px] font-extrabold leading-none" style={{ color: '#92400E' }}>
-                  {item.polishCount} คัน · ฿{item.polishAmount.toLocaleString()}
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Progress bar: สัดส่วน wash vs polish */}
-        {item.washCount > 0 && item.polishCount > 0 && (
-          <div className="mt-3">
-            <div className="h-1.5 rounded-full overflow-hidden flex" style={{ background: 'var(--surface-2)' }}>
-              <div
-                className="h-full transition-all duration-500"
-                style={{
-                  width: `${Math.round((item.washAmount / item.total) * 100)}%`,
-                  background: 'var(--accent)',
-                  borderRadius: '999px 0 0 999px',
-                }}
-                aria-hidden="true"
-              />
-              <div
-                className="h-full transition-all duration-500"
-                style={{
-                  width: `${Math.round((item.polishAmount / item.total) * 100)}%`,
-                  background: 'var(--amber)',
-                  borderRadius: '0 999px 999px 0',
-                }}
-                aria-hidden="true"
-              />
-            </div>
-            <div className="flex justify-between mt-1">
-              <span className="text-[10px] font-bold" style={{ color: 'var(--accent)' }}>
-                ล้าง {Math.round((item.washAmount / item.total) * 100)}%
+        {/* Mini service pills (collapsed) */}
+        {!expanded && monthData.total > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-2.5">
+            {monthData.washCount > 0 && (
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-md" style={{ background: 'var(--accent-light)', color: 'var(--accent)' }}>
+                💧 ล้าง {monthData.washCount} · ฿{monthData.washAmount.toLocaleString()}
               </span>
-              <span className="text-[10px] font-bold" style={{ color: 'var(--amber)' }}>
-                ขัด {Math.round((item.polishAmount / item.total) * 100)}%
+            )}
+            {monthData.polishCount > 0 && (
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded-md" style={{ background: 'var(--amber-light)', color: '#92400E' }}>
+                ✨ ขัดสี {monthData.polishCount} · ฿{monthData.polishAmount.toLocaleString()}
               </span>
-            </div>
+            )}
           </div>
         )}
+      </button>
+
+      {/* Expanded detail */}
+      <div
+        className="overflow-hidden transition-all duration-300 ease-in-out"
+        style={{ maxHeight: expanded ? '500px' : '0', opacity: expanded ? 1 : 0 }}
+      >
+        <div className="px-4 pb-4 sm:px-5">
+          {TIME_PERIODS.map(({ key, label, icon }) => (
+            <PeriodRow key={key} label={label} icon={icon} period={item[key]} />
+          ))}
+
+          {/* Progress bar: wash vs polish ratio for the month */}
+          {monthData.washCount > 0 && monthData.polishCount > 0 && (
+            <div className="mt-3 pt-3 border-t border-[var(--border)]">
+              <p className="text-[11px] font-bold text-[var(--text-tertiary)] mb-1.5">สัดส่วนเดือนนี้</p>
+              <div className="h-1.5 rounded-full overflow-hidden flex" style={{ background: 'var(--surface-2)' }}>
+                <div
+                  className="h-full transition-all duration-500"
+                  style={{
+                    width: `${Math.round((monthData.washAmount / monthData.total) * 100)}%`,
+                    background: 'var(--accent)',
+                    borderRadius: '999px 0 0 999px',
+                  }}
+                  aria-hidden="true"
+                />
+                <div
+                  className="h-full transition-all duration-500"
+                  style={{
+                    width: `${Math.round((monthData.polishAmount / monthData.total) * 100)}%`,
+                    background: 'var(--amber)',
+                    borderRadius: '0 999px 999px 0',
+                  }}
+                  aria-hidden="true"
+                />
+              </div>
+              <div className="flex justify-between mt-1">
+                <span className="text-[10px] font-bold" style={{ color: 'var(--accent)' }}>
+                  ล้าง {Math.round((monthData.washAmount / monthData.total) * 100)}%
+                </span>
+                <span className="text-[10px] font-bold" style={{ color: 'var(--amber)' }}>
+                  ขัด {Math.round((monthData.polishAmount / monthData.total) * 100)}%
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </article>
   )
