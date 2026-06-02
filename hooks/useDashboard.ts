@@ -277,17 +277,19 @@ export function useDashboard() {
     const today = new Date(now)
     today.setHours(0, 0, 0, 0)
 
-    // Cutoff dates
+    // Cutoff dates (Calendar periods)
     const weekStart = new Date(today)
-    weekStart.setDate(weekStart.getDate() - 6)
+    const day = weekStart.getDay()
+    const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1) // Monday as first day of week
+    weekStart.setDate(diff)
     const weekMs = weekStart.getTime()
 
     const monthStart = new Date(today)
-    monthStart.setDate(monthStart.getDate() - 29)
+    monthStart.setDate(1) // 1st day of the current month
     const monthMs = monthStart.getTime()
 
     const yearStart = new Date(today)
-    yearStart.setFullYear(yearStart.getFullYear() - 1)
+    yearStart.setMonth(0, 1) // Jan 1st of the current year
     const yearMs = yearStart.getTime()
 
     const emptyPeriod = (): CustomerTimePeriod => ({ washCount: 0, washAmount: 0, polishCount: 0, polishAmount: 0, total: 0 })
