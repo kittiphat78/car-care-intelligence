@@ -604,7 +604,7 @@ const UnpaidModal = memo(function UnpaidModal({ unpaidData, totalAmount, onClose
       onKeyDown={(e) => e.key === 'Escape' && handleClose()}
       role="dialog"
       aria-modal="true"
-      aria-label="สมุดทวงหนี้"
+      aria-label="ค้างชำระ"
     >
       <div className="bg-[var(--bg)] w-full max-w-lg rounded-t-[32px] sm:rounded-[28px] slide-up overflow-hidden max-h-[90dvh] flex flex-col shadow-2xl">
 
@@ -619,7 +619,7 @@ const UnpaidModal = memo(function UnpaidModal({ unpaidData, totalAmount, onClose
           <div className="relative z-10 px-6 pt-7 pb-6">
             <div className="flex items-center gap-2.5 mb-4">
               <span className="text-2xl">📒</span>
-              <h2 className="text-xl font-extrabold text-white tracking-tight">สมุดทวงหนี้</h2>
+              <h2 className="text-xl font-extrabold text-white tracking-tight">ค้างชำระ</h2>
             </div>
             <p className="text-5xl font-black text-white tracking-tight">฿{totalAmount.toLocaleString()}</p>
             <div className="flex items-center gap-3 mt-3">
@@ -707,12 +707,12 @@ const UnpaidModal = memo(function UnpaidModal({ unpaidData, totalAmount, onClose
                     onClick={() => handleGenerateBill(customerName, items)}
                     disabled={generatingBillFor === customerName}
                     className="w-full py-3 rounded-2xl bg-[var(--accent)] text-white font-bold text-[15px] active:scale-[0.97] transition-all hover:bg-[var(--accent-hover)] shadow-sm flex justify-center items-center gap-2 disabled:opacity-50"
-                    aria-label={`สร้างบิลเบิก ${customerName}`}
+                    aria-label={`สร้างบิล ${customerName}`}
                   >
                     {generatingBillFor === customerName ? (
                       <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> กำลังสร้าง...</>
                     ) : (
-                      <><BillIcon /> สร้างบิลเบิก</>
+                      <><BillIcon /> สร้างบิล</>
                     )}
                   </button>
                   <button

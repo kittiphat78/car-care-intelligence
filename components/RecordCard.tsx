@@ -32,9 +32,8 @@ const RecordCard = memo(function RecordCard({ record }: { record: Record }) {
         {/* Icon */}
         <div
           aria-hidden="true"
-          className={`w-12 h-12 min-w-[48px] rounded-2xl flex items-center justify-center text-xl shrink-0 ${
-            isWash ? 'bg-blue-50' : 'bg-amber-50'
-          }`}
+          className={`w-12 h-12 min-w-[48px] rounded-2xl flex items-center justify-center text-xl shrink-0 ${isWash ? 'bg-blue-50' : 'bg-amber-50'
+            }`}
         >
           {carTypeIcon}
         </div>

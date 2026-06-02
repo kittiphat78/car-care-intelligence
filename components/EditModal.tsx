@@ -4,18 +4,18 @@ import { supabase } from '@/lib/supabase'
 import { Record, Expense, PaymentStatus, CAR_TYPES, CAR_BRANDS } from '@/types'
 
 interface EditModalProps {
-  item:     Record | Expense | null
-  type:     'income' | 'expense'
-  isOpen:   boolean
-  onClose:  () => void
-  onSave:   (updatedFields: Partial<Record & Expense>) => void
+  item: Record | Expense | null
+  type: 'income' | 'expense'
+  isOpen: boolean
+  onClose: () => void
+  onSave: (updatedFields: Partial<Record & Expense>) => void
   onDelete: (id: string) => void
 }
 
 function splitDateTime(iso: string) {
   const d = new Date(iso)
   const date = d.toISOString().split('T')[0]
-  return { date, time: `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}` }
+  return { date, time: `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` }
 }
 function mergeDateTime(date: string, time: string): string {
   const [h, m] = time.split(':').map(Number)
@@ -25,35 +25,35 @@ function mergeDateTime(date: string, time: string): string {
 
 export default function EditModal({ item, type, isOpen, onClose, onSave, onDelete }: EditModalProps) {
   // Income
-  const [recordType, setRecordType]       = useState<'wash' | 'polish'>('wash')
-  const [plate, setPlate]                 = useState('')
-  const [price, setPrice]                 = useState('')
-  const [customerName, setCustomerName]   = useState('')
+  const [recordType, setRecordType] = useState<'wash' | 'polish'>('wash')
+  const [plate, setPlate] = useState('')
+  const [price, setPrice] = useState('')
+  const [customerName, setCustomerName] = useState('')
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('paid')
-  const [selectedType, setSelectedType]   = useState('')
+  const [selectedType, setSelectedType] = useState('')
   const [selectedBrand, setSelectedBrand] = useState('')
-  const [incomeNote, setIncomeNote]       = useState('')
+  const [incomeNote, setIncomeNote] = useState('')
 
   // Expense
-  const [title, setTitle]   = useState('')
+  const [title, setTitle] = useState('')
   const [amount, setAmount] = useState('')
-  const [note, setNote]     = useState('')
+  const [note, setNote] = useState('')
 
   // Shared
-  const [editDate, setEditDate]           = useState('')
-  const [editTime, setEditTime]           = useState('')
+  const [editDate, setEditDate] = useState('')
+  const [editTime, setEditTime] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [currentUserEmail, setCurrentUserEmail] = useState('')
 
   const modalRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
-  const [isDown, setIsDown]         = useState(false)
-  const [startX, setStartX]         = useState(0)
+  const [isDown, setIsDown] = useState(false)
+  const [startX, setStartX] = useState(0)
   const [scrollLeftVal, setScrollLeftVal] = useState(0)
-  const handleMouseDown  = (e: React.MouseEvent) => { setIsDown(true); setStartX(e.pageX - (scrollRef.current?.offsetLeft || 0)); setScrollLeftVal(scrollRef.current?.scrollLeft || 0) }
+  const handleMouseDown = (e: React.MouseEvent) => { setIsDown(true); setStartX(e.pageX - (scrollRef.current?.offsetLeft || 0)); setScrollLeftVal(scrollRef.current?.scrollLeft || 0) }
   const handleMouseLeave = () => setIsDown(false)
-  const handleMouseUp    = () => setIsDown(false)
-  const handleMouseMove  = (e: React.MouseEvent) => {
+  const handleMouseUp = () => setIsDown(false)
+  const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDown) return; e.preventDefault()
     const x = e.pageX - (scrollRef.current?.offsetLeft || 0)
     if (scrollRef.current) scrollRef.current.scrollLeft = scrollLeftVal - (x - startX) * 2
@@ -131,7 +131,7 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
             <p className="text-sm text-[var(--text-tertiary)] mt-0.5 font-medium">{isIncome ? (item as Record).plate : (item as Expense).title}</p>
           </div>
           <button onClick={onClose} className="w-10 h-10 rounded-xl flex items-center justify-center text-[var(--text-secondary)] active:scale-90 transition-transform" aria-label="ปิด">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
           </button>
         </div>
 

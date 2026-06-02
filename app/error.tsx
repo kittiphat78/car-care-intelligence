@@ -26,16 +26,16 @@ export default function Error({
         <p className="text-sm font-medium text-[var(--text-tertiary)] mb-8 leading-relaxed">
           ดูเหมือนระบบจะขัดข้องชั่วคราว ไม่ต้องกังวล กรุณาลองใหม่อีกครั้ง
         </p>
-        
+
         <div className="flex flex-col w-full gap-3">
           <button
             onClick={() => reset()}
             className="w-full bg-[var(--red)] text-white font-bold py-3.5 rounded-[var(--radius-md)] active:scale-95 transition-transform hover:shadow-lg flex items-center justify-center gap-2"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 2v6h6"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2v6h-6" /><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 2v6h6" /></svg>
             ลองใหม่อีกครั้ง
           </button>
-          
+
           <button
             onClick={() => window.location.href = '/'}
             className="w-full bg-[var(--surface-2)] text-[var(--text-secondary)] font-bold py-3.5 rounded-[var(--radius-md)] active:scale-95 transition-transform"
