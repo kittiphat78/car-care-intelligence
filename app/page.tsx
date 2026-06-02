@@ -284,7 +284,7 @@ const ChartsSection = memo(function ChartsSection({ dash }: { dash: ReturnType<t
               <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: '#8A847C', fontSize: 11, fontWeight: 600 }} dy={8} />
               <YAxis axisLine={false} tickLine={false} tick={{ fill: '#8A847C', fontSize: 11, fontWeight: 600 }} dx={-5} />
               <Tooltip
-                formatter={(value, name) => [`฿${(Number(value) || 0).toLocaleString()}`, name === 'income' ? 'รายรับ' : 'รายจ่าย']}
+                formatter={(value, name) => [`฿${(Number(value) || 0).toLocaleString()}`, name === 'income' || name === 'รายรับ' ? 'รายรับ' : 'รายจ่าย']}
                 contentStyle={{ borderRadius: '14px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-md)', fontSize: '14px', fontWeight: 700, padding: '10px 16px' }}
               />
               <Legend verticalAlign="top" align="right" iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 600, paddingBottom: '15px' }} />
