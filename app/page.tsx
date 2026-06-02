@@ -332,8 +332,8 @@ const CustomerBreakdownSection = memo(function CustomerBreakdownSection({
 }) {
   const [showAll, setShowAll] = useState(false)
   const activeCustomers = data.filter(d => d.month.total > 0)
-  const displayed = showAll ? data : data.slice(0, TOP_N)
-  const hasMore = data.length > TOP_N
+  const displayed = showAll ? activeCustomers : activeCustomers.slice(0, TOP_N)
+  const hasMore = activeCustomers.length > TOP_N
 
   return (
     <section className="fade-up delay-5 mt-6" aria-label="รายรับตามลูกค้า">
@@ -349,7 +349,7 @@ const CustomerBreakdownSection = memo(function CustomerBreakdownSection({
         </div>
       </div>
 
-      {data.length === 0 ? (
+      {activeCustomers.length === 0 ? (
         <div className="card p-10 text-center border-dashed border-2">
           <p className="text-3xl mb-2 opacity-20" aria-hidden="true">👥</p>
           <p className="text-sm font-bold text-[var(--text-tertiary)]">ยังไม่มีข้อมูลในช่วงนี้</p>
@@ -367,7 +367,7 @@ const CustomerBreakdownSection = memo(function CustomerBreakdownSection({
               onClick={() => setShowAll(v => !v)}
               className="w-full mt-3 py-3 rounded-2xl border-2 border-dashed border-[var(--border)] text-[13px] font-bold text-[var(--text-tertiary)] active:scale-[0.98] transition-all hover:border-[var(--accent)] hover:text-[var(--accent)]"
             >
-              {showAll ? '▲ ย่อรายการ' : `▼ ดูทั้งหมด ${data.length} ราย`}
+              {showAll ? '▲ ย่อรายการ' : `▼ ดูทั้งหมด ${activeCustomers.length} ราย`}
             </button>
           )}
         </>
