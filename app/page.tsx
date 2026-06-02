@@ -6,6 +6,7 @@ import RecordCard from '@/components/RecordCard'
 import { useWeather, WeatherData } from '@/hooks/useWeather'
 import { useDashboard, DashboardStats, CustomerBreakdownItem, BreakdownMode } from '@/hooks/useDashboard'
 import { Record as AppRecord } from '@/types'
+import { generateCashBill } from '@/lib/generateBill'
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Dashboard — Main Entry
@@ -327,11 +328,11 @@ const RecordListSection = memo(function RecordListSection({ dash }: { dash: Retu
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const BREAKDOWN_MODES: { key: BreakdownMode; label: string }[] = [
-  { key: 'week',     label: '1 อาทิตย์' },
-  { key: 'month',    label: '1 เดือน' },
-  { key: 'quarter',  label: '3 เดือน' },
+  { key: 'week', label: '1 อาทิตย์' },
+  { key: 'month', label: '1 เดือน' },
+  { key: 'quarter', label: '3 เดือน' },
   { key: 'halfyear', label: '6 เดือน' },
-  { key: 'year',     label: '1 ปี' },
+  { key: 'year', label: '1 ปี' },
 ]
 
 const TOP_N = 5
@@ -354,7 +355,7 @@ const CustomerBreakdownSection = memo(function CustomerBreakdownSection({
       {/* Header */}
       <div className="flex items-center justify-between mb-3 px-1">
         <div className="flex items-center gap-2">
-          <h3 className="text-base font-bold text-[var(--text-primary)] tracking-tight">รายรับตามลูกค้า 👥</h3>
+          <h3 className="text-base font-bold text-[var(--text-primary)] tracking-tight">รายรับตามลูกค้า</h3>
           {data.length > 0 && (
             <span className="badge text-[12px]" style={{ background: 'var(--surface-2)', color: 'var(--text-secondary)' }}>
               {data.length}
@@ -366,11 +367,10 @@ const CustomerBreakdownSection = memo(function CustomerBreakdownSection({
             <button
               key={key}
               onClick={() => { setShowAll(false); setMode(key) }}
-              className={`px-2.5 py-1.5 rounded-lg text-[12px] font-bold transition-all duration-150 whitespace-nowrap ${
-                mode === key
-                  ? 'bg-white text-[var(--text-primary)] shadow-[var(--shadow-sm)]'
-                  : 'text-[var(--text-tertiary)]'
-              }`}
+              className={`px-2.5 py-1.5 rounded-lg text-[12px] font-bold transition-all duration-150 whitespace-nowrap ${mode === key
+                ? 'bg-white text-[var(--text-primary)] shadow-[var(--shadow-sm)]'
+                : 'text-[var(--text-tertiary)]'
+                }`}
               aria-pressed={mode === key}
             >
               {label}
@@ -583,6 +583,20 @@ const UnpaidModal = memo(function UnpaidModal({ unpaidData, totalAmount, onClose
   }, [onClose])
   const totalCars = unpaidData.reduce((a, c) => a + c.items.length, 0)
 
+  // Bill generation
+  const [generatingBillFor, setGeneratingBillFor] = useState<string | null>(null)
+  const handleGenerateBill = useCallback(async (customerName: string, items: AppRecord[]) => {
+    setGeneratingBillFor(customerName)
+    try {
+      await generateCashBill(items, customerName)
+    } catch (e) {
+      console.error(e)
+      alert('ไม่สามารถสร้างบิลได้')
+    } finally {
+      setGeneratingBillFor(null)
+    }
+  }, [])
+
   return (
     <div
       className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md fade-in flex items-end sm:items-center justify-center"
@@ -687,8 +701,20 @@ const UnpaidModal = memo(function UnpaidModal({ unpaidData, totalAmount, onClose
                   })}
                 </div>
 
-                {/* Clear Button */}
-                <div className="px-5 pb-5">
+                {/* Action Buttons */}
+                <div className="px-5 pb-5 space-y-2.5">
+                  <button
+                    onClick={() => handleGenerateBill(customerName, items)}
+                    disabled={generatingBillFor === customerName}
+                    className="w-full py-3 rounded-2xl bg-[var(--accent)] text-white font-bold text-[15px] active:scale-[0.97] transition-all hover:bg-[var(--accent-hover)] shadow-sm flex justify-center items-center gap-2 disabled:opacity-50"
+                    aria-label={`สร้างบิลเบิก ${customerName}`}
+                  >
+                    {generatingBillFor === customerName ? (
+                      <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> กำลังสร้าง...</>
+                    ) : (
+                      <><BillIcon /> สร้างบิลเบิก</>
+                    )}
+                  </button>
                   <button
                     onClick={() => onMarkPaid(customerName)}
                     className="w-full py-3 rounded-2xl bg-emerald-500 text-white font-bold text-[15px] active:scale-[0.97] transition-all hover:bg-emerald-600 shadow-sm flex justify-center items-center gap-2"
@@ -717,3 +743,4 @@ const RefreshIcon = () => (<svg width="16" height="16" viewBox="0 0 13 13" fill=
 const CloseIcon = () => (<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>)
 const CheckMarkIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>)
 const ClockIcon = () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" /><path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>)
+const BillIcon = () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 5H7a2 2 0 00-2 2v12l2.5-1.5L10 19l2.5-1.5L15 19l2.5-1.5L20 19V7a2 2 0 00-2-2h-2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /><rect x="9" y="3" width="6" height="4" rx="1" stroke="currentColor" strokeWidth="2" /><path d="M9 12h6M9 15h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>)

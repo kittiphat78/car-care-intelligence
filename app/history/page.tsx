@@ -6,16 +6,15 @@ import { Record as AppRecord, Expense } from '@/types'
 import RecordCard from '@/components/RecordCard'
 import { exportToExcel } from '@/lib/export'
 import EditModal from '@/components/EditModal'
-import { generateCashBill } from '@/lib/generateBill'
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Constants & Types
    ═══════════════════════════════════════════════════════════════════════════ */
 
-type TabType    = 'income' | 'expense'
+type TabType = 'income' | 'expense'
 type FilterType = 'all' | 'wash' | 'polish'
 
-const START_YEAR   = new Date().getFullYear() - 5
+const START_YEAR = new Date().getFullYear() - 5
 const YEAR_OPTIONS = Array.from({ length: 16 }, (_, i) => START_YEAR + i)
 
 const MONTH_OPTIONS = [
@@ -46,15 +45,15 @@ const getExpenseIcon = (title: string) => {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 function useHistoryData(selectedYear: number, activeTab: TabType) {
-  const [records, setRecords]   = useState<AppRecord[]>([])
+  const [records, setRecords] = useState<AppRecord[]>([])
   const [expenses, setExpenses] = useState<Expense[]>([])
-  const [loading, setLoading]   = useState(true)
-  const [error, setError]       = useState('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   const fetchAllData = useCallback(async () => {
     setLoading(true); setError('')
     const startOfYear = new Date(selectedYear, 0, 1).toISOString()
-    const endOfYear   = new Date(selectedYear + 1, 0, 1).toISOString()
+    const endOfYear = new Date(selectedYear + 1, 0, 1).toISOString()
 
     const [recordsRes, expensesRes] = await Promise.all([
       supabase.from('records').select('*').gte('created_at', startOfYear).lt('created_at', endOfYear).order('created_at', { ascending: false }),
@@ -92,23 +91,16 @@ function useHistoryData(selectedYear: number, activeTab: TabType) {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 export default function HistoryPage() {
-  const [activeTab, setActiveTab]         = useState<TabType>('income')
-  const [search, setSearch]               = useState('')
-  const [selectedYear, setSelectedYear]   = useState(new Date().getFullYear())
+  const [activeTab, setActiveTab] = useState<TabType>('income')
+  const [search, setSearch] = useState('')
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
-  const [filterType, setFilterType]       = useState<FilterType>('all')
-  const [dateFrom, setDateFrom]           = useState('')
-  const [dateTo, setDateTo]               = useState('')
-  const [selectedItem, setSelectedItem]   = useState<AppRecord | Expense | null>(null)
-  const [isModalOpen, setIsModalOpen]     = useState(false)
+  const [filterType, setFilterType] = useState<FilterType>('all')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+  const [selectedItem, setSelectedItem] = useState<AppRecord | Expense | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
   const [isExportModalOpen, setIsExportModalOpen] = useState(false)
-
-  // Bill Mode
-  const [billMode, setBillMode] = useState(false)
-  const [billSelectedIds, setBillSelectedIds] = useState<Set<string>>(new Set())
-  const [billCustomerName, setBillCustomerName] = useState('')
-  const [showBillNameModal, setShowBillNameModal] = useState(false)
-  const [generatingBill, setGeneratingBill] = useState(false)
 
   const { records, expenses, loading, error, handleDelete, handleSave } = useHistoryData(selectedYear, activeTab)
 
@@ -118,16 +110,16 @@ export default function HistoryPage() {
 
   const currentMonthRecords = useMemo(() =>
     selectedMonth === 0 ? records : records.filter(r => new Date(r.created_at).getMonth() + 1 === selectedMonth)
-  , [records, selectedMonth])
+    , [records, selectedMonth])
 
   const currentMonthExpenses = useMemo(() =>
     selectedMonth === 0 ? expenses : expenses.filter(e => new Date(e.created_at).getMonth() + 1 === selectedMonth)
-  , [expenses, selectedMonth])
+    , [expenses, selectedMonth])
 
   const summary = useMemo(() => {
     const washRecords = currentMonthRecords.filter(r => r.type === 'wash')
     const polishRecords = currentMonthRecords.filter(r => r.type === 'polish')
-    
+
     return {
       totalIncome: currentMonthRecords.reduce((s, r) => s + r.price, 0),
       totalExpense: currentMonthExpenses.reduce((s, e) => s + e.amount, 0),
@@ -140,8 +132,8 @@ export default function HistoryPage() {
 
   const filteredItems = useMemo(() => {
     const fromTime = dateFrom ? new Date(dateFrom).getTime() : 0
-    const toTime   = dateTo   ? new Date(dateTo + 'T23:59:59').getTime() : Infinity
-    const sl       = search.toLowerCase()
+    const toTime = dateTo ? new Date(dateTo + 'T23:59:59').getTime() : Infinity
+    const sl = search.toLowerCase()
 
     if (activeTab === 'income') {
       return currentMonthRecords.filter(r => {
@@ -164,7 +156,7 @@ export default function HistoryPage() {
       acc[date].push(item)
       return acc
     }, {} as globalThis.Record<string, (AppRecord | Expense)[]>)
-  , [filteredItems])
+    , [filteredItems])
 
   const openModal = useCallback((item: AppRecord | Expense) => { setSelectedItem(item); setIsModalOpen(true) }, [])
   const closeModal = useCallback(() => setIsModalOpen(false), [])
@@ -172,10 +164,10 @@ export default function HistoryPage() {
   const handleExport = useCallback(async (startYear: number, startMonth: number, endYear: number, endMonth: number, mode: 'bank' | 'internal') => {
     // คำนวณวันที่เริ่ม (วันที่ 1 ของเดือนที่เริ่ม)
     const startDate = new Date(startYear, startMonth - 1, 1).toISOString()
-    
+
     // คำนวณวันที่สุดท้าย (วันที่ 1 ของเดือนถัดไปจากเดือนที่สิ้นสุด เพื่อใช้ lt)
     const endDate = new Date(endYear, endMonth, 1).toISOString()
-    
+
     const getMonthName = (m: number) => MONTH_OPTIONS.find(opt => opt.value === m)?.label || ''
     const startStr = `${getMonthName(startMonth)}${startYear + 543}`
     const endStr = `${getMonthName(endMonth)}${endYear + 543}`
@@ -185,7 +177,7 @@ export default function HistoryPage() {
       supabase.from('records').select('*').gte('created_at', startDate).lt('created_at', endDate).order('created_at', { ascending: true }),
       supabase.from('expenses').select('*').gte('created_at', startDate).lt('created_at', endDate).order('created_at', { ascending: true })
     ])
-    
+
     if ((!records || records.length === 0) && (!expenses || expenses.length === 0)) {
       alert('ไม่พบข้อมูลในช่วงเวลาที่เลือก')
       setIsExportModalOpen(false)
@@ -199,52 +191,6 @@ export default function HistoryPage() {
     setIsExportModalOpen(false)
   }, [])
 
-  // Bill Mode helpers
-  const toggleBillSelect = useCallback((id: string) => {
-    setBillSelectedIds(prev => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id); else next.add(id)
-      return next
-    })
-  }, [])
-
-  const toggleBillSelectDay = useCallback((items: (AppRecord | Expense)[]) => {
-    const incomeItems = items.filter((i): i is AppRecord => 'price' in i)
-    const ids = incomeItems.map(i => i.id)
-    const allSelected = ids.every(id => billSelectedIds.has(id))
-    setBillSelectedIds(prev => {
-      const next = new Set(prev)
-      if (allSelected) ids.forEach(id => next.delete(id))
-      else ids.forEach(id => next.add(id))
-      return next
-    })
-  }, [billSelectedIds])
-
-  const billSelectedRecords = useMemo(() => {
-    if (activeTab !== 'income') return []
-    return currentMonthRecords.filter(r => billSelectedIds.has(r.id))
-  }, [activeTab, currentMonthRecords, billSelectedIds])
-
-  const handleBillGenerate = useCallback(async () => {
-    if (billSelectedRecords.length === 0) return
-    if (!billCustomerName.trim()) return alert('กรุณาระบุชื่อลูกค้า')
-    setGeneratingBill(true)
-    try {
-      await generateCashBill(billSelectedRecords, billCustomerName.trim())
-      setShowBillNameModal(false)
-    } catch (e) {
-      console.error(e)
-      alert('ไม่สามารถสร้างบิลได้')
-    } finally {
-      setGeneratingBill(false)
-    }
-  }, [billSelectedRecords, billCustomerName])
-
-  const exitBillMode = useCallback(() => {
-    setBillMode(false)
-    setBillSelectedIds(new Set())
-    setBillCustomerName('')
-  }, [])
 
   return (
     <div className="min-h-dvh px-4 pt-6 space-y-4">
@@ -253,8 +199,6 @@ export default function HistoryPage() {
       <SummaryCard
         activeTab={activeTab} selectedMonth={selectedMonth} summary={summary}
         onExport={() => setIsExportModalOpen(true)}
-        billMode={billMode}
-        onBillModeToggle={() => billMode ? exitBillMode() : setBillMode(true)}
       />
       <FilterSection
         activeTab={activeTab} search={search} setSearch={setSearch}
@@ -263,74 +207,10 @@ export default function HistoryPage() {
       />
       <HistoryList
         loading={loading} grouped={grouped} activeTab={activeTab} onItemClick={openModal}
-        billMode={billMode && activeTab === 'income'}
-        billSelectedIds={billSelectedIds}
-        onBillToggle={toggleBillSelect}
-        onBillToggleDay={toggleBillSelectDay}
       />
       {error && <ErrorBanner error={error} />}
 
-      {/* Bill Mode Floating Action Bar */}
-      {billMode && activeTab === 'income' && (
-        <div className="fixed bottom-[5.5rem] left-4 right-4 z-[60] slide-up">
-          <div className="max-w-lg mx-auto bg-[var(--text-primary)] rounded-2xl shadow-2xl shadow-black/20 overflow-hidden">
-            {/* Progress bar */}
-            <div className="h-1 bg-white/10">
-              <div className="h-full bg-[var(--accent)] transition-all duration-300" style={{ width: billSelectedRecords.length > 0 ? '100%' : '0%' }} />
-            </div>
-            <div className="px-5 py-4 flex items-center justify-between gap-3">
-              <button onClick={exitBillMode} className="text-white/50 active:scale-95 transition-transform p-1" aria-label="ปิดโหมดสร้างบิล">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-              </button>
-              <div className="text-center flex-1">
-                {billSelectedRecords.length === 0 ? (
-                  <p className="text-sm font-bold text-white/50">เลือกรายการเพื่อสร้างบิล</p>
-                ) : (
-                  <>
-                    <p className="text-sm font-bold text-white">{billSelectedRecords.length} รายการ</p>
-                    <p className="text-xs font-extrabold text-[var(--accent)]">฿{billSelectedRecords.reduce((s, r) => s + r.price, 0).toLocaleString()}</p>
-                  </>
-                )}
-              </div>
-              <button
-                onClick={() => { if (billSelectedRecords.length > 0) { setBillCustomerName(''); setShowBillNameModal(true) } }}
-                disabled={billSelectedRecords.length === 0}
-                className="bg-[var(--accent)] text-white font-bold px-4 py-2.5 rounded-xl text-sm active:scale-95 transition-all disabled:opacity-30 disabled:scale-100 flex items-center gap-1.5"
-              >
-                🧾 สร้างบิล
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* Bill Customer Name Modal */}
-      {showBillNameModal && (
-        <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm fade-in flex items-center justify-center p-4"
-          onClick={(e) => e.target === e.currentTarget && setShowBillNameModal(false)}
-        >
-          <div className="bg-white w-full max-w-sm rounded-[24px] p-6 slide-up shadow-2xl">
-            <h3 className="text-lg font-extrabold text-[var(--text-primary)] mb-1">สร้างบิลเงินสด 🧾</h3>
-            <p className="text-sm text-[var(--text-tertiary)] mb-4">{billSelectedRecords.length} รายการ · ฿{billSelectedRecords.reduce((s, r) => s + r.price, 0).toLocaleString()}</p>
-            <label className="text-sm font-bold text-[var(--text-secondary)] block mb-2">ชื่อลูกค้า (สำหรับใส่ในบิล)</label>
-            <input
-              type="text" value={billCustomerName} onChange={e => setBillCustomerName(e.target.value)}
-              placeholder="พิมพ์ชื่อลูกค้า..."
-              className="input w-full mb-4" autoFocus
-              onKeyDown={e => e.key === 'Enter' && handleBillGenerate()}
-            />
-            <div className="flex gap-3">
-              <button onClick={() => setShowBillNameModal(false)} className="flex-1 py-3 rounded-xl bg-[var(--surface-2)] text-[var(--text-secondary)] font-bold text-sm">ยกเลิก</button>
-              <button
-                onClick={handleBillGenerate} disabled={generatingBill || !billCustomerName.trim()}
-                className="flex-1 py-3 rounded-xl bg-[var(--accent)] text-white font-bold text-sm active:scale-95 transition-transform disabled:opacity-40"
-              >
-                {generatingBill ? 'กำลังสร้าง...' : 'ดาวน์โหลดบิล'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       <EditModal
         item={selectedItem} type={activeTab} isOpen={isModalOpen} onClose={closeModal}
         onSave={(fields) => handleSave(fields, selectedItem!.id, closeModal)}
@@ -401,11 +281,9 @@ interface SummaryCardProps {
     totalPolishRevenue: number
   }
   onExport: () => void
-  billMode: boolean
-  onBillModeToggle: () => void
 }
 
-const SummaryCard = memo(function SummaryCard({ activeTab, selectedMonth, summary, onExport, billMode, onBillModeToggle }: SummaryCardProps) {
+const SummaryCard = memo(function SummaryCard({ activeTab, selectedMonth, summary, onExport }: SummaryCardProps) {
   const [showRevenue, setShowRevenue] = useState(false)
 
   return (
@@ -420,7 +298,7 @@ const SummaryCard = memo(function SummaryCard({ activeTab, selectedMonth, summar
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <div 
+          <div
             className={`flex items-center gap-2.5 bg-white/10 border border-white/10 rounded-[var(--radius-md)] px-3.5 py-2.5 cursor-pointer hover:bg-white/15 transition-colors ${activeTab !== 'income' ? 'opacity-0 pointer-events-none' : ''}`}
             onClick={() => setShowRevenue(!showRevenue)}
             role="button"
@@ -441,20 +319,9 @@ const SummaryCard = memo(function SummaryCard({ activeTab, selectedMonth, summar
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={onBillModeToggle}
-              className={`flex items-center gap-1.5 text-sm font-bold px-3.5 py-3 rounded-[var(--radius-md)] active:scale-95 transition-all ${
-                billMode
-                  ? 'bg-[var(--accent)] text-white shadow-sm'
-                  : 'text-white/70 bg-white/10 border border-white/10'
-              } ${activeTab !== 'income' ? 'opacity-0 pointer-events-none' : ''}`}
-              aria-label="สร้างบิลเงินสด"
-            >
-              🧾 {billMode ? 'ยกเลิก' : 'บิล'}
-            </button>
             {activeTab === 'income' && (
               <button onClick={onExport} className="flex items-center gap-2 text-sm font-bold text-white/70 bg-white/10 border border-white/10 px-3.5 py-3 rounded-[var(--radius-md)] active:scale-95 transition-transform" aria-label="ดาวน์โหลด Excel">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h2"/><path d="M8 17h2"/><path d="M14 13h2"/><path d="M14 17h2"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /><path d="M8 13h2" /><path d="M8 17h2" /><path d="M14 13h2" /><path d="M14 17h2" /></svg>
                 Excel
               </button>
             )}
@@ -481,7 +348,7 @@ function FilterSection({ activeTab, search, setSearch, dateFrom, setDateFrom, da
   return (
     <section className="card p-4 space-y-3 fade-up delay-2" aria-label="ตัวกรอง">
       <div className="relative">
-        <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] pointer-events-none" width="16" height="16" viewBox="0 0 15 15" fill="none" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.3"/><path d="M10.5 10.5l3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+        <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] pointer-events-none" width="16" height="16" viewBox="0 0 15 15" fill="none" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.3" /><path d="M10.5 10.5l3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>
         <input
           type="text" value={search} onChange={e => setSearch(e.target.value)}
           placeholder={activeTab === 'income' ? 'ค้นหาทะเบียน หรือชื่อลูกค้า...' : 'ค้นหารายการจ่าย...'}
@@ -496,13 +363,12 @@ function FilterSection({ activeTab, search, setSearch, dateFrom, setDateFrom, da
       </div>
       {activeTab === 'income' && (
         <div className="flex gap-2" role="group" aria-label="กรองประเภท">
-          {(['all','wash','polish'] as FilterType[]).map(t => (
+          {(['all', 'wash', 'polish'] as FilterType[]).map(t => (
             <button key={t} onClick={() => setFilterType(t)} aria-pressed={filterType === t}
-              className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all duration-150 border-2 ${
-                filterType === t
+              className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all duration-150 border-2 ${filterType === t
                   ? (t === 'all' ? 'bg-[var(--text-primary)] text-white border-transparent' : t === 'wash' ? 'bg-[var(--accent-light)] text-[var(--accent)] border-blue-200' : 'bg-[var(--amber-light)] text-[var(--amber)] border-amber-200')
                   : 'bg-white text-[var(--text-secondary)] border-[var(--border)]'
-              }`}
+                }`}
             >{t === 'all' ? 'ทั้งหมด' : t === 'wash' ? 'ล้างรถ' : 'ขัดสี'}</button>
           ))}
         </div>
@@ -516,17 +382,13 @@ interface HistoryListProps {
   grouped: globalThis.Record<string, (AppRecord | Expense)[]>
   activeTab: TabType
   onItemClick: (item: AppRecord | Expense) => void
-  billMode: boolean
-  billSelectedIds: Set<string>
-  onBillToggle: (id: string) => void
-  onBillToggleDay: (items: (AppRecord | Expense)[]) => void
 }
 
-function HistoryList({ loading, grouped, activeTab, onItemClick, billMode, billSelectedIds, onBillToggle, onBillToggleDay }: HistoryListProps) {
+function HistoryList({ loading, grouped, activeTab, onItemClick }: HistoryListProps) {
   if (loading) {
     return (
       <section className="space-y-3 fade-up delay-3" aria-busy="true" aria-label="กำลังโหลดรายการ">
-        {[1,2,3,4].map(i => <div key={i} className="skeleton h-[76px]" />)}
+        {[1, 2, 3, 4].map(i => <div key={i} className="skeleton h-[76px]" />)}
       </section>
     )
   }
@@ -547,22 +409,14 @@ function HistoryList({ loading, grouped, activeTab, onItemClick, billMode, billS
     <section className="fade-up delay-3" aria-label="รายการประวัติ">
       {Object.entries(grouped).map(([date, items]: [string, any]) => {
         const dayTotal = items.reduce((s: number, i: any) => s + ('price' in i ? i.price : i.amount), 0)
-        const dayWash  = items.filter((i: any) => 'type' in i && i.type === 'wash').length
-        const dayPol   = items.filter((i: any) => 'type' in i && i.type === 'polish').length
-        const incomeItems = items.filter((i: any) => 'price' in i)
-        const allDaySelected = billMode && incomeItems.length > 0 && incomeItems.every((i: any) => billSelectedIds.has(i.id))
+        const dayWash = items.filter((i: any) => 'type' in i && i.type === 'wash').length
+        const dayPol = items.filter((i: any) => 'type' in i && i.type === 'polish').length
 
         return (
           <div key={date} className="mb-6">
             <div className="sticky top-2 z-10 glass py-2.5 mb-2.5 rounded-xl px-1">
               <div className="flex items-center gap-2.5">
-                {billMode && activeTab === 'income' && (
-                  <button onClick={() => onBillToggleDay(items)} className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${
-                    allDaySelected ? 'bg-[var(--accent)] border-[var(--accent)]' : 'border-gray-300'
-                  }`}>
-                    {allDaySelected && <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                  </button>
-                )}
+
                 <span className="text-sm font-bold text-[var(--text-secondary)] shrink-0">{date}</span>
                 <div className="h-px flex-1 bg-[var(--border)]" aria-hidden="true" />
                 <div className="flex items-center gap-2.5">
@@ -573,76 +427,57 @@ function HistoryList({ loading, grouped, activeTab, onItemClick, billMode, billS
             </div>
             <div className="grid gap-2.5">
               {items.map((item: any) => {
-                const isIncome = 'price' in item
-                const isSelected = billMode && isIncome && billSelectedIds.has(item.id)
                 return (
-                <div key={item.id}>
-                  {activeTab === 'income' ? (
-                    <div className="flex items-stretch gap-0">
-                      {billMode && isIncome && (
-                        <button
-                          onClick={() => onBillToggle(item.id)}
-                          className={`flex items-center justify-center w-10 shrink-0 transition-all rounded-l-2xl ${
-                            isSelected ? 'bg-[var(--accent)]' : 'bg-gray-100'
-                          }`}
-                        >
-                          {isSelected ? (
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                          ) : (
-                            <div className="w-5 h-5 rounded-md border-2 border-gray-300 bg-white" />
-                          )}
-                        </button>
-                      )}
-                      <div className={`flex-1 min-w-0 ${billMode ? (isSelected ? 'opacity-100' : 'opacity-70') : 'cursor-pointer'}`}
-                        onClick={() => billMode ? onBillToggle(item.id) : onItemClick(item)}
-                      >
+                  <div key={item.id}>
+                    {activeTab === 'income' ? (
+                      <div className="cursor-pointer" onClick={() => onItemClick(item)}>
                         <RecordCard record={item as AppRecord} />
                       </div>
-                    </div>
-                  ) : (
-                    <div onClick={() => onItemClick(item)} role="button" tabIndex={0} onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && onItemClick(item)}
-                      className="card bg-white cursor-pointer transition-all duration-150 active:scale-[0.985] overflow-hidden"
-                      aria-label={`${item.title} ${item.amount} บาท`}
-                    >
-                      {/* Accent bar */}
-                      <div className="h-[3px] w-full bg-[var(--red)]" aria-hidden="true" />
+                    ) : (
+                      <div onClick={() => onItemClick(item)} role="button" tabIndex={0} onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && onItemClick(item)}
+                        className="card bg-white cursor-pointer transition-all duration-150 active:scale-[0.985] overflow-hidden"
+                        aria-label={`${item.title} ${item.amount} บาท`}
+                      >
+                        {/* Accent bar */}
+                        <div className="h-[3px] w-full bg-[var(--red)]" aria-hidden="true" />
 
-                      <div className="flex items-center gap-3.5 px-4 py-4 sm:px-5">
-                        {/* Icon */}
-                        <div className="w-12 h-12 min-w-[48px] rounded-2xl bg-[var(--red-light)] flex items-center justify-center text-xl shrink-0" aria-hidden="true">
-                          {getExpenseIcon(item.title)}
-                        </div>
-
-                        {/* Info */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 mb-1">
-                            <span className="badge badge-unpaid">รายจ่าย</span>
+                        <div className="flex items-center gap-3.5 px-4 py-4 sm:px-5">
+                          {/* Icon */}
+                          <div className="w-12 h-12 min-w-[48px] rounded-2xl bg-[var(--red-light)] flex items-center justify-center text-xl shrink-0" aria-hidden="true">
+                            {getExpenseIcon(item.title)}
                           </div>
-                          <p className="font-extrabold text-[var(--text-primary)] text-[17px] tracking-wide leading-tight truncate">
-                            {item.title}
-                          </p>
-                        </div>
 
-                        {/* Price */}
-                        <div className="text-right shrink-0">
-                          <p className="text-lg font-extrabold leading-tight text-[var(--red)]">
-                            −฿{item.amount.toLocaleString()}
-                          </p>
-                          <p className="text-[12px] text-[var(--text-tertiary)] mt-1 font-medium">
-                            {new Date(item.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.
-                          </p>
+                          {/* Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <span className="badge badge-unpaid">รายจ่าย</span>
+                            </div>
+                            <p className="font-extrabold text-[var(--text-primary)] text-[17px] tracking-wide leading-tight truncate">
+                              {item.title}
+                            </p>
+                          </div>
+
+                          {/* Price */}
+                          <div className="text-right shrink-0">
+                            <p className="text-lg font-extrabold leading-tight text-[var(--red)]">
+                              −฿{item.amount.toLocaleString()}
+                            </p>
+                            <p className="text-[12px] text-[var(--text-tertiary)] mt-1 font-medium">
+                              {new Date(item.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
-                  {(item.created_by_email || item.updated_by_email) && (
-                    <div className="flex items-center justify-end gap-3 px-2 mt-1.5 text-[11px] font-semibold text-[var(--text-tertiary)] opacity-60">
-                      {item.created_by_email && <span>➕ {item.created_by_email.split('@')[0]}</span>}
-                      {item.updated_by_email && <span>✏️ {item.updated_by_email.split('@')[0]}</span>}
-                    </div>
-                  )}
-                </div>
-              )})}
+                    )}
+                    {(item.created_by_email || item.updated_by_email) && (
+                      <div className="flex items-center justify-end gap-3 px-2 mt-1.5 text-[11px] font-semibold text-[var(--text-tertiary)] opacity-60">
+                        {item.created_by_email && <span>➕ {item.created_by_email.split('@')[0]}</span>}
+                        {item.updated_by_email && <span>✏️ {item.updated_by_email.split('@')[0]}</span>}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
 
             </div>
           </div>
@@ -712,7 +547,7 @@ function ExportModal({ activeTab, defaultYear, defaultMonth, onClose, onExport }
 
         <div className="space-y-4 mb-6 relative">
           <div className="absolute left-4 top-1/2 -translate-y-1/2 w-[2px] h-[40px] bg-[var(--border)] -z-10 hidden sm:block" />
-          
+
           <div className="card bg-[var(--surface-2)] p-4 border border-[var(--border)] relative z-0">
             <label className="block text-[13px] font-bold text-[var(--text-secondary)] mb-2">ตั้งแต่ (เริ่มต้น)</label>
             <div className="flex gap-2">
