@@ -17,7 +17,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/history', label: 'ประวัติ', icon: (a) => <ClockIcon active={a} /> },
 ]
 
-/* ─── Main Component (memoized — only re-renders on route change) ─── */
+/* ─── Main Component ─── */
 const BottomNav = memo(function BottomNav() {
   const pathname = usePathname()
 
@@ -26,7 +26,7 @@ const BottomNav = memo(function BottomNav() {
       aria-label="การนำทางหลัก"
       className="fixed bottom-0 left-0 right-0 z-50"
     >
-      <div className="glass border-t border-[var(--border)] safe-bottom">
+      <div className="glass border-t border-[var(--glass-border)] safe-bottom">
         <div className="max-w-2xl mx-auto flex items-stretch">
           {NAV_ITEMS.map((tab) => {
             const isActive = pathname === tab.href
@@ -44,10 +44,13 @@ const BottomNav = memo(function BottomNav() {
                   <div
                     className={`
                       w-[52px] h-[52px] rounded-2xl flex items-center justify-center
-                      bg-[var(--accent)] text-white
-                      transition-transform duration-150 ease-out
+                      bg-gradient-to-br from-[var(--accent)] to-[#8B5CF6] text-white
+                      transition-all duration-200 ease-out
                       active:scale-90
-                      ${isActive ? 'shadow-lg shadow-blue-500/25' : 'shadow-md shadow-blue-500/15'}
+                      ${isActive
+                        ? 'shadow-lg shadow-[var(--accent)]/30 scale-105'
+                        : 'shadow-md shadow-[var(--accent)]/15'
+                      }
                     `}
                     aria-hidden="true"
                   >
@@ -72,17 +75,20 @@ const BottomNav = memo(function BottomNav() {
                 className="flex-1 flex flex-col items-center justify-center py-2.5 group"
               >
                 <div
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-150 ease-out ${
+                  className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 ease-out ${
                     isActive
-                      ? 'bg-[var(--text-primary)] text-white'
+                      ? 'bg-[var(--accent-light)] text-[var(--accent)]'
                       : 'text-[var(--text-tertiary)]'
                   }`}
                   aria-hidden="true"
                 >
                   {tab.icon(isActive)}
+                  {isActive && (
+                    <span className="absolute -bottom-1 w-1 h-1 rounded-full bg-[var(--accent)]" />
+                  )}
                 </div>
                 <span className={`text-[11px] font-bold mt-1 transition-colors duration-150 ${
-                  isActive ? 'text-[var(--text-primary)]' : 'text-[var(--text-tertiary)]'
+                  isActive ? 'text-[var(--accent)]' : 'text-[var(--text-tertiary)]'
                 }`}>
                   {tab.label}
                 </span>
@@ -109,6 +115,7 @@ function GridIcon({ active }: { active: boolean }) {
   )
 }
 function PlusIcon({ active }: { active: boolean }) {
+  void active
   return (
     <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
       <path d="M11 4v14M4 11h14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
@@ -116,6 +123,7 @@ function PlusIcon({ active }: { active: boolean }) {
   )
 }
 function ClockIcon({ active }: { active: boolean }) {
+  void active
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
       <circle cx="10" cy="10" r="7.5" stroke="currentColor" strokeWidth="1.8" />
