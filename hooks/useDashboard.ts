@@ -86,7 +86,7 @@ export function useDashboard() {
         supabase.from('records').select('*').gte('created_at', thirtyDaysAgoIso).order('created_at', { ascending: true }),
         supabase.from('expenses').select('*').gte('created_at', thirtyDaysAgoIso),
         supabase.from('records').select('*').eq('payment_status', 'unpaid').order('created_at', { ascending: true }),
-        supabase.from('records').select('id,created_at,type,price,customer_name').eq('payment_status', 'paid').gte('created_at', oneYearAgoIso).order('created_at', { ascending: true })
+        supabase.from('records').select('id,created_at,type,price,customer_name').gte('created_at', oneYearAgoIso).order('created_at', { ascending: true })
       ])
    
       const dbErrors = [allRes.error, expenseRes.error, unpaidRes.error, yearRes.error].filter(Boolean)
