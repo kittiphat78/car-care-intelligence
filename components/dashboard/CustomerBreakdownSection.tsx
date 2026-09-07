@@ -3,15 +3,61 @@ import { CustomerBreakdownItem, CustomerTimePeriod } from '@/hooks/useDashboard'
 
 const TOP_N = 5
 
+function mergePeriods(p1: CustomerTimePeriod, p2: CustomerTimePeriod): CustomerTimePeriod {
+  return {
+    washCount: p1.washCount + p2.washCount,
+    washAmount: p1.washAmount + p2.washAmount,
+    polishCount: p1.polishCount + p2.polishCount,
+    polishAmount: p1.polishAmount + p2.polishAmount,
+    total: p1.total + p2.total,
+  }
+}
+
 export const CustomerBreakdownSection = memo(function CustomerBreakdownSection({
   data,
 }: {
   data: CustomerBreakdownItem[]
 }) {
-  const [showAll, setShowAll] = useState(false)
   const activeCustomers = data.filter(d => d.month.total > 0)
-  const displayed = showAll ? activeCustomers : activeCustomers.slice(0, TOP_N)
-  const hasMore = activeCustomers.length > TOP_N
+
+  let displayed: CustomerBreakdownItem[] = []
+  
+  if (activeCustomers.length > 0) {
+    const namedCustomers = activeCustomers.filter(c => c.customerName !== 'ลูกค้าทั่วไป')
+    const generalCustomer = activeCustomers.find(c => c.customerName === 'ลูกค้าทั่วไป')
+    
+    const topNamed = namedCustomers.slice(0, TOP_N - 1)
+    const otherNamed = namedCustomers.slice(TOP_N - 1)
+
+    const emptyPeriod = (): CustomerTimePeriod => ({ washCount: 0, washAmount: 0, polishCount: 0, polishAmount: 0, total: 0 })
+    
+    let mergedGeneral: CustomerBreakdownItem = generalCustomer || {
+      customerName: 'ลูกค้าทั่วไป',
+      week: emptyPeriod(),
+      month: emptyPeriod(),
+      year: emptyPeriod(),
+    }
+
+    if (otherNamed.length > 0 && generalCustomer) {
+      mergedGeneral = {
+        customerName: 'ลูกค้าทั่วไป',
+        week: { ...generalCustomer.week },
+        month: { ...generalCustomer.month },
+        year: { ...generalCustomer.year },
+      }
+    }
+
+    for (const other of otherNamed) {
+      mergedGeneral.week = mergePeriods(mergedGeneral.week, other.week)
+      mergedGeneral.month = mergePeriods(mergedGeneral.month, other.month)
+      mergedGeneral.year = mergePeriods(mergedGeneral.year, other.year)
+    }
+
+    displayed = [...topNamed]
+    if (mergedGeneral.month.total > 0) {
+      displayed.push(mergedGeneral)
+    }
+  }
 
   return (
     <section className="fade-up delay-5 mt-6" aria-label="รายรับตามลูกค้า">
@@ -19,36 +65,25 @@ export const CustomerBreakdownSection = memo(function CustomerBreakdownSection({
       <div className="flex items-center justify-between mb-3 px-1">
         <div className="flex items-center gap-2">
           <h3 className="text-base font-bold text-[var(--text-primary)] tracking-tight">รายรับตามลูกค้า</h3>
-          {activeCustomers.length > 0 && (
+          {displayed.length > 0 && (
             <span className="badge text-[12px]" style={{ background: 'var(--surface-2)', color: 'var(--text-secondary)' }}>
-              {activeCustomers.length} ราย
+              {displayed.length} ราย
             </span>
           )}
         </div>
       </div>
 
-      {activeCustomers.length === 0 ? (
+      {displayed.length === 0 ? (
         <div className="card p-10 text-center border-dashed border-2 border-[var(--border)]">
           <p className="text-3xl mb-2 opacity-20" aria-hidden="true">👥</p>
           <p className="text-sm font-bold text-[var(--text-tertiary)]">ยังไม่มีข้อมูลในช่วงนี้</p>
         </div>
       ) : (
-        <>
-          <div className="grid gap-3">
-            {displayed.map((item, idx) => (
-              <CustomerBreakdownCard key={item.customerName} item={item} rank={idx + 1} />
-            ))}
-          </div>
-
-          {hasMore && (
-            <button
-              onClick={() => setShowAll(v => !v)}
-              className="w-full mt-3 py-3 rounded-2xl border-2 border-dashed border-[var(--border)] text-[13px] font-bold text-[var(--text-tertiary)] active:scale-[0.98] transition-all hover:border-[var(--accent)] hover:text-[var(--accent)]"
-            >
-              {showAll ? '▲ ย่อรายการ' : `▼ ดูทั้งหมด ${activeCustomers.length} ราย`}
-            </button>
-          )}
-        </>
+        <div className="grid gap-3">
+          {displayed.map((item, idx) => (
+            <CustomerBreakdownCard key={item.customerName} item={item} rank={idx + 1} />
+          ))}
+        </div>
       )}
     </section>
   )
