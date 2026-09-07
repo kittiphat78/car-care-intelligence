@@ -78,7 +78,8 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
   // Populate fields
   useEffect(() => {
     if (!item) return
-    // eslint-disable-next-line react-hooks/set-state-in-effect`n    setConfirmDelete(false)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setConfirmDelete(false)
     const { date, time } = splitDateTime(item.created_at)
     setEditDate(date); setEditTime(time)
 
@@ -260,7 +261,7 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
           <div className="mx-6 mb-4 p-5 rounded-[var(--radius-lg)] bg-[var(--red-light)] border-2 border-[rgba(239,68,68,0.2)] shrink-0">
             <p className="text-base font-bold text-[var(--red)] mb-3">ยืนยันลบรายการนี้?</p>
             <div className="flex gap-2.5">
-              <button onClick={() => // eslint-disable-next-line react-hooks/set-state-in-effect`n    setConfirmDelete(false)} className="btn btn-ghost flex-1 py-3 text-[15px]">ยกเลิก</button>
+              <button onClick={() => setConfirmDelete(false)} className="btn btn-ghost flex-1 py-3 text-[15px]">ยกเลิก</button>
               <button onClick={() => onDelete(item.id)} className="flex-1 py-3 rounded-[var(--radius-md)] text-[15px] font-bold text-white bg-[var(--red)] active:scale-[0.97] transition-transform">ลบรายการ</button>
             </div>
           </div>

@@ -9,10 +9,6 @@ export interface ExportData {
   expenses: Expense[]
 }
 
-// 🛡️ Type Guard
-const isExpenseRecord = (item: AppRecord | Expense): item is Expense => {
-  return 'amount' in item
-}
 
 export async function exportToExcel(
   data: AppRecord[] | Expense[] | ExportData,
@@ -38,7 +34,7 @@ export async function exportToExcel(
   /* ═══════════════════════════════════════════════════════════════════════════
      Helper Function: สำหรับสร้างหน้า Data Sheet (ใช้ร่วมกันทั้ง 2 Mode)
      ═══════════════════════════════════════════════════════════════════════════ */
-  const createRawSheet = (sheetName: string, isExpense: boolean, items: any[]) => {
+  const createRawSheet = (sheetName: string, isExpense: boolean, items: (AppRecord | Expense)[]) => {
     if (items.length === 0) return
     const ws = workbook.addWorksheet(sheetName)
     
@@ -77,27 +73,29 @@ export async function exportToExcel(
     const monthlyTotals: globalThis.Record<string, number> = {}
 
     items.forEach((item, idx) => {
-      let rowValues: globalThis.Record<string, any> = {}
+      let rowValues: globalThis.Record<string, string | number> = {}
       const dateStr = formatDate(item.created_at)
       const d = new Date(item.created_at)
       const monthKey = d.toLocaleString('th-TH', { month: 'long', year: 'numeric' })
 
       if (isExpense) {
-        totalAmount += item.amount || 0
-        monthlyTotals[monthKey] = (monthlyTotals[monthKey] || 0) + (item.amount || 0)
+        const exp = item as Expense
+        totalAmount += exp.amount || 0
+        monthlyTotals[monthKey] = (monthlyTotals[monthKey] || 0) + (exp.amount || 0)
         rowValues = {
-          no: idx + 1, date: dateStr, title: item.title || '-', note: item.note || '-', amount: item.amount || 0
+          no: idx + 1, date: dateStr, title: exp.title || '-', note: exp.note || '-', amount: exp.amount || 0
         }
       } else {
-        totalAmount += item.price || 0
-        monthlyTotals[monthKey] = (monthlyTotals[monthKey] || 0) + (item.price || 0)
-        if (item.type === 'wash') totalWashCount++
-        if (item.type === 'polish') totalPolishCount++
-        const services = item.services || []
+        const rec = item as AppRecord
+        totalAmount += rec.price || 0
+        monthlyTotals[monthKey] = (monthlyTotals[monthKey] || 0) + (rec.price || 0)
+        if (rec.type === 'wash') totalWashCount++
+        if (rec.type === 'polish') totalPolishCount++
+        const services = rec.services || []
         rowValues = {
-          no: idx + 1, date: dateStr, plate: item.plate || '-', customer: item.customer_name || '-',
-          type: item.type === 'wash' ? 'ล้างรถ' : 'ขัดสี', brand: services[1] || '-', carType: services[0] || '-',
-          status: item.payment_status === 'paid' ? 'ชำระแล้ว' : 'ค้างชำระ', note: services[2] || '-', price: item.price || 0
+          no: idx + 1, date: dateStr, plate: rec.plate || '-', customer: rec.customer_name || '-',
+          type: rec.type === 'wash' ? 'ล้างรถ' : 'ขัดสี', brand: services[1] || '-', carType: services[0] || '-',
+          status: rec.payment_status === 'paid' ? 'ชำระแล้ว' : 'ค้างชำระ', note: services[2] || '-', price: rec.price || 0
         }
       }
 
@@ -132,7 +130,7 @@ export async function exportToExcel(
     })
 
     // จัดความกว้างคอลัมน์อัตโนมัติ (คำนวณอย่างละเอียด)
-    ws.columns.forEach((column, colIndex) => {
+    ws.columns.forEach((column) => {
       let maxCharWidth = 0
       column.eachCell?.({ includeEmpty: true }, (cell) => {
         if (!cell.value) return

@@ -1,98 +1,24 @@
 'use client'
 
-import { useCallback, useEffect, useState, useMemo, memo } from 'react'
-import { supabase } from '@/lib/supabase'
+import { useCallback, useState, useMemo } from 'react'
 import { Record as AppRecord, Expense } from '@/types'
-import RecordCard from '@/components/RecordCard'
 import { exportToExcel } from '@/lib/export'
 import EditModal from '@/components/EditModal'
 import { useToast } from '@/hooks/useToast'
+import { supabase } from '@/lib/supabase'
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   Constants & Types
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-type TabType = 'income' | 'expense'
-type FilterType = 'all' | 'wash' | 'polish'
-
-const START_YEAR = new Date().getFullYear() - 5
-const YEAR_OPTIONS = Array.from({ length: 16 }, (_, i) => START_YEAR + i)
-
-const MONTH_OPTIONS = [
-  { value: 0, label: 'ตลอดทั้งปี' },
-  { value: 1, label: 'มกราคม' }, { value: 2, label: 'กุมภาพันธ์' },
-  { value: 3, label: 'มีนาคม' }, { value: 4, label: 'เมษายน' },
-  { value: 5, label: 'พฤษภาคม' }, { value: 6, label: 'มิถุนายน' },
-  { value: 7, label: 'กรกฎาคม' }, { value: 8, label: 'สิงหาคม' },
-  { value: 9, label: 'กันยายน' }, { value: 10, label: 'ตุลาคม' },
-  { value: 11, label: 'พฤศจิกายน' }, { value: 12, label: 'ธันวาคม' },
-]
-
-const getExpenseIcon = (title: string) => {
-  const t = title || ''
-  if (t.includes('น้ำยา')) return '💧'
-  if (t.includes('แรง')) return '👷'
-  if (t.includes('ข้าว') || t.includes('อาหาร')) return '🍚'
-  if (t.includes('เช่า')) return '🏠'
-  if (t.includes('ไฟ')) return '⚡'
-  if (t.includes('น้ำ')) return '🚰'
-  if (t.includes('ขยะ')) return '🗑️'
-  if (t.includes('อุปกรณ์')) return '🛒'
-  return '💸'
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   Custom Hook (100% original logic)
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-function useHistoryData(selectedYear: number, activeTab: TabType) {
-  const [records, setRecords] = useState<AppRecord[]>([])
-  const [expenses, setExpenses] = useState<Expense[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-
-  const fetchAllData = useCallback(async () => {
-    setLoading(true); setError('')
-    const startOfYear = new Date(selectedYear, 0, 1).toISOString()
-    const endOfYear = new Date(selectedYear + 1, 0, 1).toISOString()
-
-    const [recordsRes, expensesRes] = await Promise.all([
-      supabase.from('records').select('*').gte('created_at', startOfYear).lt('created_at', endOfYear).order('created_at', { ascending: false }),
-      supabase.from('expenses').select('*').gte('created_at', startOfYear).lt('created_at', endOfYear).order('created_at', { ascending: false }),
-    ])
-    if (recordsRes.error) { setError(recordsRes.error.message); setRecords([]) } else setRecords(recordsRes.data ?? [])
-    if (expensesRes.error) { setError(expensesRes.error.message); setExpenses([]) } else setExpenses(expensesRes.data ?? [])
-    setLoading(false)
-  }, [selectedYear])
-
-  useEffect(() => { fetchAllData() }, [fetchAllData])
-
-  const handleDelete = useCallback(async (id: string, onCloseModal: () => void) => {
-    setError('')
-    const table = activeTab === 'income' ? 'records' : 'expenses'
-    const { error } = await supabase.from(table).delete().eq('id', id)
-    if (error) setError(error.message); else { onCloseModal(); fetchAllData() }
-  }, [activeTab, fetchAllData])
-
-  const handleSave = useCallback(async (updatedFields: Partial<AppRecord & Expense>, id: string, onCloseModal: () => void) => {
-    setError('')
-    const table = activeTab === 'income' ? 'records' : 'expenses'
-    const updateData = activeTab === 'income'
-      ? { type: updatedFields.type, plate: updatedFields.plate, price: updatedFields.price, services: updatedFields.services, customer_name: updatedFields.customer_name, payment_status: updatedFields.payment_status, created_at: updatedFields.created_at, updated_by_email: updatedFields.updated_by_email, updated_at: updatedFields.updated_at }
-      : { title: updatedFields.title, amount: updatedFields.amount, note: updatedFields.note, created_at: updatedFields.created_at, updated_by_email: updatedFields.updated_by_email, updated_at: updatedFields.updated_at }
-    const { error } = await supabase.from(table).update(updateData).eq('id', id)
-    if (error) setError(error.message); else { onCloseModal(); fetchAllData() }
-  }, [activeTab, fetchAllData])
-
-  return { records, expenses, loading, error, setError, handleDelete, handleSave }
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   Main Component
-   ═══════════════════════════════════════════════════════════════════════════ */
+import { TabType, FilterType, MONTH_OPTIONS } from '@/components/history/constants'
+import { useHistoryData } from '@/hooks/useHistoryData'
+import { Header } from '@/components/history/Header'
+import { TabToggle } from '@/components/history/TabToggle'
+import { SummaryCard } from '@/components/history/SummaryCard'
+import { FilterSection } from '@/components/history/FilterSection'
+import { HistoryList } from '@/components/history/HistoryList'
+import { ExportModal } from '@/components/history/ExportModal'
+import { ErrorBanner } from '@/components/ui/ErrorBanner'
 
 export default function HistoryPage() {
-  const { error: toastError, info: toastInfo } = useToast()
+  const { info: toastInfo } = useToast()
   const [activeTab, setActiveTab] = useState<TabType>('income')
   const [search, setSearch] = useState('')
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
@@ -153,7 +79,8 @@ export default function HistoryPage() {
 
   const grouped = useMemo(() =>
     filteredItems.reduce((acc, item) => {
-      const date = new Date(item.created_at).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
+      const d = new Date(item.created_at)
+      const date = `${d.getDate()} ${MONTH_OPTIONS[d.getMonth() + 1].label} ${d.getFullYear() + 543}`
       if (!acc[date]) acc[date] = []
       acc[date].push(item)
       return acc
@@ -164,10 +91,7 @@ export default function HistoryPage() {
   const closeModal = useCallback(() => setIsModalOpen(false), [])
 
   const handleExport = useCallback(async (startYear: number, startMonth: number, endYear: number, endMonth: number, mode: 'bank' | 'internal') => {
-    // คำนวณวันที่เริ่ม (วันที่ 1 ของเดือนที่เริ่ม)
     const startDate = new Date(startYear, startMonth - 1, 1).toISOString()
-
-    // คำนวณวันที่สุดท้าย (วันที่ 1 ของเดือนถัดไปจากเดือนที่สิ้นสุด เพื่อใช้ lt)
     const endDate = new Date(endYear, endMonth, 1).toISOString()
 
     const getMonthName = (m: number) => MONTH_OPTIONS.find(opt => opt.value === m)?.label || ''
@@ -191,7 +115,7 @@ export default function HistoryPage() {
 
     exportToExcel(exportData, fileName, mode)
     setIsExportModalOpen(false)
-  }, [])
+  }, [toastInfo])
 
 
   return (
@@ -227,364 +151,6 @@ export default function HistoryPage() {
           onExport={handleExport}
         />
       )}
-    </div>
-  )
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   Sub-Components
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-interface HistoryHeaderProps {
-  selectedMonth: number
-  setSelectedMonth: (v: number) => void
-  selectedYear: number
-  setSelectedYear: (v: number) => void
-}
-
-const Header = memo(function Header({ selectedMonth, setSelectedMonth, selectedYear, setSelectedYear }: HistoryHeaderProps) {
-  return (
-    <header className="flex items-center justify-between fade-up">
-      <h1 className="text-2xl font-extrabold text-[var(--text-primary)] tracking-tight">ประวัติ</h1>
-      <div className="flex gap-2">
-        <select value={selectedMonth} onChange={e => setSelectedMonth(parseInt(e.target.value))} className="input py-2.5 px-3 text-sm w-auto !min-h-[44px] font-bold" aria-label="เลือกเดือน">
-          {MONTH_OPTIONS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-        </select>
-        <select value={selectedYear} onChange={e => setSelectedYear(parseInt(e.target.value))} className="input py-2.5 px-3 text-sm w-auto !min-h-[44px] font-bold" aria-label="เลือกปี">
-          {YEAR_OPTIONS.map(y => <option key={y} value={y}>{y + 543}</option>)}
-        </select>
-      </div>
-    </header>
-  )
-})
-
-const TabToggle = memo(function TabToggle({ activeTab, switchTab }: { activeTab: TabType; switchTab: (t: TabType) => void }) {
-  return (
-    <div className="flex bg-[var(--surface-2)] p-1.5 rounded-2xl gap-1.5 fade-up delay-1" role="tablist" aria-label="สลับประเภทรายการ">
-      <button role="tab" aria-selected={activeTab === 'income'} onClick={() => switchTab('income')} className={`flex-1 py-3.5 rounded-xl text-base font-bold transition-all duration-150 ${activeTab === 'income' ? 'bg-[var(--surface)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-tertiary)]'}`}>
-        💰 รายรับ
-      </button>
-      <button role="tab" aria-selected={activeTab === 'expense'} onClick={() => switchTab('expense')} className={`flex-1 py-3.5 rounded-xl text-base font-bold transition-all duration-150 ${activeTab === 'expense' ? 'bg-[var(--surface)] text-[var(--red)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-tertiary)]'}`}>
-        💸 รายจ่าย
-      </button>
-    </div>
-  )
-})
-
-interface SummaryCardProps {
-  activeTab: TabType
-  selectedMonth: number
-  summary: {
-    totalIncome: number
-    totalExpense: number
-    totalWashCount: number
-    totalPolishCount: number
-    totalWashRevenue: number
-    totalPolishRevenue: number
-  }
-  onExport: () => void
-}
-
-const SummaryCard = memo(function SummaryCard({ activeTab, selectedMonth, summary, onExport }: SummaryCardProps) {
-  const [showRevenue, setShowRevenue] = useState(false)
-
-  return (
-    <section className="card-dark p-5 fade-up delay-1" aria-label="สรุปยอดรวม">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-[13px] text-white/50 mb-1.5 font-medium">
-            {selectedMonth === 0 ? 'ยอดรวมทั้งปี' : `ยอดรวมเดือน${MONTH_OPTIONS.find(m => m.value === selectedMonth)?.label}`}
-          </p>
-          <p className="text-3xl font-extrabold text-white" aria-live="polite">
-            ฿{(activeTab === 'income' ? summary.totalIncome : summary.totalExpense).toLocaleString()}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <div
-            className={`flex items-center gap-2.5 bg-white/10 border border-white/10 rounded-[var(--radius-md)] px-3.5 py-2.5 cursor-pointer hover:bg-white/15 transition-colors ${activeTab !== 'income' ? 'opacity-0 pointer-events-none' : ''}`}
-            onClick={() => setShowRevenue(!showRevenue)}
-            role="button"
-            aria-label="สลับการแสดงผลจำนวนคันและรายได้"
-          >
-            <div className="text-center">
-              <p className="text-[11px] text-white/50 leading-none mb-1">ล้างรถ</p>
-              <p className="text-base font-extrabold text-white leading-none">
-                {showRevenue ? `฿${(summary.totalWashRevenue || 0).toLocaleString()}` : summary.totalWashCount}
-              </p>
-            </div>
-            <div className="w-px h-8 bg-white/15" aria-hidden="true" />
-            <div className="text-center">
-              <p className="text-[11px] text-white/50 leading-none mb-1">ขัดสี</p>
-              <p className="text-base font-extrabold text-white leading-none">
-                {showRevenue ? `฿${(summary.totalPolishRevenue || 0).toLocaleString()}` : summary.totalPolishCount}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {activeTab === 'income' && (
-              <button onClick={onExport} className="flex items-center gap-2 text-sm font-bold text-white/70 bg-white/10 border border-white/10 px-3.5 py-3 rounded-[var(--radius-md)] active:scale-95 transition-transform" aria-label="ดาวน์โหลด Excel">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /><path d="M8 13h2" /><path d="M8 17h2" /><path d="M14 13h2" /><path d="M14 17h2" /></svg>
-                Excel
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    </section>
-  )
-})
-
-interface FilterSectionProps {
-  activeTab: TabType
-  search: string
-  setSearch: (v: string) => void
-  dateFrom: string
-  setDateFrom: (v: string) => void
-  dateTo: string
-  setDateTo: (v: string) => void
-  filterType: FilterType
-  setFilterType: (v: FilterType) => void
-}
-
-function FilterSection({ activeTab, search, setSearch, dateFrom, setDateFrom, dateTo, setDateTo, filterType, setFilterType }: FilterSectionProps) {
-  return (
-    <section className="card p-4 space-y-3 fade-up delay-2" aria-label="ตัวกรอง">
-      <div className="relative">
-        <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] pointer-events-none" width="16" height="16" viewBox="0 0 15 15" fill="none" aria-hidden="true"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" strokeWidth="1.3" /><path d="M10.5 10.5l3 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" /></svg>
-        <input
-          type="text" value={search} onChange={e => setSearch(e.target.value)}
-          placeholder={activeTab === 'income' ? 'ค้นหาทะเบียน หรือชื่อลูกค้า...' : 'ค้นหารายการจ่าย...'}
-          className="input text-[15px] w-full" style={{ paddingLeft: '2.75rem' }}
-          aria-label="ค้นหา"
-        />
-      </div>
-      <div className="flex items-center gap-2">
-        <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="input flex-1 text-sm py-2.5 text-center cursor-pointer !min-h-[44px]" aria-label="วันที่เริ่มต้น" />
-        <span className="text-[var(--text-tertiary)] text-base font-bold shrink-0" aria-hidden="true">—</span>
-        <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="input flex-1 text-sm py-2.5 text-center cursor-pointer !min-h-[44px]" aria-label="วันที่สิ้นสุด" />
-      </div>
-      {activeTab === 'income' && (
-        <div className="flex gap-2" role="group" aria-label="กรองประเภท">
-          {(['all', 'wash', 'polish'] as FilterType[]).map(t => (
-            <button key={t} onClick={() => setFilterType(t)} aria-pressed={filterType === t}
-              className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all duration-150 border-2 ${filterType === t
-                  ? (t === 'all' ? 'bg-[var(--text-primary)] text-white border-transparent' : t === 'wash' ? 'bg-[var(--accent-light)] text-[var(--accent)] border-blue-200' : 'bg-[var(--amber-light)] text-[var(--amber)] border-amber-200')
-                  : 'bg-[var(--surface)] text-[var(--text-secondary)] border-[var(--border)]'
-                }`}
-            >{t === 'all' ? 'ทั้งหมด' : t === 'wash' ? 'ล้างรถ' : 'ขัดสี'}</button>
-          ))}
-        </div>
-      )}
-    </section>
-  )
-}
-
-interface HistoryListProps {
-  loading: boolean
-  grouped: globalThis.Record<string, (AppRecord | Expense)[]>
-  activeTab: TabType
-  onItemClick: (item: AppRecord | Expense) => void
-}
-
-function HistoryList({ loading, grouped, activeTab, onItemClick }: HistoryListProps) {
-  if (loading) {
-    return (
-      <section className="space-y-3 fade-up delay-3" aria-busy="true" aria-label="กำลังโหลดรายการ">
-        {[1, 2, 3, 4].map(i => <div key={i} className="skeleton h-[76px]" />)}
-      </section>
-    )
-  }
-
-  if (Object.keys(grouped).length === 0) {
-    return (
-      <section className="fade-up delay-3">
-        <div className="card p-14 text-center border-dashed border-2 border-[var(--border)]">
-          <p className="text-4xl mb-3 opacity-20" aria-hidden="true">📂</p>
-          <p className="text-base font-bold text-[var(--text-primary)]">ไม่พบรายการ</p>
-          <p className="text-sm text-[var(--text-tertiary)] mt-1.5">ลองเปลี่ยนตัวกรองดูครับ</p>
-        </div>
-      </section>
-    )
-  }
-
-  return (
-    <section className="fade-up delay-3" aria-label="รายการประวัติ">
-      {Object.entries(grouped).map(([date, items]: [string, any]) => {
-        const dayTotal = items.reduce((s: number, i: any) => s + ('price' in i ? i.price : i.amount), 0)
-        const dayWash = items.filter((i: any) => 'type' in i && i.type === 'wash').length
-        const dayPol = items.filter((i: any) => 'type' in i && i.type === 'polish').length
-
-        return (
-          <div key={date} className="mb-6">
-            <div className="sticky top-2 z-10 glass py-2.5 mb-2.5 rounded-xl px-1">
-              <div className="flex items-center gap-2.5">
-
-                <span className="text-sm font-bold text-[var(--text-secondary)] shrink-0">{date}</span>
-                <div className="h-px flex-1 bg-[var(--border)]" aria-hidden="true" />
-                <div className="flex items-center gap-2.5">
-                  {activeTab === 'income' && <span className="text-[11px] text-[var(--text-tertiary)] font-medium shrink-0">ล้าง {dayWash} · ขัด {dayPol}</span>}
-                  <span className={`text-sm font-bold shrink-0 ${activeTab === 'income' ? 'text-[var(--green)]' : 'text-[var(--red)]'}`}>฿{dayTotal.toLocaleString()}</span>
-                </div>
-              </div>
-            </div>
-            <div className="grid gap-2.5">
-              {items.map((item: any) => {
-                return (
-                  <div key={item.id}>
-                    {activeTab === 'income' ? (
-                      <div className="cursor-pointer" onClick={() => onItemClick(item)}>
-                        <RecordCard record={item as AppRecord} />
-                      </div>
-                    ) : (
-                      <div onClick={() => onItemClick(item)} role="button" tabIndex={0} onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && onItemClick(item)}
-                        className="card bg-[var(--surface)] cursor-pointer transition-all duration-150 active:scale-[0.985] overflow-hidden"
-                        aria-label={`${item.title} ${item.amount} บาท`}
-                      >
-                        {/* Accent bar */}
-                        <div className="h-[3px] w-full bg-[var(--red)]" aria-hidden="true" />
-
-                        <div className="flex items-center gap-3.5 px-4 py-4 sm:px-5">
-                          {/* Icon */}
-                          <div className="w-12 h-12 min-w-[48px] rounded-2xl bg-[var(--red-light)] flex items-center justify-center text-xl shrink-0" aria-hidden="true">
-                            {getExpenseIcon(item.title)}
-                          </div>
-
-                          {/* Info */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5 mb-1">
-                              <span className="badge badge-unpaid">รายจ่าย</span>
-                            </div>
-                            <p className="font-extrabold text-[var(--text-primary)] text-[17px] tracking-wide leading-tight truncate">
-                              {item.title}
-                            </p>
-                          </div>
-
-                          {/* Price */}
-                          <div className="text-right shrink-0">
-                            <p className="text-lg font-extrabold leading-tight text-[var(--red)]">
-                              −฿{item.amount.toLocaleString()}
-                            </p>
-                            <p className="text-[12px] text-[var(--text-tertiary)] mt-1 font-medium">
-                              {new Date(item.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    {(item.created_by_email || item.updated_by_email) && (
-                      <div className="flex items-center justify-end gap-3 px-2 mt-1.5 text-[11px] font-semibold text-[var(--text-tertiary)] opacity-60">
-                        {item.created_by_email && <span>➕ {item.created_by_email.split('@')[0]}</span>}
-                        {item.updated_by_email && <span>✏️ {item.updated_by_email.split('@')[0]}</span>}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-
-            </div>
-          </div>
-        )
-      })}
-    </section>
-  )
-}
-
-const ErrorBanner = memo(function ErrorBanner({ error }: { error: string }) {
-  if (!error) return null
-  return (
-    <div className="fixed bottom-28 left-4 right-4 max-w-2xl mx-auto p-4 rounded-[var(--radius-md)] bg-[var(--red)] text-white text-base font-bold text-center fade-up" role="alert" aria-live="assertive">
-      {error}
-    </div>
-  )
-})
-
-interface ExportModalProps {
-  activeTab: TabType
-  defaultYear: number
-  defaultMonth: number
-  onClose: () => void
-  onExport: (startYear: number, startMonth: number, endYear: number, endMonth: number, mode: 'bank' | 'internal') => Promise<void>
-}
-
-function ExportModal({ activeTab, defaultYear, defaultMonth, onClose, onExport }: ExportModalProps) {
-  const { error: toastError } = useToast()
-  const [startYear, setStartYear] = useState(defaultYear)
-  const [startMonth, setStartMonth] = useState(defaultMonth)
-  const [endYear, setEndYear] = useState(defaultYear)
-  const [endMonth, setEndMonth] = useState(defaultMonth)
-  const [exportMode, setExportMode] = useState<'bank' | 'internal'>('bank')
-  const [isExporting, setIsExporting] = useState(false)
-
-  const EXPORT_MONTH_OPTIONS = MONTH_OPTIONS.filter(m => m.value !== 0)
-
-  const handleConfirm = async () => {
-    // Validate range
-    const start = new Date(startYear, startMonth - 1, 1).getTime()
-    const end = new Date(endYear, endMonth - 1, 1).getTime()
-    if (end < start) {
-      toastError('เดือนที่สิ้นสุดต้องอยู่หลังจากเดือนที่เริ่มต้น')
-      return
-    }
-
-    setIsExporting(true)
-    await onExport(startYear, startMonth, endYear, endMonth, exportMode)
-    setIsExporting(false)
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 fade-in" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="bg-[var(--surface)] w-full max-w-md rounded-[28px] p-6 slide-up shadow-2xl">
-        <h2 className="text-xl font-extrabold text-[var(--text-primary)] mb-4 text-center">
-          ส่งออกข้อมูล (Excel)
-        </h2>
-
-        {/* Mode Selection */}
-        <div className="flex bg-[var(--surface-2)] p-1 rounded-xl gap-1 mb-5">
-          <button onClick={() => setExportMode('bank')} className={`flex-1 py-2 rounded-lg text-[13px] font-bold transition-all ${exportMode === 'bank' ? 'bg-[var(--surface)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-tertiary)]'}`}>ฉบับให้ธนาคารดู</button>
-          <button onClick={() => setExportMode('internal')} className={`flex-1 py-2 rounded-lg text-[13px] font-bold transition-all ${exportMode === 'internal' ? 'bg-[var(--surface)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-tertiary)]'}`}>ฉบับดูภายใน (Dashboard)</button>
-        </div>
-
-        <p className="text-sm font-medium text-[var(--text-tertiary)] mb-6 text-center">
-          {exportMode === 'bank' ? `เลือกระยะเวลาที่ต้องการดาวน์โหลดข้อมูล${activeTab === 'income' ? 'รายรับ' : 'รายจ่าย'}` : 'ดาวน์โหลดรายงานสรุปภาพรวมพร้อมข้อมูลดิบ'}
-        </p>
-
-        <div className="space-y-4 mb-6 relative">
-          <div className="absolute left-4 top-1/2 -translate-y-1/2 w-[2px] h-[40px] bg-[var(--border)] -z-10 hidden sm:block" />
-
-          <div className="card bg-[var(--surface-2)] p-4 border border-[var(--border)] relative z-0">
-            <label className="block text-[13px] font-bold text-[var(--text-secondary)] mb-2">ตั้งแต่ (เริ่มต้น)</label>
-            <div className="flex gap-2">
-              <select value={startMonth} onChange={e => setStartMonth(parseInt(e.target.value))} className="input py-2.5 px-3 text-sm flex-1 font-bold">
-                {EXPORT_MONTH_OPTIONS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-              </select>
-              <select value={startYear} onChange={e => setStartYear(parseInt(e.target.value))} className="input py-2.5 px-3 text-sm flex-1 font-bold">
-                {YEAR_OPTIONS.map(y => <option key={y} value={y}>{y + 543}</option>)}
-              </select>
-            </div>
-          </div>
-
-          <div className="card bg-[var(--surface-2)] p-4 border border-[var(--border)] relative z-0">
-            <label className="block text-[13px] font-bold text-[var(--text-secondary)] mb-2">ถึง (สิ้นสุด)</label>
-            <div className="flex gap-2">
-              <select value={endMonth} onChange={e => setEndMonth(parseInt(e.target.value))} className="input py-2.5 px-3 text-sm flex-1 font-bold">
-                {EXPORT_MONTH_OPTIONS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-              </select>
-              <select value={endYear} onChange={e => setEndYear(parseInt(e.target.value))} className="input py-2.5 px-3 text-sm flex-1 font-bold">
-                {YEAR_OPTIONS.map(y => <option key={y} value={y}>{y + 543}</option>)}
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex gap-3 mt-2">
-          <button onClick={onClose} className="flex-1 py-3.5 rounded-xl font-bold text-[var(--text-secondary)] bg-[var(--surface-2)] active:scale-95 transition-transform">
-            ยกเลิก
-          </button>
-          <button onClick={handleConfirm} disabled={isExporting} className="flex-1 py-3.5 rounded-xl font-bold text-white bg-[var(--accent)] active:scale-95 transition-transform flex justify-center items-center gap-2">
-            {isExporting ? <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'ดาวน์โหลด'}
-          </button>
-        </div>
-      </div>
     </div>
   )
 }
