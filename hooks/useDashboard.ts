@@ -154,6 +154,12 @@ export function useDashboard() {
     const now = new Date().toISOString()
     
     try {
+      // Optimistic update: ลบรายการออกจาก unpaidRecords ล่วงหน้าเพื่อให้ UI ตอบสนองทันที
+      setUnpaidRecords(prev => prev.filter(r => {
+        const name = (r.customer_name || '').trim() || 'ลูกค้าทั่วไป (ไม่ระบุชื่อ)'
+        return name !== (isGeneral ? 'ลูกค้าทั่วไป (ไม่ระบุชื่อ)' : customerName)
+      }))
+
       const { error } = await supabase
         .from('records')
         .update({ payment_status: 'paid', updated_at: now, updated_by_email: userEmail })
@@ -161,13 +167,16 @@ export function useDashboard() {
         .eq('customer_name', targetName)
 
       if (!error) {
-        fetchData()
+        fetchData() // ดึงข้อมูลใหม่เพื่ออัปเดตสถิติรวม (netProfit, etc.)
         toastSuccess('ทำเครื่องหมายชำระเงินเรียบร้อย')
       } else {
+        // Rollback ถ้ามี error
+        fetchData()
         console.error('[Dashboard] markAllAsPaidByCustomer DB Error:', error)
         toastError('บันทึกข้อมูลไม่สำเร็จ: ' + error.message)
       }
     } catch (err) {
+      fetchData() // Rollback
       console.error('[Dashboard] markAllAsPaidByCustomer Unexpected Error:', err)
       toastError('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์')
     }
