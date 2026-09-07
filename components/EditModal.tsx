@@ -117,7 +117,7 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
       aria-modal="true"
       aria-label={`แก้ไข${isIncome ? 'รายรับ' : 'รายจ่าย'}`}
     >
-      <div ref={modalRef} className="bg-white w-full max-w-md rounded-t-[28px] sm:rounded-[28px] slide-up overflow-hidden max-h-[90dvh] flex flex-col">
+      <div ref={modalRef} className="bg-[var(--surface)] w-full max-w-md rounded-t-[28px] sm:rounded-[28px] slide-up overflow-hidden max-h-[90dvh] flex flex-col">
 
         {/* Handle bar (mobile) */}
         <div className="flex justify-center pt-3 pb-1 sm:hidden shrink-0" aria-hidden="true">
@@ -153,10 +153,10 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
                 <label className="label">ประเภทบริการ</label>
                 <div className="grid grid-cols-2 gap-2.5">
                   <button type="button" onClick={() => setRecordType('wash')} aria-pressed={recordType === 'wash'}
-                    className={`py-3 rounded-[var(--radius-md)] border-2 text-[15px] font-bold transition-all duration-150 flex items-center justify-center gap-2 ${recordType === 'wash' ? 'bg-[var(--accent-light)] text-[var(--accent)] border-[var(--accent)]' : 'bg-white text-[var(--text-secondary)] border-[var(--border)]'}`}
+                    className={`py-3 rounded-[var(--radius-md)] border-2 text-[15px] font-bold transition-all duration-150 flex items-center justify-center gap-2 ${recordType === 'wash' ? 'bg-[var(--accent-light)] text-[var(--accent)] border-[var(--accent)]' : 'bg-[var(--surface)] text-[var(--text-secondary)] border-[var(--border)]'}`}
                   >🚗 ล้างรถ</button>
                   <button type="button" onClick={() => setRecordType('polish')} aria-pressed={recordType === 'polish'}
-                    className={`py-3 rounded-[var(--radius-md)] border-2 text-[15px] font-bold transition-all duration-150 flex items-center justify-center gap-2 ${recordType === 'polish' ? 'bg-[var(--amber-light)] text-[var(--amber)] border-[var(--amber)]' : 'bg-white text-[var(--text-secondary)] border-[var(--border)]'}`}
+                    className={`py-3 rounded-[var(--radius-md)] border-2 text-[15px] font-bold transition-all duration-150 flex items-center justify-center gap-2 ${recordType === 'polish' ? 'bg-[var(--amber-light)] text-[var(--amber)] border-[var(--amber)]' : 'bg-[var(--surface)] text-[var(--text-secondary)] border-[var(--border)]'}`}
                   >✨ ขัดสี</button>
                 </div>
               </div>
@@ -180,10 +180,10 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
                   <label className="label">สถานะ</label>
                   <div className="flex flex-col gap-2">
                     <button type="button" onClick={() => setPaymentStatus('paid')} aria-pressed={paymentStatus === 'paid'}
-                      className={`flex items-center justify-center gap-2 py-2.5 rounded-[var(--radius-md)] border-2 text-sm font-bold transition-all duration-150 ${paymentStatus === 'paid' ? 'bg-[var(--green-light)] text-[var(--green)] border-[var(--green)]' : 'bg-white text-[var(--text-secondary)] border-[var(--border)]'}`}
+                      className={`flex items-center justify-center gap-2 py-2.5 rounded-[var(--radius-md)] border-2 text-sm font-bold transition-all duration-150 ${paymentStatus === 'paid' ? 'bg-[var(--green-light)] text-[var(--green)] border-[var(--green)]' : 'bg-[var(--surface)] text-[var(--text-secondary)] border-[var(--border)]'}`}
                     >✅ ชำระแล้ว</button>
                     <button type="button" onClick={() => setPaymentStatus('unpaid')} aria-pressed={paymentStatus === 'unpaid'}
-                      className={`flex items-center justify-center gap-2 py-2.5 rounded-[var(--radius-md)] border-2 text-sm font-bold transition-all duration-150 ${paymentStatus === 'unpaid' ? 'bg-[var(--red-light)] text-[var(--red)] border-[var(--red)]' : 'bg-white text-[var(--text-secondary)] border-[var(--border)]'}`}
+                      className={`flex items-center justify-center gap-2 py-2.5 rounded-[var(--radius-md)] border-2 text-sm font-bold transition-all duration-150 ${paymentStatus === 'unpaid' ? 'bg-[var(--red-light)] text-[var(--red)] border-[var(--red)]' : 'bg-[var(--surface)] text-[var(--text-secondary)] border-[var(--border)]'}`}
                     >⏳ ค้างชำระ</button>
                   </div>
                 </div>
@@ -194,11 +194,11 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
                 <label className="label">ยี่ห้อรถ</label>
                 <div ref={scrollRef} onMouseDown={handleMouseDown} onMouseLeave={handleMouseLeave} onMouseUp={handleMouseUp} onMouseMove={handleMouseMove} className="flex gap-2 overflow-x-auto pb-1 no-scrollbar cursor-grab active:cursor-grabbing">
                   <button type="button" onClick={() => setSelectedBrand('')} aria-pressed={selectedBrand === ''}
-                    className={`flex-shrink-0 px-3.5 py-2 rounded-[var(--radius-md)] border-2 text-sm font-bold transition-all duration-150 ${selectedBrand === '' ? 'bg-[var(--text-primary)] text-white border-transparent' : 'bg-white text-[var(--text-secondary)] border-[var(--border)]'}`}
+                    className={`flex-shrink-0 px-3.5 py-2 rounded-[var(--radius-md)] border-2 text-sm font-bold transition-all duration-150 ${selectedBrand === '' ? 'bg-[var(--text-primary)] text-white border-transparent' : 'bg-[var(--surface)] text-[var(--text-secondary)] border-[var(--border)]'}`}
                   >ไม่ระบุ</button>
                   {CAR_BRANDS.map(b => (
                     <button key={b.id} type="button" onClick={() => setSelectedBrand(b.name)} aria-pressed={selectedBrand === b.name}
-                      className={`flex-shrink-0 px-3.5 py-2 rounded-[var(--radius-md)] border-2 text-sm font-bold transition-all duration-150 ${selectedBrand === b.name ? 'bg-[var(--text-primary)] text-white border-transparent' : 'bg-white text-[var(--text-secondary)] border-[var(--border)]'}`}
+                      className={`flex-shrink-0 px-3.5 py-2 rounded-[var(--radius-md)] border-2 text-sm font-bold transition-all duration-150 ${selectedBrand === b.name ? 'bg-[var(--text-primary)] text-white border-transparent' : 'bg-[var(--surface)] text-[var(--text-secondary)] border-[var(--border)]'}`}
                     >{b.name}</button>
                   ))}
                 </div>
@@ -210,7 +210,7 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
                 <div className="grid grid-cols-3 gap-2">
                   {CAR_TYPES.map(t => (
                     <button key={t.id} type="button" onClick={() => setSelectedType(t.name)} aria-pressed={selectedType === t.name}
-                      className={`flex items-center gap-2 px-3 py-3 rounded-[var(--radius-md)] border-2 text-sm font-bold transition-all duration-150 ${selectedType === t.name ? 'bg-[var(--text-primary)] text-white border-transparent' : 'bg-white text-[var(--text-secondary)] border-[var(--border)]'}`}
+                      className={`flex items-center gap-2 px-3 py-3 rounded-[var(--radius-md)] border-2 text-sm font-bold transition-all duration-150 ${selectedType === t.name ? 'bg-[var(--text-primary)] text-white border-transparent' : 'bg-[var(--surface)] text-[var(--text-secondary)] border-[var(--border)]'}`}
                     >
                       <span className="text-base leading-none" aria-hidden="true">{t.icon}</span>
                       <span className="truncate">{t.name.split(' /')[0]}</span>
@@ -249,7 +249,7 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
             )}
             <div className="h-[1px] bg-[var(--border)] w-full my-1" aria-hidden="true" />
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center shadow-sm text-[11px] border border-[var(--border)]" aria-hidden="true">👤</div>
+              <div className="w-8 h-8 rounded-xl bg-[var(--surface)] flex items-center justify-center shadow-sm text-[11px] border border-[var(--border)]" aria-hidden="true">👤</div>
               <div><p className="text-[11px] font-bold uppercase tracking-widest text-[var(--text-tertiary)]">บัญชีปัจจุบัน</p><p className="text-sm font-bold text-[var(--text-primary)]">{currentUserEmail || '...'}</p></div>
             </div>
           </div>
@@ -257,7 +257,7 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
 
         {/* Delete confirm */}
         {confirmDelete && (
-          <div className="mx-6 mb-4 p-5 rounded-[var(--radius-lg)] bg-[var(--red-light)] border-2 border-red-200 shrink-0">
+          <div className="mx-6 mb-4 p-5 rounded-[var(--radius-lg)] bg-[var(--red-light)] border-2 border-[rgba(239,68,68,0.2)] shrink-0">
             <p className="text-base font-bold text-[var(--red)] mb-3">ยืนยันลบรายการนี้?</p>
             <div className="flex gap-2.5">
               <button onClick={() => setConfirmDelete(false)} className="btn btn-ghost flex-1 py-3 text-[15px]">ยกเลิก</button>

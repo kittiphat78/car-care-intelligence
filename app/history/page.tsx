@@ -259,10 +259,10 @@ const Header = memo(function Header({ selectedMonth, setSelectedMonth, selectedY
 const TabToggle = memo(function TabToggle({ activeTab, switchTab }: { activeTab: TabType; switchTab: (t: TabType) => void }) {
   return (
     <div className="flex bg-[var(--surface-2)] p-1.5 rounded-2xl gap-1.5 fade-up delay-1" role="tablist" aria-label="สลับประเภทรายการ">
-      <button role="tab" aria-selected={activeTab === 'income'} onClick={() => switchTab('income')} className={`flex-1 py-3.5 rounded-xl text-base font-bold transition-all duration-150 ${activeTab === 'income' ? 'bg-white text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-tertiary)]'}`}>
+      <button role="tab" aria-selected={activeTab === 'income'} onClick={() => switchTab('income')} className={`flex-1 py-3.5 rounded-xl text-base font-bold transition-all duration-150 ${activeTab === 'income' ? 'bg-[var(--surface)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-tertiary)]'}`}>
         💰 รายรับ
       </button>
-      <button role="tab" aria-selected={activeTab === 'expense'} onClick={() => switchTab('expense')} className={`flex-1 py-3.5 rounded-xl text-base font-bold transition-all duration-150 ${activeTab === 'expense' ? 'bg-white text-[var(--red)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-tertiary)]'}`}>
+      <button role="tab" aria-selected={activeTab === 'expense'} onClick={() => switchTab('expense')} className={`flex-1 py-3.5 rounded-xl text-base font-bold transition-all duration-150 ${activeTab === 'expense' ? 'bg-[var(--surface)] text-[var(--red)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-tertiary)]'}`}>
         💸 รายจ่าย
       </button>
     </div>
@@ -367,7 +367,7 @@ function FilterSection({ activeTab, search, setSearch, dateFrom, setDateFrom, da
             <button key={t} onClick={() => setFilterType(t)} aria-pressed={filterType === t}
               className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all duration-150 border-2 ${filterType === t
                   ? (t === 'all' ? 'bg-[var(--text-primary)] text-white border-transparent' : t === 'wash' ? 'bg-[var(--accent-light)] text-[var(--accent)] border-blue-200' : 'bg-[var(--amber-light)] text-[var(--amber)] border-amber-200')
-                  : 'bg-white text-[var(--text-secondary)] border-[var(--border)]'
+                  : 'bg-[var(--surface)] text-[var(--text-secondary)] border-[var(--border)]'
                 }`}
             >{t === 'all' ? 'ทั้งหมด' : t === 'wash' ? 'ล้างรถ' : 'ขัดสี'}</button>
           ))}
@@ -435,7 +435,7 @@ function HistoryList({ loading, grouped, activeTab, onItemClick }: HistoryListPr
                       </div>
                     ) : (
                       <div onClick={() => onItemClick(item)} role="button" tabIndex={0} onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && onItemClick(item)}
-                        className="card bg-white cursor-pointer transition-all duration-150 active:scale-[0.985] overflow-hidden"
+                        className="card bg-[var(--surface)] cursor-pointer transition-all duration-150 active:scale-[0.985] overflow-hidden"
                         aria-label={`${item.title} ${item.amount} บาท`}
                       >
                         {/* Accent bar */}
@@ -530,15 +530,15 @@ function ExportModal({ activeTab, defaultYear, defaultMonth, onClose, onExport }
 
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 fade-in" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="bg-white w-full max-w-md rounded-[28px] p-6 slide-up shadow-2xl">
+      <div className="bg-[var(--surface)] w-full max-w-md rounded-[28px] p-6 slide-up shadow-2xl">
         <h2 className="text-xl font-extrabold text-[var(--text-primary)] mb-4 text-center">
           ส่งออกข้อมูล (Excel)
         </h2>
 
         {/* Mode Selection */}
         <div className="flex bg-[var(--surface-2)] p-1 rounded-xl gap-1 mb-5">
-          <button onClick={() => setExportMode('bank')} className={`flex-1 py-2 rounded-lg text-[13px] font-bold transition-all ${exportMode === 'bank' ? 'bg-white text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-tertiary)]'}`}>ฉบับให้ธนาคารดู</button>
-          <button onClick={() => setExportMode('internal')} className={`flex-1 py-2 rounded-lg text-[13px] font-bold transition-all ${exportMode === 'internal' ? 'bg-white text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-tertiary)]'}`}>ฉบับดูภายใน (Dashboard)</button>
+          <button onClick={() => setExportMode('bank')} className={`flex-1 py-2 rounded-lg text-[13px] font-bold transition-all ${exportMode === 'bank' ? 'bg-[var(--surface)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-tertiary)]'}`}>ฉบับให้ธนาคารดู</button>
+          <button onClick={() => setExportMode('internal')} className={`flex-1 py-2 rounded-lg text-[13px] font-bold transition-all ${exportMode === 'internal' ? 'bg-[var(--surface)] text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-tertiary)]'}`}>ฉบับดูภายใน (Dashboard)</button>
         </div>
 
         <p className="text-sm font-medium text-[var(--text-tertiary)] mb-6 text-center">

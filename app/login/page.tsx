@@ -102,7 +102,7 @@ export default function LoginPage() {
           <label htmlFor="login-remember" className="flex items-center gap-3 cursor-pointer py-1 group w-max">
             <div className="relative">
               <input id="login-remember" type="checkbox" className="sr-only peer" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} />
-              <div className="w-6 h-6 rounded-lg border-2 border-[var(--border)] bg-white peer-checked:bg-[var(--accent)] peer-checked:border-[var(--accent)] transition-all flex items-center justify-center">
+              <div className="w-6 h-6 rounded-lg border-2 border-[var(--border)] bg-[var(--surface)] peer-checked:bg-[var(--accent)] peer-checked:border-[var(--accent)] transition-all flex items-center justify-center">
                 {rememberMe && <CheckIcon />}
               </div>
             </div>
