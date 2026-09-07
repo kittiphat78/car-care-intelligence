@@ -16,7 +16,8 @@ export default function LoginPage() {
 
   useEffect(() => {
     const saved = localStorage.getItem('remembered_email')
-    // eslint-disable-next-line react-hooks/set-state-in-effect`n    if (saved) { setEmail(saved); setRememberMe(true) }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (saved) { setEmail(saved); setRememberMe(true) }
   }, [])
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
