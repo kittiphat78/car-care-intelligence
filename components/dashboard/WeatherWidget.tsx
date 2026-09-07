@@ -2,7 +2,15 @@ import { memo } from 'react'
 import { WeatherData } from '@/hooks/useWeather'
 import { AISparklesIcon } from '@/components/icons/DashboardIcons'
 
-export const WeatherWidget = memo(function WeatherWidget({ weather }: { weather: WeatherData }) {
+export const WeatherWidget = memo(function WeatherWidget({ 
+  weather,
+  onRefresh,
+  isRefreshing
+}: { 
+  weather: WeatherData
+  onRefresh: () => void
+  isRefreshing: boolean
+}) {
   // ตรวจจับว่าเป็นธีมเข้ม (กลางคืน) จากค่าสี background
   const isDark = weather.bgClass.includes('#1E') || weather.bgClass.includes('#0F') || weather.bgClass.includes('#0C') || weather.bgClass.includes('#2E') || weather.bgClass.includes('#31')
   const glassLight = isDark ? 'bg-white/10 border-white/15' : 'bg-white/40 border-white/50'
@@ -21,10 +29,19 @@ export const WeatherWidget = memo(function WeatherWidget({ weather }: { weather:
           <div>
             <div className="flex items-center gap-2 mb-1.5">
               <p className={`text-[11px] font-extrabold uppercase tracking-widest opacity-80 ${weather.textClass}`}>เมืองเชียงราย 📍</p>
-              <span className={`flex items-center gap-1 ${updateBg} px-2 py-0.5 rounded-full border`}>
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" aria-hidden="true" />
+              <button
+                onClick={onRefresh}
+                disabled={isRefreshing}
+                className={`flex items-center gap-1.5 ${updateBg} px-2.5 py-1 rounded-full border cursor-pointer hover:opacity-80 active:scale-95 transition-all disabled:opacity-50`}
+                aria-label="รีเฟรชสภาพอากาศ"
+              >
+                {isRefreshing ? (
+                  <svg className="animate-spin w-3 h-3 text-white" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                ) : (
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" aria-hidden="true" />
+                )}
                 <span className={`text-[10px] font-bold opacity-70 ${weather.textClass}`}>อัปเดต {weather.lastUpdated} น.</span>
-              </span>
+              </button>
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
               <span className={`text-[13px] font-bold px-2.5 py-1 rounded-lg shadow-sm ${weather.badgeClass}`}>{weather.condition} {weather.temp}°C</span>
@@ -35,11 +52,15 @@ export const WeatherWidget = memo(function WeatherWidget({ weather }: { weather:
           </div>
         </div>
         {weather.prob > 0 && (
-          <div className={`text-right shrink-0 ${glassLight} px-3 py-2 rounded-xl border shadow-sm`}>
-            <p className={`text-[10px] font-bold uppercase tracking-wider opacity-70 ${weather.textClass}`}>โอกาสฝน</p>
+          <div className={`text-right shrink-0 px-3.5 py-2.5 rounded-2xl border shadow-sm transition-colors duration-300 ${
+            weather.prob > 40
+              ? 'bg-gradient-to-br from-red-500 to-rose-600 border-red-400 shadow-red-500/40 text-white'
+              : glassLight
+          }`}>
+            <p className={`text-[10px] font-bold uppercase tracking-wider ${weather.prob > 40 ? 'text-white/90' : `opacity-70 ${weather.textClass}`}`}>โอกาสฝน</p>
             <div className="flex items-baseline justify-end gap-0.5 mt-0.5">
-              <p className={`text-lg font-extrabold leading-none ${weather.textClass}`}>{weather.prob}</p>
-              <p className={`text-xs font-bold ${weather.textClass}`}>%</p>
+              <p className={`text-2xl font-black leading-none ${weather.prob > 40 ? 'text-white' : weather.textClass}`}>{weather.prob}</p>
+              <p className={`text-xs font-bold ${weather.prob > 40 ? 'text-white/90' : weather.textClass}`}>%</p>
             </div>
           </div>
         )}

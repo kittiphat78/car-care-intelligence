@@ -140,35 +140,34 @@ function getWeatherTheme(group: string, isNight: boolean) {
 
 // ── สร้างข้อความแนะนำสำหรับร้านล้างรถ ──
 function buildWeatherMessage(group: string, prob: number, probTom: number, temp: number, humidity: number): string {
-  // ตอนกลางคืน (ร้านปิด)
   const hour = new Date().getHours()
   if (hour >= 20 || hour < 6) {
-    if (probTom > 50) return `พรุ่งนี้มีโอกาสฝนตก ${probTom}% อย่าลืมเก็บอุปกรณ์เข้าที่กันน้ำก่อนกลับบ้านนะครับ!`
-    return 'หมดเวลาทำงานแล้ว พักผ่อนให้เต็มที่ พรุ่งนี้ลุยใหม่ครับ! 💪'
+    if (probTom > 50) return `⚠️ พรุ่งนี้ฝนตก ${probTom}% รีบเก็บอุปกรณ์เข้าที่ร่ม!`
+    return 'พักผ่อนให้เต็มที่ พรุ่งนี้ลุยใหม่ครับ 💪'
   }
 
   switch (group) {
     case 'clear':
-      if (temp >= 38) return `แดดแรงมาก (${temp}°C) ดื่มน้ำเยอะๆ ลูกค้าอาจอยากได้เคลือบเงาป้องกัน UV ให้แนะนำบริการเสริมเลยครับ!`
-      if (prob > 50) return `ตอนนี้ฟ้าเปิด แต่เดี๋ยวจะมีโอกาสฝนตก ${prob}% รีบกอบโกยก่อนฝนมาเลยครับ!`
-      if (probTom > 50) return `วันนี้อากาศดี ลุยเต็มที่เลยครับ! (พรุ่งนี้มีแววฝนตก ${probTom}%)`
-      return 'ท้องฟ้าแจ่มใส ลูกค้าเข้าต่อเนื่องแน่นอน เตรียมกำลังคนและน้ำยาให้พร้อมลุย!'
+      if (temp >= 38) return `🔥 แดดจัด ${temp}°C แนะนำลูกค้าเคลือบเงากัน UV เลย!`
+      if (prob > 50) return `⚠️ ตอนนี้ฟ้าเปิด แต่เดี๋ยวฝนจะตก ${prob}% รีบล้างรีบเช็ด!`
+      if (probTom > 50) return `วันนี้ลุยเต็มที่! (พรุ่งนี้มีแววฝน ${probTom}%)`
+      return '☀️ ฟ้าโปร่ง ลูกค้าเยอะแน่ เตรียมคนและน้ำยาให้พร้อม!'
     case 'cloudy':
-      if (prob > 50) return `เมฆเยอะ โอกาสฝนตก ${prob}% ให้เตรียมผ้าใบคลุมรถที่ล้างเสร็จไว้ด้วยนะครับ!`
-      return 'ฟ้าครึ้มๆ แต่ยังพอทำงานได้ดี อากาศไม่ร้อนมาก ช่างทำงานสบายครับ'
+      if (prob > 50) return `⚠️ ครึ้มฟ้าครึ้มฝน โอกาสตก ${prob}% เตรียมผ้าใบคลุมรถ!`
+      return '☁️ อากาศครึ้ม ไม่ร้อน ช่างทำงานสบาย'
     case 'fog':
-      return 'หมอกลงหนา ทัศนวิสัยต่ำ ระวังลูกค้าเข้าออกลานจอด ดูแลความปลอดภัยให้ดีครับ'
+      return '🌫️ หมอกลง ทัศนวิสัยต่ำ ระวังรถเข้าออกลานจอด'
     case 'drizzle':
-      return 'ฝนปรอยๆ ลูกค้าอาจชะลอเข้าร้าน ใช้เวลานี้เช็คสต๊อกน้ำยาและเตรียมอุปกรณ์ให้พร้อมครับ'
+      return '🌧️ ฝนปรอยๆ ถือโอกาสเช็คสต๊อกน้ำยาและอุปกรณ์'
     case 'rain':
-      if (humidity > 85) return `ฝนตก ความชื้นสูง (${humidity}%) รถที่ล้างเสร็จจะแห้งช้า ให้เช็ดซ้ำก่อนส่งมอบลูกค้านะครับ`
-      return 'ฟ้าฝนไม่เป็นใจ ลูกค้าน่าจะเงียบ ให้ลูกน้องสลับพักหรือเช็คสต๊อกน้ำยาได้เลยครับ'
+      if (humidity > 85) return `💧 ความชื้นสูง ${humidity}% รถแห้งช้า ต้องเช็ดซ้ำให้ดี`
+      return '🌧️ ฝนตก ให้ลูกน้องพักหรือจัดร้านได้เลย'
     case 'heavyrain':
-      return '⚠️ ฝนตกหนักมาก ระวังน้ำท่วมลาน ให้หยุดรับงานชั่วคราวและเก็บอุปกรณ์ให้ดีครับ'
+      return '🚨 ฝนตกหนัก! ระวังน้ำท่วมลาน เก็บอุปกรณ์ให้พ้นน้ำ!'
     case 'storm':
-      return '⛈️ พายุเข้า! หยุดทำงานกลางแจ้ง อพยพเข้าที่กำบัง ระวังฟ้าผ่าและลมแรงครับ!'
+      return '⛈️ พายุเข้า! งดงานกลางแจ้ง ระวังฟ้าผ่า!'
     default:
-      return 'กำลังวิเคราะห์สภาพอากาศ...'
+      return 'กำลังวิเคราะห์อากาศ...'
   }
 }
 
@@ -177,17 +176,18 @@ function formatUpdateTime(date: Date): string {
   return date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
 }
 
-// ── ตั้งค่า interval ──
-const FETCH_INTERVAL_MS = 5 * 60 * 1000   // ⏱️ ดึงข้อมูลทุก 5 นาที (เดิม 15 นาที)
-const RETRY_DELAY_MS = 30 * 1000          // 🔄 retry ถ้า fetch ล้มเหลว ทุก 30 วินาที
+const FETCH_INTERVAL_MS = 5 * 60 * 1000
+const RETRY_DELAY_MS = 30 * 1000
 const MAX_RETRIES = 3
 
 export function useWeather() {
   const [weather, setWeather] = useState<WeatherData | null>(null)
+  const [isRefetching, setIsRefetching] = useState(false)
   const retryCountRef = useRef(0)
   const retryTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   const fetchWeather = useCallback(async function fetchWeatherFn(signal?: AbortSignal) {
+    setIsRefetching(true)
     const timestamp = Date.now()
     const hour = new Date().getHours()
     const isNight = hour >= 18 || hour < 6
@@ -199,68 +199,63 @@ export function useWeather() {
     let aqiStatus = { label: 'รอข้อมูล', colorClass: 'bg-gray-100 text-gray-500 border-gray-300' };
     let fetchSuccess = false;
 
-    // ── 1. ดึงข้อมูลอากาศ ──
-    try {
-      const wRes = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=19.91&longitude=99.84&current=temperature_2m,weather_code,relative_humidity_2m,apparent_temperature,wind_speed_10m&hourly=precipitation_probability&daily=precipitation_probability_max&timezone=Asia%2FBangkok&forecast_days=2&_t=${timestamp}`,
-        { cache: 'no-store', signal }
-      );
+    const weatherReq = fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=19.91&longitude=99.84&current=temperature_2m,weather_code,relative_humidity_2m,apparent_temperature,wind_speed_10m&hourly=precipitation_probability&daily=precipitation_probability_max&timezone=Asia%2FBangkok&forecast_days=2&_t=${timestamp}`,
+      { cache: 'no-store', signal }
+    ).then(res => {
+      if (!res.ok) throw new Error('Weather API error')
+      return res.json()
+    })
+
+    const aqiReq = fetch(
+      `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=19.91&longitude=99.84&current=us_aqi&timezone=Asia%2FBangkok&_t=${timestamp}`,
+      { cache: 'no-store', signal }
+    ).then(res => {
+      if (!res.ok) throw new Error('AQI API error')
+      return res.json()
+    })
+
+    const [wResult, aqResult] = await Promise.allSettled([weatherReq, aqiReq])
+
+    if (wResult.status === 'fulfilled') {
+      const data = wResult.value
+      const currentCode = data.current?.weather_code ?? 0;
+      temp = Math.round(data.current?.temperature_2m ?? 30);
+      feelsLike = Math.round(data.current?.apparent_temperature ?? temp);
+      humidity = Math.round(data.current?.relative_humidity_2m ?? 0);
+      windSpeed = Math.round(data.current?.wind_speed_10m ?? 0);
       
-      if (wRes.ok) {
-        const data = await wRes.json();
-        const currentCode = data.current?.weather_code ?? 0;
-        temp = Math.round(data.current?.temperature_2m ?? 30);
-        feelsLike = Math.round(data.current?.apparent_temperature ?? temp);
-        humidity = Math.round(data.current?.relative_humidity_2m ?? 0);
-        windSpeed = Math.round(data.current?.wind_speed_10m ?? 0);
+      const currentHour = new Date().getHours();
+      const remainingProbsToday = data.hourly?.precipitation_probability?.slice(currentHour, 24) || [];
+      prob = remainingProbsToday.length > 0 
+        ? Math.max(...remainingProbsToday) 
+        : (data.daily?.precipitation_probability_max?.[0] ?? 0);
         
-        // หา precipitation probability ที่เหลือของวันนี้
-        const currentHour = new Date().getHours();
-        const remainingProbsToday = data.hourly?.precipitation_probability?.slice(currentHour, 24) || [];
-        prob = remainingProbsToday.length > 0 
-          ? Math.max(...remainingProbsToday) 
-          : (data.daily?.precipitation_probability_max?.[0] ?? 0);
-          
-        probTom = data.daily?.precipitation_probability_max?.[1] ?? 0;
+      probTom = data.daily?.precipitation_probability_max?.[1] ?? 0;
 
-        // แปลง weather code เป็น icon + condition
-        const mapped = mapWeatherCode(currentCode, isNight);
-        icon = mapped.icon;
-        condition = mapped.condition;
-        weatherGroup = mapped.group;
-        
-        fetchSuccess = true;
-      }
-    } catch (err: unknown) { 
-      if (err instanceof Error && err.name !== 'AbortError') console.error("โหลดอากาศไม่สำเร็จ:", err) 
+      const mapped = mapWeatherCode(currentCode, isNight);
+      icon = mapped.icon;
+      condition = mapped.condition;
+      weatherGroup = mapped.group;
+      fetchSuccess = true;
     }
 
-    // ── 2. ดึงข้อมูลคุณภาพอากาศ (AQI) ──
-    try {
-      const aqRes = await fetch(
-        `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=19.91&longitude=99.84&current=us_aqi&timezone=Asia%2FBangkok&_t=${timestamp}`,
-        { cache: 'no-store', signal }
-      );
-      if (aqRes.ok) {
-        const aqData = await aqRes.json();
-        aqiValue = Math.round(aqData.current?.us_aqi ?? 0);
-        fetchSuccess = true;
-      }
-    } catch (err: unknown) { 
-      if (err instanceof Error && err.name !== 'AbortError') console.error("โหลดฝุ่นไม่สำเร็จ:", err) 
+    if (aqResult.status === 'fulfilled') {
+      const aqData = aqResult.value
+      aqiValue = Math.round(aqData.current?.us_aqi ?? 0);
+      fetchSuccess = true;
     }
 
-    // ── 3. ถ้าดึงไม่สำเร็จเลย → retry ──
     if (!fetchSuccess) {
+      setIsRefetching(false)
       if (retryCountRef.current < MAX_RETRIES) {
         retryCountRef.current++
         retryTimerRef.current = setTimeout(() => fetchWeatherFn(signal), RETRY_DELAY_MS)
       }
-      return // ไม่ update state ถ้าไม่มีข้อมูลใหม่
+      return
     }
-    retryCountRef.current = 0 // reset retry counter
+    retryCountRef.current = 0
 
-    // ── 4. จัดระดับ AQI ──
     if (aqiValue > 300) {
       aqiStatus = { label: 'วิกฤต', colorClass: 'bg-[#4C0519] text-white border-[#881337]' };
     } else if (aqiValue > 200) {
@@ -275,15 +270,13 @@ export function useWeather() {
       aqiStatus = { label: 'ดี', colorClass: 'bg-green-100 text-green-700 border-green-300' };
     }
 
-    // ── 5. สร้างข้อความ + theme ──
     let message = buildWeatherMessage(weatherGroup, prob, probTom, temp, humidity);
     const theme = getWeatherTheme(weatherGroup, isNight);
 
-    // เพิ่มคำเตือน AQI ถ้าสูง
     if (aqiValue > 200) {
-      message += ' 🚨 ฝุ่นระดับสีม่วง (200+) อันตรายมาก ให้ช่างใส่หน้ากาก N95 ด้วยนะครับ!'
+      message += ' 🚨 ฝุ่นม่วง (200+) ช่างต้องใส่ N95 ครับ!'
     } else if (aqiValue > 150) {
-      message += ' 😷 ปล. ตอนนี้ฝุ่นเริ่มแดง อย่าลืมให้ช่างใส่หน้ากากป้องกันตอนทำงานนะครับ'
+      message += ' 😷 ฝุ่นเริ่มแดง ใส่หน้ากากอนามัยด้วยนะครับ'
     }
 
     setWeather({
@@ -292,24 +285,31 @@ export function useWeather() {
       ...theme,
       lastUpdated: formatUpdateTime(new Date()),
     });
+    
+    setIsRefetching(false)
   }, [])
 
   useEffect(() => {
-    // 🛡️ สร้าง AbortController ใหม่ทุกครั้งที่ mount (แก้ bug เดิม)
     const controller = new AbortController()
 
-    // fetch ทันที
     fetchWeather(controller.signal)
 
-    // ⏱️ ตั้ง interval 5 นาที (เดิม 15 นาที)
     const intervalId = setInterval(() => fetchWeather(controller.signal), FETCH_INTERVAL_MS)
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchWeather()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
 
     return () => {
       clearInterval(intervalId)
       controller.abort()
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
       if (retryTimerRef.current) clearTimeout(retryTimerRef.current)
     }
   }, [fetchWeather])
 
-  return weather
+  return { data: weather, refetch: fetchWeather, isRefetching }
 }

@@ -17,7 +17,7 @@ import { RecordListSection } from '@/components/dashboard/RecordListSection'
 import { UnpaidModal } from '@/components/dashboard/UnpaidModal'
 
 export default function Dashboard() {
-  const weather = useWeather()
+  const { data: weather, refetch: refreshWeather, isRefetching: isRefreshingWeather } = useWeather()
   const dash = useDashboard()
   const [isUnpaidModalOpen, setIsUnpaidModalOpen] = useState(false)
 
@@ -29,7 +29,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-dvh px-4 pt-6 space-y-5">
       <Header userEmail={dash.userEmail} onLogout={dash.logout} />
-      {weather && <WeatherWidget weather={weather} />}
+      {weather && <WeatherWidget weather={weather} onRefresh={refreshWeather} isRefreshing={isRefreshingWeather} />}
       {dash.totalUnpaidAmount > 0 && <UnpaidAlert totalAmount={dash.totalUnpaidAmount} onClick={openUnpaid} />}
       <NetProfitHero stats={dash.stats} />
       <StatsRow stats={dash.stats} />
