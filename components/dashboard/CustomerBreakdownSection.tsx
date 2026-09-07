@@ -54,41 +54,38 @@ export const CustomerBreakdownSection = memo(function CustomerBreakdownSection({
   )
 })
 
-const TIME_PERIODS: { key: 'week' | 'month' | 'year'; label: string; icon: string }[] = [
-  { key: 'week', label: 'สัปดาห์นี้', icon: '📅' },
-  { key: 'month', label: 'เดือนนี้', icon: '📆' },
-  { key: 'year', label: 'ปีนี้', icon: '📊' },
-]
-
-const PeriodRow = memo(function PeriodRow({ label, icon, period }: { label: string; icon: string; period: CustomerTimePeriod }) {
+const PeriodDetail = memo(function PeriodDetail({
+  title,
+  period
+}: {
+  title: string
+  period: CustomerTimePeriod
+}) {
   if (period.total === 0) return null
+
   return (
     <div className="py-3 border-t border-[var(--border)]">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-[13px] font-bold text-[var(--text-secondary)]">{icon} {label}</span>
+        <span className="text-[13px] font-bold text-[var(--text-secondary)]">{title}</span>
         <span className="text-[15px] font-black text-[var(--text-primary)]">฿{period.total.toLocaleString()}</span>
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="space-y-1.5 pl-1">
         {period.washCount > 0 && (
-          <div
-            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5"
-            style={{ background: 'var(--accent-light)', border: '1px solid rgba(37,99,235,0.12)' }}
-          >
-            <span className="text-[11px]" aria-hidden="true">💧</span>
-            <span className="text-[12px] font-bold" style={{ color: 'var(--accent)' }}>
-              ล้าง {period.washCount} คัน · ฿{period.washAmount.toLocaleString()}
-            </span>
+          <div className="flex items-center justify-between text-[13px]">
+            <div className="flex items-center gap-2 text-[var(--text-secondary)]">
+              <span className="text-[11px]" aria-hidden="true">💧</span>
+              <span>ล้างรถ ({period.washCount} คัน)</span>
+            </div>
+            <span className="font-semibold text-[var(--text-primary)]">฿{period.washAmount.toLocaleString()}</span>
           </div>
         )}
         {period.polishCount > 0 && (
-          <div
-            className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5"
-            style={{ background: 'var(--amber-light)', border: '1px solid rgba(217,119,6,0.15)' }}
-          >
-            <span className="text-[11px]" aria-hidden="true">✨</span>
-            <span className="text-[12px] font-bold" style={{ color: '#92400E' }}>
-              ขัดสี {period.polishCount} คัน · ฿{period.polishAmount.toLocaleString()}
-            </span>
+          <div className="flex items-center justify-between text-[13px]">
+            <div className="flex items-center gap-2 text-[var(--text-secondary)]">
+              <span className="text-[11px]" aria-hidden="true">✨</span>
+              <span>ขัดสี ({period.polishCount} คัน)</span>
+            </div>
+            <span className="font-semibold text-[var(--text-primary)]">฿{period.polishAmount.toLocaleString()}</span>
           </div>
         )}
       </div>
@@ -148,7 +145,7 @@ const CustomerBreakdownCard = memo(function CustomerBreakdownCard({
                 {item.customerName}
               </p>
               <p className="text-[12px] text-[var(--text-tertiary)] font-medium mt-0.5">
-                เดือนนี้ {totalCars} คัน
+                บริการ {totalCars} คัน
               </p>
             </div>
           </div>
@@ -160,7 +157,7 @@ const CustomerBreakdownCard = memo(function CustomerBreakdownCard({
               >
                 ฿{monthData.total.toLocaleString()}
               </p>
-              <p className="text-[11px] text-[var(--text-tertiary)] font-medium mt-0.5">เดือนนี้</p>
+              <p className="text-[11px] text-[var(--text-tertiary)] font-medium mt-0.5">ยอดเดือนนี้</p>
             </div>
             <svg
               className={`w-5 h-5 text-[var(--text-tertiary)] transition-transform duration-200 ${expanded ? 'rotate-180' : ''}`}
@@ -176,12 +173,12 @@ const CustomerBreakdownCard = memo(function CustomerBreakdownCard({
           <div className="flex flex-wrap gap-1.5 mt-2.5">
             {monthData.washCount > 0 && (
               <span className="text-[11px] font-bold px-2 py-0.5 rounded-md" style={{ background: 'var(--accent-light)', color: 'var(--accent)' }}>
-                💧 ล้าง {monthData.washCount} · ฿{monthData.washAmount.toLocaleString()}
+                💧 ล้าง {monthData.washCount}
               </span>
             )}
             {monthData.polishCount > 0 && (
               <span className="text-[11px] font-bold px-2 py-0.5 rounded-md" style={{ background: 'var(--amber-light)', color: '#92400E' }}>
-                ✨ ขัดสี {monthData.polishCount} · ฿{monthData.polishAmount.toLocaleString()}
+                ✨ ขัดสี {monthData.polishCount}
               </span>
             )}
           </div>
@@ -194,21 +191,15 @@ const CustomerBreakdownCard = memo(function CustomerBreakdownCard({
         style={{ maxHeight: expanded ? '500px' : '0', opacity: expanded ? 1 : 0 }}
       >
         <div className="px-4 pb-4 sm:px-5">
-          {TIME_PERIODS.map(({ key, label, icon }) => (
-            <PeriodRow key={key} label={label} icon={icon} period={item[key]} />
-          ))}
-
           {/* Progress bar: wash vs polish ratio for the month */}
           {monthData.washCount > 0 && monthData.polishCount > 0 && (
-            <div className="mt-3 pt-3 border-t border-[var(--border)]">
-              <p className="text-[11px] font-bold text-[var(--text-tertiary)] mb-1.5">สัดส่วนเดือนนี้</p>
+            <div className="mb-3 mt-1">
               <div className="h-1.5 rounded-full overflow-hidden flex" style={{ background: 'var(--surface-2)' }}>
                 <div
                   className="h-full transition-all duration-500"
                   style={{
                     width: `${Math.round((monthData.washAmount / monthData.total) * 100)}%`,
                     background: 'var(--accent)',
-                    borderRadius: '999px 0 0 999px',
                   }}
                   aria-hidden="true"
                 />
@@ -217,20 +208,16 @@ const CustomerBreakdownCard = memo(function CustomerBreakdownCard({
                   style={{
                     width: `${Math.round((monthData.polishAmount / monthData.total) * 100)}%`,
                     background: 'var(--amber)',
-                    borderRadius: '0 999px 999px 0',
                   }}
                   aria-hidden="true"
                 />
               </div>
-              <div className="flex justify-between mt-1">
-                <span className="text-[10px] font-bold" style={{ color: 'var(--accent)' }}>
-                  ล้าง {Math.round((monthData.washAmount / monthData.total) * 100)}%
-                </span>
-                <span className="text-[10px] font-bold" style={{ color: 'var(--amber)' }}>
-                  ขัด {Math.round((monthData.polishAmount / monthData.total) * 100)}%
-                </span>
-              </div>
             </div>
+          )}
+
+          <PeriodDetail title="🗓️ สรุปยอดเดือนนี้" period={item.month} />
+          {item.year.total > item.month.total && (
+            <PeriodDetail title="📊 ภาพรวมสะสมปีนี้" period={item.year} />
           )}
         </div>
       </div>
