@@ -187,7 +187,7 @@ export function useWeather() {
   const retryCountRef = useRef(0)
   const retryTimerRef = useRef<NodeJS.Timeout | null>(null)
 
-  const fetchWeather = useCallback(async (signal?: AbortSignal) => {
+  const fetchWeather = useCallback(async function fetchWeatherFn(signal?: AbortSignal) {
     const timestamp = Date.now()
     const hour = new Date().getHours()
     const isNight = hour >= 18 || hour < 6
@@ -254,7 +254,7 @@ export function useWeather() {
     if (!fetchSuccess) {
       if (retryCountRef.current < MAX_RETRIES) {
         retryCountRef.current++
-        retryTimerRef.current = setTimeout(() => fetchWeather(signal), RETRY_DELAY_MS)
+        retryTimerRef.current = setTimeout(() => fetchWeatherFn(signal), RETRY_DELAY_MS)
       }
       return // ไม่ update state ถ้าไม่มีข้อมูลใหม่
     }

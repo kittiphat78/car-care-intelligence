@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Record as AppRecord, Expense } from '@/types' // ✅ alias `AppRecord` เพื่อไม่ให้ซ้ำกับ TypeScript `Record<K,T>`
+import { Record as AppRecord, Expense } from '@/types'
+import { useToast } from '@/hooks/useToast'
 
 export type ChartMode = 'week' | 'month'
 export interface CustomerTimePeriod {
@@ -34,6 +35,7 @@ export interface DashboardStats {
 
 export function useDashboard() {
   const router = useRouter()
+  const { error: toastError, success: toastSuccess } = useToast()
   
   // ── States ──
   const [userEmail, setUserEmail]               = useState('')
@@ -145,10 +147,11 @@ export function useDashboard() {
 
     if (!error) {
       fetchData()
+      toastSuccess('ทำเครื่องหมายชำระเงินเรียบร้อย')
     } else {
-      alert('เกิดข้อผิดพลาด: ' + error.message)
+      toastError('เกิดข้อผิดพลาด: ' + error.message)
     }
-  }, [userEmail, fetchData])
+  }, [userEmail, fetchData, toastSuccess, toastError])
 
   // ── Derived State & Computations (Memoized) ──
 

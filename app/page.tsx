@@ -8,6 +8,7 @@ import { useDashboard, DashboardStats, CustomerBreakdownItem, CustomerTimePeriod
 import { Record as AppRecord } from '@/types'
 import { generateCashBill } from '@/lib/generateBill'
 import { useTheme } from '@/hooks/useTheme'
+import { useToast } from '@/hooks/useToast'
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Dashboard — Main Entry
@@ -326,7 +327,7 @@ const RecordListSection = memo(function RecordListSection({ dash }: { dash: Retu
         </button>
       </div>
       {dash.records.length === 0 ? (
-        <div className="card p-12 text-center border-dashed border-2">
+        <div className="card p-12 text-center border-dashed border-2 border-[var(--border)]">
           <p className="text-4xl mb-3 opacity-20" aria-hidden="true">🚗</p>
           <p className="text-base font-bold text-[var(--text-primary)]">ยังไม่มีงานวันนี้</p>
           <p className="text-sm text-[var(--text-tertiary)] mt-1.5">กด + เพื่อเพิ่มรายการใหม่</p>
@@ -369,7 +370,7 @@ const CustomerBreakdownSection = memo(function CustomerBreakdownSection({
       </div>
 
       {activeCustomers.length === 0 ? (
-        <div className="card p-10 text-center border-dashed border-2">
+        <div className="card p-10 text-center border-dashed border-2 border-[var(--border)]">
           <p className="text-3xl mb-2 opacity-20" aria-hidden="true">👥</p>
           <p className="text-sm font-bold text-[var(--text-tertiary)]">ยังไม่มีข้อมูลในช่วงนี้</p>
         </div>
@@ -611,6 +612,8 @@ function getOverdueBadgeStyle(days: number): { bg: string; text: string; border:
 const UnpaidModal = memo(function UnpaidModal({ unpaidData, totalAmount, onClose, onMarkPaid }: {
   unpaidData: UnpaidGroup[]; totalAmount: number; onClose: () => void; onMarkPaid: (name: string) => void
 }) {
+  const { error: toastError } = useToast()
+  
   // ✅ ใช้ useEffect แทนการเรียก side effect ตรงใน render body
   useEffect(() => {
     document.body.classList.add('modal-open')
@@ -631,11 +634,11 @@ const UnpaidModal = memo(function UnpaidModal({ unpaidData, totalAmount, onClose
       await generateCashBill(items, customerName)
     } catch (e) {
       console.error(e)
-      alert('ไม่สามารถสร้างบิลได้')
+      toastError('ไม่สามารถสร้างบิลได้')
     } finally {
       setGeneratingBillFor(null)
     }
-  }, [])
+  }, [toastError])
 
   return (
     <div

@@ -6,6 +6,7 @@ import { Record as AppRecord, Expense } from '@/types'
 import RecordCard from '@/components/RecordCard'
 import { exportToExcel } from '@/lib/export'
 import EditModal from '@/components/EditModal'
+import { useToast } from '@/hooks/useToast'
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Constants & Types
@@ -91,6 +92,7 @@ function useHistoryData(selectedYear: number, activeTab: TabType) {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 export default function HistoryPage() {
+  const { error: toastError, info: toastInfo } = useToast()
   const [activeTab, setActiveTab] = useState<TabType>('income')
   const [search, setSearch] = useState('')
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
@@ -179,7 +181,7 @@ export default function HistoryPage() {
     ])
 
     if ((!records || records.length === 0) && (!expenses || expenses.length === 0)) {
-      alert('ไม่พบข้อมูลในช่วงเวลาที่เลือก')
+      toastInfo('ไม่พบข้อมูลในช่วงเวลาที่เลือก')
       setIsExportModalOpen(false)
       return
     }
@@ -396,7 +398,7 @@ function HistoryList({ loading, grouped, activeTab, onItemClick }: HistoryListPr
   if (Object.keys(grouped).length === 0) {
     return (
       <section className="fade-up delay-3">
-        <div className="card p-14 text-center border-dashed border-2">
+        <div className="card p-14 text-center border-dashed border-2 border-[var(--border)]">
           <p className="text-4xl mb-3 opacity-20" aria-hidden="true">📂</p>
           <p className="text-base font-bold text-[var(--text-primary)]">ไม่พบรายการ</p>
           <p className="text-sm text-[var(--text-tertiary)] mt-1.5">ลองเปลี่ยนตัวกรองดูครับ</p>
@@ -505,6 +507,7 @@ interface ExportModalProps {
 }
 
 function ExportModal({ activeTab, defaultYear, defaultMonth, onClose, onExport }: ExportModalProps) {
+  const { error: toastError } = useToast()
   const [startYear, setStartYear] = useState(defaultYear)
   const [startMonth, setStartMonth] = useState(defaultMonth)
   const [endYear, setEndYear] = useState(defaultYear)
@@ -519,7 +522,7 @@ function ExportModal({ activeTab, defaultYear, defaultMonth, onClose, onExport }
     const start = new Date(startYear, startMonth - 1, 1).getTime()
     const end = new Date(endYear, endMonth - 1, 1).getTime()
     if (end < start) {
-      alert('เดือนที่สิ้นสุดต้องอยู่หลังจากเดือนที่เริ่มต้น')
+      toastError('เดือนที่สิ้นสุดต้องอยู่หลังจากเดือนที่เริ่มต้น')
       return
     }
 
