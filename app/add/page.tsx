@@ -282,7 +282,7 @@ const SectionLabel = ({ children, required }: { children: React.ReactNode; requi
   </label>
 )
 const Card = ({ children, className = '', onClick }: { children: React.ReactNode; className?: string; onClick?: () => void }) => (
-  <div className={`bg-white rounded-[var(--radius-xl)] p-5 shadow-[var(--shadow-sm)] border border-[var(--border)] ${className}`} onClick={onClick}>{children}</div>
+  <div className={`bg-[var(--surface)] rounded-[var(--radius-xl)] p-5 shadow-[var(--shadow-sm)] border border-[var(--border)] ${className}`} onClick={onClick}>{children}</div>
 )
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -295,13 +295,13 @@ const ModeToggle = memo(function ModeToggle({ mode, onChange }: { mode: FormMode
       <button
         role="tab" aria-selected={mode === 'income'} aria-controls="income-panel"
         onClick={() => onChange('income')}
-        className={`flex-1 py-3.5 rounded-xl text-base font-bold transition-all duration-150 active:scale-[0.98] ${mode === 'income' ? 'bg-white text-[var(--accent)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-tertiary)]'
+        className={`flex-1 py-3.5 rounded-xl text-base font-bold transition-all duration-150 active:scale-[0.98] ${mode === 'income' ? 'bg-[var(--surface)] text-[var(--accent)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-tertiary)]'
           }`}
       >💰 รายรับ</button>
       <button
         role="tab" aria-selected={mode === 'expense'} aria-controls="expense-panel"
         onClick={() => onChange('expense')}
-        className={`flex-1 py-3.5 rounded-xl text-base font-bold transition-all duration-150 active:scale-[0.98] ${mode === 'expense' ? 'bg-white text-[var(--red)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-tertiary)]'
+        className={`flex-1 py-3.5 rounded-xl text-base font-bold transition-all duration-150 active:scale-[0.98] ${mode === 'expense' ? 'bg-[var(--surface)] text-[var(--red)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-tertiary)]'
           }`}
       >💸 รายจ่าย</button>
     </div>
@@ -325,7 +325,7 @@ const SuccessBanner = memo(function SuccessBanner({ message }: { message: string
 const ErrorBanner = memo(function ErrorBanner({ error }: { error: string }) {
   if (!error) return null
   return (
-    <div className="w-full p-4 rounded-[var(--radius-md)] bg-[var(--red-light)] border-2 border-red-200 text-[var(--red)] text-sm font-bold text-center fade-up" role="alert" aria-live="assertive">
+    <div className="w-full p-4 rounded-[var(--radius-md)] bg-[var(--red-light)] border-2 border-[rgba(239,68,68,0.2)] text-[var(--red)] text-sm font-bold text-center fade-up" role="alert" aria-live="assertive">
       🚨 {error}
     </div>
   )
@@ -433,17 +433,17 @@ function IncomeForm({ states, setters }: IncomeFormProps) {
               value={plate}
               onChange={e => setPlate(e.target.value.toUpperCase())}
               placeholder="กข 1234"
-              className="w-full text-center text-2xl font-extrabold tracking-widest py-4 bg-white border-2 border-[var(--border)] rounded-xl transition-all uppercase placeholder:font-medium placeholder:text-[var(--text-tertiary)] placeholder:tracking-normal focus:border-[var(--accent)] focus:shadow-[0_0_0_4px_rgba(37,99,235,0.08)]"
+              className="w-full text-center text-2xl font-extrabold tracking-widest py-4 bg-[var(--surface)] border-2 border-[var(--border)] rounded-xl transition-all uppercase placeholder:font-medium placeholder:text-[var(--text-tertiary)] placeholder:tracking-normal focus:border-[var(--accent)] focus:shadow-[0_0_0_4px_rgba(37,99,235,0.08)]"
               aria-required="true"
               aria-label="ป้ายทะเบียนรถ"
               autoComplete="off"
             />
           </div>
           {visitCount > 0 && (
-            <div className="mt-3 bg-[var(--amber-light)] border-2 border-amber-200 rounded-xl p-3 flex items-center justify-center gap-2.5 scale-in">
+            <div className="mt-3 bg-[var(--amber-light)] border-2 border-[rgba(245,158,11,0.2)] rounded-xl p-3 flex items-center justify-center gap-2.5 scale-in">
               <span className="text-lg leading-none" aria-hidden="true">🎉</span>
               <p className="text-[14px] font-bold text-[var(--amber)]">
-                ลูกค้าประจำ! เข้ามาครั้งที่ <span className="text-base text-amber-600 bg-white px-2 py-0.5 rounded-lg shadow-sm ml-0.5 font-extrabold">{visitCount + 1}</span>
+                ลูกค้าประจำ! เข้ามาครั้งที่ <span className="text-base text-[var(--amber)] bg-[var(--surface)] px-2 py-0.5 rounded-lg shadow-sm ml-0.5 font-extrabold">{visitCount + 1}</span>
               </p>
             </div>
           )}
@@ -451,7 +451,7 @@ function IncomeForm({ states, setters }: IncomeFormProps) {
 
         <Card>
           <SectionLabel required>ราคา (บาท)</SectionLabel>
-          <div className="relative flex items-center bg-[var(--surface-2)] rounded-xl border-2 border-transparent focus-within:border-[var(--accent)] focus-within:bg-white transition-all mt-2 h-[64px]">
+          <div className="relative flex items-center bg-[var(--surface-2)] rounded-xl border-2 border-transparent focus-within:border-[var(--accent)] focus-within:bg-[var(--surface)] transition-all mt-2 h-[64px]">
             <span className="absolute left-4 text-xl font-bold text-[var(--text-tertiary)] select-none" aria-hidden="true">฿</span>
             <input
               type="text"
@@ -516,7 +516,7 @@ function IncomeForm({ states, setters }: IncomeFormProps) {
               className={`px-4 py-2.5 rounded-xl border-2 text-sm font-bold transition-all duration-150 active:scale-95
                 ${selectedBrand === b.id
                   ? 'border-[var(--accent)] bg-[var(--accent)] text-white shadow-md shadow-blue-500/15'
-                  : 'border-[var(--border)] bg-white text-[var(--text-secondary)]'
+                  : 'border-[var(--border)] bg-[var(--surface)] text-[var(--text-secondary)]'
                 }`}
               aria-pressed={selectedBrand === b.id}
             >{b.name}</button>
@@ -576,7 +576,7 @@ function IncomeForm({ states, setters }: IncomeFormProps) {
                 className={`inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border-2 text-sm font-bold transition-all duration-150 active:scale-95
                   ${customerName === name
                     ? 'border-[var(--accent)] bg-[var(--accent)] text-white shadow-md shadow-blue-500/15'
-                    : 'border-[var(--border)] bg-white text-[var(--text-secondary)]'
+                    : 'border-[var(--border)] bg-[var(--surface)] text-[var(--text-secondary)]'
                   }`}
                 aria-pressed={customerName === name}
               >
@@ -653,8 +653,8 @@ function ExpenseForm({ states, setters }: ExpenseFormProps) {
     <div className="space-y-4 fade-up" id="expense-panel" role="tabpanel">
       <Card>
         <SectionLabel required>จำนวนเงินที่จ่าย (บาท)</SectionLabel>
-        <div className="relative flex items-center bg-red-50/50 rounded-xl border-2 border-transparent focus-within:border-[var(--red)] focus-within:bg-white transition-all mt-2 h-[64px]">
-          <span className="absolute left-4 text-xl font-bold text-red-300 select-none" aria-hidden="true">฿</span>
+        <div className="relative flex items-center bg-[var(--red-light)] rounded-xl border-2 border-transparent focus-within:border-[var(--red)] focus-within:bg-[var(--surface)] transition-all mt-2 h-[64px]">
+          <span className="absolute left-4 text-xl font-bold text-[var(--red)]/30 select-none" aria-hidden="true">฿</span>
           <input
             type="text"
             inputMode="numeric"
@@ -680,7 +680,7 @@ function ExpenseForm({ states, setters }: ExpenseFormProps) {
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 text-sm font-bold transition-all duration-150 active:scale-95
                 ${states.title === preset.label
                   ? 'bg-[var(--red)] text-white border-[var(--red)] shadow-md shadow-red-500/15'
-                  : 'bg-white text-[var(--text-secondary)] border-[var(--border)]'
+                  : 'bg-[var(--surface)] text-[var(--text-secondary)] border-[var(--border)]'
                 }`}
               aria-pressed={states.title === preset.label}
             >
@@ -716,7 +716,7 @@ function ActionButtons({ mode, saving, onSubmit }: { mode: FormMode; saving: boo
       <button
         onClick={() => onSubmit(true)}
         disabled={saving}
-        className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-white border-2 border-[var(--border)] rounded-2xl text-[15px] font-bold text-[var(--text-secondary)] active:scale-[0.98] transition-transform disabled:opacity-50"
+        className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-[var(--surface)] border-2 border-[var(--border)] rounded-2xl text-[15px] font-bold text-[var(--text-secondary)] active:scale-[0.98] transition-transform disabled:opacity-50"
         aria-label="บันทึกแล้วทำรายการต่อ"
         aria-busy={saving}
       >
@@ -754,7 +754,7 @@ function ServiceTypeButton({ active, onClick, icon, label, sublabel, color }: {
       type="button"
       onClick={onClick}
       className={`relative flex items-center gap-3.5 p-4 rounded-[var(--radius-xl)] border-2 transition-all duration-150 active:scale-[0.97]
-        ${active ? `${colors.border} ${colors.bg}` : 'border-[var(--border)] bg-white'
+        ${active ? `${colors.border} ${colors.bg}` : 'border-[var(--border)] bg-[var(--surface)]'
         }`}
       aria-pressed={active}
       aria-label={`${label} ${sublabel}`}
