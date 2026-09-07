@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, memo, useCallback, useMemo, useEffect } from 'react'
-import { Area, AreaChart, BarChart, Bar, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from 'recharts'
+import { useState, memo, useCallback, useEffect } from 'react'
+import { BarChart, Bar, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from 'recharts'
 import RecordCard from '@/components/RecordCard'
 import { useWeather, WeatherData } from '@/hooks/useWeather'
 import { useDashboard, DashboardStats, CustomerBreakdownItem, CustomerTimePeriod } from '@/hooks/useDashboard'
 import { Record as AppRecord } from '@/types'
 import { generateCashBill } from '@/lib/generateBill'
+import { useTheme } from '@/hooks/useTheme'
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Dashboard — Main Entry
@@ -78,6 +79,7 @@ const LoadingSkeleton = memo(function LoadingSkeleton() {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 const Header = memo(function Header({ userEmail, onLogout }: { userEmail: string; onLogout: () => void }) {
+  const { theme, toggle } = useTheme()
   return (
     <header className="flex items-center justify-between fade-up">
       <div>
@@ -86,9 +88,18 @@ const Header = memo(function Header({ userEmail, onLogout }: { userEmail: string
           {userEmail.split('@')[0] || 'Admin'}
         </h2>
       </div>
-      <button onClick={onLogout} className="btn btn-ghost text-sm py-2.5 px-4" aria-label="ออกจากระบบ">
-        ออกจากระบบ
-      </button>
+      <div className="flex items-center gap-2">
+        <button onClick={toggle} className="theme-toggle" aria-label={`เปลี่ยนเป็นโหมด${theme === 'dark' ? 'สว่าง' : 'มืด'}`}>
+          {theme === 'dark' ? (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          )}
+        </button>
+        <button onClick={onLogout} className="btn btn-ghost text-sm py-2.5 px-4" aria-label="ออกจากระบบ">
+          ออกจากระบบ
+        </button>
+      </div>
     </header>
   )
 })
@@ -210,18 +221,18 @@ const StatsRow = memo(function StatsRow({ stats }: { stats: DashboardStats }) {
     <section className="grid grid-cols-3 gap-3 fade-up delay-3" aria-label="สถิติวันนี้">
       {/* รายจ่าย */}
       <div className="card p-4 flex flex-col justify-between h-32">
-        <div className="w-9 h-9 rounded-2xl bg-red-50 flex items-center justify-center text-[var(--red)] border border-red-100 shrink-0">
+        <div className="w-9 h-9 rounded-2xl flex items-center justify-center text-[var(--red)] shrink-0" style={{ background: 'var(--red-light)' }}>
           <ExpenseIcon />
         </div>
         <div>
-          <p className="text-lg font-extrabold text-[var(--red)] leading-tight">฿{stats.todayExpense.toLocaleString()}</p>
+          <p className="text-lg font-extrabold text-[var(--red)] leading-tight tabular-nums">฿{stats.todayExpense.toLocaleString()}</p>
           <p className="text-[11px] font-bold text-[var(--text-tertiary)] uppercase tracking-wide mt-1">รายจ่าย</p>
         </div>
       </div>
 
       {/* ล้างรถ */}
       <div className="card p-4 flex flex-col justify-between h-32">
-        <div className="w-9 h-9 rounded-2xl bg-blue-50 flex items-center justify-center text-[var(--accent)] border border-blue-100 shrink-0">
+        <div className="w-9 h-9 rounded-2xl flex items-center justify-center text-[var(--accent)] shrink-0" style={{ background: 'var(--accent-light)' }}>
           <WashIcon />
         </div>
         <div>
@@ -235,7 +246,7 @@ const StatsRow = memo(function StatsRow({ stats }: { stats: DashboardStats }) {
 
       {/* ขัดสี */}
       <div className="card p-4 flex flex-col justify-between h-32">
-        <div className="w-9 h-9 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600 border border-purple-100 shrink-0">
+        <div className="w-9 h-9 rounded-2xl flex items-center justify-center text-[var(--amber)] shrink-0" style={{ background: 'var(--amber-light)' }}>
           <AISparklesIcon />
         </div>
         <div>
@@ -253,17 +264,25 @@ const StatsRow = memo(function StatsRow({ stats }: { stats: DashboardStats }) {
 
 
 const ChartsSection = memo(function ChartsSection({ dash }: { dash: ReturnType<typeof useDashboard> }) {
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
+  const gridColor = isDark ? 'rgba(255,255,255,0.06)' : '#E5E7EB'
+  const tickColor = isDark ? '#6B7280' : '#8A847C'
+  const tooltipBg = isDark ? '#1C1C27' : '#FFFFFF'
+  const tooltipBorder = isDark ? 'rgba(255,255,255,0.1)' : 'var(--border)'
+
   return (
     <>
       <div className="flex items-center justify-between fade-up delay-4 mt-5 mb-2.5 px-1">
         <h3 className="text-base font-bold text-[var(--text-primary)] tracking-tight">ภาพรวมร้าน 📊</h3>
-        <div className="flex bg-[var(--surface-2)] p-1 rounded-xl gap-1">
+        <div className="flex p-1 rounded-xl gap-1" style={{ background: 'var(--surface-2)' }}>
           {(['week', 'month'] as const).map(m => (
             <button
               key={m}
               onClick={() => dash.setChartMode(m)}
-              className={`px-3.5 py-2 rounded-lg text-sm font-bold transition-all duration-150 ${dash.chartMode === m ? 'bg-white text-[var(--text-primary)] shadow-[var(--shadow-sm)]' : 'text-[var(--text-tertiary)]'
+              className={`px-3.5 py-2 rounded-lg text-sm font-bold transition-all duration-150 ${dash.chartMode === m ? 'text-[var(--text-primary)] shadow-sm' : 'text-[var(--text-tertiary)]'
                 }`}
+              style={dash.chartMode === m ? { background: 'var(--surface)', boxShadow: 'var(--shadow-sm)' } : undefined}
               aria-pressed={dash.chartMode === m}
             >
               {m === 'week' ? '7 วัน' : '30 วัน'}
@@ -276,12 +295,12 @@ const ChartsSection = memo(function ChartsSection({ dash }: { dash: ReturnType<t
         <div className="h-48">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={dash.chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-              <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: '#8A847C', fontSize: 11, fontWeight: 600 }} dy={8} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fill: '#8A847C', fontSize: 11, fontWeight: 600 }} dx={-5} />
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={gridColor} />
+              <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: tickColor, fontSize: 11, fontWeight: 600 }} dy={8} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: tickColor, fontSize: 11, fontWeight: 600 }} dx={-5} />
               <Tooltip
                 formatter={(value, name) => [`฿${(Number(value) || 0).toLocaleString()}`, name === 'income' || name === 'รายรับ' ? 'รายรับ' : 'รายจ่าย']}
-                contentStyle={{ borderRadius: '14px', border: '1px solid var(--border)', boxShadow: 'var(--shadow-md)', fontSize: '14px', fontWeight: 700, padding: '10px 16px' }}
+                contentStyle={{ borderRadius: '14px', border: `1px solid ${tooltipBorder}`, background: tooltipBg, boxShadow: 'var(--shadow-lg)', fontSize: '14px', fontWeight: 700, padding: '10px 16px', color: 'var(--text-primary)' }}
               />
               <Legend verticalAlign="top" align="right" iconType="circle" wrapperStyle={{ fontSize: '11px', fontWeight: 600, paddingBottom: '15px' }} />
               <Bar dataKey="income" fill="#8B5CF6" radius={[4, 4, 0, 0]} name="รายรับ" barSize={16} />
@@ -581,12 +600,12 @@ function formatThaiDate(dateStr: string): string {
   return d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' })
 }
 
-/** เลือกสีตาม severity ของจำนวนวันค้าง */
+/** เลือกสีตาม severity ของจำนวนวันค้าง — theme-aware */
 function getOverdueBadgeStyle(days: number): { bg: string; text: string; border: string } {
-  if (days >= 14) return { bg: 'bg-red-50', text: 'text-red-600', border: 'border-red-200' }
-  if (days >= 7) return { bg: 'bg-orange-50', text: 'text-orange-600', border: 'border-orange-200' }
-  if (days >= 3) return { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-200' }
-  return { bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-200' }
+  if (days >= 14) return { bg: 'var(--red-light)', text: 'var(--red)', border: 'rgba(239,68,68,0.2)' }
+  if (days >= 7) return { bg: 'var(--orange-light)', text: 'var(--orange)', border: 'rgba(249,115,22,0.2)' }
+  if (days >= 3) return { bg: 'var(--amber-light)', text: 'var(--amber)', border: 'rgba(245,158,11,0.2)' }
+  return { bg: 'var(--amber-light)', text: 'var(--amber)', border: 'rgba(245,158,11,0.15)' }
 }
 
 const UnpaidModal = memo(function UnpaidModal({ unpaidData, totalAmount, onClose, onMarkPaid }: {
@@ -656,7 +675,7 @@ const UnpaidModal = memo(function UnpaidModal({ unpaidData, totalAmount, onClose
 
         {/* ── Content ── */}
         <div className="overflow-y-auto flex-1 p-3.5 sm:p-5 space-y-4">
-          {unpaidData.map(({ customerName, items, total }, groupIdx) => {
+          {unpaidData.map(({ customerName, items, total }) => {
             const maxOverdueDays = Math.max(...items.map(i => getOverdueDays(i.created_at)))
             const maxStyle = getOverdueBadgeStyle(maxOverdueDays)
             const urgencyEmoji = maxOverdueDays >= 14 ? '🔴' : maxOverdueDays >= 7 ? '🟠' : maxOverdueDays >= 3 ? '🟡' : '⚪'
@@ -667,7 +686,7 @@ const UnpaidModal = memo(function UnpaidModal({ unpaidData, totalAmount, onClose
                 <div className="px-4 pt-4 pb-3 sm:px-5 sm:pt-5 sm:pb-4">
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-2xl bg-red-50 flex items-center justify-center text-lg shrink-0 border border-red-100">
+                      <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-lg shrink-0" style={{ background: 'var(--red-light)', border: '1px solid rgba(239,68,68,0.15)' }}>
                         {urgencyEmoji}
                       </div>
                       <div>
@@ -681,9 +700,9 @@ const UnpaidModal = memo(function UnpaidModal({ unpaidData, totalAmount, onClose
                   </div>
 
                   {/* Overdue Badge */}
-                  <div className={`flex items-center gap-2 mt-3 px-3.5 py-2 rounded-xl ${maxStyle.bg} border ${maxStyle.border}`}>
+                  <div className="flex items-center gap-2 mt-3 px-3.5 py-2 rounded-xl" style={{ background: maxStyle.bg, border: `1px solid ${maxStyle.border}` }}>
                     <ClockIcon />
-                    <span className={`text-[13px] font-bold ${maxStyle.text}`}>
+                    <span className="text-[13px] font-bold" style={{ color: maxStyle.text }}>
                       ค้างนานสุด {maxOverdueDays} วัน
                     </span>
                   </div>
@@ -697,7 +716,7 @@ const UnpaidModal = memo(function UnpaidModal({ unpaidData, totalAmount, onClose
                     return (
                       <div key={item.id} className={`flex items-center justify-between px-3.5 py-3 sm:px-4 sm:py-3.5 ${idx > 0 ? 'border-t border-[var(--border)]' : ''}`}>
                         <div className="flex items-center gap-3 min-w-0">
-                          <span className="w-6 h-6 rounded-lg bg-white flex items-center justify-center text-[12px] font-bold text-[var(--text-tertiary)] shrink-0 shadow-sm border border-[var(--border)]">
+                          <span className="w-6 h-6 rounded-lg flex items-center justify-center text-[12px] font-bold text-[var(--text-tertiary)] shrink-0 shadow-sm border border-[var(--border)]" style={{ background: 'var(--surface)' }}>
                             {idx + 1}
                           </span>
                           <div className="min-w-0">
@@ -707,7 +726,7 @@ const UnpaidModal = memo(function UnpaidModal({ unpaidData, totalAmount, onClose
                                 {formatThaiDate(item.created_at)}
                               </span>
                               <span className="text-[var(--text-tertiary)]">·</span>
-                              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${style.bg} ${style.text} border ${style.border}`}>
+                              <span className="text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: style.bg, color: style.text, border: `1px solid ${style.border}` }}>
                                 {days} วัน
                               </span>
                             </div>

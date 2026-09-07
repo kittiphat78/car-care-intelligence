@@ -22,7 +22,7 @@ const RecordCard = memo(function RecordCard({ record }: { record: Record }) {
       role="button"
       tabIndex={0}
       aria-label={`${isWash ? 'ล้างรถ' : 'ขัดสี'} ${plate} ราคา ${price} บาท ${!isPaid ? 'ค้างชำระ' : ''}`}
-      className="card bg-white cursor-pointer transition-all duration-150 active:scale-[0.985] overflow-hidden"
+      className="card cursor-pointer transition-all duration-150 active:scale-[0.985] overflow-hidden"
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); (e.target as HTMLElement).click() } }}
     >
       {/* Accent bar */}
@@ -32,8 +32,8 @@ const RecordCard = memo(function RecordCard({ record }: { record: Record }) {
         {/* Icon */}
         <div
           aria-hidden="true"
-          className={`w-12 h-12 min-w-[48px] rounded-2xl flex items-center justify-center text-xl shrink-0 ${isWash ? 'bg-blue-50' : 'bg-amber-50'
-            }`}
+          className="w-12 h-12 min-w-[48px] rounded-2xl flex items-center justify-center text-xl shrink-0"
+          style={{ background: isWash ? 'var(--accent-light)' : 'var(--amber-light)' }}
         >
           {carTypeIcon}
         </div>
@@ -55,7 +55,7 @@ const RecordCard = memo(function RecordCard({ record }: { record: Record }) {
 
         {/* Price */}
         <div className="text-right shrink-0">
-          <p className={`text-lg font-extrabold leading-tight ${!isPaid ? 'text-[var(--red)]' : 'text-[var(--text-primary)]'}`}>
+          <p className={`text-lg font-extrabold leading-tight tabular-nums ${!isPaid ? 'text-[var(--red)]' : 'text-[var(--text-primary)]'}`}>
             ฿{price.toLocaleString()}
           </p>
           <p className="text-[12px] text-[var(--text-tertiary)] mt-1 font-medium">{time} น.</p>
