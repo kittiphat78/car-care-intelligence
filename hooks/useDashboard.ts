@@ -42,7 +42,6 @@ export function useDashboard() {
   const [records, setRecords]                   = useState<AppRecord[]>([])
   const [allRecords, setAllRecords]             = useState<AppRecord[]>([])
   const [expenses, setExpenses]                 = useState<Expense[]>([])
-  const [yesterdayRecords, setYesterdayRecords] = useState<AppRecord[]>([])
   const [chartMode, setChartMode]               = useState<ChartMode>('week')
 
   const [loading, setLoading]                   = useState(true)
@@ -51,57 +50,66 @@ export function useDashboard() {
 
   // ── Data Fetching ──
   const fetchData = useCallback(async (skipAuth = false) => {
-    setLoading(true)
-    
-    // 1. Auth check
-    if (!skipAuth) {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { 
-        router.push('/login')
-        return 
+    try {
+      setLoading(true)
+      
+      // 1. Auth check
+      if (!skipAuth) {
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
+        if (authError || !user) { 
+          if (authError) console.error('[Dashboard] Auth Error:', authError)
+          router.push('/login')
+          return 
+        }
+        setUserEmail(user.email ?? '')
       }
-      setUserEmail(user.email ?? '')
+
+      // 2. Date boundaries (ใช้ Local Time ให้เป๊ะ)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      
+      const yesterday = new Date(today)
+      yesterday.setDate(yesterday.getDate() - 1)
+      
+      const thirtyDaysAgo = new Date(today)
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+      const oneYearAgo = new Date(today)
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+   
+      // แปลงเป็น ISO String ครั้งเดียว
+      const thirtyDaysAgoIso = thirtyDaysAgo.toISOString()
+      const oneYearAgoIso = oneYearAgo.toISOString()
+   
+      // 3. Parallel Fetching (Optimized to reduce queries)
+      const [allRes, expenseRes, unpaidRes, yearRes] = await Promise.all([
+        supabase.from('records').select('*').gte('created_at', thirtyDaysAgoIso).order('created_at', { ascending: true }),
+        supabase.from('expenses').select('*').gte('created_at', thirtyDaysAgoIso),
+        supabase.from('records').select('*').eq('payment_status', 'unpaid').order('created_at', { ascending: true }),
+        supabase.from('records').select('id,created_at,type,price,customer_name').eq('payment_status', 'paid').gte('created_at', oneYearAgoIso).order('created_at', { ascending: true })
+      ])
+   
+      const dbErrors = [allRes.error, expenseRes.error, unpaidRes.error, yearRes.error].filter(Boolean)
+      if (dbErrors.length > 0) {
+        console.error('[Dashboard] DB Fetch Error:', dbErrors)
+        toastError('ไม่สามารถดึงข้อมูลได้ครบถ้วน อาจมีปัญหากับเซิร์ฟเวอร์หรืออินเทอร์เน็ต')
+        // We can still proceed with partial data, or return. 
+        // Proceeding might be better for UX if some queries succeed, but fallback to [] is already there.
+      }
+
+      // 4. State updates
+      const allData = allRes.data ?? []
+      setAllRecords(allData)
+      setExpenses(expenseRes.data ?? [])
+      setUnpaidRecords(unpaidRes.data ?? [])
+      setYearRecords((yearRes.data ?? []) as AppRecord[])
+    } catch (err) {
+      console.error('[Dashboard] Unexpected Error during fetchData:', err)
+      toastError('เกิดข้อผิดพลาดเครือข่าย หรือเซิร์ฟเวอร์ไม่ตอบสนอง')
+    } finally {
+      setLoading(false)
     }
-
-    // 2. Date boundaries (ใช้ Local Time ให้เป๊ะ)
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    
-    const yesterday = new Date(today)
-    yesterday.setDate(yesterday.getDate() - 1)
-    
-    const thirtyDaysAgo = new Date(today)
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-
-    const oneYearAgo = new Date(today)
-    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
- 
-    // แปลงเป็น ISO String ครั้งเดียว
-    const todayIso = today.toISOString()
-    const yesterdayIso = yesterday.toISOString()
-    const thirtyDaysAgoIso = thirtyDaysAgo.toISOString()
-    const oneYearAgoIso = oneYearAgo.toISOString()
- 
-    // 3. Parallel Fetching
-    const [todayRes, yesterdayRes, allRes, expenseRes, unpaidRes, yearRes] = await Promise.all([
-      supabase.from('records').select('*').gte('created_at', todayIso).order('created_at', { ascending: false }),
-      supabase.from('records').select('*').gte('created_at', yesterdayIso).lt('created_at', todayIso),
-      supabase.from('records').select('*').gte('created_at', thirtyDaysAgoIso).order('created_at', { ascending: true }),
-      supabase.from('expenses').select('*').gte('created_at', thirtyDaysAgoIso),
-      supabase.from('records').select('*').eq('payment_status', 'unpaid').order('created_at', { ascending: true }),
-      supabase.from('records').select('id,created_at,type,price,customer_name').eq('payment_status', 'paid').gte('created_at', oneYearAgoIso).order('created_at', { ascending: true })
-    ])
- 
-    // 4. State updates (Fallback to empty array to prevent crash)
-    setRecords(todayRes.data ?? [])
-    setYesterdayRecords(yesterdayRes.data ?? [])
-    setAllRecords(allRes.data ?? [])
-    setExpenses(expenseRes.data ?? [])
-    setUnpaidRecords(unpaidRes.data ?? [])
-    setYearRecords((yearRes.data ?? []) as AppRecord[])
-    
-    setLoading(false)
-  }, [router])
+  }, [router, toastError])
  
   // ── Real-time Subscriptions (debounced เพื่อป้องกัน rapid-fire re-fetch) ──
   const realtimeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -124,8 +132,14 @@ export function useDashboard() {
 
   // ── Actions ──
   const logout = useCallback(async () => {
-    await supabase.auth.signOut()
-    router.push('/login')
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) console.error('[Dashboard] Logout Error:', error)
+    } catch (err) {
+      console.error('[Dashboard] Unexpected Logout Error:', err)
+    } finally {
+      router.push('/login')
+    }
   }, [router])
 
   const markAllAsPaidByCustomer = useCallback(async (customerName: string) => {
@@ -139,17 +153,23 @@ export function useDashboard() {
     const targetName = isGeneral ? '' : customerName
     const now = new Date().toISOString()
     
-    const { error } = await supabase
-      .from('records')
-      .update({ payment_status: 'paid', updated_at: now, updated_by_email: userEmail })
-      .eq('payment_status', 'unpaid')
-      .eq('customer_name', targetName)
+    try {
+      const { error } = await supabase
+        .from('records')
+        .update({ payment_status: 'paid', updated_at: now, updated_by_email: userEmail })
+        .eq('payment_status', 'unpaid')
+        .eq('customer_name', targetName)
 
-    if (!error) {
-      fetchData()
-      toastSuccess('ทำเครื่องหมายชำระเงินเรียบร้อย')
-    } else {
-      toastError('เกิดข้อผิดพลาด: ' + error.message)
+      if (!error) {
+        fetchData()
+        toastSuccess('ทำเครื่องหมายชำระเงินเรียบร้อย')
+      } else {
+        console.error('[Dashboard] markAllAsPaidByCustomer DB Error:', error)
+        toastError('บันทึกข้อมูลไม่สำเร็จ: ' + error.message)
+      }
+    } catch (err) {
+      console.error('[Dashboard] markAllAsPaidByCustomer Unexpected Error:', err)
+      toastError('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์')
     }
   }, [userEmail, fetchData, toastSuccess, toastError])
 
@@ -161,14 +181,42 @@ export function useDashboard() {
     todayStartLocal.setHours(0, 0, 0, 0)
     const todayStartMs = todayStartLocal.getTime()
 
-    // ใช้ reduce รอบเดียวเพื่อหาค่าหลายๆ อย่างได้ (ถ้าข้อมูลเยอะๆ จะช่วยได้)
+    // Derive today and yesterday from allRecords
+    const yesterdayStartLocal = new Date()
+    yesterdayStartLocal.setDate(yesterdayStartLocal.getDate() - 1)
+    yesterdayStartLocal.setHours(0, 0, 0, 0)
+    const yesterdayStartMs = yesterdayStartLocal.getTime()
+
+    // O(n) filter from allRecords (last 30 days)
+    const todayRecords = []
+    let yesterdayIncome = 0
+
+    for (let i = allRecords.length - 1; i >= 0; i--) {
+      const r = allRecords[i]
+      const t = new Date(r.created_at).getTime()
+      if (t >= todayStartMs) {
+        todayRecords.push(r)
+      } else if (t >= yesterdayStartMs) {
+        yesterdayIncome += r.price
+      } else {
+        // Since allRecords is sorted ascending, we could break early, 
+        // but sorting is ascending (oldest first). 
+        // Actually, if we go backwards, t < yesterdayStartMs means we passed yesterday.
+        break
+      }
+    }
+
+    // Set records for other components
+    setRecords(todayRecords)
+
+    // Calculate today's stats
     let todayTotalIncome = 0
     let todayPaid = 0
     let todayUnpaid = 0
     let washCount = 0
     let polishCount = 0
 
-    records.forEach(r => {
+    todayRecords.forEach(r => {
       todayTotalIncome += r.price
       if (r.payment_status === 'paid') todayPaid += r.price
       if (r.payment_status === 'unpaid') todayUnpaid += r.price
@@ -176,12 +224,11 @@ export function useDashboard() {
       if (r.type === 'polish') polishCount++
     })
 
-    // คำนวณรายจ่ายเฉพาะของวันนี้
+    // Calculate today's expenses
     const todayExpense = expenses
       .filter(e => new Date(e.created_at).getTime() >= todayStartMs)
       .reduce((s, e) => s + e.amount, 0)
       
-    const yesterdayIncome = yesterdayRecords.reduce((s, r) => s + r.price, 0)
     const diffAmount = todayTotalIncome - yesterdayIncome
 
     return {
@@ -196,7 +243,7 @@ export function useDashboard() {
       diffPct: yesterdayIncome > 0 ? Math.round((diffAmount / yesterdayIncome) * 100) : 0,
       isUp: diffAmount >= 0
     }
-  }, [records, expenses, yesterdayRecords])
+  }, [allRecords, expenses])
 
   // 2. ข้อมูลกราฟ (ใช้ bucket map เพื่อ O(n) แทน O(days × records))
   const chartData = useMemo(() => {
