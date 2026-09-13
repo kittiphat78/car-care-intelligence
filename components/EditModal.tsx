@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Record, Expense, PaymentStatus, CAR_TYPES, CAR_BRANDS } from '@/types'
+import DOMPurify from 'isomorphic-dompurify'
 
 interface EditModalProps {
   item: Record | Expense | null
@@ -100,9 +101,26 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
     const created_at = mergeDateTime(editDate, editTime)
     const now = new Date().toISOString()
     if (type === 'income') {
-      onSave({ type: recordType, plate: plate.trim(), price: parseInt(price) || 0, customer_name: customerName.trim(), payment_status: paymentStatus, services: [selectedType, selectedBrand, incomeNote.trim()], created_at, updated_by_email: currentUserEmail, updated_at: now })
+      onSave({
+        type: recordType,
+        plate: DOMPurify.sanitize(plate.trim()),
+        price: parseInt(price) || 0,
+        customer_name: DOMPurify.sanitize(customerName.trim()),
+        payment_status: paymentStatus,
+        services: [DOMPurify.sanitize(selectedType), DOMPurify.sanitize(selectedBrand), DOMPurify.sanitize(incomeNote.trim())],
+        created_at,
+        updated_by_email: currentUserEmail,
+        updated_at: now
+      })
     } else {
-      onSave({ title: title.trim(), amount: parseInt(amount) || 0, note: note.trim(), created_at, updated_by_email: currentUserEmail, updated_at: now })
+      onSave({
+        title: DOMPurify.sanitize(title.trim()),
+        amount: parseInt(amount) || 0,
+        note: DOMPurify.sanitize(note.trim()),
+        created_at,
+        updated_by_email: currentUserEmail,
+        updated_at: now
+      })
     }
   }, [type, recordType, plate, price, customerName, paymentStatus, selectedType, selectedBrand, incomeNote, editDate, editTime, currentUserEmail, title, amount, note, onSave])
 

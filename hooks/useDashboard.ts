@@ -39,7 +39,7 @@ export function useDashboard() {
   
   // ── States ──
   const [userEmail, setUserEmail]               = useState('')
-  const [records, setRecords]                   = useState<AppRecord[]>([])
+
   const [allRecords, setAllRecords]             = useState<AppRecord[]>([])
   const [expenses, setExpenses]                 = useState<Expense[]>([])
   const [chartMode, setChartMode]               = useState<ChartMode>('week')
@@ -215,8 +215,6 @@ export function useDashboard() {
       }
     }
 
-    // Set records for other components
-    setRecords(todayRecords)
 
     // Calculate today's stats
     let todayTotalIncome = 0
@@ -253,6 +251,14 @@ export function useDashboard() {
       isUp: diffAmount >= 0
     }
   }, [allRecords, expenses])
+
+  // 1b. Today's records (derived from allRecords — pure computation)
+  const records = useMemo<AppRecord[]>(() => {
+    const todayStartLocal = new Date()
+    todayStartLocal.setHours(0, 0, 0, 0)
+    const todayStartMs = todayStartLocal.getTime()
+    return allRecords.filter(r => new Date(r.created_at).getTime() >= todayStartMs)
+  }, [allRecords])
 
   // 2. ข้อมูลกราฟ (ใช้ bucket map เพื่อ O(n) แทน O(days × records))
   const chartData = useMemo(() => {
