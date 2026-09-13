@@ -27,7 +27,7 @@ export default function Dashboard() {
   if (dash.loading) return <LoadingSkeleton />
 
   return (
-    <div className="min-h-dvh px-4 pt-6 space-y-5">
+    <div className="min-h-dvh px-4 pt-6 space-y-5 content-with-nav">
       <Header userEmail={dash.userEmail} onLogout={dash.logout} />
       {weather && <WeatherWidget weather={weather} onRefresh={refreshWeather} isRefreshing={isRefreshingWeather} />}
       {dash.totalUnpaidAmount > 0 && <UnpaidAlert totalAmount={dash.totalUnpaidAmount} onClick={openUnpaid} />}

@@ -44,95 +44,100 @@ export default function LoginPage() {
   }
 
   return (
-    <div
-      className="min-h-dvh flex flex-col items-center justify-center px-5 py-12"
-      style={{ background: 'linear-gradient(180deg, #EFF6FF 0%, #F8F6F3 40%, #F8F6F3 100%)' }}
-    >
-      <BrandLogo />
+    <div className="min-h-dvh flex flex-col items-center justify-center px-5 py-12 relative overflow-hidden" style={{ background: 'var(--bg)' }}>
+      {/* ── Background Decorations ── */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+        <div className="absolute -top-32 -right-32 w-80 h-80 rounded-full opacity-[0.06]" style={{ background: 'radial-gradient(circle, var(--accent) 0%, transparent 70%)' }} />
+        <div className="absolute -bottom-24 -left-24 w-64 h-64 rounded-full opacity-[0.04]" style={{ background: 'radial-gradient(circle, var(--cyan) 0%, transparent 70%)' }} />
+      </div>
 
-      <div className="card-elevated w-full max-w-sm p-7 sm:p-8 fade-up delay-1">
-        <form onSubmit={handleLogin} className="space-y-5" noValidate>
+      <div className="relative z-10 w-full max-w-sm flex flex-col items-center">
+        <BrandLogo />
 
-          {/* Email */}
-          <div>
-            <label htmlFor="login-email" className="label cursor-pointer">อีเมล</label>
-            <input
-              id="login-email"
-              type="email"
-              name="email"
-              autoComplete="username email"
-              placeholder="example@email.com"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              className="input"
-              required
-              aria-required="true"
-            />
-          </div>
+        <div className="card-elevated w-full p-7 sm:p-8 fade-up delay-1">
+          <form onSubmit={handleLogin} className="space-y-5" noValidate>
 
-          {/* Password */}
-          <div>
-            <label htmlFor="login-password" className="label cursor-pointer">รหัสผ่าน</label>
-            <div className="relative">
+            {/* Email */}
+            <div>
+              <label htmlFor="login-email" className="label cursor-pointer">อีเมล</label>
               <input
-                id="login-password"
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                autoComplete="current-password"
-                placeholder="••••••••"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                className="input pr-14"
+                id="login-email"
+                type="email"
+                name="email"
+                autoComplete="username email"
+                placeholder="example@email.com"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                className="input"
                 required
                 aria-required="true"
               />
-              <button
-                type="button"
-                aria-label={showPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
-                aria-pressed={showPassword}
-                onClick={() => setShowPassword(v => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-xl text-[var(--text-secondary)] active:scale-90 transition-transform"
-                tabIndex={-1}
-              >
-                {showPassword ? <EyeOffIcon /> : <EyeIcon />}
-              </button>
             </div>
-          </div>
 
-          {/* Remember */}
-          <label htmlFor="login-remember" className="flex items-center gap-3 cursor-pointer py-1 group w-max">
-            <div className="relative">
-              <input id="login-remember" type="checkbox" className="sr-only peer" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} />
-              <div className="w-6 h-6 rounded-lg border-2 border-[var(--border)] bg-[var(--surface)] peer-checked:bg-[var(--accent)] peer-checked:border-[var(--accent)] transition-all flex items-center justify-center">
-                {rememberMe && <CheckIcon />}
+            {/* Password */}
+            <div>
+              <label htmlFor="login-password" className="label cursor-pointer">รหัสผ่าน</label>
+              <div className="relative">
+                <input
+                  id="login-password"
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  className="input pr-14"
+                  required
+                  aria-required="true"
+                />
+                <button
+                  type="button"
+                  aria-label={showPassword ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน'}
+                  aria-pressed={showPassword}
+                  onClick={() => setShowPassword(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-xl text-[var(--text-secondary)] active:scale-90 transition-transform"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                </button>
               </div>
             </div>
-            <span className="text-[15px] text-[var(--text-secondary)] select-none font-medium">จดจำอีเมลไว้</span>
-          </label>
 
-          {/* Error */}
-          {error && <ErrorBanner error={error} />}
+            {/* Remember */}
+            <label htmlFor="login-remember" className="flex items-center gap-3 cursor-pointer py-1 group w-max">
+              <div className="relative">
+                <input id="login-remember" type="checkbox" className="sr-only peer" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} />
+                <div className="w-6 h-6 rounded-lg border-2 border-[var(--border)] bg-[var(--surface)] peer-checked:bg-[var(--accent)] peer-checked:border-[var(--accent)] transition-all flex items-center justify-center">
+                  {rememberMe && <CheckIcon />}
+                </div>
+              </div>
+              <span className="text-[15px] text-[var(--text-secondary)] select-none font-medium">จดจำอีเมลไว้</span>
+            </label>
 
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="btn btn-accent w-full py-4 text-lg mt-2"
-            aria-busy={loading}
-          >
-            {loading ? (
-              <>
-                <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full spinner" aria-hidden="true" />
-                กำลังเข้าสู่ระบบ...
-              </>
-            ) : 'เข้าสู่ระบบ'}
-          </button>
-        </form>
+            {/* Error */}
+            {error && <ErrorBanner error={error} />}
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn btn-accent w-full py-4 text-lg mt-2"
+              aria-busy={loading}
+            >
+              {loading ? (
+                <>
+                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full spinner" aria-hidden="true" />
+                  กำลังเข้าสู่ระบบ...
+                </>
+              ) : 'เข้าสู่ระบบ'}
+            </button>
+          </form>
+        </div>
+
+        <p className="mt-10 text-[12px] text-[var(--text-tertiary)] tracking-widest uppercase select-none font-medium fade-up delay-2" aria-hidden="true">
+          Car Care Intelligence
+        </p>
       </div>
-
-      <p className="mt-10 text-[12px] text-[var(--text-tertiary)] tracking-widest uppercase select-none font-medium fade-up delay-2" aria-hidden="true">
-        Car Care Intelligence
-      </p>
     </div>
   )
 }
@@ -141,10 +146,12 @@ export default function LoginPage() {
 const BrandLogo = memo(function BrandLogo() {
   return (
     <div className="mb-10 text-center fade-up select-none">
-      <div className="w-20 h-20 rounded-[22px] bg-gradient-to-br from-[var(--accent)] to-[#1D4ED8] flex items-center justify-center mx-auto mb-5 shadow-lg shadow-blue-500/20" aria-hidden="true">
+      <div className="w-20 h-20 rounded-[22px] bg-gradient-to-br from-[var(--accent)] to-[#8B5CF6] flex items-center justify-center mx-auto mb-5 shadow-lg float-soft" style={{ boxShadow: '0 8px 32px rgba(99, 102, 241, 0.25)' }} aria-hidden="true">
         <svg width="36" height="36" viewBox="0 0 26 26" fill="none"><path d="M4 16c0-2 1-4 3-5l2-5h8l2 5c2 1 3 3 3 5v2H4v-2z" fill="white" fillOpacity=".9"/><circle cx="8" cy="20" r="2.5" fill="white"/><circle cx="18" cy="20" r="2.5" fill="white"/><path d="M2 16h22" stroke="white" strokeWidth="1.2" strokeOpacity=".4"/></svg>
       </div>
-      <h1 className="text-2xl font-extrabold text-[var(--text-primary)] tracking-tight">Car Care</h1>
+      <h1 className="text-2xl font-extrabold tracking-tight">
+        <span className="bg-gradient-to-r from-[var(--accent)] to-[#8B5CF6] bg-clip-text text-transparent">Car Care</span>
+      </h1>
       <p className="text-base text-[var(--text-secondary)] mt-1.5 font-medium">ระบบจัดการร้านล้างรถ</p>
     </div>
   )
@@ -152,8 +159,8 @@ const BrandLogo = memo(function BrandLogo() {
 
 const ErrorBanner = memo(function ErrorBanner({ error }: { error: string }) {
   return (
-    <div className="flex items-center gap-3 p-4 rounded-[var(--radius-md)] bg-[var(--red-light)] border border-red-200 fade-up" role="alert" aria-live="assertive">
-      <svg width="18" height="18" viewBox="0 0 15 15" fill="none" className="shrink-0" aria-hidden="true"><circle cx="7.5" cy="7.5" r="6.5" stroke="#DC2626" strokeWidth="1.3"/><path d="M7.5 4.5v4M7.5 10.5v.5" stroke="#DC2626" strokeWidth="1.5" strokeLinecap="round"/></svg>
+    <div className="flex items-center gap-3 p-4 rounded-[var(--radius-md)] bg-[var(--red-light)] border border-red-200 pop-in" role="alert" aria-live="assertive">
+      <svg width="18" height="18" viewBox="0 0 15 15" fill="none" className="shrink-0" aria-hidden="true"><circle cx="7.5" cy="7.5" r="6.5" stroke="var(--red)" strokeWidth="1.3"/><path d="M7.5 4.5v4M7.5 10.5v.5" stroke="var(--red)" strokeWidth="1.5" strokeLinecap="round"/></svg>
       <p className="text-[15px] font-semibold text-[var(--red)]">{error}</p>
     </div>
   )

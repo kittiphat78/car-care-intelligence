@@ -69,7 +69,7 @@ export const UnpaidModal = memo(function UnpaidModal({ unpaidData, totalAmount, 
       aria-modal="true"
       aria-label="ค้างชำระ"
     >
-      <div className="bg-[var(--bg)] w-full max-w-lg rounded-t-[32px] sm:rounded-[28px] slide-up overflow-hidden max-h-[90dvh] flex flex-col shadow-2xl">
+      <div className="bg-[var(--bg)] w-full max-w-lg rounded-t-[32px] sm:rounded-[28px] slide-up-spring overflow-hidden max-h-[90dvh] flex flex-col shadow-2xl">
 
         {/* ── Header: Gradient ── */}
         <header className="relative overflow-hidden shrink-0">

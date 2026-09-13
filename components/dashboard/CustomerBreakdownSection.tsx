@@ -73,9 +73,9 @@ export const CustomerBreakdownSection = memo(function CustomerBreakdownSection({
       </div>
 
       {displayed.length === 0 ? (
-        <div className="card p-10 text-center border-dashed border-2 border-[var(--border)]">
-          <p className="text-3xl mb-2 opacity-20" aria-hidden="true">👥</p>
-          <p className="text-sm font-bold text-[var(--text-tertiary)]">ยังไม่มีข้อมูลในช่วงนี้</p>
+        <div className="empty-state">
+          <p className="empty-state-icon" aria-hidden="true">👥</p>
+          <p className="empty-state-title">ยังไม่มีข้อมูลในช่วงนี้</p>
         </div>
       ) : (
         <div className="grid gap-3">

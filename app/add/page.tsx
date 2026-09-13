@@ -168,7 +168,7 @@ export default function AddPage() {
   }, [formMode, submitIncome, submitExpense])
 
   return (
-    <div className="min-h-dvh bg-[var(--bg)]">
+    <div className="min-h-dvh bg-[var(--bg)] content-with-nav">
 
       {/* ── Sticky Header ── */}
       <div className="sticky top-0 z-30 glass border-b border-[var(--border)]">
