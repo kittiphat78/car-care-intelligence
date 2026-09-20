@@ -119,7 +119,7 @@ export default function HistoryPage() {
 
 
   return (
-    <div className="min-h-dvh px-4 pt-6 space-y-4">
+    <div className="min-h-dvh px-4 pt-6 space-y-4 content-with-nav">
       <Header selectedMonth={selectedMonth} setSelectedMonth={setSelectedMonth} selectedYear={selectedYear} setSelectedYear={setSelectedYear} />
       <TabToggle activeTab={activeTab} switchTab={switchTab} />
       <SummaryCard

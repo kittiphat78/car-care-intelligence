@@ -21,10 +21,10 @@ export function HistoryList({ loading, grouped, activeTab, onItemClick }: Histor
   if (Object.keys(grouped).length === 0) {
     return (
       <section className="fade-up delay-3">
-        <div className="card p-14 text-center border-dashed border-2 border-[var(--border)]">
-          <p className="text-4xl mb-3 opacity-20" aria-hidden="true">📂</p>
-          <p className="text-base font-bold text-[var(--text-primary)]">ไม่พบรายการ</p>
-          <p className="text-sm text-[var(--text-tertiary)] mt-1.5">ลองเปลี่ยนตัวกรองดูครับ</p>
+        <div className="empty-state">
+          <p className="empty-state-icon" aria-hidden="true">📂</p>
+          <p className="empty-state-title">ไม่พบรายการ</p>
+          <p className="empty-state-desc">ลองเปลี่ยนตัวกรองดูครับ</p>
         </div>
       </section>
     )

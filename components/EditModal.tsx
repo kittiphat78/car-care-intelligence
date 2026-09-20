@@ -136,7 +136,7 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
       aria-modal="true"
       aria-label={`แก้ไข${isIncome ? 'รายรับ' : 'รายจ่าย'}`}
     >
-      <div ref={modalRef} className="bg-[var(--surface)] w-full max-w-md rounded-t-[28px] sm:rounded-[28px] slide-up overflow-hidden max-h-[90dvh] flex flex-col">
+      <div ref={modalRef} className="bg-[var(--surface)] w-full max-w-md rounded-t-[28px] sm:rounded-[28px] slide-up-spring overflow-hidden max-h-[90dvh] flex flex-col">
 
         {/* Handle bar (mobile) */}
         <div className="flex justify-center pt-3 pb-1 sm:hidden shrink-0" aria-hidden="true">

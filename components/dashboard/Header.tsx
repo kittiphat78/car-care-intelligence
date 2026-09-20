@@ -1,15 +1,36 @@
 import { memo } from 'react'
 import { useTheme } from '@/hooks/useTheme'
 
+function getGreeting(): string {
+  const h = new Date().getHours()
+  if (h < 12) return 'สวัสดีตอนเช้า'
+  if (h < 17) return 'สวัสดีตอนบ่าย'
+  return 'สวัสดีตอนเย็น'
+}
+
+function getThaiDate(): string {
+  return new Date().toLocaleDateString('th-TH', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+}
+
 export const Header = memo(function Header({ userEmail, onLogout }: { userEmail: string; onLogout: () => void }) {
   const { theme, toggle } = useTheme()
+  const displayName = userEmail.split('@')[0] || 'Admin'
+
   return (
     <header className="flex items-center justify-between fade-up">
       <div>
-        <p className="text-sm text-[var(--text-tertiary)] mb-0.5 font-medium">สวัสดี,</p>
-        <h2 className="text-xl font-extrabold text-[var(--text-primary)] leading-tight tracking-tight">
-          {userEmail.split('@')[0] || 'Admin'}
-        </h2>
+        <p className="text-[13px] text-[var(--text-tertiary)] font-medium leading-tight">{getThaiDate()}</p>
+        <div className="flex items-baseline gap-2 mt-1">
+          <h2 className="text-xl font-extrabold text-[var(--text-primary)] leading-tight tracking-tight">
+            {getGreeting()}, {displayName}
+          </h2>
+          <span className="text-lg" aria-hidden="true">👋</span>
+        </div>
       </div>
       <div className="flex items-center gap-2">
         <button onClick={toggle} className="theme-toggle" aria-label={`เปลี่ยนเป็นโหมด${theme === 'dark' ? 'สว่าง' : 'มืด'}`}>
