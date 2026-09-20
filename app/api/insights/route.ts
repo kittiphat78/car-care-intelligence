@@ -2,9 +2,56 @@ import { NextResponse } from 'next/server'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
+// Rate limit store (in-memory, suitable for single-instance / edge)
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
+const RATE_LIMIT = 10   // max requests per window
+const RATE_WINDOW = 60 * 1000  // 1 minute
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now()
+  const entry = rateLimitMap.get(ip)
+  
+  if (entry) {
+    if (now < entry.resetTime) {
+      if (entry.count >= RATE_LIMIT) return false
+      entry.count++
+    } else {
+      entry.count = 1
+      entry.resetTime = now + RATE_WINDOW
+    }
+  } else {
+    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_WINDOW })
+  }
+  
+  // Cleanup stale entries
+  if (rateLimitMap.size > 100) {
+    for (const [key, val] of rateLimitMap) {
+      if (now >= val.resetTime) rateLimitMap.delete(key)
+    }
+  }
+  return true
+}
+
+/** Sanitize numeric input — prevent prompt injection via non-numeric values */
+function sanitizeNumber(value: unknown): number {
+  const num = Number(value)
+  if (!Number.isFinite(num)) return 0
+  // Clamp to reasonable range for a car wash business
+  return Math.max(-1_000_000, Math.min(1_000_000, Math.round(num)))
+}
+
 export async function POST(request: Request) {
   try {
-    // Auth check — only authenticated users can call this API
+    // 1. Rate limit check
+    const ip = request.headers.get('x-forwarded-for') || 'unknown-ip'
+    if (!checkRateLimit(ip)) {
+      return NextResponse.json(
+        { text: '✦ ส่งคำขอมากเกินไป กรุณารอสักครู่' },
+        { status: 429 }
+      )
+    }
+
+    // 2. Auth check
     const cookieStore = await cookies()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,9 +69,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    // 3. Parse and validate input
     const data = await request.json()
 
-    // ✅ Input validation — ตรวจสอบว่า body มีข้อมูลที่ต้องการ
     const requiredFields = ['todayTotalIncome', 'todayExpense', 'netProfit', 'washCount', 'polishCount'] as const
     for (const field of requiredFields) {
       if (typeof data[field] !== 'number') {
@@ -32,23 +79,33 @@ export async function POST(request: Request) {
       }
     }
 
+    // 4. Sanitize all numeric inputs before putting them in the prompt
+    const todayTotalIncome = sanitizeNumber(data.todayTotalIncome)
+    const todayExpense = sanitizeNumber(data.todayExpense)
+    const netProfit = sanitizeNumber(data.netProfit)
+    const washCount = sanitizeNumber(data.washCount)
+    const polishCount = sanitizeNumber(data.polishCount)
+    const unpaidCount = sanitizeNumber(data.unpaidCount ?? 0)
+    const unpaidTotal = sanitizeNumber(data.unpaidTotal ?? 0)
+
     const apiKey = process.env.GEMINI_API_KEY
 
     if (!apiKey) {
       return NextResponse.json({ text: '✦ กรุณาใส่ GEMINI_API_KEY ในไฟล์ .env.local เพื่อเปิดใช้งาน AI' })
     }
 
+    // 5. Build prompt with sanitized values only
     const prompt = `
       คุณคือ "ผู้ช่วยร้านคนโปรด" ที่ร่าเริง ขยันขันแข็ง และรักเจ้าของร้านมาก หน้าที่ของคุณคือรายงานผลประกอบการร้านล้างรถประจำวันให้ "คุณแม่" ฟังอย่างอารมณ์ดี
       จงวิเคราะห์ข้อมูลของวันนี้ออกมาเป็นข้อๆ สั้นๆ 3-4 ข้อ 
       
       ข้อมูลวันนี้:
-      - รายรับรวม: ${data.todayTotalIncome} บาท
-      - รายจ่าย: ${data.todayExpense} บาท
-      - กำไรสุทธิ: ${data.netProfit} บาท
-      - ล้างรถ: ${data.washCount} คัน
-      - ขัดสี: ${data.polishCount} คัน
-      - ลูกค้าค้างชำระ: ${data.unpaidCount ?? 0} คน (รวม ${data.unpaidTotal ?? 0} บาท)
+      - รายรับรวม: ${todayTotalIncome} บาท
+      - รายจ่าย: ${todayExpense} บาท
+      - กำไรสุทธิ: ${netProfit} บาท
+      - ล้างรถ: ${washCount} คัน
+      - ขัดสี: ${polishCount} คัน
+      - ลูกค้าค้างชำระ: ${unpaidCount} คน (รวม ${unpaidTotal} บาท)
       
       กฎการตอบกลับ:
       - ตอบเฉพาะข้อความที่เป็นข้อๆ เริ่มต้นแต่ละข้อด้วย ✦ 
