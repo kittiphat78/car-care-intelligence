@@ -180,6 +180,13 @@ const FETCH_INTERVAL_MS = 5 * 60 * 1000
 const RETRY_DELAY_MS = 30 * 1000
 const MAX_RETRIES = 3
 
+// AQI thresholds (US EPA scale)
+const AQI_HAZARDOUS     = 300
+const AQI_VERY_UNHEALTHY = 200
+const AQI_UNHEALTHY      = 150
+const AQI_SENSITIVE       = 100
+const AQI_MODERATE        = 50
+
 export function useWeather() {
   const [weather, setWeather] = useState<WeatherData | null>(null)
   const [isRefetching, setIsRefetching] = useState(false)
@@ -256,15 +263,15 @@ export function useWeather() {
     }
     retryCountRef.current = 0
 
-    if (aqiValue > 300) {
+    if (aqiValue > AQI_HAZARDOUS) {
       aqiStatus = { label: 'วิกฤต', colorClass: 'bg-[#4C0519] text-white border-[#881337]' };
-    } else if (aqiValue > 200) {
+    } else if (aqiValue > AQI_VERY_UNHEALTHY) {
       aqiStatus = { label: 'อันตรายมาก', colorClass: 'bg-purple-100 text-purple-800 border-purple-300' };
-    } else if (aqiValue > 150) {
+    } else if (aqiValue > AQI_UNHEALTHY) {
       aqiStatus = { label: 'อันตราย', colorClass: 'bg-red-100 text-red-700 border-red-300' };
-    } else if (aqiValue > 100) {
+    } else if (aqiValue > AQI_SENSITIVE) {
       aqiStatus = { label: 'เริ่มมีผลกระทบ', colorClass: 'bg-orange-100 text-orange-700 border-orange-300' };
-    } else if (aqiValue > 50) {
+    } else if (aqiValue > AQI_MODERATE) {
       aqiStatus = { label: 'ปานกลาง', colorClass: 'bg-yellow-100 text-yellow-800 border-yellow-300' };
     } else if (aqiValue > 0) {
       aqiStatus = { label: 'ดี', colorClass: 'bg-green-100 text-green-700 border-green-300' };
@@ -273,9 +280,9 @@ export function useWeather() {
     let message = buildWeatherMessage(weatherGroup, prob, probTom, temp, humidity);
     const theme = getWeatherTheme(weatherGroup, isNight);
 
-    if (aqiValue > 200) {
+    if (aqiValue > AQI_VERY_UNHEALTHY) {
       message += ' 🚨 ฝุ่นม่วง (200+) ช่างต้องใส่ N95 ครับ!'
-    } else if (aqiValue > 150) {
+    } else if (aqiValue > AQI_UNHEALTHY) {
       message += ' 😷 ฝุ่นเริ่มแดง ใส่หน้ากากอนามัยด้วยนะครับ'
     }
 

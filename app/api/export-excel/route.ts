@@ -1,33 +1,14 @@
 import { NextResponse } from 'next/server'
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { authenticateRequest } from '@/lib/serverAuth'
 
 // สร้างหน่วยความจำจำลอง (In-memory Store) สำหรับเก็บประวัติการ Request
 // (หมายเหตุ: วิธีนี้เหมาะสำหรับระบบง่ายๆ หรือรันบนเซิร์ฟเวอร์ตัวเดียว หากเป็น Serverless อาจมีการรีเซ็ตค่าได้)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
 
 export async function GET(request: Request) {
-  // Auth check — only authenticated users can call this API
-  try {
-    const cookieStore = await cookies()
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) { return cookieStore.get(name)?.value },
-          set(name: string, value: string, options: CookieOptions) { cookieStore.set({ name, value, ...options }) },
-          remove(name: string, options: CookieOptions) { cookieStore.set({ name, value: '', ...options }) },
-        },
-      }
-    )
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-  } catch {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  // Auth check
+  const auth = await authenticateRequest()
+  if (auth.error) return auth.error
 
 
   // 1. ดึง IP Address ของคนที่เรียก API

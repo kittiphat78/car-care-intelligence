@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Record, Expense, PaymentStatus, CAR_TYPES, CAR_BRANDS } from '@/types'
+import { splitDateTime, mergeDateTime } from '@/lib/dateUtils'
 import DOMPurify from 'isomorphic-dompurify'
 
 interface EditModalProps {
@@ -11,17 +12,6 @@ interface EditModalProps {
   onClose: () => void
   onSave: (updatedFields: Partial<Record & Expense>) => void
   onDelete: (id: string) => void
-}
-
-function splitDateTime(iso: string) {
-  const d = new Date(iso)
-  const date = d.toISOString().split('T')[0]
-  return { date, time: `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` }
-}
-function mergeDateTime(date: string, time: string): string {
-  const [h, m] = time.split(':').map(Number)
-  const d = new Date(date); d.setHours(h, m, 0, 0)
-  return d.toISOString()
 }
 
 export default function EditModal({ item, type, isOpen, onClose, onSave, onDelete }: EditModalProps) {

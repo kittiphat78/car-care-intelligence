@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Record as AppRecord, Expense } from '@/types'
 import { useToast } from '@/hooks/useToast'
+import { getStartOfDay, getStartOfYesterday, getDaysAgo, getYearsAgo, getStartOfWeek, getStartOfMonth, getStartOfYear, parseDateMs } from '@/lib/dateUtils'
 
 export type ChartMode = 'week' | 'month'
 export interface CustomerTimePeriod {
@@ -39,11 +40,9 @@ export function useDashboard() {
   
   // ── States ──
   const [userEmail, setUserEmail]               = useState('')
-
   const [allRecords, setAllRecords]             = useState<AppRecord[]>([])
   const [expenses, setExpenses]                 = useState<Expense[]>([])
   const [chartMode, setChartMode]               = useState<ChartMode>('week')
-
   const [loading, setLoading]                   = useState(true)
   const [unpaidRecords, setUnpaidRecords]       = useState<AppRecord[]>([])
   const [yearRecords, setYearRecords]           = useState<AppRecord[]>([])
@@ -53,7 +52,6 @@ export function useDashboard() {
     try {
       setLoading(true)
       
-      // 1. Auth check
       if (!skipAuth) {
         const { data: { user }, error: authError } = await supabase.auth.getUser()
         if (authError || !user) { 
@@ -64,24 +62,9 @@ export function useDashboard() {
         setUserEmail(user.email ?? '')
       }
 
-      // 2. Date boundaries (ใช้ Local Time ให้เป๊ะ)
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      
-      const yesterday = new Date(today)
-      yesterday.setDate(yesterday.getDate() - 1)
-      
-      const thirtyDaysAgo = new Date(today)
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-
-      const oneYearAgo = new Date(today)
-      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+      const thirtyDaysAgoIso = getDaysAgo(30).toISOString()
+      const oneYearAgoIso = getYearsAgo(1).toISOString()
    
-      // แปลงเป็น ISO String ครั้งเดียว
-      const thirtyDaysAgoIso = thirtyDaysAgo.toISOString()
-      const oneYearAgoIso = oneYearAgo.toISOString()
-   
-      // 3. Parallel Fetching (Optimized to reduce queries)
       const [allRes, expenseRes, unpaidRes, yearRes] = await Promise.all([
         supabase.from('records').select('*').gte('created_at', thirtyDaysAgoIso).order('created_at', { ascending: true }),
         supabase.from('expenses').select('*').gte('created_at', thirtyDaysAgoIso),
@@ -93,13 +76,9 @@ export function useDashboard() {
       if (dbErrors.length > 0) {
         console.error('[Dashboard] DB Fetch Error:', dbErrors)
         toastError('ไม่สามารถดึงข้อมูลได้ครบถ้วน อาจมีปัญหากับเซิร์ฟเวอร์หรืออินเทอร์เน็ต')
-        // We can still proceed with partial data, or return. 
-        // Proceeding might be better for UX if some queries succeed, but fallback to [] is already there.
       }
 
-      // 4. State updates
-      const allData = allRes.data ?? []
-      setAllRecords(allData)
+      setAllRecords(allRes.data ?? [])
       setExpenses(expenseRes.data ?? [])
       setUnpaidRecords(unpaidRes.data ?? [])
       setYearRecords((yearRes.data ?? []) as AppRecord[])
@@ -111,7 +90,7 @@ export function useDashboard() {
     }
   }, [router, toastError])
  
-  // ── Real-time Subscriptions (debounced เพื่อป้องกัน rapid-fire re-fetch) ──
+  // ── Real-time Subscriptions (debounced) ──
   const realtimeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
     fetchData()
@@ -154,7 +133,7 @@ export function useDashboard() {
     const now = new Date().toISOString()
     
     try {
-      // Optimistic update: ลบรายการออกจาก unpaidRecords ล่วงหน้าเพื่อให้ UI ตอบสนองทันที
+      // Optimistic update
       setUnpaidRecords(prev => prev.filter(r => {
         const name = (r.customer_name || '').trim() || 'ลูกค้าทั่วไป (ไม่ระบุชื่อ)'
         return name !== (isGeneral ? 'ลูกค้าทั่วไป (ไม่ระบุชื่อ)' : customerName)
@@ -167,11 +146,10 @@ export function useDashboard() {
         .eq('customer_name', targetName)
 
       if (!error) {
-        fetchData() // ดึงข้อมูลใหม่เพื่ออัปเดตสถิติรวม (netProfit, etc.)
+        fetchData()
         toastSuccess('ทำเครื่องหมายชำระเงินเรียบร้อย')
       } else {
-        // Rollback ถ้ามี error
-        fetchData()
+        fetchData() // Rollback
         console.error('[Dashboard] markAllAsPaidByCustomer DB Error:', error)
         toastError('บันทึกข้อมูลไม่สำเร็จ: ' + error.message)
       }
@@ -184,56 +162,42 @@ export function useDashboard() {
 
   // ── Derived State & Computations (Memoized) ──
 
-  // 1. สถิติภาพรวม (คำนวณใหม่เมื่อข้อมูลเปลี่ยนเท่านั้น)
+  // 1. สถิติภาพรวม
   const stats = useMemo<DashboardStats>(() => {
-    const todayStartLocal = new Date()
-    todayStartLocal.setHours(0, 0, 0, 0)
-    const todayStartMs = todayStartLocal.getTime()
+    const todayStartMs = getStartOfDay().getTime()
+    const yesterdayStartMs = getStartOfYesterday().getTime()
 
-    // Derive today and yesterday from allRecords
-    const yesterdayStartLocal = new Date()
-    yesterdayStartLocal.setDate(yesterdayStartLocal.getDate() - 1)
-    yesterdayStartLocal.setHours(0, 0, 0, 0)
-    const yesterdayStartMs = yesterdayStartLocal.getTime()
-
-    // O(n) filter from allRecords (last 30 days)
     const todayRecords = []
     let yesterdayIncome = 0
 
     for (let i = allRecords.length - 1; i >= 0; i--) {
       const r = allRecords[i]
-      const t = new Date(r.created_at).getTime()
+      const t = parseDateMs(r.created_at)
       if (t >= todayStartMs) {
         todayRecords.push(r)
       } else if (t >= yesterdayStartMs) {
         yesterdayIncome += r.price
       } else {
-        // Since allRecords is sorted ascending, we could break early, 
-        // but sorting is ascending (oldest first). 
-        // Actually, if we go backwards, t < yesterdayStartMs means we passed yesterday.
         break
       }
     }
 
-
-    // Calculate today's stats
     let todayTotalIncome = 0
     let todayPaid = 0
     let todayUnpaid = 0
     let washCount = 0
     let polishCount = 0
 
-    todayRecords.forEach(r => {
+    for (const r of todayRecords) {
       todayTotalIncome += r.price
       if (r.payment_status === 'paid') todayPaid += r.price
       if (r.payment_status === 'unpaid') todayUnpaid += r.price
       if (r.type === 'wash') washCount++
       if (r.type === 'polish') polishCount++
-    })
+    }
 
-    // Calculate today's expenses
     const todayExpense = expenses
-      .filter(e => new Date(e.created_at).getTime() >= todayStartMs)
+      .filter(e => parseDateMs(e.created_at) >= todayStartMs)
       .reduce((s, e) => s + e.amount, 0)
       
     const diffAmount = todayTotalIncome - yesterdayIncome
@@ -252,44 +216,37 @@ export function useDashboard() {
     }
   }, [allRecords, expenses])
 
-  // 1b. Today's records (derived from allRecords — pure computation)
+  // Today's records (derived from allRecords)
   const records = useMemo<AppRecord[]>(() => {
-    const todayStartLocal = new Date()
-    todayStartLocal.setHours(0, 0, 0, 0)
-    const todayStartMs = todayStartLocal.getTime()
-    return allRecords.filter(r => new Date(r.created_at).getTime() >= todayStartMs)
+    const todayStartMs = getStartOfDay().getTime()
+    return allRecords.filter(r => parseDateMs(r.created_at) >= todayStartMs)
   }, [allRecords])
 
-  // 2. ข้อมูลกราฟ (ใช้ bucket map เพื่อ O(n) แทน O(days × records))
+  // 2. ข้อมูลกราฟ (bucket map — O(n))
   const chartData = useMemo(() => {
-    const now = new Date()
     const days = chartMode === 'week' ? 7 : 30
     
+    const now = new Date()
     const endDate = new Date(now)
     endDate.setDate(endDate.getDate() + 1)
-    endDate.setHours(0,0,0,0)
+    endDate.setHours(0, 0, 0, 0)
     
-    const startDate = new Date(now)
-    startDate.setDate(startDate.getDate() - (days - 1))
-    startDate.setHours(0,0,0,0)
-
+    const startDate = getDaysAgo(days - 1)
     const startMs = startDate.getTime()
     const endMs = endDate.getTime()
     const dayMs = 24 * 60 * 60 * 1000
 
-    // Bucket map: index → { income, expense }
     const buckets = Array.from({ length: days }, () => ({ income: 0, expense: 0 }))
 
-    // O(n) — วนรอบเดียว, หาว่าตกอยู่ใน bucket ไหน
     for (const r of allRecords) {
-      const t = new Date(r.created_at).getTime()
+      const t = parseDateMs(r.created_at)
       if (t >= startMs && t < endMs) {
         const idx = Math.floor((t - startMs) / dayMs)
         if (idx >= 0 && idx < days) buckets[idx].income += r.price
       }
     }
     for (const e of expenses) {
-      const t = new Date(e.created_at).getTime()
+      const t = parseDateMs(e.created_at)
       if (t >= startMs && t < endMs) {
         const idx = Math.floor((t - startMs) / dayMs)
         if (idx >= 0 && idx < days) buckets[idx].expense += e.amount
@@ -311,7 +268,6 @@ export function useDashboard() {
 
   // 3. จัดกลุ่มสมุดทวงหนี้ตามลูกค้า
   const groupedUnpaid = useMemo(() => {
-    // ✅ ใช้ TypeScript Record utility อย่างถูกต้อง ไม่ตีกับ type Record ของแอปเรา
     const grouped = unpaidRecords.reduce((acc, r) => {
       const name = (r.customer_name || '').trim() || 'ลูกค้าทั่วไป (ไม่ระบุชื่อ)'
       if (!acc[name]) acc[name] = []
@@ -322,11 +278,9 @@ export function useDashboard() {
     return Object.entries(grouped)
       .map(([name, items]) => ({
         customerName: name,
-        // เรียงจากค้างนานสุด → ใหม่สุด ภายในแต่ละลูกค้า
-        items: items.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
+        items: items.sort((a, b) => parseDateMs(a.created_at) - parseDateMs(b.created_at)),
         total: items.reduce((s, r) => s + r.price, 0)
       }))
-      // Sort ให้ลูกค้าที่ค้างเยอะสุดอยู่บนสุด (Optional UX Upgrade)
       .sort((a, b) => b.total - a.total)
   }, [unpaidRecords])
 
@@ -336,26 +290,11 @@ export function useDashboard() {
     [unpaidRecords]
   )
 
-  // 5. รายรับตามลูกค้า แยก wash/polish — คำนวณ 3 ช่วงเวลา (week/month/year) ในรอบเดียว
+  // 5. รายรับตามลูกค้า แยก wash/polish — คำนวณ 3 ช่วงเวลาในรอบเดียว
   const customerBreakdown = useMemo<CustomerBreakdownItem[]>(() => {
-    const now = new Date()
-    const today = new Date(now)
-    today.setHours(0, 0, 0, 0)
-
-    // Cutoff dates (Calendar periods)
-    const weekStart = new Date(today)
-    const day = weekStart.getDay()
-    const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1) // Monday as first day of week
-    weekStart.setDate(diff)
-    const weekMs = weekStart.getTime()
-
-    const monthStart = new Date(today)
-    monthStart.setDate(1) // 1st day of the current month
-    const monthMs = monthStart.getTime()
-
-    const yearStart = new Date(today)
-    yearStart.setMonth(0, 1) // Jan 1st of the current year
-    const yearMs = yearStart.getTime()
+    const weekMs = getStartOfWeek().getTime()
+    const monthMs = getStartOfMonth().getTime()
+    const yearMs = getStartOfYear().getTime()
 
     const emptyPeriod = (): CustomerTimePeriod => ({ washCount: 0, washAmount: 0, polishCount: 0, polishAmount: 0, total: 0 })
 
@@ -363,13 +302,12 @@ export function useDashboard() {
 
     for (const r of yearRecords) {
       const name = (r.customer_name || '').trim() || 'ลูกค้าทั่วไป'
-      const t = new Date(r.created_at).getTime()
+      const t = parseDateMs(r.created_at)
       if (t < yearMs) continue
 
       if (!grouped[name]) grouped[name] = { week: emptyPeriod(), month: emptyPeriod(), year: emptyPeriod() }
       const g = grouped[name]
 
-      // Accumulate into applicable periods
       const periods: CustomerTimePeriod[] = [g.year]
       if (t >= monthMs) periods.push(g.month)
       if (t >= weekMs) periods.push(g.week)
@@ -387,10 +325,7 @@ export function useDashboard() {
     }
 
     return Object.entries(grouped)
-      .map(([customerName, v]) => ({
-        customerName,
-        ...v,
-      }))
+      .map(([customerName, v]) => ({ customerName, ...v }))
       .sort((a, b) => b.month.total - a.month.total)
   }, [yearRecords])
 
