@@ -3,6 +3,12 @@ export type PaymentMethod  = 'cash' | 'transfer'
 export type PaymentStatus  = 'paid' | 'unpaid'
 export type JobStatus      = 'pending' | 'done'
 
+/** Display name for unnamed customers in analytics (short form) */
+export const DEFAULT_CUSTOMER_NAME = 'ลูกค้าทั่วไป'
+/** Display name for unnamed customers in unpaid/debt tracking (explicit form) */
+export const DEFAULT_CUSTOMER_NAME_UNPAID = 'ลูกค้าทั่วไป (ไม่ระบุชื่อ)'
+
+
 export interface Record {
   id:               string
   created_at:       string
@@ -56,6 +62,7 @@ export const CAR_BRANDS = [
   { id: 'chevrolet',  name: 'CHEVROLET' },
   { id: 'deepal',     name: 'DEEPAL' },
   { id: 'byd',        name: 'BYD' },
+  { id: 'jaecoo',     name: 'JAECOO' },
   { id: 'ora',        name: 'ORA / GWM' },
   { id: 'neta',       name: 'NETA' },
   { id: 'tesla',      name: 'TESLA' },
