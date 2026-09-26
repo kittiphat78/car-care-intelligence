@@ -1,5 +1,6 @@
 import { memo, useState } from 'react'
 import { CustomerBreakdownItem, CustomerTimePeriod } from '@/hooks/useDashboard'
+import { DEFAULT_CUSTOMER_NAME } from '@/types'
 
 const TOP_N = 5
 
@@ -21,8 +22,8 @@ export const CustomerBreakdownSection = memo(function CustomerBreakdownSection({
   let displayed: CustomerBreakdownItem[] = []
   
   if (data.length > 0) {
-    const namedCustomers = data.filter(c => c.customerName !== 'ลูกค้าทั่วไป')
-    const generalCustomer = data.find(c => c.customerName === 'ลูกค้าทั่วไป')
+    const namedCustomers = data.filter(c => c.customerName !== DEFAULT_CUSTOMER_NAME)
+    const generalCustomer = data.find(c => c.customerName === DEFAULT_CUSTOMER_NAME)
     
     const topNamed = namedCustomers.filter(c => c.month.total > 0).slice(0, TOP_N - 1)
     const topNamedSet = new Set(topNamed.map(c => c.customerName))
@@ -31,7 +32,7 @@ export const CustomerBreakdownSection = memo(function CustomerBreakdownSection({
     const emptyPeriod = (): CustomerTimePeriod => ({ washCount: 0, washAmount: 0, polishCount: 0, polishAmount: 0, total: 0 })
     
     let mergedGeneral: CustomerBreakdownItem = generalCustomer || {
-      customerName: 'ลูกค้าทั่วไป',
+      customerName: DEFAULT_CUSTOMER_NAME,
       week: emptyPeriod(),
       month: emptyPeriod(),
       year: emptyPeriod(),
@@ -39,7 +40,7 @@ export const CustomerBreakdownSection = memo(function CustomerBreakdownSection({
 
     if (otherNamed.length > 0 && generalCustomer) {
       mergedGeneral = {
-        customerName: 'ลูกค้าทั่วไป',
+        customerName: DEFAULT_CUSTOMER_NAME,
         week: { ...generalCustomer.week },
         month: { ...generalCustomer.month },
         year: { ...generalCustomer.year },
@@ -136,7 +137,7 @@ const CustomerBreakdownCard = memo(function CustomerBreakdownCard({
 }) {
   const [expanded, setExpanded] = useState(false)
   const isTop = rank === 1
-  const customerInitial = item.customerName === 'ลูกค้าทั่วไป'
+  const customerInitial = item.customerName === DEFAULT_CUSTOMER_NAME
     ? '👤'
     : item.customerName.charAt(0)
   const monthData = item.month

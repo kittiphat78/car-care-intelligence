@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Record as AppRecord, Expense } from '@/types'
+import { Record as AppRecord, Expense, DEFAULT_CUSTOMER_NAME, DEFAULT_CUSTOMER_NAME_UNPAID } from '@/types'
 import { useToast } from '@/hooks/useToast'
 import { getStartOfDay, getStartOfYesterday, getDaysAgo, getYearsAgo, getStartOfWeek, getStartOfMonth, getStartOfYear, parseDateMs } from '@/lib/dateUtils'
 
@@ -122,9 +122,9 @@ export function useDashboard() {
   }, [router])
 
   const markAllAsPaidByCustomer = useCallback(async (customerName: string) => {
-    const isGeneral = customerName === 'ลูกค้าทั่วไป (ไม่ระบุชื่อ)'
+    const isGeneral = customerName === DEFAULT_CUSTOMER_NAME_UNPAID
     const confirmMsg = isGeneral
-      ? `ยืนยันว่า "ลูกค้าทั่วไป (ไม่ระบุชื่อ)" ชำระเงินครบแล้วทั้งหมด?`
+      ? `ยืนยันว่า "${DEFAULT_CUSTOMER_NAME_UNPAID}" ชำระเงินครบแล้วทั้งหมด?`
       : `ยืนยันว่าเต็นท์/ลูกค้า "${customerName}" ชำระเงินครบแล้วทั้งหมด?`
     
     if (!window.confirm(confirmMsg)) return
@@ -135,8 +135,8 @@ export function useDashboard() {
     try {
       // Optimistic update
       setUnpaidRecords(prev => prev.filter(r => {
-        const name = (r.customer_name || '').trim() || 'ลูกค้าทั่วไป (ไม่ระบุชื่อ)'
-        return name !== (isGeneral ? 'ลูกค้าทั่วไป (ไม่ระบุชื่อ)' : customerName)
+        const name = (r.customer_name || '').trim() || DEFAULT_CUSTOMER_NAME_UNPAID
+        return name !== (isGeneral ? DEFAULT_CUSTOMER_NAME_UNPAID : customerName)
       }))
 
       const { error } = await supabase
@@ -269,7 +269,7 @@ export function useDashboard() {
   // 3. จัดกลุ่มสมุดทวงหนี้ตามลูกค้า
   const groupedUnpaid = useMemo(() => {
     const grouped = unpaidRecords.reduce((acc, r) => {
-      const name = (r.customer_name || '').trim() || 'ลูกค้าทั่วไป (ไม่ระบุชื่อ)'
+      const name = (r.customer_name || '').trim() || DEFAULT_CUSTOMER_NAME_UNPAID
       if (!acc[name]) acc[name] = []
       acc[name].push(r)
       return acc
@@ -301,7 +301,7 @@ export function useDashboard() {
     const grouped: globalThis.Record<string, { week: CustomerTimePeriod; month: CustomerTimePeriod; year: CustomerTimePeriod }> = {}
 
     for (const r of yearRecords) {
-      const name = (r.customer_name || '').trim() || 'ลูกค้าทั่วไป'
+      const name = (r.customer_name || '').trim() || DEFAULT_CUSTOMER_NAME
       const t = parseDateMs(r.created_at)
       if (t < yearMs) continue
 

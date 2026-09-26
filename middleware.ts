@@ -1,6 +1,14 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// Single source of truth — เฉพาะ routes ที่มี page จริง
+const PROTECTED_ROUTES = ['/', '/history', '/add']
+
+const isProtectedPath = (path: string) =>
+  PROTECTED_ROUTES.some(route =>
+    route === '/' ? path === '/' : path.startsWith(route)
+  )
+
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
     request: { headers: request.headers },
@@ -12,13 +20,8 @@ export async function middleware(request: NextRequest) {
   if (!supabaseUrl || !supabaseKey) {
     console.warn('⚠️ [Middleware] Missing Supabase environment variables. Please check your .env file.')
     const path = request.nextUrl.pathname
-    const protectedRoutes = ['/', '/dashboard', '/history', '/finance', '/export', '/add']
-    const isProtectedRoute = protectedRoutes.some(route => {
-      if (route === '/') return path === '/'
-      return path.startsWith(route)
-    })
-    
-    if (isProtectedRoute) {
+
+    if (isProtectedPath(path)) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
     return response
@@ -50,17 +53,8 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
   const isLoginPage = path.startsWith('/login')
 
-  // กำหนด Route ที่ต้องการป้องกัน (รวมหน้า / ซึ่งก็คือ Dashboard ปัจจุบัน)
-  const protectedRoutes = ['/', '/dashboard', '/history', '/finance', '/export', '/add']
-  
-  // เช็คว่า path ปัจจุบันอยู่ในรายการที่ต้องป้องกันหรือไม่
-  const isProtectedRoute = protectedRoutes.some(route => {
-    if (route === '/') return path === '/'
-    return path.startsWith(route)
-  })
-
   // ถ้ายังไม่ได้ login และพยายามเข้าหน้า Protected Route → redirect ไป /login
-  if (!user && isProtectedRoute) {
+  if (!user && isProtectedPath(path)) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
@@ -74,4 +68,4 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
-}
+}
