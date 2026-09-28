@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { authenticateRequest } from '@/lib/serverAuth'
+import { env } from '@/lib/env'
 
 // Rate limit store (in-memory, suitable for single-instance / edge)
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
@@ -73,10 +74,18 @@ export async function POST(request: Request) {
     const unpaidCount = sanitizeNumber(data.unpaidCount ?? 0)
     const unpaidTotal = sanitizeNumber(data.unpaidTotal ?? 0)
 
-    const apiKey = process.env.GEMINI_API_KEY
-
-    if (!apiKey) {
-      return NextResponse.json({ text: '✦ กรุณาใส่ GEMINI_API_KEY ในไฟล์ .env.local เพื่อเปิดใช้งาน AI' })
+    let apiKey: string
+    try {
+      apiKey = env.GEMINI_API_KEY
+    } catch (configErr) {
+      console.error('[API Insights Error]: Configuration error -', configErr)
+      return NextResponse.json(
+        {
+          error: 'CONFIGURATION_ERROR',
+          text: '✦ ระบบ AI ยังไม่ได้ถูกเปิดใช้งาน หรือขาดการตั้งค่า GEMINI_API_KEY ใน Environment Variables',
+        },
+        { status: 500 }
+      )
     }
 
     // 5. Build prompt with sanitized values only
@@ -116,13 +125,29 @@ export async function POST(request: Request) {
     const resData = await response.json()
     
     if (resData.error) {
-      return NextResponse.json({ text: `✦ AI Error: ${resData.error.message}` })
+      console.error('[API Insights Error]: Gemini API responded with error:', resData.error)
+      return NextResponse.json(
+        {
+          error: 'AI_PROVIDER_ERROR',
+          text: `✦ AI Error: ${resData.error.message || 'บริการ AI ตอบกลับด้วยข้อผิดพลาด'}`,
+        },
+        { status: response.status >= 400 ? response.status : 502 }
+      )
     }
     
     const text = resData.candidates?.[0]?.content?.parts?.[0]?.text || '✦ ไม่สามารถวิเคราะห์ข้อมูลได้ในขณะนี้'
 
     return NextResponse.json({ text })
-  } catch {
-    return NextResponse.json({ text: 'เกิดข้อผิดพลาดในการเชื่อมต่อกับ AI' }, { status: 500 })
+  } catch (error) {
+    console.error('[API Insights Error]:', error)
+    const errorMessage = error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการเชื่อมต่อกับ AI'
+    return NextResponse.json(
+      {
+        error: 'API_INSIGHTS_ERROR',
+        text: 'เกิดข้อผิดพลาดในการเชื่อมต่อกับ AI กรุณาลองใหม่อีกครั้ง',
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
+      },
+      { status: 500 }
+    )
   }
 }
