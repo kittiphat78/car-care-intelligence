@@ -13,6 +13,10 @@ const sarabun = Sarabun({
 export const metadata: Metadata = {
   title: 'Car Care Intelligence',
   description: 'ระบบจัดการร้านล้างรถอัจฉริยะ',
+  robots: {
+    index: false,
+    follow: false,
+  },
 }
 
 export const viewport: Viewport = {

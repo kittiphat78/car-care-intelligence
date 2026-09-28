@@ -7,7 +7,6 @@ export const TabToggle = memo(function TabToggle({ activeTab, switchTab }: { act
       <button
         role="tab"
         aria-selected={activeTab === 'income'}
-        aria-pressed={activeTab === 'income'}
         onClick={() => switchTab('income')}
         style={activeTab === 'income' ? { color: 'var(--accent)' } : undefined}
       >
@@ -16,7 +15,6 @@ export const TabToggle = memo(function TabToggle({ activeTab, switchTab }: { act
       <button
         role="tab"
         aria-selected={activeTab === 'expense'}
-        aria-pressed={activeTab === 'expense'}
         onClick={() => switchTab('expense')}
         style={activeTab === 'expense' ? { color: 'var(--red)' } : undefined}
       >
