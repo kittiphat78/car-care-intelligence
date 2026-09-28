@@ -8,7 +8,7 @@
  * รัน: npx vitest run tests/useDashboard.test.ts
  */
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { parseDateMs, getStartOfDay, getStartOfYesterday, getDaysAgo, getStartOfWeek, getStartOfMonth, getStartOfYear } from '@/lib/dateUtils'
+import { parseDateMs, getStartOfDay, getStartOfYesterday, getStartOfWeek, getStartOfMonth, getStartOfYear } from '@/lib/dateUtils'
 import type { Record as AppRecord, Expense } from '@/types'
 import { DEFAULT_CUSTOMER_NAME, DEFAULT_CUSTOMER_NAME_UNPAID } from '@/types'
 
