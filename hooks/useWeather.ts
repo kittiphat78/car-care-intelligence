@@ -179,6 +179,8 @@ function formatUpdateTime(date: Date): string {
 const FETCH_INTERVAL_MS = 5 * 60 * 1000
 const RETRY_DELAY_MS = 30 * 1000
 const MAX_RETRIES = 3
+const CACHE_KEY = 'car_care_weather_cache'
+const CACHE_TTL_MS = 30 * 60 * 1000 // 30 นาที
 
 // AQI thresholds (US EPA scale)
 const AQI_HAZARDOUS     = 300
@@ -187,17 +189,62 @@ const AQI_UNHEALTHY      = 150
 const AQI_SENSITIVE       = 100
 const AQI_MODERATE        = 50
 
+interface CachedWeather {
+  data: WeatherData
+  timestamp: number
+}
+
+function getCachedWeather(): WeatherData | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY)
+    if (!raw) return null
+    const parsed: CachedWeather = JSON.parse(raw)
+    if (Date.now() - parsed.timestamp < CACHE_TTL_MS) {
+      return parsed.data
+    }
+    sessionStorage.removeItem(CACHE_KEY)
+  } catch (e) {
+    console.warn('[useWeather] Error reading cache from sessionStorage:', e)
+  }
+  return null
+}
+
+function setCachedWeather(data: WeatherData) {
+  if (typeof window === 'undefined') return
+  try {
+    const payload: CachedWeather = { data, timestamp: Date.now() }
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify(payload))
+  } catch (e) {
+    console.warn('[useWeather] Error saving cache to sessionStorage:', e)
+  }
+}
+
 export function useWeather() {
-  const [weather, setWeather] = useState<WeatherData | null>(null)
+  const [weather, setWeather] = useState<WeatherData | null>(() => getCachedWeather())
   const [isRefetching, setIsRefetching] = useState(false)
   const retryCountRef = useRef(0)
   const retryTimerRef = useRef<NodeJS.Timeout | null>(null)
 
-  const fetchWeather = useCallback(async function fetchWeatherFn(signal?: AbortSignal) {
+  const fetchWeather = useCallback(async function fetchWeatherFn(signal?: AbortSignal, force = false) {
+    // หากไม่บังคับดึงข้อมูลใหม่ (force = false) ให้เช็ค cache ที่มีอายุน้อยกว่า 30 นาที
+    if (!force) {
+      const cached = getCachedWeather()
+      if (cached) {
+        setWeather(cached)
+        setIsRefetching(false)
+        return
+      }
+    }
+
     setIsRefetching(true)
     const timestamp = Date.now()
     const hour = new Date().getHours()
     const isNight = hour >= 18 || hour < 6
+
+    // ดึงพิกัดจาก Environment Variable (Fallback: เชียงราย 19.91, 99.84)
+    const lat = process.env.NEXT_PUBLIC_WEATHER_LAT || '19.91'
+    const lon = process.env.NEXT_PUBLIC_WEATHER_LON || '99.84'
 
     let icon = '☁️'; let condition = 'กำลังอัปเดต...'; let temp = 0; let feelsLike = 0;
     let humidity = 0; let windSpeed = 0; let prob = 0; let probTom = 0;
@@ -207,7 +254,7 @@ export function useWeather() {
     let fetchSuccess = false;
 
     const weatherReq = fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=19.91&longitude=99.84&current=temperature_2m,weather_code,relative_humidity_2m,apparent_temperature,wind_speed_10m&hourly=precipitation_probability&daily=precipitation_probability_max&timezone=Asia%2FBangkok&forecast_days=2&_t=${timestamp}`,
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,relative_humidity_2m,apparent_temperature,wind_speed_10m&hourly=precipitation_probability&daily=precipitation_probability_max&timezone=Asia%2FBangkok&forecast_days=2&_t=${timestamp}`,
       { cache: 'no-store', signal }
     ).then(res => {
       if (!res.ok) throw new Error('Weather API error')
@@ -215,7 +262,7 @@ export function useWeather() {
     })
 
     const aqiReq = fetch(
-      `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=19.91&longitude=99.84&current=us_aqi&timezone=Asia%2FBangkok&_t=${timestamp}`,
+      `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=us_aqi&timezone=Asia%2FBangkok&_t=${timestamp}`,
       { cache: 'no-store', signal }
     ).then(res => {
       if (!res.ok) throw new Error('AQI API error')
@@ -257,7 +304,7 @@ export function useWeather() {
       setIsRefetching(false)
       if (retryCountRef.current < MAX_RETRIES) {
         retryCountRef.current++
-        retryTimerRef.current = setTimeout(() => fetchWeatherFn(signal), RETRY_DELAY_MS)
+        retryTimerRef.current = setTimeout(() => fetchWeatherFn(signal, force), RETRY_DELAY_MS)
       }
       return
     }
@@ -286,26 +333,33 @@ export function useWeather() {
       message += ' 😷 ฝุ่นเริ่มแดง ใส่หน้ากากอนามัยด้วยนะครับ'
     }
 
-    setWeather({
+    const weatherData: WeatherData = {
       icon, condition, temp, feelsLike, humidity, windSpeed,
       prob, aqi: aqiValue, aqiStatus, message,
       ...theme,
       lastUpdated: formatUpdateTime(new Date()),
-    });
-    
+    }
+
+    setWeather(weatherData)
+    setCachedWeather(weatherData)
     setIsRefetching(false)
   }, [])
+
+  const refetch = useCallback(() => {
+    return fetchWeather(undefined, true)
+  }, [fetchWeather])
 
   useEffect(() => {
     const controller = new AbortController()
 
-    fetchWeather(controller.signal)
+    // โหลดครั้งแรก (ดึงจาก Cache ก่อนหากมี)
+    fetchWeather(controller.signal, false)
 
-    const intervalId = setInterval(() => fetchWeather(controller.signal), FETCH_INTERVAL_MS)
+    const intervalId = setInterval(() => fetchWeather(controller.signal, false), FETCH_INTERVAL_MS)
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        fetchWeather()
+        fetchWeather(undefined, false)
       }
     }
     document.addEventListener('visibilitychange', handleVisibilityChange)
@@ -318,5 +372,5 @@ export function useWeather() {
     }
   }, [fetchWeather])
 
-  return { data: weather, refetch: fetchWeather, isRefetching }
+  return { data: weather, refetch, isRefetching }
 }

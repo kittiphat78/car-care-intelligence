@@ -1,6 +1,5 @@
 import { memo, useEffect, useCallback, useState } from 'react'
 import { Record as AppRecord } from '@/types'
-import { generateCashBill } from '@/lib/generateBill'
 import { useToast } from '@/hooks/useToast'
 import { CloseIcon, ClockIcon, BillIcon, CheckMarkIcon } from '@/components/icons/DashboardIcons'
 
@@ -51,6 +50,7 @@ export const UnpaidModal = memo(function UnpaidModal({ unpaidData, totalAmount, 
   const handleGenerateBill = useCallback(async (customerName: string, items: AppRecord[]) => {
     setGeneratingBillFor(customerName)
     try {
+      const { generateCashBill } = await import('@/lib/generateBill')
       await generateCashBill(items, customerName)
     } catch (e) {
       console.error(e)

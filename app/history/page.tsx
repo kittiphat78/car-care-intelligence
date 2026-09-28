@@ -2,7 +2,6 @@
 
 import { useCallback, useState, useMemo } from 'react'
 import { Record as AppRecord, Expense } from '@/types'
-import { exportToExcel } from '@/lib/export'
 import EditModal from '@/components/EditModal'
 import { useToast } from '@/hooks/useToast'
 import { supabase } from '@/lib/supabase'
@@ -113,7 +112,8 @@ export default function HistoryPage() {
     const exportData = { records: records || [], expenses: expenses || [] }
     const fileName = mode === 'internal' ? `รายงานภายใน_${rangeLabel}` : `สรุปรายรับและรายจ่าย_${rangeLabel}`
 
-    exportToExcel(exportData, fileName, mode)
+    const { exportToExcel } = await import('@/lib/export')
+    await exportToExcel(exportData, fileName, mode)
     setIsExportModalOpen(false)
   }, [toastInfo])
 
