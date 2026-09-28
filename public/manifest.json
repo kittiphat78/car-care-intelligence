@@ -1,0 +1,57 @@
+{
+  "name": "Car Care Intelligence",
+  "short_name": "คาร์แคร์",
+  "description": "ระบบจัดการร้านล้างรถอัจฉริยะ — บันทึกรายรับ รายจ่าย และติดตามลูกค้า",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#0A0A0F",
+  "background_color": "#0A0A0F",
+  "lang": "th",
+  "dir": "ltr",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/manifest-icon-192.maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/manifest-icon-512.maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/apple-icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/favicon-196.png",
+      "sizes": "196x196",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "บันทึกรายรับ",
+      "short_name": "เพิ่มรายการ",
+      "description": "เปิดหน้าบันทึกรายรับรายจ่ายโดยตรง",
+      "url": "/add",
+      "icons": [{ "src": "/icons/manifest-icon-192.maskable.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "ประวัติรายการ",
+      "short_name": "ประวัติ",
+      "description": "เปิดหน้าประวัติรายการ",
+      "url": "/history",
+      "icons": [{ "src": "/icons/manifest-icon-192.maskable.png", "sizes": "192x192" }]
+    }
+  ]
+}

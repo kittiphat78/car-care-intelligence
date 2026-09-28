@@ -17,13 +17,38 @@ export const metadata: Metadata = {
     index: false,
     follow: false,
   },
+  // ── PWA Manifest ──
+  manifest: '/manifest.json',
+  // ── iOS Web App ──
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'คาร์แคร์',
+  },
+  // ── Icons ──
+  icons: {
+    icon: [
+      { url: '/icons/icon.svg',                     type: 'image/svg+xml' },
+      { url: '/icons/manifest-icon-192.maskable.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/manifest-icon-512.maskable.png', sizes: '512x512', type: 'image/png' },
+      { url: '/icons/favicon-196.png',               sizes: '196x196', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/icons/apple-icon-180.png', sizes: '180x180', type: 'image/png' },
+    ],
+  },
 }
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  // ── Kiosk / Tablet Mode: ป้องกันการ Pinch-Zoom โดยไม่ตั้งใจ ──
   maximumScale: 1,
-  themeColor: '#0A0A0F',
+  userScalable: false,
+  themeColor: [
+    { media: '(prefers-color-scheme: dark)',  color: '#0A0A0F' },
+    { media: '(prefers-color-scheme: light)', color: '#FFFFFF' },
+  ],
 }
 
 // Inline script to prevent flash of wrong theme
@@ -47,4 +72,4 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </body>
     </html>
   )
-}
+}

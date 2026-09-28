@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0A0A0F"/>
+      <stop offset="100%" stop-color="#1A1A2E"/>
+    </linearGradient>
+    <linearGradient id="car" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#0EA5E9"/>
+    </linearGradient>
+  </defs>
+  <!-- Background with rounded corners -->
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <!-- Car body -->
+  <path d="M96 300 L130 230 Q160 195 220 190 L300 188 Q350 188 380 210 L420 300 Z"
+        fill="url(#car)" opacity="0.9"/>
+  <!-- Car roof -->
+  <path d="M180 230 Q220 190 260 185 Q300 182 340 200 L370 230 Z"
+        fill="#7DD3FC"/>
+  <!-- Wheels -->
+  <circle cx="170" cy="310" r="38" fill="#0A0A0F" stroke="#38BDF8" stroke-width="8"/>
+  <circle cx="170" cy="310" r="20" fill="#1E293B"/>
+  <circle cx="350" cy="310" r="38" fill="#0A0A0F" stroke="#38BDF8" stroke-width="8"/>
+  <circle cx="350" cy="310" r="20" fill="#1E293B"/>
+  <!-- Water drops -->
+  <ellipse cx="200" cy="155" rx="8" ry="14" fill="#38BDF8" opacity="0.8"/>
+  <ellipse cx="260" cy="140" rx="8" ry="14" fill="#7DD3FC" opacity="0.9"/>
+  <ellipse cx="320" cy="150" rx="6" ry="11" fill="#38BDF8" opacity="0.7"/>
+  <ellipse cx="370" cy="170" rx="5" ry="9"  fill="#BAE6FD" opacity="0.6"/>
+  <!-- Splash waves -->
+  <path d="M80 360 Q160 340 256 355 Q352 370 432 350"
+        fill="none" stroke="#38BDF8" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
+  <path d="M100 380 Q180 362 256 375 Q332 388 420 368"
+        fill="none" stroke="#7DD3FC" stroke-width="3" stroke-linecap="round" opacity="0.4"/>
+</svg>
