@@ -14,7 +14,7 @@ Car Care Intelligence
 ├── /debts                         ค้างชำระ (สมุดทวงหนี้)            [auth]  ใหม่
 │   ├── ?sort=amount|age
 │   ├── ?edit=income:<id>          ↳ dialog แก้ไขรายการ
-│   └── ?settle=<customer>         ↳ dialog ยืนยันรับชำระครบ
+│   └── ?settle=<customer>         ↳ dialog ยืนยันเคลียร์ยอด
 ├── /add                           บันทึก                          [auth]
 │   └── ?type=income|expense
 ├── /history                       ประวัติ                          [auth]
@@ -36,7 +36,7 @@ Car Care Intelligence
 |---|---|---|---|---|---|---|---|---|---|
 | `/login` | เข้าสู่ระบบ · คาร์แคร์ | public (ถ้ามี session → `/`) | ยืนยันตัวตน | `next` (path ภายในเท่านั้น) | เปิดแอปครั้งแรก, session หมดอายุ, logout | `next` หรือ `/` | F-01, F-02 | เปลี่ยน (เพิ่ม `next`) | R5 |
 | `/` | ภาพรวม · คาร์แคร์ | auth | ยอดวันนี้, ค้างชำระ, รายการวันนี้, แนวโน้ม | `edit` | nav, หลัง login, หลังบันทึก, PWA start_url | `/debts`, `/add`, `/history`, dialog แก้ไข | F-11..F-19 | เปลี่ยน | R3 |
-| `/debts` | ค้างชำระ · คาร์แคร์ | auth | ทวงหนี้, ออกบิล, รับชำระครบ | `sort`, `edit`, `settle` | nav, การ์ดค้างชำระบน `/` | dialog แก้ไข, ดาวน์โหลด PDF | F-20..F-22 | **ใหม่** (แทน modal) | R3 |
+| `/debts` | ค้างชำระ · คาร์แคร์ | auth | ทวงหนี้, ออกบิล, เคลียร์ยอด | `sort`, `edit`, `settle` | nav, การ์ดค้างชำระบน `/` | dialog แก้ไข, ดาวน์โหลด PDF | F-20..F-22 | **ใหม่** (แทน modal) | R3 |
 | `/add` | บันทึกรายการ · คาร์แคร์ | auth | บันทึกรายรับหรือรายจ่าย | `type` | nav (ปุ่มกลาง), PWA shortcut | `/` (บันทึก) หรืออยู่หน้าเดิม (บันทึกแล้วทำต่อ) | F-23..F-31 | เปลี่ยน (`type` ใน URL) | R2 |
 | `/history` | ประวัติ · คาร์แคร์ | auth | ค้นหา, ตรวจสอบ, แก้ไข, ลบ และส่งออก | `tab`, `y`, `m`, `q`, `from`, `to`, `job`, `edit`, `export` | nav, PWA shortcut, "ดูทั้งหมด" จาก `/` | dialog แก้ไข, dialog ส่งออก | F-32..F-40 | เปลี่ยน (ตัวกรองใน URL) | R4 |
 | `/more` | เพิ่มเติม · คาร์แคร์ | auth | บัญชี, theme, logout, เวอร์ชัน | `logout` | nav | `/login` (หลัง logout) | F-04, F-06 | **ใหม่** | R5 |
