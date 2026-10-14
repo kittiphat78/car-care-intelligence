@@ -1,10 +1,27 @@
 import type { NextConfig } from 'next'
 import { version } from './package.json'
+import { checkEnvironment } from './lib/env-guard'
+
+// ADR-12: Preview/Development ห้ามชี้ฐานข้อมูล production (และ production ต้องชี้ production) ไม่งั้น build ไม่ผ่าน
+const environment = checkEnvironment({
+  appEnv: process.env.NEXT_PUBLIC_APP_ENV,
+  vercelEnv: process.env.VERCEL_ENV,
+  supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  productionRef: process.env.PRODUCTION_SUPABASE_PROJECT_REF,
+})
+for (const warning of environment.warnings) console.warn(`⚠ [env-guard] ${warning}`)
+if (environment.errors.length > 0) {
+  throw new Error(['[env-guard] Environment misconfigured:', ...environment.errors.map(e => `  • ${e}`)].join('\n'))
+}
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   // แนบเลขเวอร์ชันไปกับรายงาน error (lib/observability.ts)
-  env: { NEXT_PUBLIC_APP_VERSION: version },
+  env: {
+    NEXT_PUBLIC_APP_VERSION: version,
+    NEXT_PUBLIC_APP_ENV: environment.appEnv,
+    NEXT_PUBLIC_APP_DATABASE: environment.database,
+  },
   // TypeScript และ ESLint จะทำงานปกติตอน build
   async headers() {
     return [
