@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Record, Expense, PaymentStatus, CAR_TYPES, CAR_BRANDS } from '@/types'
-import { splitDateTime, mergeDateTime } from '@/lib/dateUtils'
+import { splitDateTime, resolveCreatedAt } from '@/lib/dateUtils'
 import DOMPurify from 'isomorphic-dompurify'
 
 interface EditModalProps {
@@ -88,7 +88,8 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
   }, [item, type, isOpen])
 
   const handleSave = useCallback(() => {
-    const created_at = mergeDateTime(editDate, editTime)
+    if (!item) return
+    const created_at = resolveCreatedAt(item.created_at, editDate, editTime)
     const now = new Date().toISOString()
     if (type === 'income') {
       onSave({
@@ -112,7 +113,7 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
         updated_at: now
       })
     }
-  }, [type, recordType, plate, price, customerName, paymentStatus, selectedType, selectedBrand, incomeNote, editDate, editTime, currentUserEmail, title, amount, note, onSave])
+  }, [item, type, recordType, plate, price, customerName, paymentStatus, selectedType, selectedBrand, incomeNote, editDate, editTime, currentUserEmail, title, amount, note, onSave])
 
   if (!isOpen || !item) return null
 

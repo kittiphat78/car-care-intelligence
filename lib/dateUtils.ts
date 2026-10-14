@@ -63,22 +63,45 @@ export function parseDateMs(isoString: string): number {
   return Date.parse(isoString)
 }
 
+/** Shop time zone. Thailand has no daylight saving time, so the offset is fixed. */
+const SHOP_TIME_ZONE = 'Asia/Bangkok'
+const SHOP_UTC_OFFSET = '+07:00'
+
+const shopDateTimeParts = new Intl.DateTimeFormat('en-CA', {
+  timeZone: SHOP_TIME_ZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+})
+
 /**
- * Split an ISO datetime string into { date, time } for form fields.
+ * Split an ISO datetime string into { date, time } for form fields,
+ * both in Asia/Bangkok wall-clock time regardless of the device time zone.
  */
 export function splitDateTime(iso: string): { date: string; time: string } {
-  const d = new Date(iso)
-  const date = d.toISOString().split('T')[0]
-  const time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-  return { date, time }
+  const parts: Partial<Record<Intl.DateTimeFormatPartTypes, string>> = {}
+  for (const part of shopDateTimeParts.formatToParts(new Date(iso))) parts[part.type] = part.value
+  return {
+    date: `${parts.year}-${parts.month}-${parts.day}`,
+    time: `${parts.hour}:${parts.minute}`,
+  }
 }
 
 /**
- * Merge separate date and time strings back into an ISO datetime string.
+ * Merge Asia/Bangkok date (YYYY-MM-DD) and time (HH:mm) strings back into an ISO datetime string.
  */
 export function mergeDateTime(date: string, time: string): string {
-  const [h, m] = time.split(':').map(Number)
-  const d = new Date(date)
-  d.setHours(h, m, 0, 0)
-  return d.toISOString()
+  return new Date(`${date}T${time}:00${SHOP_UTC_OFFSET}`).toISOString()
+}
+
+/**
+ * Value to save as created_at after editing: the stored value untouched when the
+ * date and time fields were not changed, otherwise the newly entered Bangkok time.
+ */
+export function resolveCreatedAt(storedIso: string, date: string, time: string): string {
+  const original = splitDateTime(storedIso)
+  return original.date === date && original.time === time ? storedIso : mergeDateTime(date, time)
 }
