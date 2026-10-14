@@ -4,6 +4,7 @@ import { useState, useEffect, memo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
 import { ErrorBanner } from '@/components/ui/ErrorBanner'
+import { NEXT_PARAM, safeNextPath } from '@/lib/auth/redirect'
 
 /* ─── Main Component ─── */
 export default function LoginPage() {
@@ -37,7 +38,9 @@ export default function LoginPage() {
       if (data.session) {
         if (rememberMe) localStorage.setItem('remembered_email', emailVal)
         else localStorage.removeItem('remembered_email')
-        router.refresh(); router.push('/')
+        // กลับไปหน้าที่ตั้งใจจะเข้าก่อนถูกพามา login (เฉพาะหน้าในเว็บนี้)
+        const next = safeNextPath(new URLSearchParams(window.location.search).get(NEXT_PARAM))
+        router.refresh(); router.push(next)
       }
     } catch {
       setError('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง'); setLoading(false)

@@ -42,10 +42,15 @@ describe('proxy', () => {
     vi.unstubAllEnvs()
   })
 
-  it.each(['/', '/history', '/add', '/history/anything'])('redirects a signed-out visitor from %s to /login', async (path) => {
+  it.each([
+    ['/', '/login'],
+    ['/history', '/login?next=%2Fhistory'],
+    ['/add', '/login?next=%2Fadd'],
+    ['/history/anything?tab=expense', '/login?next=%2Fhistory%2Fanything%3Ftab%3Dexpense'],
+  ])('redirects a signed-out visitor from %s to %s', async (path, target) => {
     const res = await proxy(request(path))
     expect(res.status).toBe(307)
-    expect(res.headers.get('location')).toBe('https://shop.example/login')
+    expect(res.headers.get('location')).toBe(`https://shop.example${target}`)
   })
 
   it('lets a signed-out visitor open /login', async () => {
@@ -76,6 +81,17 @@ describe('proxy', () => {
     const res = await proxy(request('/'))
     expect(res.cookies.get('sb-token')?.value).toBe('new')
     expect(res.headers.get('cache-control')).toBe('private, no-store')
+  })
+
+  it.each([
+    ['/login?next=%2Fhistory', 'https://shop.example/history'],
+    ['/login?next=%2Fadd%3Fmode%3Dexpense', 'https://shop.example/add?mode=expense'],
+    ['/login?next=https%3A%2F%2Fevil.example', 'https://shop.example/'],
+    ['/login?next=%2F%2Fevil.example', 'https://shop.example/'],
+  ])('sends a signed-in user from %s to %s (same site only)', async (path, target) => {
+    mockState.user = { id: 'user-1' }
+    const res = await proxy(request(path))
+    expect(res.headers.get('location')).toBe(target)
   })
 
   it('keeps refreshed session cookies on a redirect', async () => {

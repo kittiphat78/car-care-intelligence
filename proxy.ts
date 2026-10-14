@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { LOGIN_PATH, NEXT_PARAM, loginPathFor, safeNextPath } from '@/lib/auth/redirect'
 
 // Single source of truth — เฉพาะ routes ที่มี page จริง
 const PROTECTED_ROUTES = ['/', '/history', '/add']
@@ -24,7 +25,7 @@ export async function proxy(request: NextRequest) {
 
   if (!supabaseUrl || !supabaseKey) {
     console.warn('⚠️ [Proxy] Missing Supabase environment variables. Please check your .env file.')
-    return isProtectedPath(request.nextUrl.pathname) ? redirectTo('/login') : response
+    return isProtectedPath(request.nextUrl.pathname) ? redirectTo(LOGIN_PATH) : response
   }
 
   const supabase = createServerClient(supabaseUrl, supabaseKey, {
@@ -44,16 +45,16 @@ export async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
   const path = request.nextUrl.pathname
-  const isLoginPage = path.startsWith('/login')
+  const isLoginPage = path.startsWith(LOGIN_PATH)
 
-  // ถ้ายังไม่ได้ login และพยายามเข้าหน้า Protected Route → redirect ไป /login
+  // ถ้ายังไม่ได้ login และพยายามเข้าหน้า Protected Route → redirect ไป /login แล้วจำหน้าที่จะไปไว้ใน ?next=
   if (!user && isProtectedPath(path)) {
-    return redirectTo('/login')
+    return redirectTo(loginPathFor(path + request.nextUrl.search))
   }
 
-  // ถ้า login อยู่แล้ว แต่ตั้งใจจะเข้า /login → redirect ไปหน้าหลัก
+  // ถ้า login อยู่แล้ว แต่ตั้งใจจะเข้า /login → ไปหน้าที่จำไว้ (หรือหน้าหลัก)
   if (user && isLoginPage) {
-    return redirectTo('/')
+    return redirectTo(safeNextPath(request.nextUrl.searchParams.get(NEXT_PARAM)))
   }
 
   return response
