@@ -7,7 +7,7 @@
 
 | Feature | Branch | Commits | Tests | สถานะ |
 |---|---|---|---|---|
-| Phase 0: Hotfix v1.0.1 (ER-01 + Next 16.3.8) | `hotfix/1.0.1` (จาก `v1.0.0`) | `1cab952`, `e2b67ed`, `93f60ff` | 191/191 (TZ Bangkok/UTC/NY), lint 0 error, type, build ✅ | ✅ เสร็จในเครื่อง · รออนุมัติ H-a..H-d (`hotfix-1.0.1.md`) |
+| Phase 0: Hotfix v1.0.1 (ER-01 + Next 16.3.8) | `hotfix/1.0.1` (จาก `v1.0.0`) | `1cab952`, `e2b67ed`, `93f60ff` | 191/191 (TZ Bangkok/UTC/NY), lint 0 error, type, build ✅ | ✅ push แล้ว (H-a) · Vercel Preview `93f60ff` build สำเร็จ · รอ H-b..H-d (`hotfix-1.0.1.md`) |
 | A1: CI quality gates | `ci/quality-gates` (จาก `main` = `v1.0.0`) | `e820660` | จำลองทุก job ในเครื่อง ✅ (§2) | ✅ เสร็จในเครื่อง · รออนุมัติ push + PR |
 | A2…C9 | — | — | — | ยังไม่เริ่ม |
 
@@ -39,10 +39,11 @@
 | S07-05 | `.github/` ใช้ LF แต่เครื่องตั้ง `core.autocrlf` (Windows) จึงมีคำเตือน CRLF ซึ่งไม่กระทบ GitHub Actions | Low | RESOLVED (ไม่ต้องทำ) |
 | S07-06 | เจ้าของเลือกเผยแพร่เฉพาะสรุป incident (repo public) และบันทึกฉบับเต็มเก็บใน branch `local/incident-detail-2026-10-14` บนเครื่องเท่านั้น (ไม่ push) | Medium | RESOLVED |
 | S07-07 | สลับ branch ทำให้ `node_modules` ต้อง `npm ci` ใหม่ทุกครั้ง (hotfix = Next 16.3.8, main = 16.2.1) และตอนนี้ `node_modules` ตรงกับ `main` | Low | — (ขั้นตอนปกติ) |
+| S07-08 | ถ้ายังไม่ตั้ง Ignored Build Step ทุก commit เอกสารหรือ CI จะ build และ deploy ใหม่ → เจ้าของตั้ง Custom `git diff --quiet HEAD^ HEAD -- . ':(exclude)docs' ':(exclude).github'` แล้ว 2026-10-14 | Low | RESOLVED (ยืนยันจาก commit เอกสารถัดไปที่ถูกข้าม build) |
 
 ## 4. รออนุมัติ (ต่อ feature)
 | # | ขอ | ผล |
 |---|---|---|
 | A1-a | Push `ci/quality-gates` + เปิด PR → `main` | CI รันครั้งแรกบน GitHub และ Vercel สร้าง Preview (โค้ดแอปเหมือน v1.0.0) |
-| A1-b | Merge PR | ไม่เปลี่ยน runtime แต่ทำให้ Vercel deploy production ใหม่ (build เดิม) ถ้ายังไม่ได้ตั้ง Ignored Build Step |
+| A1-b | Merge PR | ไม่เปลี่ยน runtime · Ignored Build Step ตั้งแล้ว (S07-08) จึงไม่ deploy production ใหม่ |
 | A1-c | ตั้ง required checks ใน ruleset (เจ้าของ) | `lint`, `typecheck`, `test`, `build`, `secrets`, `pr-title` ทันที และ `audit` หลัง v1.0.1 |
