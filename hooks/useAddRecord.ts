@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
+import { countVisitsByPlate } from '@/features/records/api'
 
 export function useAuthUser() {
   const [user, setUser] = useState<{ id: string | null; email: string }>({ id: null, email: '' })
@@ -42,16 +43,10 @@ export function useCustomerVisitCount(plate: string) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (checkPlate.length < 3) { setVisitCount(0); return }
     const timer = setTimeout(async () => {
-      try {
-        const { count, error } = await supabase
-          .from('records').select('*', { count: 'exact', head: true }).eq('plate', checkPlate)
-        if (error) {
-          console.error('[VisitCount] DB Error:', error)
-        }
-        setVisitCount(count ?? 0)
-      } catch (err) {
-        console.error('[VisitCount] Unexpected Error:', err)
-      }
+      // ล้มเหลวแบบเงียบ: แสดง 0 ครั้ง (FR-REC-06)
+      const result = await countVisitsByPlate(checkPlate)
+      if (!result.ok) console.error('[VisitCount] DB Error:', result.error)
+      setVisitCount(result.ok ? result.data : 0)
     }, 600)
     return () => clearTimeout(timer)
   }, [plate])

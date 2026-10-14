@@ -1,8 +1,10 @@
 import { useState, useCallback, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
 import { Record as AppRecord, Expense } from '@/types'
 import { TabType } from '@/components/history/constants'
-import { bangkokYearRange } from '@/lib/time/bangkok'
+import { loadYear } from '@/features/history/api'
+import { deleteEntry, updateEntry } from '@/features/records/api'
+import { toUserMessage } from '@/lib/errors'
+import { reportAppError } from '@/lib/observability'
 
 export function useHistoryData(selectedYear: number, activeTab: TabType) {
   const [records, setRecords] = useState<AppRecord[]>([])
@@ -13,27 +15,17 @@ export function useHistoryData(selectedYear: number, activeTab: TabType) {
   const fetchAllData = useCallback(async () => {
     try {
       setLoading(true); setError('')
-      const { start, end } = bangkokYearRange(selectedYear)
-      const startOfYear = start.toISOString()
-      const endOfYear = end.toISOString()
+      const result = await loadYear(selectedYear)
 
-      const [recordsRes, expensesRes] = await Promise.all([
-        supabase.from('records').select('*').gte('created_at', startOfYear).lt('created_at', endOfYear).order('created_at', { ascending: false }),
-        supabase.from('expenses').select('*').gte('created_at', startOfYear).lt('created_at', endOfYear).order('created_at', { ascending: false }),
-      ])
-      
-      const dbErrors = [recordsRes.error, expensesRes.error].filter(Boolean)
-      if (dbErrors.length > 0) {
-        console.error('[History] Fetch Error:', dbErrors)
-        setError('ไม่สามารถโหลดข้อมูลประวัติได้บางส่วน')
+      const failure = [result.records, result.expenses].find(r => !r.ok)
+      if (failure && !failure.ok) {
+        console.error('[History] Fetch Error:', failure.error)
+        reportAppError(failure.error)
+        setError(`ไม่สามารถโหลดข้อมูลประวัติได้บางส่วน: ${toUserMessage(failure.error)}`)
       }
-      
-      setRecords(recordsRes.data ?? [])
-      setExpenses(expensesRes.data ?? [])
-    } catch (err) {
-      console.error('[History] Unexpected Fetch Error:', err)
-      setError('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์')
-      setRecords([]); setExpenses([])
+
+      setRecords(result.records.ok ? result.records.data : [])
+      setExpenses(result.expenses.ok ? result.expenses.data : [])
     } finally {
       setLoading(false)
     }
@@ -42,42 +34,34 @@ export function useHistoryData(selectedYear: number, activeTab: TabType) {
   useEffect(() => { fetchAllData() }, [fetchAllData])
 
   const handleDelete = useCallback(async (id: string, onCloseModal: () => void) => {
-    try {
-      setError('')
-      const table = activeTab === 'income' ? 'records' : 'expenses'
-      const { error } = await supabase.from(table).delete().eq('id', id)
-      
-      if (error) {
-        console.error('[History] Delete Error:', error)
-        setError('ลบข้อมูลไม่สำเร็จ: ' + error.message)
-      } else { 
-        onCloseModal(); fetchAllData() 
-      }
-    } catch (err) {
-      console.error('[History] Unexpected Delete Error:', err)
-      setError('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์')
+    setError('')
+    const table = activeTab === 'income' ? 'records' : 'expenses'
+    const result = await deleteEntry(table, id)
+
+    if (!result.ok) {
+      console.error('[History] Delete Error:', result.error)
+      reportAppError(result.error)
+      setError('ลบข้อมูลไม่สำเร็จ: ' + toUserMessage(result.error))
+    } else {
+      onCloseModal(); fetchAllData()
     }
   }, [activeTab, fetchAllData])
 
   const handleSave = useCallback(async (updatedFields: Partial<AppRecord & Expense>, id: string, onCloseModal: () => void) => {
-    try {
-      setError('')
-      const table = activeTab === 'income' ? 'records' : 'expenses'
-      const updateData = activeTab === 'income'
-        ? { type: updatedFields.type, plate: updatedFields.plate, price: updatedFields.price, services: updatedFields.services, customer_name: updatedFields.customer_name, payment_status: updatedFields.payment_status, created_at: updatedFields.created_at, updated_by_email: updatedFields.updated_by_email, updated_at: updatedFields.updated_at }
-        : { title: updatedFields.title, amount: updatedFields.amount, note: updatedFields.note, created_at: updatedFields.created_at, updated_by_email: updatedFields.updated_by_email, updated_at: updatedFields.updated_at }
-      
-      const { error } = await supabase.from(table).update(updateData).eq('id', id)
-      
-      if (error) {
-        console.error('[History] Update Error:', error)
-        setError('บันทึกข้อมูลไม่สำเร็จ: ' + error.message)
-      } else { 
-        onCloseModal(); fetchAllData() 
-      }
-    } catch (err) {
-      console.error('[History] Unexpected Update Error:', err)
-      setError('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์')
+    setError('')
+    const table = activeTab === 'income' ? 'records' : 'expenses'
+    const updateData = activeTab === 'income'
+      ? { type: updatedFields.type, plate: updatedFields.plate, price: updatedFields.price, services: updatedFields.services, customer_name: updatedFields.customer_name, payment_status: updatedFields.payment_status, created_at: updatedFields.created_at, updated_by_email: updatedFields.updated_by_email, updated_at: updatedFields.updated_at }
+      : { title: updatedFields.title, amount: updatedFields.amount, note: updatedFields.note, created_at: updatedFields.created_at, updated_by_email: updatedFields.updated_by_email, updated_at: updatedFields.updated_at }
+
+    const result = await updateEntry(table, id, updateData)
+
+    if (!result.ok) {
+      console.error('[History] Update Error:', result.error)
+      reportAppError(result.error)
+      setError('บันทึกข้อมูลไม่สำเร็จ: ' + toUserMessage(result.error))
+    } else {
+      onCloseModal(); fetchAllData()
     }
   }, [activeTab, fetchAllData])
 

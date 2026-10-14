@@ -4,8 +4,10 @@ import { useCallback, useState, useMemo } from 'react'
 import { Record as AppRecord, Expense } from '@/types'
 import EditModal from '@/components/EditModal'
 import { useToast } from '@/hooks/useToast'
-import { supabase } from '@/lib/supabase'
-import { addDays, bangkokMonthRange, bangkokParts, startOfBangkokDay } from '@/lib/time/bangkok'
+import { loadExportRange } from '@/features/history/api'
+import { toAppError, toUserMessage } from '@/lib/errors'
+import { reportAppError } from '@/lib/observability'
+import { addDays, bangkokParts, startOfBangkokDay } from '@/lib/time/bangkok'
 
 import { TabType, FilterType, MONTH_OPTIONS } from '@/components/history/constants'
 import { useHistoryData } from '@/hooks/useHistoryData'
@@ -18,7 +20,7 @@ import { ExportModal } from '@/components/history/ExportModal'
 import { ErrorBanner } from '@/components/ui/ErrorBanner'
 
 export default function HistoryPage() {
-  const { info: toastInfo } = useToast()
+  const { info: toastInfo, error: toastError } = useToast()
   const [activeTab, setActiveTab] = useState<TabType>('income')
   const [search, setSearch] = useState('')
   const [selectedYear, setSelectedYear] = useState(() => bangkokParts().year)
@@ -92,32 +94,40 @@ export default function HistoryPage() {
   const closeModal = useCallback(() => setIsModalOpen(false), [])
 
   const handleExport = useCallback(async (startYear: number, startMonth: number, endYear: number, endMonth: number, mode: 'bank' | 'internal') => {
-    const startDate = bangkokMonthRange(startYear, startMonth).start.toISOString()
-    const endDate = bangkokMonthRange(endYear, endMonth).end.toISOString()
-
     const getMonthName = (m: number) => MONTH_OPTIONS.find(opt => opt.value === m)?.label || ''
     const startStr = `${getMonthName(startMonth)}${startYear + 543}`
     const endStr = `${getMonthName(endMonth)}${endYear + 543}`
     const rangeLabel = startStr === endStr ? startStr : `ตั้งแต่${startStr}_ถึง${endStr}`
 
-    const [{ data: records }, { data: expenses }] = await Promise.all([
-      supabase.from('records').select('*').gte('created_at', startDate).lt('created_at', endDate).order('created_at', { ascending: true }),
-      supabase.from('expenses').select('*').gte('created_at', startDate).lt('created_at', endDate).order('created_at', { ascending: true })
-    ])
+    // โหลดไม่ครบ = ไม่สร้างไฟล์ เพื่อไม่ให้ได้ไฟล์ที่ขาดรายรับหรือรายจ่ายโดยไม่รู้ตัว (ER-07)
+    const result = await loadExportRange(startYear, startMonth, endYear, endMonth)
+    if (!result.ok) {
+      console.error('[History] Export Fetch Error:', result.error)
+      reportAppError(result.error)
+      toastError('ส่งออกไม่สำเร็จ: ' + toUserMessage(result.error))
+      return
+    }
 
-    if ((!records || records.length === 0) && (!expenses || expenses.length === 0)) {
+    const { records, expenses } = result.data
+    if (records.length === 0 && expenses.length === 0) {
       toastInfo('ไม่พบข้อมูลในช่วงเวลาที่เลือก')
       setIsExportModalOpen(false)
       return
     }
 
-    const exportData = { records: records || [], expenses: expenses || [] }
     const fileName = mode === 'internal' ? `รายงานภายใน_${rangeLabel}` : `สรุปรายรับและรายจ่าย_${rangeLabel}`
 
-    const { exportToExcel } = await import('@/lib/export')
-    await exportToExcel(exportData, fileName, mode)
-    setIsExportModalOpen(false)
-  }, [toastInfo])
+    try {
+      const { exportToExcel } = await import('@/lib/export')
+      await exportToExcel({ records, expenses }, fileName, mode)
+      setIsExportModalOpen(false)
+    } catch (e) {
+      console.error('[History] Export Error:', e)
+      const appErr = toAppError(e)
+      reportAppError(appErr)
+      toastError('สร้างไฟล์ไม่สำเร็จ: ' + toUserMessage(appErr))
+    }
+  }, [toastInfo, toastError])
 
 
   return (

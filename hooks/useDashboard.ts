@@ -3,7 +3,10 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Record as AppRecord, Expense, DEFAULT_CUSTOMER_NAME, DEFAULT_CUSTOMER_NAME_UNPAID } from '@/types'
 import { useToast } from '@/hooks/useToast'
-import { getStartOfDay, getStartOfYesterday, getDaysAgo, getYearsAgo, getStartOfWeek, getStartOfMonth, getStartOfYear, parseDateMs } from '@/lib/dateUtils'
+import { getStartOfDay, getStartOfYesterday, getStartOfWeek, getStartOfMonth, getStartOfYear, parseDateMs } from '@/lib/dateUtils'
+import { loadDashboard, markCustomerPaid } from '@/features/dashboard/api'
+import { toUserMessage } from '@/lib/errors'
+import { reportAppError } from '@/lib/observability'
 import { addDays, bangkokToday, formatBangkok, startOfBangkokDay } from '@/lib/time/bangkok'
 
 export type ChartMode = 'week' | 'month'
@@ -63,26 +66,19 @@ export function useDashboard() {
         setUserEmail(user.email ?? '')
       }
 
-      const thirtyDaysAgoIso = getDaysAgo(30).toISOString()
-      const oneYearAgoIso = getYearsAgo(1).toISOString()
-   
-      const [allRes, expenseRes, unpaidRes, yearRes] = await Promise.all([
-        supabase.from('records').select('*').gte('created_at', thirtyDaysAgoIso).order('created_at', { ascending: true }),
-        supabase.from('expenses').select('*').gte('created_at', thirtyDaysAgoIso),
-        supabase.from('records').select('*').eq('payment_status', 'unpaid').order('created_at', { ascending: true }),
-        supabase.from('records').select('id,created_at,type,price,customer_name').gte('created_at', oneYearAgoIso).order('created_at', { ascending: true })
-      ])
-   
-      const dbErrors = [allRes.error, expenseRes.error, unpaidRes.error, yearRes.error].filter(Boolean)
-      if (dbErrors.length > 0) {
-        console.error('[Dashboard] DB Fetch Error:', dbErrors)
-        toastError('ไม่สามารถดึงข้อมูลได้ครบถ้วน อาจมีปัญหากับเซิร์ฟเวอร์หรืออินเทอร์เน็ต')
+      const { recentRecords, recentExpenses, unpaidRecords, yearRecords } = await loadDashboard()
+
+      const failure = [recentRecords, recentExpenses, unpaidRecords, yearRecords].find(r => !r.ok)
+      if (failure && !failure.ok) {
+        console.error('[Dashboard] DB Fetch Error:', failure.error)
+        reportAppError(failure.error)
+        toastError(`ไม่สามารถดึงข้อมูลได้ครบถ้วน: ${toUserMessage(failure.error)}`)
       }
 
-      setAllRecords(allRes.data ?? [])
-      setExpenses(expenseRes.data ?? [])
-      setUnpaidRecords(unpaidRes.data ?? [])
-      setYearRecords((yearRes.data ?? []) as AppRecord[])
+      setAllRecords(recentRecords.ok ? recentRecords.data : [])
+      setExpenses(recentExpenses.ok ? recentExpenses.data : [])
+      setUnpaidRecords(unpaidRecords.ok ? unpaidRecords.data : [])
+      setYearRecords(yearRecords.ok ? yearRecords.data : [])
     } catch (err) {
       console.error('[Dashboard] Unexpected Error during fetchData:', err)
       toastError('เกิดข้อผิดพลาดเครือข่าย หรือเซิร์ฟเวอร์ไม่ตอบสนอง')
@@ -131,8 +127,7 @@ export function useDashboard() {
     if (!window.confirm(confirmMsg)) return
 
     const targetName = isGeneral ? '' : customerName
-    const now = new Date().toISOString()
-    
+
     try {
       // Optimistic update
       setUnpaidRecords(prev => prev.filter(r => {
@@ -140,19 +135,16 @@ export function useDashboard() {
         return name !== (isGeneral ? DEFAULT_CUSTOMER_NAME_UNPAID : customerName)
       }))
 
-      const { error } = await supabase
-        .from('records')
-        .update({ payment_status: 'paid', updated_at: now, updated_by_email: userEmail })
-        .eq('payment_status', 'unpaid')
-        .eq('customer_name', targetName)
+      const result = await markCustomerPaid(targetName, userEmail)
 
-      if (!error) {
+      if (result.ok) {
         fetchData()
         toastSuccess('ทำเครื่องหมายชำระเงินเรียบร้อย')
       } else {
         fetchData() // Rollback
-        console.error('[Dashboard] markAllAsPaidByCustomer DB Error:', error)
-        toastError('บันทึกข้อมูลไม่สำเร็จ: ' + error.message)
+        console.error('[Dashboard] markAllAsPaidByCustomer DB Error:', result.error)
+        reportAppError(result.error)
+        toastError('บันทึกข้อมูลไม่สำเร็จ: ' + toUserMessage(result.error))
       }
     } catch (err) {
       fetchData() // Rollback
