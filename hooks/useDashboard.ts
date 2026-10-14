@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { Record as AppRecord, Expense, DEFAULT_CUSTOMER_NAME, DEFAULT_CUSTOMER_NAME_UNPAID } from '@/types'
 import { useToast } from '@/hooks/useToast'
 import { getStartOfDay, getStartOfYesterday, getDaysAgo, getYearsAgo, getStartOfWeek, getStartOfMonth, getStartOfYear, parseDateMs } from '@/lib/dateUtils'
+import { addDays, bangkokToday, formatBangkok, startOfBangkokDay } from '@/lib/time/bangkok'
 
 export type ChartMode = 'week' | 'month'
 export interface CustomerTimePeriod {
@@ -226,14 +227,10 @@ export function useDashboard() {
   const chartData = useMemo(() => {
     const days = chartMode === 'week' ? 7 : 30
     
-    const now = new Date()
-    const endDate = new Date(now)
-    endDate.setDate(endDate.getDate() + 1)
-    endDate.setHours(0, 0, 0, 0)
-    
-    const startDate = getDaysAgo(days - 1)
-    const startMs = startDate.getTime()
-    const endMs = endDate.getTime()
+    const today = bangkokToday()
+    const firstDay = addDays(today, -(days - 1))
+    const startMs = startOfBangkokDay(firstDay).getTime()
+    const endMs = startOfBangkokDay(addDays(today, 1)).getTime()
     const dayMs = 24 * 60 * 60 * 1000
 
     const buckets = Array.from({ length: days }, () => ({ income: 0, expense: 0 }))
@@ -254,12 +251,11 @@ export function useDashboard() {
     }
 
     return buckets.map((b, i) => {
-      const d = new Date(startDate)
-      d.setDate(d.getDate() + i)
+      const dayStart = startOfBangkokDay(addDays(firstDay, i))
       return {
-        label: chartMode === 'week' 
-          ? d.toLocaleDateString('th-TH', { weekday: 'short' }) 
-          : d.toLocaleDateString('th-TH', { day: 'numeric' }),
+        label: chartMode === 'week'
+          ? formatBangkok(dayStart, { weekday: 'short' })
+          : formatBangkok(dayStart, { day: 'numeric' }),
         income: b.income,
         expense: b.expense,
       }

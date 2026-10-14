@@ -1,15 +1,16 @@
 import { memo } from 'react'
 import { useTheme } from '@/hooks/useTheme'
+import { bangkokParts, formatBangkok } from '@/lib/time/bangkok'
 
 function getGreeting(): string {
-  const h = new Date().getHours()
+  const h = bangkokParts().hour
   if (h < 12) return 'สวัสดีตอนเช้า'
   if (h < 17) return 'สวัสดีตอนบ่าย'
   return 'สวัสดีตอนเย็น'
 }
 
 function getThaiDate(): string {
-  return new Date().toLocaleDateString('th-TH', {
+  return formatBangkok(new Date(), {
     weekday: 'long',
     day: 'numeric',
     month: 'long',

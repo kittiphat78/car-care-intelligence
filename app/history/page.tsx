@@ -5,6 +5,7 @@ import { Record as AppRecord, Expense } from '@/types'
 import EditModal from '@/components/EditModal'
 import { useToast } from '@/hooks/useToast'
 import { supabase } from '@/lib/supabase'
+import { addDays, bangkokMonthRange, bangkokParts, startOfBangkokDay } from '@/lib/time/bangkok'
 
 import { TabType, FilterType, MONTH_OPTIONS } from '@/components/history/constants'
 import { useHistoryData } from '@/hooks/useHistoryData'
@@ -20,8 +21,8 @@ export default function HistoryPage() {
   const { info: toastInfo } = useToast()
   const [activeTab, setActiveTab] = useState<TabType>('income')
   const [search, setSearch] = useState('')
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
+  const [selectedYear, setSelectedYear] = useState(() => bangkokParts().year)
+  const [selectedMonth, setSelectedMonth] = useState(() => bangkokParts().month)
   const [filterType, setFilterType] = useState<FilterType>('all')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
@@ -36,11 +37,11 @@ export default function HistoryPage() {
   }, [])
 
   const currentMonthRecords = useMemo(() =>
-    selectedMonth === 0 ? records : records.filter(r => new Date(r.created_at).getMonth() + 1 === selectedMonth)
+    selectedMonth === 0 ? records : records.filter(r => bangkokParts(r.created_at).month === selectedMonth)
     , [records, selectedMonth])
 
   const currentMonthExpenses = useMemo(() =>
-    selectedMonth === 0 ? expenses : expenses.filter(e => new Date(e.created_at).getMonth() + 1 === selectedMonth)
+    selectedMonth === 0 ? expenses : expenses.filter(e => bangkokParts(e.created_at).month === selectedMonth)
     , [expenses, selectedMonth])
 
   const summary = useMemo(() => {
@@ -58,8 +59,9 @@ export default function HistoryPage() {
   }, [currentMonthRecords, currentMonthExpenses])
 
   const filteredItems = useMemo(() => {
-    const fromTime = dateFrom ? new Date(dateFrom).getTime() : 0
-    const toTime = dateTo ? new Date(dateTo + 'T23:59:59').getTime() : Infinity
+    // ช่วงวันที่เป็นวันไทยเต็มวัน: ตั้งแต่ 00:00 ของวันเริ่ม ถึงก่อน 00:00 ของวันถัดจากวันสิ้นสุด (ER-10)
+    const fromTime = dateFrom ? startOfBangkokDay(dateFrom).getTime() : 0
+    const toTime = dateTo ? startOfBangkokDay(addDays(dateTo, 1)).getTime() - 1 : Infinity
     const sl = search.toLowerCase()
 
     if (activeTab === 'income') {
@@ -78,8 +80,8 @@ export default function HistoryPage() {
 
   const grouped = useMemo(() =>
     filteredItems.reduce((acc, item) => {
-      const d = new Date(item.created_at)
-      const date = `${d.getDate()} ${MONTH_OPTIONS[d.getMonth() + 1].label} ${d.getFullYear() + 543}`
+      const d = bangkokParts(item.created_at)
+      const date = `${d.day} ${MONTH_OPTIONS[d.month].label} ${d.year + 543}`
       if (!acc[date]) acc[date] = []
       acc[date].push(item)
       return acc
@@ -90,8 +92,8 @@ export default function HistoryPage() {
   const closeModal = useCallback(() => setIsModalOpen(false), [])
 
   const handleExport = useCallback(async (startYear: number, startMonth: number, endYear: number, endMonth: number, mode: 'bank' | 'internal') => {
-    const startDate = new Date(startYear, startMonth - 1, 1).toISOString()
-    const endDate = new Date(endYear, endMonth, 1).toISOString()
+    const startDate = bangkokMonthRange(startYear, startMonth).start.toISOString()
+    const endDate = bangkokMonthRange(endYear, endMonth).end.toISOString()
 
     const getMonthName = (m: number) => MONTH_OPTIONS.find(opt => opt.value === m)?.label || ''
     const startStr = `${getMonthName(startMonth)}${startYear + 543}`
@@ -146,7 +148,7 @@ export default function HistoryPage() {
         <ExportModal
           activeTab={activeTab}
           defaultYear={selectedYear}
-          defaultMonth={selectedMonth === 0 ? new Date().getMonth() + 1 : selectedMonth}
+          defaultMonth={selectedMonth === 0 ? bangkokParts().month : selectedMonth}
           onClose={() => setIsExportModalOpen(false)}
           onExport={handleExport}
         />

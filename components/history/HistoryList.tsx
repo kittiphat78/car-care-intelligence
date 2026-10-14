@@ -1,6 +1,7 @@
 import { Record as AppRecord, Expense } from '@/types'
 import { TabType, getExpenseIcon } from './constants'
 import RecordCard from '@/components/RecordCard'
+import { formatBangkok } from '@/lib/time/bangkok'
 
 interface HistoryListProps {
   loading: boolean
@@ -87,7 +88,7 @@ export function HistoryList({ loading, grouped, activeTab, onItemClick }: Histor
                               −฿{(item as Expense).amount.toLocaleString()}
                             </p>
                             <p className="text-[12px] text-[var(--text-tertiary)] mt-1 font-medium">
-                              {new Date(item.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.
+                              {formatBangkok(item.created_at, { hour: '2-digit', minute: '2-digit' })} น.
                             </p>
                           </div>
                         </div>

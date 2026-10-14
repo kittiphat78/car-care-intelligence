@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf'
 import type { Record as AppRecord } from '@/types'
+import { formatBangkok } from '@/lib/time/bangkok'
 
 /* ═══════════════════════════════════════════════════════════════════════════
    ข้อมูลร้าน — แก้ไขตรงนี้ถ้าข้อมูลเปลี่ยน
@@ -104,8 +105,7 @@ export async function generateCashBill(
   doc.setFont('Sarabun', 'normal')
 
   const billNo = generateBillNumber()
-  const today = new Date()
-  const thaiDate = today.toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' })
+  const thaiDate = formatBangkok(new Date(), { day: 'numeric', month: 'long', year: 'numeric' })
   let y = margin + 2
 
   // ═════════════════════════════════════════════════════════════════════════
