@@ -23,8 +23,8 @@
 
 | PR | Branch | เนื้อหา | ต้องมี | Release |
 |---|---|---|---|---|
-| H1 | `hotfix/next-16-4` | `build(deps)`: `next` + `eslint-config-next` 16.4.x (exact) | lockfile diff review, audit ก่อน/หลัง | v1.0.1 |
-| H2 | `hotfix/edit-date-shift` | `fix(records)`: ER-01 + test 00:00/03:30/06:59/07:00/23:59 ภายใต้ TZ Asia/Bangkok และ UTC | — | v1.0.1 |
+| H1 | `hotfix/1.0.1` | `build(deps)`: `next` + `eslint-config-next` **16.3.8** (exact) — ✅ commit `e2b67ed` (`hotfix-1.0.1.md`) | lockfile diff review, audit ก่อน/หลัง | v1.0.1 |
+| H2 | `hotfix/1.0.1` | `fix(records)`: ER-01 + test 00:00/03:30/06:59/07:00/23:59 ภายใต้ TZ Asia/Bangkok, UTC, New York — ✅ commit `1cab952` | — | v1.0.1 |
 
 ไม่มี DB change และ rollback = Vercel instant rollback ไป v1.0.0
 ⚠ ปัจจุบันยังไม่มี staging จึงทดสอบ H2 ได้แค่ unit test และการแก้ไขจริงบน Preview จะเขียน production DB (R01) **ถ้ายังไม่มี P-3 ให้ทดสอบ H2 แบบ manual บน production เฉพาะการ "เปิด-บันทึกโดยไม่แก้" กับรายการทดสอบที่สร้างเองแล้วลบทิ้ง หรือรอ P-3** โดยต้องได้อนุมัติแยก
