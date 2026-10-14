@@ -8,13 +8,16 @@
 | Feature | Branch | Commits | Tests | สถานะ |
 |---|---|---|---|---|
 | Phase 0: Hotfix v1.0.1 (ER-01 + Next 16.3.8) | `hotfix/1.0.1` (จาก `v1.0.0`) | `1cab952`, `e2b67ed`, `93f60ff` | 191/191 (TZ Bangkok/UTC/NY), lint 0 error, type, build ✅ | ✅ **Production** · PR #3 merge `d748ac6` (merge commit) · Vercel production deploy success 2026-10-14 19:43 · tag `v1.0.1` → `d748ac6` ✅ |
-| A1: CI quality gates | `ci/quality-gates` (rebase บน `main` `d748ac6`) | `5d12043` | จำลองทุก job ในเครื่อง ✅ (§2) · `npm audit --audit-level=critical` บน `main` ปัจจุบัน exit 0 ✅ | ✅ push แล้ว · รอเจ้าของเปิด PR + merge |
+| A1: CI quality gates | `ci/quality-gates` | `5d12043` | CI รันจริงบน GitHub ผ่าน 9/9 (Node 22 runner) ✅ | ✅ PR #4 merge แล้ว |
 | A2: Ignored Build Step | — (ตั้งใน Vercel โดยเจ้าของ) | — | commit docs-only ถูกข้าม build ✅ | ✅ (S07-08) |
-| A4: proxy + server client + `next` param | `refactor/proxy-and-server-client` (จาก `main` `d748ac6`) | `9ca9719`, `a73e770` | 222/222 · `next start` ในเครื่อง: `/` → `/login`, `/history` → `/login?next=%2Fhistory` ✅ | ✅ push แล้ว · รอเจ้าของเปิด PR + merge |
-| A9: error reporting | `chore/error-reporting` (ต่อจาก A4) | `d8f64fa` | 223/223 · endpoint ในเครื่อง: ไม่มี session 401, origin อื่น 403 ✅ | ✅ เสร็จในเครื่อง · ไม่ push |
-| B1: เวลาไทย | `refactor/time-bangkok` (ต่อจาก A9) | `749498a` | 268/268 ทั้ง TZ Bangkok และ UTC · test ใหม่ fail กับโค้ดเดิมเมื่อ TZ=UTC/NY ✅ | ✅ เสร็จในเครื่อง · ไม่ push |
+| A4: proxy + server client + `next` param | `refactor/proxy-and-server-client` | `9ca9719`, `a73e770` | 222/222 · production: `/history` → `/login?next=%2Fhistory` ✅ · เจ้าของ login ใช้งานได้ ✅ | ✅ **Production** · PR #6 → `24c6c8c` |
+| A9: error reporting | `chore/error-reporting` | `75d7613` | 242/242 · production: `/api/client-errors` ไม่มี session → 401 ✅ | ✅ **Production** · PR #7 → `152fd26` |
+| B1: เวลาไทย | `refactor/time-bangkok` (rebase บน `152fd26`) | `776780b` | 287/287 ทั้ง TZ Bangkok และ UTC · test ใหม่ fail กับโค้ดเดิมเมื่อ TZ=UTC/NY ✅ | 🔄 push แล้ว · รอ PR + ทดสอบ Preview + merge |
 | B2: data-access layer | `refactor/data-access-layer` (ต่อจาก B1) | `c402e3b` | 323/323 (รวม A4 `next`) ทั้ง TZ Bangkok และ UTC ✅ | ✅ เสร็จในเครื่อง · ไม่ push |
-| A3, A5–A8, B3–B7, C1–C9 | — | — | — | ยังไม่เริ่ม (A3/A5–A7 รอ P-3/P-4, A8 รอ Q-12, C* รอ S06-02) |
+| A5: DB baseline | `db/baseline` | `e67140c` | รันบน staging: M000 สำเร็จ · RLS on · anon ไม่มีสิทธิ์ · seed 1,263/141 แถว ✅ | 🔄 push แล้ว · รอ PR + merge (CLI config + CI `db` job ทำต่อ) |
+| A8: ลบ API ที่ไม่ใช้ | `chore/remove-unused-api` (จาก `152fd26`) | `e99c31c` | 241/241 · build เหลือแค่ `/api/client-errors` ✅ | ✅ เสร็จในเครื่อง · รออนุมัติ push |
+| P-3/P-4: staging | — (Supabase + Vercel โดยเจ้าของ) | — | Preview ส่ง login ไปที่ staging (Auth log) ✅ · key production ตรวจภายนอกแล้ว ✅ | 🔄 เหลือบัญชีทดสอบที่ login ได้ (S07-17) |
+| A3, A6, A7, B3–B7, C1–C9 | — | — | — | ยังไม่เริ่ม (P-9, Q-12, S06-02 ตอบแล้ว 2026-10-14) |
 
 ## 2. A1 — CI quality gates
 
@@ -66,6 +69,11 @@
 | S07-14 | ทดสอบเส้นทางบันทึก/แก้/ลบจริงบน Preview ไม่ได้ เพราะ Preview ใช้ production DB ทำให้ unit test ใช้ mock | Medium | BLOCKED (P-3/P-4 staging) |
 | S07-15 | `fetchAllPages` ใช้ offset pagination ซึ่งถ้ามีการบันทึกระหว่างโหลดหลายหน้า อาจได้แถวซ้ำ 1 แถว [I] (ร้านบันทึก ~3 รายการ/วัน) | Low | UNRESOLVED (แก้ด้วย RPC ใน B3) |
 | S07-16 | สภาพอากาศ (`useWeather`) ยังใช้ชั่วโมงของเครื่อง | Low | — (ย้ายใน `features/weather`) |
+| S07-17 | login บน Preview ไม่ได้: staging Auth log = `Invalid login credentials` (Preview ชี้ staging ถูกแล้ว) [I] พิมพ์รหัสขณะแป้นเป็นภาษาไทย | Low | UNRESOLVED (เจ้าของสร้างบัญชีทดสอบใหม่) |
+| S07-18 | `pr-title` ไม่รันใหม่เมื่อแก้หัวข้อ PR (workflow ไม่ฟัง event `edited`) ทำให้ PR #6 แสดง fail ทั้งที่หัวข้อถูก | Low | UNRESOLVED (แก้ใน CI follow-up) |
+| S07-19 | PR #4–#7 ถูก merge แบบ merge commit ไม่ใช่ squash ตาม `git-workflow.md` §3.1 | Low | — (ไม่เสียหาย) |
+| S07-20 | Ignored Build Step ไม่ยกเว้น `supabase/` ทำให้ merge PR ที่แก้แค่ SQL จะ deploy production ใหม่ด้วยโค้ดเดิม | Low | NEEDS_APPROVAL (เพิ่ม `':(exclude)supabase'` ใน Vercel) |
+| S07-21 | หลัง merge A8 ตัวแปร `GEMINI_API_KEY` ใน Vercel (ถ้ามี) ไม่ถูกใช้แล้ว | Low | NEEDS_APPROVAL (เจ้าของลบ) |
 
 ## 4. รออนุมัติ (ต่อ feature)
 | # | ขอ | ผล |
