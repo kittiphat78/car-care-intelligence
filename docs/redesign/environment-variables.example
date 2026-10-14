@@ -1,0 +1,51 @@
+# =============================================================================
+# Car Care Intelligence — Environment Variables (Step 05 design)
+# -----------------------------------------------------------------------------
+# ไฟล์นี้เป็น "ตัวอย่าง" เท่านั้น: ไม่มีค่าจริงหรือ secret ใด ๆ
+# ค่าจริงตั้งใน Vercel (Production / Preview / Development แยก scope) และ .env.local บนเครื่อง dev
+# ห้าม commit .env.local หรือไฟล์ที่มีค่าจริง (.gitignore ครอบ .env* อยู่แล้ว ยกเว้น .env.example)
+#
+# Scope:  P = Production   V = Preview (staging)   D = Development (local)
+# Public: NEXT_PUBLIC_* ถูกฝังใน JS bundle จึงต้องไม่ใช่ความลับ
+# =============================================================================
+
+# ---- Environment identity (ADR-12) ------------------------------------------
+# ค่าที่ใช้ได้: production | preview | development
+# P=production  V=preview  D=development
+NEXT_PUBLIC_APP_ENV=development
+
+# Project ref ของ Supabase "production" ใช้ตรวจว่า Preview/Dev ไม่ได้ชี้ไป production
+# ตั้งค่าเดียวกันทุก scope (P, V, D) และไม่ใช่ secret (เป็นแค่ subdomain)
+PRODUCTION_SUPABASE_PROJECT_REF=your-production-project-ref
+
+# ---- Supabase (public) -------------------------------------------------------
+# P = production project · V และ D = staging project (ห้ามชี้ production)
+NEXT_PUBLIC_SUPABASE_URL=https://your-staging-project-ref.supabase.co
+# anon (หรือ publishable) key ของ project เดียวกับ URL ข้างบน
+# เป็น public key โดยออกแบบ ความปลอดภัยมาจาก RLS (authorization-matrix.md)
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+
+# ---- App metadata ------------------------------------------------------------
+# ใส่อัตโนมัติจาก package.json ตอน build (next.config.ts) และไม่ต้องตั้งเอง
+# NEXT_PUBLIC_APP_VERSION=2.0.0
+
+# ---- Weather (public, optional) ---------------------------------------------
+# ถ้าไม่ตั้งจะใช้ค่าเริ่มต้นเดิม (19.91, 99.84) และชื่อพื้นที่ต้องตรงกับพิกัด (TD-23)
+NEXT_PUBLIC_WEATHER_LAT=19.91
+NEXT_PUBLIC_WEATHER_LON=99.84
+NEXT_PUBLIC_WEATHER_LOCATION_NAME=เชียงราย
+
+# ---- Deprecated (ลบเมื่อ Q-12 อนุมัติ) ----------------------------------------
+# GEMINI_API_KEY=            # server-only · ใช้โดย /api/insights ที่ไม่มี caller
+
+# =============================================================================
+# ห้ามตั้งค่าเหล่านี้ใน Vercel หรือในแอป
+# -----------------------------------------------------------------------------
+# SUPABASE_SERVICE_ROLE_KEY   → ใช้เฉพาะผู้ดูแลใน Supabase Dashboard หรือ CLI บนเครื่องตัวเอง
+#
+# Secrets สำหรับ CI (GitHub Actions → Environments: staging / production)
+# ไม่อยู่ในแอป และไม่อยู่ในไฟล์ใด ๆ ใน repo:
+#   SUPABASE_ACCESS_TOKEN      → Supabase CLI (link/db push)
+#   SUPABASE_DB_PASSWORD       → db push ไปยัง project ของ environment นั้น
+#   SUPABASE_PROJECT_REF       → staging หรือ production ตาม environment
+# =============================================================================
