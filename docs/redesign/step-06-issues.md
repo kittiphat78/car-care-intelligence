@@ -9,7 +9,7 @@
 | ID | เรื่อง | Severity | สถานะ |
 |---|---|---|---|
 | S06-01 | ตรวจหรือตั้ง branch protection / rulesets / environments ไม่ได้ | High | BLOCKED |
-| S06-02 | เสนอเปลี่ยน D-11: ปล่อย UI ใหม่ครั้งเดียวที่ v2.0.0 (Phase B) | Medium | NEEDS_APPROVAL |
+| S06-02 | เสนอเปลี่ยน D-11: ปล่อย UI ใหม่ครั้งเดียวที่ v2.0.0 (Phase B) | Medium | RESOLVED (เจ้าของอนุมัติ 2026-10-14) |
 | S06-03 | ลบ remote branches ค้าง 28 ตัว (merge แล้ว 27) | Low | NEEDS_APPROVAL |
 | S06-04 | Pin GitHub Actions ด้วย commit SHA | Low | UNRESOLVED |
 | S06-05 | คำสั่ง Supabase CLI สำหรับรัน SQL tests ใน CI ยังไม่ได้ทดสอบ | Low | UNRESOLVED |
@@ -29,7 +29,7 @@ Carry-over: S01-01/S05-01 (schema), S01-02/S05-05 (Vercel), S01-08/S01-09 (push)
 - **ต้องการ:** เจ้าของตั้งค่าตาม `branch-protection.md` §1–§4 แล้วส่งผล `gh api …/rulesets` หรือ screenshot
 - **Prompt:** > "S06-01: ตั้ง rulesets ตาม branch-protection.md แล้ว นี่คือผล `gh api repos/kittiphat78/car-care-intelligence/rulesets` ให้ตรวจว่าตรงตามเอกสารและปิด S06-01"
 
-## S06-02 — ปล่อย UI ใหม่ครั้งเดียว · Medium · `NEEDS_APPROVAL`
+## S06-02 — ปล่อย UI ใหม่ครั้งเดียว · Medium · `RESOLVED` (อนุมัติ 2026-10-14)
 - **ข้อเสนอเดิม (D-11):** ปล่อย UI ทีละหน้า (R2..R5) สู่ production
 - **ข้อเสนอใหม่:** Phase A (DB + data fixes บน UI เดิม) ปล่อยทีละ release แล้ว Phase B (UI ทั้งหมด) รวมใน `develop` → RC บน staging → UAT โดยเจ้าของ → v2.0.0 ครั้งเดียว
 - **เหตุผล:** ไม่มี production ที่มี 2 ดีไซน์ปนกัน, Phase B ไม่มี DB change จึง rollback ด้วย Vercel ได้ทั้งก้อน และไม่ต้องดูแล CSS 2 ชุดใน production
