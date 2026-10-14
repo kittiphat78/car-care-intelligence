@@ -8,7 +8,7 @@
 
 | ID | เรื่อง | Severity | สถานะ |
 |---|---|---|---|
-| S02-01 | ไม่มีข้อมูลจากผู้ใช้จริงโดยตรง จึงมี business decision ค้าง 20 ข้อ | High | NEEDS_APPROVAL |
+| S02-01 | ไม่มีข้อมูลจากผู้ใช้จริงโดยตรง จึงมี business decision ค้าง (ตอบแล้ว 5/20 และข้อที่ block Step 03 ปิดครบ) | Medium | NEEDS_APPROVAL (บางส่วน) |
 | S02-02 | หลักฐานเรื่อง business rule ขัดแย้งกันเอง | Medium | NEEDS_APPROVAL |
 | S02-03 | Script ตรวจ ID ข้ามเอกสารรายงาน false positive | Low | RESOLVED |
 
@@ -39,7 +39,8 @@
 - **ผล:** เอกสารครบทั้ง 6 ไฟล์ และ requirement ที่ขึ้นกับคำตอบมีค่าเริ่มต้นจึงไม่ block Step 03 ทั้งหมด
 - **ระบบที่กระทบ:** `product-decisions.md`, `product-requirements.md` (Personas §3.1, NFR †, SM-xx), `scope-and-exclusions.md` §6
 - **ความเสี่ยงถ้าปล่อยไว้:** Step 03 (UX research และ IA) อาจออกแบบผิดกลุ่ม โดยเฉพาะ Q-03 (อุปกรณ์), Q-04 (ป้ายเงินสดสุทธิ), Q-08 (เคลียร์บางรายการ), Q-16 (เงินสด/โอน) และ Q-17 (รูปแบบ Excel ธนาคาร)
-- **สิ่งที่ต้องการจากผู้ใช้:** ตอบ Q-01..Q-20 อย่างน้อยข้อที่ Blocking = Step 03 ได้แก่ **Q-03, Q-04, Q-08, Q-16, Q-17**
+- **อัปเดต 2026-10-14:** เจ้าของตอบ Q-03, Q-04, Q-08, Q-16, Q-17 แล้ว (→ D-12..D-16) และอัปเดต PRD, AC, prioritization และ scope ให้สอดคล้อง จึงไม่มีคำถามที่ block Step 03 เหลืออยู่ Severity ลดเป็น Medium
+- **สิ่งที่ต้องการจากผู้ใช้:** คำถามที่เหลือ 15 ข้อ โดยข้อที่ block Step 05 คือ **Q-01, Q-02, Q-05, Q-06, Q-13**
 - **Prompt สำหรับแก้ภายหลัง:**
   > "คำตอบ product decisions: Q-01: …, Q-03: …, Q-04: …, (ใส่เท่าที่ตอบได้) ให้ย้ายคำตอบเข้า `product-decisions.md` §1 เป็น D-xx และอัปเดต `product-requirements.md`, `feature-prioritization.md`, `acceptance-criteria.md`, `scope-and-exclusions.md` ให้สอดคล้อง โดยห้ามเปลี่ยนข้อที่ไม่ได้ตอบ แล้วปิด S02-01 เฉพาะส่วนที่ตอบแล้ว"
 
