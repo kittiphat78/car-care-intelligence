@@ -99,16 +99,3 @@ jobs:
             -- . ':(exclude)package-lock.json'; then
             echo "Possible secret committed. Remove it and rotate the key."; exit 1
           fi
-
-  pr-title:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    steps:
-      - name: Conventional Commit title
-        env:
-          TITLE: ${{ github.event.pull_request.title }}
-        run: |
-          if ! printf '%s' "$TITLE" | grep -Eq '^(feat|fix|perf|refactor|style|test|docs|build|ci|chore|db|revert)(\([a-z0-9-]+\))?!?: .{1,72}$'; then
-            echo "PR title must follow docs/redesign/commit-conventions.md, e.g. 'fix(records): …'"; exit 1
-          fi

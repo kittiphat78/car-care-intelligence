@@ -1,0 +1,25 @@
+name: pr-title
+
+# Separate from ci.yml so that editing a PR title re-runs only this check (S07-18)
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions: {}
+
+concurrency:
+  group: pr-title-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  pr-title:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Conventional Commit title
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          if ! printf '%s' "$TITLE" | grep -Eq '^(feat|fix|perf|refactor|style|test|docs|build|ci|chore|db|revert)(\([a-z0-9-]+\))?!?: .{1,72}$'; then
+            echo "PR title must follow docs/redesign/commit-conventions.md, e.g. 'fix(records): …'"; exit 1
+          fi
