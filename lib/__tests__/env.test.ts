@@ -41,21 +41,17 @@ describe('Environment validation module', () => {
     }).rejects.toThrow(/ENV VALIDATION FAILED/)
   })
 
-  it('throws an error when accessing GEMINI_API_KEY if not configured', async () => {
-    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://valid.supabase.co'
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'valid-anon-key-123456789'
-    delete process.env.GEMINI_API_KEY
-
-    const { env } = await import('../env')
-    expect(() => env.GEMINI_API_KEY).toThrow(/GEMINI_API_KEY is required/)
-  })
-
-  it('returns GEMINI_API_KEY on the server when configured', async () => {
+  it('exposes no server secrets (the Gemini key was removed with /api/insights)', async () => {
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://valid.supabase.co'
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'valid-anon-key-123456789'
     process.env.GEMINI_API_KEY = 'test-gemini-key'
 
     const { env } = await import('../env')
-    expect(env.GEMINI_API_KEY).toBe('test-gemini-key')
+    expect(Object.keys(env).sort()).toEqual([
+      'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+      'NEXT_PUBLIC_SUPABASE_URL',
+      'NEXT_PUBLIC_WEATHER_LAT',
+      'NEXT_PUBLIC_WEATHER_LON',
+    ])
   })
 })

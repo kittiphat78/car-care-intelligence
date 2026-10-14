@@ -46,7 +46,6 @@ const nextConfig: NextConfig = {
             // - 'unsafe-inline' needed for theme script and styled-jsx
             // - open-meteo.com for weather/AQI APIs
             // - supabase for auth/database
-            // - generativelanguage.googleapis.com for Gemini AI
             // - fonts.googleapis.com/fonts.gstatic.com for Google Fonts
             key: 'Content-Security-Policy',
             value: [
@@ -55,7 +54,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob:",
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.open-meteo.com https://air-quality-api.open-meteo.com https://generativelanguage.googleapis.com",
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.open-meteo.com https://air-quality-api.open-meteo.com",
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",
