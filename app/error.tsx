@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { reportError } from '@/lib/observability'
 
 export default function Error({
   error,
@@ -10,8 +11,8 @@ export default function Error({
   reset: () => void
 }) {
   useEffect(() => {
-    // โค้ดส่วนนี้สามารถส่ง Error ไปเก็บบนระบบ Monitoring (เช่น Sentry) ได้ในอนาคต
     console.error('Application Error:', error)
+    reportError(error)
   }, [error])
 
   return (
