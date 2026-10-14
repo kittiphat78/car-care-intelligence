@@ -1,6 +1,7 @@
 # Database Schema — Step 05
 
-> วันที่: 2026-10-14 · **ยังไม่ได้เห็น schema จริงของ Production** (S01-01) ดังนั้นทุกอย่างใน §1 อนุมานจากโค้ด [I] และต้องยืนยันด้วย SQL ใน `production-baseline.md` §8 ก่อนเขียน migration จริง (`database-migration-plan.md` M000)
+> วันที่: 2026-10-14 · **อัปเดต: ได้ผล SQL ข้อ 1–17 จาก production แล้ว (ดู §1.4)** ส่วนตารางใน §1.1–1.2 เดิมเป็น [I] และ §1.4 คือ [V]
+> (เดิม) **ยังไม่ได้เห็น schema จริงของ Production** (S01-01) ดังนั้นทุกอย่างใน §1 อนุมานจากโค้ด [I] และต้องยืนยันด้วย SQL ใน `production-baseline.md` §8 ก่อนเขียน migration จริง (`database-migration-plan.md` M000)
 > SQL ในเอกสารนี้เป็น **แบบร่างเพื่อ review** ยังไม่ได้รันกับฐานข้อมูลใดเลย และห้ามรันกับ Production
 
 ## 1. Schema ปัจจุบัน (อนุมาน)
@@ -41,6 +42,26 @@
 - Realtime publication: ใช้กับ `records`, `expenses` [V โค้ด] / [U config]
 - RLS, policies, indexes, triggers, functions: **[U] ทั้งหมด**
 - Storage: ไม่ใช้ [V]
+
+### 1.4 Verified จาก production (2026-10-14)
+| เรื่อง | ผลจริง |
+|---|---|
+| `records` columns | `id uuid` default `gen_random_uuid()` · `created_at timestamptz` not null default `now()` · `type text` not null · `plate text` not null · `services text[]` default `'{}'` · `price integer` not null · `seq_number integer` null · `customer_name text` default `''` · `payment_status text` **nullable** default `'paid'` · `job_status text` default `'done'` · `payment_method text` default `'cash'` · `created_by uuid` · `created_by_email`, `updated_by_email text` · `updated_at timestamptz` |
+| `records.note` | **ไม่มี column นี้** (ปิด S05-06) และหมายเหตุอยู่ใน `services[3]` เท่านั้น |
+| `expenses` columns | `id uuid` · `created_at timestamptz` not null default `now()` · `title text` not null · `amount integer` not null · `note text` default `''` · `created_by uuid` · `created_by_email`, `updated_by_email text` · `updated_at timestamptz` |
+| Constraints | มีแค่ PK (ไม่มี check, FK) |
+| Indexes | มีแค่ PK |
+| Triggers | ไม่มี · Functions: `rls_auto_enable` (SECURITY DEFINER, น่าจะมาจาก Supabase) |
+| RLS / Policies | **เปิดแล้ว** ตั้งแต่ 2026-10-14 · policy อนุญาตเฉพาะ `authenticated` (ชั่วคราวก่อน M002 ฉบับเต็ม) |
+| Grants | หลัง 2026-10-14: `anon` ไม่มีสิทธิ์บน `records`/`expenses` · `authenticated`: SELECT/INSERT/UPDATE/DELETE |
+| Realtime publication | **ไม่มีตารางใด** → realtime ใน dashboard ไม่ทำงานใน production (F-18) |
+| Extensions | pg_stat_statements, pgcrypto, plpgsql, supabase_vault, uuid-ossp (ไม่มี pg_cron) |
+| Migration history | ไม่มี (`supabase_migrations` ไม่มี) |
+| Storage | ไม่มี bucket |
+| ขนาด | records 962 · expenses 91 · auth.users 4 |
+| ข้อมูลผิดกติกา | plate/price/amount/title = 0 · ค้างชำระที่ชื่อว่างหรือมีช่องว่าง = 0 · seq ซ้ำ ≥ 10 กรณี |
+
+**ผลต่อแบบ:** M000 baseline ต้องบันทึกสถานะหลังแก้ (RLS เปิด, policy authenticated-only) แล้ว M002 แทน policy ด้วย `is_app_member()` · M008 เพิ่ม `records_payment_status_chk` ต้องรับ null หรือเพิ่ม `set not null` หลังตรวจว่าไม่มี null · M009 seq trigger แก้ปัญหาที่เกิดจริง · เพิ่ม migration เปิด realtime publication (ถ้ายังต้องการ F-18)
 
 ## 2. Target Schema
 
