@@ -5,6 +5,7 @@ import BottomNav from '@/components/BottomNav'
 import { useKioskMode } from '@/hooks/useKioskMode'
 import { useGlobalErrorReporting } from '@/hooks/useGlobalErrorReporting'
 import { ToastProvider } from '@/hooks/useToast'
+import { EnvironmentBar } from '@/components/ui/EnvironmentBar'
 import { useEffect } from 'react'
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
@@ -25,6 +26,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
   return (
     <ToastProvider>
+      <EnvironmentBar />
       <main
         className={`
           relative w-full max-w-2xl mx-auto block
