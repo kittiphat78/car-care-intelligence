@@ -31,8 +31,12 @@ export function ExportModal({ activeTab, defaultYear, defaultMonth, onClose, onE
     }
 
     setIsExporting(true)
-    await onExport(startYear, startMonth, endYear, endMonth, exportMode)
-    setIsExporting(false)
+    try {
+      await onExport(startYear, startMonth, endYear, endMonth, exportMode)
+    } finally {
+      // ปุ่มไม่หมุนค้างแม้ส่งออกล้มเหลว (ER-07)
+      setIsExporting(false)
+    }
   }
 
   return (

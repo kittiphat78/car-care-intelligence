@@ -2,7 +2,9 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { countIncomeOn, createExpense, createIncome } from '@/features/records/api'
+import { toAppError, toUserMessage } from '@/lib/errors'
+import { reportAppError } from '@/lib/observability'
 import { RecordType, CAR_TYPES, CAR_BRANDS, PaymentStatus } from '@/types'
 import { z } from 'zod'
 import DOMPurify from 'isomorphic-dompurify'
@@ -16,7 +18,7 @@ import { ExpenseForm } from '@/components/add/ExpenseForm'
 import { ActionButtons } from '@/components/add/ActionButtons'
 import { SuccessBanner } from '@/components/add/Banners'
 import { ErrorBanner } from '@/components/ui/ErrorBanner'
-import { addDays, bangkokTimestampOn, bangkokToday, startOfBangkokDay } from '@/lib/time/bangkok'
+import { bangkokTimestampOn, bangkokToday } from '@/lib/time/bangkok'
 
 // วันและเวลาเป็นเวลาไทยเสมอ ไม่ขึ้นกับ timezone ของเครื่อง (ADR-06)
 const getTodayStr = () => bangkokToday()
@@ -89,23 +91,21 @@ export default function AddPage() {
     const safePrice = validationResult.data.price
 
     const timestamp = generateTimestamp(date)
-    const dayStart = startOfBangkokDay(date)
-    const nextDayStart = startOfBangkokDay(addDays(date, 1))
-
-    const { count } = await supabase.from('records').select('*', { count: 'exact', head: true })
-      .gte('created_at', dayStart.toISOString()).lt('created_at', nextDayStart.toISOString())
+    // นับไม่สำเร็จ = เริ่มลำดับที่ 1 เหมือนเดิม (ลำดับซ้ำแก้ถาวรใน B6)
+    const countResult = await countIncomeOn(date)
+    const count = countResult.ok ? countResult.data : 0
 
     const typeName = CAR_TYPES.find(t => t.id === selectedType)?.name || ''
     const brandName = CAR_BRANDS.find(b => b.id === selectedBrand)?.name || ''
     const services = [typeName, brandName, safeNote]
 
-    const { error } = await supabase.from('records').insert({
+    const result = await createIncome({
       type, plate: safePlate, services, price: safePrice,
-      seq_number: (count ?? 0) + 1, created_at: timestamp, created_by: userId,
+      seq_number: count + 1, created_at: timestamp, created_by: userId,
       created_by_email: userEmail, payment_method: 'cash', customer_name: safeCustomerName,
       payment_status: paymentStatus, job_status: 'done',
     })
-    if (error) throw error
+    if (!result.ok) throw result.error
     if (safeCustomerName) addCustomer(safeCustomerName)
     if (isBulk) {
       setSuccessMsg(`บันทึก ${safePlate} สำเร็จ`)
@@ -136,12 +136,12 @@ export default function AddPage() {
     const safeNote = DOMPurify.sanitize(validationResult.data.note || '')
     const safeAmount = validationResult.data.amount
 
-    const { error } = await supabase.from('expenses').insert({
+    const result = await createExpense({
       title: safeTitle, amount: safeAmount,
       created_at: generateTimestamp(date), created_by: userId, created_by_email: userEmail,
       note: safeNote,
     })
-    if (error) throw error
+    if (!result.ok) throw result.error
     if (isBulk) {
       setSuccessMsg(`บันทึกรายจ่าย ${safeTitle} สำเร็จ`)
       resetExpenseForm(); setTimeout(() => setSuccessMsg(''), 4000)
@@ -155,8 +155,9 @@ export default function AddPage() {
       else await submitExpense(isBulk)
     } catch (e: unknown) {
       console.error('[AddRecord] Submit Error:', e)
-      const message = e instanceof Error ? e.message : 'ตรวจสอบการเชื่อมต่ออินเทอร์เน็ต'
-      setError('บันทึกไม่สำเร็จ: ' + message)
+      const appErr = toAppError(e)
+      reportAppError(appErr)
+      setError('บันทึกไม่สำเร็จ: ' + toUserMessage(appErr))
     } finally { setSaving(false) }
   }, [formMode, submitIncome, submitExpense])
 

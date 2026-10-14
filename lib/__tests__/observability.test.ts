@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { createErrorRef, ERROR_REF_PATTERN } from '@/lib/errors'
+import { appError, createErrorRef, ERROR_REF_PATTERN } from '@/lib/errors'
 import {
   buildErrorReport,
   reportError,
+  reportAppError,
   resetReportBudget,
   scrubMessage,
   CLIENT_ERRORS_ENDPOINT,
@@ -80,5 +81,15 @@ describe('reportError', () => {
   it('never throws when sending fails', () => {
     sendBeacon.mockImplementation(() => { throw new Error('blocked') })
     expect(() => reportError(new Error('x'))).not.toThrow()
+  })
+
+  it('reports only unexpected data-access failures, keeping their reference', async () => {
+    for (const code of ['NETWORK', 'VALIDATION', 'AUTH_EXPIRED', 'FORBIDDEN'] as const) reportAppError(appError(code))
+    expect(sendBeacon).not.toHaveBeenCalled()
+
+    const failure = appError('SERVER', { code: 'XX000', message: 'internal error' })
+    reportAppError(failure)
+    const body = JSON.parse(await (sendBeacon.mock.calls[0][1] as Blob).text())
+    expect(body).toMatchObject({ code: 'SERVER', ref: failure.ref, message: 'XX000: internal error' })
   })
 })
