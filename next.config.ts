@@ -1,7 +1,10 @@
 import type { NextConfig } from 'next'
+import { version } from './package.json'
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // แนบเลขเวอร์ชันไปกับรายงาน error (lib/observability.ts)
+  env: { NEXT_PUBLIC_APP_VERSION: version },
   // TypeScript และ ESLint จะทำงานปกติตอน build
   async headers() {
     return [
