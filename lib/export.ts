@@ -1,6 +1,7 @@
 import type { Record as AppRecord, Expense } from '@/types'
 import ExcelJS from 'exceljs'
 import { saveAs } from 'file-saver'
+import { formatBangkok, toBangkokDay } from '@/lib/time/bangkok'
 
 export type ExportMode = 'bank' | 'internal'
 
@@ -22,7 +23,7 @@ export async function exportToExcel(
   const formatDate = (iso: string) => {
     if (!iso) return '-'
     // เอาเวลาออก เหลือแค่วัน เดือน ปี
-    return new Date(iso).toLocaleDateString('th-TH', {
+    return formatBangkok(iso, {
       year: 'numeric', month: 'long', day: 'numeric'
     })
   }
@@ -75,8 +76,7 @@ export async function exportToExcel(
     items.forEach((item, idx) => {
       let rowValues: globalThis.Record<string, string | number> = {}
       const dateStr = formatDate(item.created_at)
-      const d = new Date(item.created_at)
-      const monthKey = d.toLocaleString('th-TH', { month: 'long', year: 'numeric' })
+      const monthKey = formatBangkok(item.created_at, { month: 'long', year: 'numeric' })
 
       if (isExpense) {
         const exp = item as Expense
@@ -195,10 +195,9 @@ export async function exportToExcel(
 
     records.forEach(r => {
       totalIncome += r.price || 0
-      const d = new Date(r.created_at)
-      const sortKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      const sortKey = toBangkokDay(r.created_at).slice(0, 7)
       if (!monthlyDataMap[sortKey]) {
-         monthlyDataMap[sortKey] = { income: 0, expense: 0, wash: 0, polish: 0, label: d.toLocaleString('th-TH', { month: 'short', year: '2-digit' }) }
+         monthlyDataMap[sortKey] = { income: 0, expense: 0, wash: 0, polish: 0, label: formatBangkok(r.created_at, { month: 'short', year: '2-digit' }) }
       }
       monthlyDataMap[sortKey].income += (r.price || 0)
       if (r.type === 'wash') {
@@ -214,10 +213,9 @@ export async function exportToExcel(
     let totalExpense = 0
     expenses.forEach(e => {
       totalExpense += e.amount || 0
-      const d = new Date(e.created_at)
-      const sortKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      const sortKey = toBangkokDay(e.created_at).slice(0, 7)
       if (!monthlyDataMap[sortKey]) {
-         monthlyDataMap[sortKey] = { income: 0, expense: 0, wash: 0, polish: 0, label: d.toLocaleString('th-TH', { month: 'short', year: '2-digit' }) }
+         monthlyDataMap[sortKey] = { income: 0, expense: 0, wash: 0, polish: 0, label: formatBangkok(e.created_at, { month: 'short', year: '2-digit' }) }
       }
       monthlyDataMap[sortKey].expense += (e.amount || 0)
     })

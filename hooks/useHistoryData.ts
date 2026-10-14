@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Record as AppRecord, Expense } from '@/types'
 import { TabType } from '@/components/history/constants'
+import { bangkokYearRange } from '@/lib/time/bangkok'
 
 export function useHistoryData(selectedYear: number, activeTab: TabType) {
   const [records, setRecords] = useState<AppRecord[]>([])
@@ -12,8 +13,9 @@ export function useHistoryData(selectedYear: number, activeTab: TabType) {
   const fetchAllData = useCallback(async () => {
     try {
       setLoading(true); setError('')
-      const startOfYear = new Date(selectedYear, 0, 1).toISOString()
-      const endOfYear = new Date(selectedYear + 1, 0, 1).toISOString()
+      const { start, end } = bangkokYearRange(selectedYear)
+      const startOfYear = start.toISOString()
+      const endOfYear = end.toISOString()
 
       const [recordsRes, expensesRes] = await Promise.all([
         supabase.from('records').select('*').gte('created_at', startOfYear).lt('created_at', endOfYear).order('created_at', { ascending: false }),

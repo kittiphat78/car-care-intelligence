@@ -1,57 +1,57 @@
 /**
- * Date utility functions for consistent date boundary computations.
- * Eliminates duplicated `new Date(); d.setHours(0,0,0,0)` patterns across hooks.
+ * Date boundary helpers used by the dashboard.
+ *
+ * All boundaries are Asia/Bangkok calendar periods (ER-11), computed by
+ * lib/time/bangkok.ts, so the result does not depend on the device time zone.
+ * New code should use lib/time/bangkok.ts directly; these wrappers keep the
+ * existing Date-returning API until the dashboard moves to RPCs (B3).
  */
+import {
+  addDays,
+  bangkokToday,
+  joinBangkok,
+  splitBangkok,
+  startOfBangkokDay,
+  startOfMonth,
+  startOfWeek,
+  startOfYear,
+  toBangkokDay,
+  yearsBefore,
+} from '@/lib/time/bangkok'
 
-/** Get start of today (00:00:00.000 local time) */
+/** Start (00:00 Bangkok) of the Bangkok day containing `date` */
 export function getStartOfDay(date: Date = new Date()): Date {
-  const d = new Date(date)
-  d.setHours(0, 0, 0, 0)
-  return d
+  return startOfBangkokDay(toBangkokDay(date))
 }
 
-/** Get start of yesterday (00:00:00.000 local time) */
+/** Start of yesterday (00:00 Bangkok) */
 export function getStartOfYesterday(): Date {
-  const d = getStartOfDay()
-  d.setDate(d.getDate() - 1)
-  return d
+  return startOfBangkokDay(addDays(bangkokToday(), -1))
 }
 
-/** Get date N days ago at 00:00:00.000 local time */
+/** Start of the day N days ago (00:00 Bangkok) */
 export function getDaysAgo(n: number): Date {
-  const d = getStartOfDay()
-  d.setDate(d.getDate() - n)
-  return d
+  return startOfBangkokDay(addDays(bangkokToday(), -n))
 }
 
-/** Get start of current week (Monday 00:00:00.000 local time) */
+/** Start of the current week (Monday 00:00 Bangkok) */
 export function getStartOfWeek(): Date {
-  const d = getStartOfDay()
-  const day = d.getDay()
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
-  d.setDate(diff)
-  return d
+  return startOfBangkokDay(startOfWeek(bangkokToday()))
 }
 
-/** Get start of current month (1st day, 00:00:00.000 local time) */
+/** Start of the current month (1st day, 00:00 Bangkok) */
 export function getStartOfMonth(): Date {
-  const d = getStartOfDay()
-  d.setDate(1)
-  return d
+  return startOfBangkokDay(startOfMonth(bangkokToday()))
 }
 
-/** Get start of current year (Jan 1st, 00:00:00.000 local time) */
+/** Start of the current year (Jan 1st, 00:00 Bangkok) */
 export function getStartOfYear(): Date {
-  const d = getStartOfDay()
-  d.setMonth(0, 1)
-  return d
+  return startOfBangkokDay(startOfYear(bangkokToday()))
 }
 
-/** Get a date N years ago at 00:00:00.000 local time */
+/** Start of the same calendar day N years ago (00:00 Bangkok) */
 export function getYearsAgo(n: number): Date {
-  const d = getStartOfDay()
-  d.setFullYear(d.getFullYear() - n)
-  return d
+  return startOfBangkokDay(yearsBefore(bangkokToday(), n))
 }
 
 /**
@@ -63,38 +63,19 @@ export function parseDateMs(isoString: string): number {
   return Date.parse(isoString)
 }
 
-/** Shop time zone. Thailand has no daylight saving time, so the offset is fixed. */
-const SHOP_TIME_ZONE = 'Asia/Bangkok'
-const SHOP_UTC_OFFSET = '+07:00'
-
-const shopDateTimeParts = new Intl.DateTimeFormat('en-CA', {
-  timeZone: SHOP_TIME_ZONE,
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-  hour: '2-digit',
-  minute: '2-digit',
-  hourCycle: 'h23',
-})
-
 /**
  * Split an ISO datetime string into { date, time } for form fields,
  * both in Asia/Bangkok wall-clock time regardless of the device time zone.
  */
 export function splitDateTime(iso: string): { date: string; time: string } {
-  const parts: Partial<Record<Intl.DateTimeFormatPartTypes, string>> = {}
-  for (const part of shopDateTimeParts.formatToParts(new Date(iso))) parts[part.type] = part.value
-  return {
-    date: `${parts.year}-${parts.month}-${parts.day}`,
-    time: `${parts.hour}:${parts.minute}`,
-  }
+  return splitBangkok(iso)
 }
 
 /**
  * Merge Asia/Bangkok date (YYYY-MM-DD) and time (HH:mm) strings back into an ISO datetime string.
  */
 export function mergeDateTime(date: string, time: string): string {
-  return new Date(`${date}T${time}:00${SHOP_UTC_OFFSET}`).toISOString()
+  return joinBangkok(date, time)
 }
 
 /**

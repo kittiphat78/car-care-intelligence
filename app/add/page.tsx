@@ -16,18 +16,11 @@ import { ExpenseForm } from '@/components/add/ExpenseForm'
 import { ActionButtons } from '@/components/add/ActionButtons'
 import { SuccessBanner } from '@/components/add/Banners'
 import { ErrorBanner } from '@/components/ui/ErrorBanner'
+import { addDays, bangkokTimestampOn, bangkokToday, startOfBangkokDay } from '@/lib/time/bangkok'
 
-const getTodayStr = () => {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-const generateTimestamp = (dateStr: string) => {
-  const now = new Date()
-  const d = new Date(dateStr)
-  d.setHours(now.getHours(), now.getMinutes(), now.getSeconds())
-  return d.toISOString()
-}
+// วันและเวลาเป็นเวลาไทยเสมอ ไม่ขึ้นกับ timezone ของเครื่อง (ADR-06)
+const getTodayStr = () => bangkokToday()
+const generateTimestamp = (dateStr: string) => bangkokTimestampOn(dateStr)
 
 export default function AddPage() {
   const router = useRouter()
@@ -96,11 +89,11 @@ export default function AddPage() {
     const safePrice = validationResult.data.price
 
     const timestamp = generateTimestamp(date)
-    const dayStart = new Date(date); dayStart.setHours(0, 0, 0, 0)
-    const dayEnd = new Date(date); dayEnd.setHours(23, 59, 59, 999)
+    const dayStart = startOfBangkokDay(date)
+    const nextDayStart = startOfBangkokDay(addDays(date, 1))
 
     const { count } = await supabase.from('records').select('*', { count: 'exact', head: true })
-      .gte('created_at', dayStart.toISOString()).lte('created_at', dayEnd.toISOString())
+      .gte('created_at', dayStart.toISOString()).lt('created_at', nextDayStart.toISOString())
 
     const typeName = CAR_TYPES.find(t => t.id === selectedType)?.name || ''
     const brandName = CAR_BRANDS.find(b => b.id === selectedBrand)?.name || ''

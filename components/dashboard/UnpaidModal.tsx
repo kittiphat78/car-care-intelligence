@@ -2,22 +2,18 @@ import { memo, useEffect, useCallback, useState } from 'react'
 import { Record as AppRecord } from '@/types'
 import { useToast } from '@/hooks/useToast'
 import { CloseIcon, ClockIcon, BillIcon, CheckMarkIcon } from '@/components/icons/DashboardIcons'
+import { bangkokToday, daysBetween, formatBangkok, toBangkokDay } from '@/lib/time/bangkok'
 
 interface UnpaidGroup { customerName: string; items: AppRecord[]; total: number }
 
 /** คำนวณจำนวนวันค้างชำระจาก created_at ถึงวันนี้ */
 function getOverdueDays(createdAt: string): number {
-  const created = new Date(createdAt)
-  created.setHours(0, 0, 0, 0)
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  return Math.max(0, Math.floor((today.getTime() - created.getTime()) / (1000 * 60 * 60 * 24)))
+  return Math.max(0, daysBetween(toBangkokDay(createdAt), bangkokToday()))
 }
 
 /** จัดรูปแบบวันที่เป็นภาษาไทย */
 function formatThaiDate(dateStr: string): string {
-  const d = new Date(dateStr)
-  return d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' })
+  return formatBangkok(dateStr, { day: 'numeric', month: 'short', year: '2-digit' })
 }
 
 /** เลือกสีตาม severity ของจำนวนวันค้าง — theme-aware */

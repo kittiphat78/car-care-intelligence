@@ -2,6 +2,7 @@
 
 import { memo } from 'react'
 import { Record, CAR_TYPES } from '@/types'
+import { formatBangkok } from '@/lib/time/bangkok'
 
 const RecordCard = memo(function RecordCard({ record }: { record: Record }) {
   const {
@@ -13,7 +14,7 @@ const RecordCard = memo(function RecordCard({ record }: { record: Record }) {
   const isPaid = payment_status === 'paid'
   const [serviceName = '', carBrand = '', note = ''] = services
 
-  const time = new Date(created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })
+  const time = formatBangkok(created_at, { hour: '2-digit', minute: '2-digit' })
   const carTypeIcon = CAR_TYPES.find(t => t.name === serviceName)?.icon ?? (isWash ? '🧼' : '✨')
   const accentColor = !isPaid ? 'var(--red)' : isWash ? 'var(--accent)' : 'var(--amber)'
 
