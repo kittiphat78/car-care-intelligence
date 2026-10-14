@@ -92,7 +92,9 @@ Dev-only: `vitest` (critical ผ่าน `tinypool`/UI server) ไม่ได�
 - ดู `current-architecture.md` §3 ถ้า RLS ปิดหรือ policy เป็น `using (true)` สำหรับ `anon` **ใครก็ตามที่มี anon key (อยู่ใน JS bundle สาธารณะ) อ่าน แก้ หรือลบข้อมูลร้านได้โดยไม่ต้อง login**
 - ยืนยันด้วย SQL ข้อ 1, 2, 10 ใน `production-baseline.md` §8
 
-### ER-13 — Public sign-up อาจเปิดอยู่ · **Critical (รอยืนยัน)** · [U]
+### ER-13 — Public sign-up อาจเปิดอยู่ · ~~Critical~~ → **Low (mitigated)** · [V]
+
+> **อัปเดต 2026-10-14:** เจ้าของส่ง screenshot Supabase Auth แสดงว่า "Allow new users to sign up" **ปิดอยู่** และ anonymous sign-ins ปิด ความเสี่ยงที่เหลือคือบัญชีที่อาจถูกสร้างไว้ก่อนหน้า (ตอนที่ยังเปิดอยู่ ถ้าเคยเปิด) จึงต้องเทียบรายชื่อด้วย SQL ข้อ 13 และ allowlist `app_members` (ADR-04) ยังทำตามแผนเป็นการป้องกันชั้นที่สอง
 
 - ไม่มี role ในแอป ถ้า Supabase เปิด "Allow new users to sign up" ไว้ คนนอกสมัครผ่าน Auth API แล้วได้สิทธิ์ `authenticated` เท่ากับพนักงาน
 

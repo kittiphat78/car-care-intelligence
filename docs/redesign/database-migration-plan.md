@@ -74,6 +74,8 @@ union all select 'title', count(*) from expenses where title is null or char_len
 ```
 ทุกค่าต้องเป็น 0 ก่อน M010 และถ้าไม่เป็น 0 ให้ส่ง **รายการ id** ให้เจ้าของตัดสิน (ไม่แก้เอง)
 
+> **ผลจริงบน production (2026-10-14, เจ้าของรันชุดย่อย 4 ข้อ):** `plate` 0 · `price<0` 0 · `amount<1` 0 · `title` 0 [V] → constraint หลัก 4 ตัวจะ VALIDATE ผ่านกับข้อมูลปัจจุบัน ส่วนที่ยังไม่ได้รัน: `type`, `status`, `customer>50`, `note>200`
+
 ### 4.3 ตรวจ RLS หลัง M002 (บน staging)
 | Test | คาดหวัง |
 |---|---|

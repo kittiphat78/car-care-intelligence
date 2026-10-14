@@ -6,19 +6,19 @@
 ## A. ข้อมูลที่ต้องให้เจ้าของระบบยืนยัน (ไม่ต้องส่ง secret)
 
 ### Vercel
-- [ ] A1. Commit SHA ของ **Current Production Deployment** (Vercel → Project → Deployments → Production)
-- [ ] A2. Production Branch ที่ตั้งไว้ (คาดว่าเป็น `main`)
-- [ ] A3. เปิด Git integration และ auto Preview deployments อยู่หรือไม่
+- [x] A1. Commit SHA ของ **Current Production Deployment** → **`7f58eec`** "chore(release): bump version to 1.0.0" (Ready, Sep 28) = tag `v1.0.0` [V screenshot Vercel Deployments, 2026-10-14]
+- [x] A2. Production Branch → `main` (ทุก Production deployment มาจาก `main`) [V screenshot]
+- [x] A3. Git integration **เปิด** และทุก branch ที่ push สร้าง Preview อัตโนมัติ (เช่น `feat/add-car…`, `fix/net-prof…`, `security/rev…`) [V screenshot]
 - [ ] A4. Env vars แต่ละตัวถูกตั้งใน scope ไหนบ้าง (Production / Preview / Development) และ Preview ใช้ Supabase project ref เดียวกับ Production หรือไม่ (ดูแค่ subdomain ของ URL)
 - [ ] A5. `GEMINI_API_KEY` ตั้งอยู่ใน Production หรือไม่
-- [ ] A6. Vercel plan (Hobby / Pro) และ Node.js version ใน Project Settings
+- [~] A6. Vercel plan → **Hobby** [V screenshot] · Node.js version ยังไม่ทราบ (ดู S01-02, ข้อสังเกต Hobby ใน `step-01-issues.md`)
 - [ ] A7. Production domain และเปิด Deployment Protection สำหรับ Preview หรือไม่
 
 ### Supabase
 - [ ] A8. มีกี่ project และ project ไหนคือ production
 - [ ] A9. Plan (Free / Pro) และมี Daily Backups หรือ PITR หรือไม่ (Database → Backups)
 - [ ] A10. ผลของ read-only SQL ข้อ 1–12 ใน `production-baseline.md` §8
-- [ ] A11. Auth → "Allow new users to sign up" เปิดหรือปิด และมี provider อื่นนอกจาก email หรือไม่
+- [x] A11. "Allow new users to sign up" = **ปิด**, anonymous sign-ins = ปิด, manual linking = ปิด, Confirm email = เปิด [V screenshot Supabase, 2026-10-14] · provider อื่นยังไม่ได้ดู
 - [ ] A12. มี Database Webhooks, Edge Functions หรือ Storage buckets ที่ใช้งานอยู่หรือไม่
 
 ### ผู้ใช้

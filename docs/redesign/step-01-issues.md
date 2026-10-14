@@ -40,7 +40,10 @@
 - **Prompt สำหรับแก้ภายหลัง:**
   > "นี่คือผล SQL จาก Supabase production (แนบผล U-1..U-9 และค่า Max rows / sign-up) ให้ปรับ `existing-risks.md` (ER-02, ER-03, ER-12, ER-13) และ `current-architecture.md` §3, §7 จาก Unknown/Inferred เป็น Verified ตามผลจริง อัปเดต severity และปิด S01-01 ใน `step-01-issues.md` ห้ามแก้โค้ดหรือ DB"
 
-## S01-02 — ไม่มีสิทธิ์เข้าถึง Vercel · High · `BLOCKED`
+## S01-02 — ไม่มีสิทธิ์เข้าถึง Vercel · High · `BLOCKED` (บางส่วนได้ข้อมูลแล้ว)
+
+> **อัปเดต 2026-10-14 (จาก screenshot ของเจ้าของ):** Production = `7f58eec` = `v1.0.0` [V], production branch = `main` [V], Git integration + Preview ต่อ branch เปิดอยู่ [V], plan = **Hobby** [V] · ยังไม่ทราบ: env scope ของ Preview (A4), Node version, region
+> **ข้อสังเกตเรื่อง Hobby [I]:** (1) เงื่อนไขการใช้งานของ Vercel กำหนดให้ Hobby ใช้เพื่อ non-commercial/personal ซึ่งระบบร้านค้าที่มีรายได้อาจไม่เข้าเงื่อนไข จึงควรให้เจ้าของตรวจเงื่อนไขล่าสุดเอง (2) runtime logs บน Hobby เก็บสั้น ทำให้ ADR-11 (error log ผ่าน Vercel logs) อาจดูย้อนหลังได้ไม่นาน → ทบทวนใน Step 07 A9
 
 - **ประเภท:** Access / Deployment
 - **ขั้นตอนที่เกิด:** Task 10 (Vercel configuration และ deployment risks)
@@ -121,7 +124,9 @@
   > "แก้ S01-08: push 3 local branches เป็น `archive/<ชื่อเดิม>` บน origin (ไม่ merge) แล้วเทียบเนื้อหา `fix/*` ทั้งสองกับ `main` ปัจจุบันว่าถูกแทนที่แล้วหรือไม่ และรายงานผล"
   > ⚠️ การ push branch อาจทำให้เกิด Vercel Preview (ดู S01-09)
 
-## S01-09 — Push branch เอกสารอาจสร้าง Preview ที่ชี้ Production DB · Medium · `NEEDS_APPROVAL`
+## S01-09 — Push branch เอกสารอาจสร้าง Preview ที่ชี้ Production DB · Medium · `RESOLVED` (อนุมัติแล้ว)
+
+> **อัปเดต 2026-10-14:** เจ้าของอนุมัติ push (ข้อ 24) และยืนยันแล้วว่า push จะสร้าง Preview (A3) ซึ่งโค้ดของ branch เอกสารเหมือน `v1.0.0` ทุกไฟล์นอก `docs/` จึงไม่เพิ่มพฤติกรรมใหม่ แต่ Preview URL ใหม่จะใช้ env ของ scope Preview (A4 ยังไม่ทราบ)
 
 - **ประเภท:** Release safety
 - **หลักฐาน:** ไม่ทราบสถานะ Git integration และ Preview env scope (S01-02, Step 00 R01)
