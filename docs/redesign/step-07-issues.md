@@ -7,13 +7,13 @@
 
 | Feature | Branch | Commits | Tests | สถานะ |
 |---|---|---|---|---|
-| Phase 0: Hotfix v1.0.1 (ER-01 + Next 16.3.8) | `hotfix/1.0.1` (จาก `v1.0.0`) | `1cab952`, `e2b67ed`, `93f60ff` | 191/191 (TZ Bangkok/UTC/NY), lint 0 error, type, build ✅ | ✅ **Production** · PR #3 merge `d748ac6` (merge commit) · Vercel production deploy success 2026-10-14 19:43 · รอ H-d (tag `v1.0.1`) |
-| A1: CI quality gates | `ci/quality-gates` (จาก `main` = `v1.0.0`) | `e820660` | จำลองทุก job ในเครื่อง ✅ (§2) | ✅ เสร็จในเครื่อง · รออนุมัติ push + PR |
+| Phase 0: Hotfix v1.0.1 (ER-01 + Next 16.3.8) | `hotfix/1.0.1` (จาก `v1.0.0`) | `1cab952`, `e2b67ed`, `93f60ff` | 191/191 (TZ Bangkok/UTC/NY), lint 0 error, type, build ✅ | ✅ **Production** · PR #3 merge `d748ac6` (merge commit) · Vercel production deploy success 2026-10-14 19:43 · tag `v1.0.1` → `d748ac6` ✅ |
+| A1: CI quality gates | `ci/quality-gates` (rebase บน `main` `d748ac6`) | `5d12043` | จำลองทุก job ในเครื่อง ✅ (§2) · `npm audit --audit-level=critical` บน `main` ปัจจุบัน exit 0 ✅ | ✅ push แล้ว · รอเจ้าของเปิด PR + merge |
 | A2: Ignored Build Step | — (ตั้งใน Vercel โดยเจ้าของ) | — | commit docs-only ถูกข้าม build ✅ | ✅ (S07-08) |
-| A4: proxy + server client | `refactor/proxy-and-server-client` (จาก `main` `d748ac6`) | `9ca9719` | 215/215 · `next start` ในเครื่อง: `/`,`/history`,`/add` → 307 `/login` ✅ | ✅ เสร็จในเครื่อง · ไม่ push |
-| A9: error reporting | `chore/error-reporting` (ต่อจาก A4) | `e5f8b61` | 223/223 · endpoint ในเครื่อง: ไม่มี session 401, origin อื่น 403 ✅ | ✅ เสร็จในเครื่อง · ไม่ push |
-| B1: เวลาไทย | `refactor/time-bangkok` (ต่อจาก A9) | `e008638` | 268/268 ทั้ง TZ Bangkok และ UTC · test ใหม่ fail กับโค้ดเดิมเมื่อ TZ=UTC/NY ✅ | ✅ เสร็จในเครื่อง · ไม่ push |
-| B2: data-access layer | `refactor/data-access-layer` (ต่อจาก B1) | `ccb0a2e` | 304/304 ทั้ง TZ Bangkok และ UTC ✅ | ✅ เสร็จในเครื่อง · ไม่ push |
+| A4: proxy + server client + `next` param | `refactor/proxy-and-server-client` (จาก `main` `d748ac6`) | `9ca9719`, `a73e770` | 222/222 · `next start` ในเครื่อง: `/` → `/login`, `/history` → `/login?next=%2Fhistory` ✅ | ✅ push แล้ว · รอเจ้าของเปิด PR + merge |
+| A9: error reporting | `chore/error-reporting` (ต่อจาก A4) | `d8f64fa` | 223/223 · endpoint ในเครื่อง: ไม่มี session 401, origin อื่น 403 ✅ | ✅ เสร็จในเครื่อง · ไม่ push |
+| B1: เวลาไทย | `refactor/time-bangkok` (ต่อจาก A9) | `749498a` | 268/268 ทั้ง TZ Bangkok และ UTC · test ใหม่ fail กับโค้ดเดิมเมื่อ TZ=UTC/NY ✅ | ✅ เสร็จในเครื่อง · ไม่ push |
+| B2: data-access layer | `refactor/data-access-layer` (ต่อจาก B1) | `c402e3b` | 323/323 (รวม A4 `next`) ทั้ง TZ Bangkok และ UTC ✅ | ✅ เสร็จในเครื่อง · ไม่ push |
 | A3, A5–A8, B3–B7, C1–C9 | — | — | — | ยังไม่เริ่ม (A3/A5–A7 รอ P-3/P-4, A8 รอ Q-12, C* รอ S06-02) |
 
 ## 2. A1 — CI quality gates
@@ -58,7 +58,7 @@
 | S07-06 | เจ้าของเลือกเผยแพร่เฉพาะสรุป incident (repo public) และบันทึกฉบับเต็มเก็บใน branch `local/incident-detail-2026-10-14` บนเครื่องเท่านั้น (ไม่ push) | Medium | RESOLVED |
 | S07-07 | สลับ branch ทำให้ `node_modules` ต้อง `npm ci` ใหม่ทุกครั้ง (hotfix = Next 16.3.8, main = 16.2.1) และตอนนี้ `node_modules` ตรงกับ `main` | Low | — (ขั้นตอนปกติ) |
 | S07-08 | ถ้ายังไม่ตั้ง Ignored Build Step ทุก commit เอกสารหรือ CI จะ build และ deploy ใหม่ → เจ้าของตั้ง Custom `git diff --quiet HEAD^ HEAD -- . ':(exclude)docs' ':(exclude).github'` แล้ว 2026-10-14 | Low | RESOLVED (ยืนยันจาก commit เอกสารถัดไปที่ถูกข้าม build) |
-| S07-09 | A4 ตามแผนรวม "`next` param" (กลับไปหน้าเดิมหลัง login) แต่เป็นพฤติกรรม Authentication ใหม่ จึง**ไม่ทำ**ในรอบนี้ | Low | NEEDS_APPROVAL |
+| S07-09 | `next` param (กลับไปหน้าเดิมหลัง login) เป็นพฤติกรรม Authentication ใหม่ → เจ้าของอนุมัติ 2026-10-14 → `a73e770` รับเฉพาะ path ในเว็บนี้ (กัน open redirect) | Low | RESOLVED |
 | S07-10 | `proxy.ts` ของ Next 16 รันบน Node runtime (middleware เดิมเป็น Edge) [I จากเอกสาร Next 16] | Low | RESOLVED (architecture §8 เลือก Node อยู่แล้ว) |
 | S07-11 | Vercel Hobby เก็บ runtime log สั้น [I ~1 ชั่วโมง] และไม่มี alert ดังนั้น A9 ช่วยตอนตรวจย้อนหลังได้จำกัด | Medium | UNRESOLVED (ADR-11: ทบทวนหลัง 1 เดือน / Sentry ต้องอนุมัติ) |
 | S07-12 | B2 ยังไม่ย้ายการเรียก Auth (login, `getUser`, `signOut`) และ realtime channel เพราะเป็นงาน Authentication (`features/auth`, Phase C) และ B3 | Low | — (ตามแผน) |
@@ -70,9 +70,9 @@
 ## 4. รออนุมัติ (ต่อ feature)
 | # | ขอ | ผล |
 |---|---|---|
-| H-d | สร้าง annotated tag `v1.0.1` บน `d748ac6` แล้ว push tag | อ้างอิง rollback ได้ ไม่กระทบ production |
-| BA-1 | Push `refactor/proxy-and-server-client` (A4) + เปิด PR → `main` | Vercel สร้าง Preview (ใช้ production DB: เปิดดูได้ ห้ามบันทึก) |
-| BA-2 | Merge A4 แล้วทำ A9 → B1 → B2 ตามลำดับ (push/PR/merge ทีละตัว) | **ทุก merge deploy production** (แตะโค้ดแอป) ทำนอกเวลาร้านเปิด |
-| A1-a | Push `ci/quality-gates` + เปิด PR → `main` | CI รันครั้งแรกบน GitHub และ Vercel สร้าง Preview (โค้ดแอปเหมือน v1.0.0) |
-| A1-b | Merge PR | ไม่เปลี่ยน runtime · Ignored Build Step ตั้งแล้ว (S07-08) จึงไม่ deploy production ใหม่ |
+| H-d | สร้าง annotated tag `v1.0.1` บน `d748ac6` แล้ว push tag | ✅ อนุมัติและทำแล้ว |
+| BA-1 | Push `refactor/proxy-and-server-client` (A4) + เปิด PR → `main` | ✅ อนุมัติ · push แล้ว (เจ้าของเปิด PR เพราะเครื่องไม่มี `gh`) |
+| BA-2 | Merge A4 แล้วทำ A9 → B1 → B2 ตามลำดับ (push/PR/merge ทีละตัว) | ✅ อนุมัติ · **ทุก merge deploy production** ทำนอกเวลาร้านเปิด |
+| A1-a | Push `ci/quality-gates` + เปิด PR → `main` (✅ อนุมัติ · push แล้ว) | CI รันครั้งแรกบน GitHub และ Vercel สร้าง Preview (โค้ดแอปเหมือน v1.0.0) |
+| A1-b | Merge PR (✅ อนุมัติ) | ไม่เปลี่ยน runtime · Ignored Build Step ตั้งแล้ว (S07-08) จึงไม่ deploy production ใหม่ |
 | A1-c | ตั้ง required checks ใน ruleset (เจ้าของ) | `lint`, `typecheck`, `test`, `build`, `secrets`, `pr-title` ทันที และ `audit` หลัง v1.0.1 |
