@@ -13,7 +13,7 @@
 | S04-03 | Script ตรวจ contrast อยู่นอก repo จึงตรวจซ้ำไม่ได้ | Low | NEEDS_APPROVAL |
 | S04-04 | ความเสี่ยงชื่อ variable ชนกันใน Tailwind v4 `@theme` | Low | UNRESOLVED |
 | S04-05 | ต้องมี lint rule กันตัวอักษรเล็กกว่า 14px และสี hardcode | Low | NEEDS_APPROVAL |
-| S04-06 | ยังไม่มี visual mockup ให้เจ้าของดูก่อน implement | Medium | NEEDS_APPROVAL |
+| S04-06 | ยังไม่มี visual mockup ให้เจ้าของดูก่อน implement | Medium | RESOLVED (รอ feedback จากเจ้าของ) |
 | S04-07 | Palette ร่างแรกมีคู่สีไม่ผ่าน 1 คู่ (dark primary hover) | Low | RESOLVED |
 | S04-08 | Python บน Windows เขียน UTF-8 ไม่ได้ในโหมด isolated | Low | RESOLVED |
 | S04-09 | Design ↔ flow check พบ UF-AUTH-03 ไม่มีหน้าจอ | Low | RESOLVED |
@@ -47,7 +47,11 @@ Carry-over ที่กระทบ Step นี้: **S03-01** (ยังไม�
 - **ข้อเสนอ:** ESLint rule หรือ grep ใน CI ที่ห้าม `text-[10-13px]`, `text-xs`, hex ใน className และ `style={{ color/background }}`
 - **เหตุผล:** กันหนี้ TD-32/TD-34 กลับมา
 
-## S04-06 — ยังไม่มี visual mockup · Medium · `NEEDS_APPROVAL`
+## S04-06 — ยังไม่มี visual mockup · Medium · `RESOLVED`
+
+> **อัปเดต 2026-10-14:** เจ้าของอนุมัติทางเลือก (a) จึงสร้าง style preview แบบ static ที่ `docs/redesign/preview/style-preview.html` ใช้ tokens ตรงตาม `design-tokens.md` และข้อมูลสมมติทั้งหมด (ไม่มีข้อมูลร้านจริง ไม่เชื่อมต่อ DB) มี 6 หน้า: ภาพรวม, ค้างชำระ, บันทึก, ประวัติ, เพิ่มเติม และระบบดีไซน์ ทั้ง 2 theme และเปลี่ยนเลย์เอาต์ตามขนาดจอจริง (bottom nav < 1024px และ sidebar ≥ 1024px) ได้ publish เป็น artifact แบบ private ที่ https://claude.ai/artifact/4eZJgAjzd6FH2JkcbPwCX1 เพื่อเปิดบนมือถือ, tablet และ PC
+> **ตรวจแล้ว:** script parse ผ่าน (`node --check`) · **ยังไม่ได้ตรวจ:** การแสดงผลบนอุปกรณ์จริง และ axe/Lighthouse ของหน้า preview (S03-05) · โค้ดแอปไม่ถูกแก้
+> **ขั้นต่อไป:** เจ้าของรีวิวแล้วส่ง feedback และถ้ามีการแก้ ให้ปรับ tokens/สเปกก่อน แล้วจึง republish ที่ URL เดิม
 - **สถานะ:** Step 04 ส่งมอบเป็นสเปกข้อความ + tokens + wireframe ข้อความ **ไม่มีภาพ mockup หรือ prototype** และไม่ได้สร้างโดยอ้างว่ามี
 - **ความเสี่ยง:** เจ้าของ ("ขอดูง่าย แต่มือโปร") ยังไม่เห็นหน้าตาจริงก่อน implement จึงอาจต้องแก้หลัง R2
 - **ข้อเสนอ:** (a) ทำหน้า **style preview** แบบ static (HTML เดียว) แสดง tokens + component หลัก + หน้าภาพรวมตัวอย่างด้วยข้อมูลสมมติ ทั้ง 2 theme ให้เจ้าของดูบนมือถือ/tablet/PC ก่อน Step 07 โดยไม่แตะแอปจริง หรือ (b) ข้ามไปทำใน R2 บน Preview (staging)
