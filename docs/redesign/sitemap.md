@@ -1,0 +1,86 @@
+# Sitemap & Route Map — Step 03
+
+> วันที่: 2026-10-14 · อ้างอิง `information-architecture.md` (UXD-01..09)
+> สถานะ route: **คงเดิม** = path เดิมใช้ต่อ · **ใหม่** = path ใหม่ · **เปลี่ยน** = path เดิมแต่พฤติกรรมเปลี่ยน · **ลบ (รออนุมัติ)** = Q-12
+> การ implement จริง (App Router segments, parallel/intercepting routes) ตัดสินใน Step 05 และเอกสารนี้กำหนดแค่ **พฤติกรรมที่ผู้ใช้เห็น**
+
+## 1. Sitemap
+
+```
+Car Care Intelligence
+├── /login                         เข้าสู่ระบบ                      [public]
+├── /                              ภาพรวม                         [auth]
+│   └── ?edit=<kind>:<id>          ↳ dialog แก้ไขรายการ
+├── /debts                         ค้างชำระ (สมุดทวงหนี้)            [auth]  ใหม่
+│   ├── ?sort=amount|age
+│   ├── ?edit=income:<id>          ↳ dialog แก้ไขรายการ
+│   └── ?settle=<customer>         ↳ dialog ยืนยันเคลียร์ยอด
+├── /add                           บันทึก                          [auth]
+│   └── ?type=income|expense
+├── /history                       ประวัติ                          [auth]
+│   ├── ?tab=income|expense&y=&m=&q=&from=&to=&job=
+│   ├── ?edit=<kind>:<id>          ↳ dialog แก้ไขรายการ
+│   └── ?export=1                  ↳ dialog ส่งออก Excel
+├── /more                          เพิ่มเติม                        [auth]  ใหม่
+│   └── ?logout=1                  ↳ dialog ยืนยันออกจากระบบ
+├── (not-found)                    ไม่พบหน้า                        [any]
+├── (error)                        เกิดข้อผิดพลาด                    [any]
+└── /api/insights, /api/export-excel                              ลบ (รออนุมัติ Q-12)
+```
+
+`<kind>` = `income` | `expense` · `<id>` = UUID ของรายการ · `<customer>` = ชื่อลูกค้าแบบ URL-encoded (หรือ token แทนกลุ่ม "ลูกค้าทั่วไป")
+
+## 2. Route Map
+
+| Route | ชื่อหน้า (`<title>`) | Access | วัตถุประสงค์ | Query params | เข้าจาก | ไปต่อได้ | Features | สถานะ | Release |
+|---|---|---|---|---|---|---|---|---|---|
+| `/login` | เข้าสู่ระบบ · คาร์แคร์ | public (ถ้ามี session → `/`) | ยืนยันตัวตน | `next` (path ภายในเท่านั้น) | เปิดแอปครั้งแรก, session หมดอายุ, logout | `next` หรือ `/` | F-01, F-02 | เปลี่ยน (เพิ่ม `next`) | R5 |
+| `/` | ภาพรวม · คาร์แคร์ | auth | ยอดวันนี้, ค้างชำระ, รายการวันนี้, แนวโน้ม | `edit` | nav, หลัง login, หลังบันทึก, PWA start_url | `/debts`, `/add`, `/history`, dialog แก้ไข | F-11..F-19 | เปลี่ยน | R3 |
+| `/debts` | ค้างชำระ · คาร์แคร์ | auth | ทวงหนี้, ออกบิล, เคลียร์ยอด | `sort`, `edit`, `settle` | nav, การ์ดค้างชำระบน `/` | dialog แก้ไข, ดาวน์โหลด PDF | F-20..F-22 | **ใหม่** (แทน modal) | R3 |
+| `/add` | บันทึกรายการ · คาร์แคร์ | auth | บันทึกรายรับหรือรายจ่าย | `type` | nav (ปุ่มกลาง), PWA shortcut | `/` (บันทึก) หรืออยู่หน้าเดิม (บันทึกแล้วทำต่อ) | F-23..F-31 | เปลี่ยน (`type` ใน URL) | R2 |
+| `/history` | ประวัติ · คาร์แคร์ | auth | ค้นหา, ตรวจสอบ, แก้ไข, ลบ และส่งออก | `tab`, `y`, `m`, `q`, `from`, `to`, `job`, `edit`, `export` | nav, PWA shortcut, "ดูทั้งหมด" จาก `/` | dialog แก้ไข, dialog ส่งออก | F-32..F-40 | เปลี่ยน (ตัวกรองใน URL) | R4 |
+| `/more` | เพิ่มเติม · คาร์แคร์ | auth | บัญชี, theme, logout, เวอร์ชัน | `logout` | nav | `/login` (หลัง logout) | F-04, F-06 | **ใหม่** | R5 |
+| not-found | ไม่พบหน้า | any | — | — | URL ผิด, `edit` id ไม่พบ (§4) | `/` | F-10 | คงเดิม | R5 |
+| error | เกิดข้อผิดพลาด | any | — | — | runtime error | ลองใหม่, `/` | F-10 | เปลี่ยน (แสดงรหัสอ้างอิง) | R5 |
+
+### 2.1 ค่าเริ่มต้นของ query params
+
+| Param | ค่าเริ่มต้น | Validation | ถ้าค่าไม่ถูกต้อง |
+|---|---|---|---|
+| `type` (add) | `income` | `income` \| `expense` | ใช้ค่าเริ่มต้น |
+| `tab` | `income` | `income` \| `expense` | ใช้ค่าเริ่มต้น |
+| `y` | ปีปัจจุบัน (ค.ศ. ใน URL และแสดงเป็น พ.ศ.) | 4 หลัก, ไม่เกินปีปัจจุบัน | ใช้ค่าเริ่มต้น |
+| `m` | เดือนปัจจุบัน | `0` (ทั้งปี) หรือ `1..12` | ใช้ค่าเริ่มต้น |
+| `q` | ว่าง | ≤ 50 ตัวอักษร | ตัดส่วนเกิน |
+| `from`, `to` | ว่าง | `YYYY-MM-DD` และ `from ≤ to` | ไม่ใช้ตัวกรองนั้น |
+| `job` | `all` | `all` \| `wash` \| `polish` | `all` |
+| `sort` | `amount` | `amount` \| `age` | `amount` |
+| `next` (login) | `/` | ต้องขึ้นต้นด้วย `/` และไม่ใช่ `//` (กัน open redirect) | `/` |
+
+> ตัวเลือกปีใน History จำกัดไม่เกินปีปัจจุบัน (ปัจจุบันมีถึง +10 ปี) โดยไม่กระทบข้อมูล
+
+## 3. ความเข้ากันได้กับของเดิม
+
+| ของเดิม | ของใหม่ | การรองรับ |
+|---|---|---|
+| `/add` (bookmark, PWA shortcut "บันทึกรายรับ") | `/add` = `/add?type=income` | ไม่ต้องทำอะไร |
+| `/history` (PWA shortcut "ประวัติรายการ") | `/history` ตามค่าเริ่มต้น | ไม่ต้องทำอะไร |
+| Modal ค้างชำระบน `/` | `/debts` | การ์ดค้างชำระลิงก์ไป `/debts` |
+| PWA `start_url: "/"` | `/` | ไม่ต้องทำอะไร |
+| Manifest shortcuts | เสนอเพิ่ม "ค้างชำระ" → `/debts` และ "บันทึกรายจ่าย" → `/add?type=expense` (ไม่เกิน 4 รายการ) | ต้องติดตั้ง PWA ใหม่หรือรอ browser อัปเดต manifest ซึ่งเป็นพฤติกรรมของ OS [I] |
+| Kiosk redirect หลัง reload | reload อยู่หน้าเดิม (FR-PLAT-02) | ลบ `useKioskMode` ใน release ที่มี draft (R2) |
+| `/api/insights`, `/api/export-excel` | — | ลบหลังอนุมัติ Q-12 และไม่มี client เรียก |
+
+## 4. Edge cases ของ route
+
+| กรณี | พฤติกรรม |
+|---|---|
+| ไม่มี session แล้วเปิด route auth ใด ๆ | ไป `/login?next=<path+query>` และหลัง login กลับมาที่เดิม |
+| Session หมดอายุระหว่างใช้งาน (เช่น กดบันทึก) | ไม่ redirect ทันที แต่แสดง dialog "กรุณาเข้าสู่ระบบอีกครั้ง" และเก็บ draft ไว้ (`user-flows.md` UF-AUTH-03) |
+| มี session แล้วเปิด `/login` | ไป `/` |
+| `?edit=income:<id>` แต่ไม่พบรายการ (ถูกลบจากเครื่องอื่น) | ไม่เปิด dialog แต่แสดง toast "ไม่พบรายการนี้ อาจถูกลบไปแล้ว" แล้วลบ `edit` ออกจาก URL |
+| `?settle=<ชื่อ>` แต่ลูกค้าไม่มียอดค้างแล้ว | ไม่เปิด dialog และแสดง toast "ไม่มียอดค้างชำระของลูกค้านี้" |
+| เปิด `/history?y=2030` | ใช้ปีปัจจุบัน |
+| กด back ขณะ dialog เปิด | ปิด dialog และอยู่หน้าเดิม |
+| กด back ขณะฟอร์ม `/add` มีข้อมูลค้าง | ออกจากหน้าได้เลยเพราะ draft ถูกเก็บไว้แล้ว (ไม่ถามซ้ำ) และกลับมาจะเห็นข้อมูลเดิม |
+| Deep link `/debts` ขณะไม่มียอดค้าง | แสดง empty state |

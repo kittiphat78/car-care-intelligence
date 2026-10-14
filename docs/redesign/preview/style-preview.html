@@ -1,0 +1,832 @@
+<title>คาร์แคร์ Style Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: app shell — bottom nav below 1024px, 240px sidebar at 1024px+; tokens copied 1:1 from docs/redesign/design-tokens.md (dark-first). */
+:root {
+  color-scheme: dark;
+  --bg: #0B111A; --surface: #131B26; --surface-2: #1B2533; --surface-inverse: #F1F5F9;
+  --overlay: rgb(0 0 0 / 0.6);
+  --text: #F1F5F9; --text-2: #CBD5E1; --text-3: #A3B0C2; --text-inverse: #0B111A;
+  --border: #2A3647; --border-strong: #6B7A90;
+  --primary: #2563EB; --primary-hover: #1D4ED8; --on-primary: #FFFFFF; --primary-subtle: #16274A; --link: #8AB4FF; --focus: #8AB4FF;
+  --success: #047857; --success-subtle: #0E2E24; --success-text: #4ADE9B;
+  --danger: #C62828; --danger-subtle: #3A1517; --danger-text: #FF8A8A;
+  --warning: #B45309; --warning-subtle: #3A2610; --warning-text: #FBBF4D;
+  --info-subtle: #16274A; --info-text: #8AB4FF;
+  --income: #4ADE9B; --expense: #FF8A8A; --unpaid: #FBBF4D;
+  --wash: #4FC3F7; --wash-subtle: #0E2A3A; --polish: #C4A8FF; --polish-subtle: #26193F;
+  --env: #B45309;
+  --elev-1: none; --elev-2: 0 4px 12px rgb(0 0 0 / .5); --elev-3: 0 12px 32px rgb(0 0 0 / .6);
+  --font: "Sarabun", "Noto Sans Thai", "Leelawadee UI", "Thonburi", system-ui, sans-serif;
+  --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 20px;
+  --dur-fast: 150ms; --dur-base: 220ms; --ease: cubic-bezier(0.2, 0, 0, 1);
+  --gutter: 16px; --nav-h: 64px;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg: #F4F6F9; --surface: #FFFFFF; --surface-2: #EDF0F4; --surface-inverse: #0F1A2A; --overlay: rgb(15 26 42 / 0.5);
+    --text: #0F1A2A; --text-2: #3D4A5C; --text-3: #5A6678; --text-inverse: #FFFFFF;
+    --border: #D9DFE7; --border-strong: #7B8798;
+    --primary: #1D4ED8; --primary-hover: #1E40AF; --primary-subtle: #E3EBFD; --link: #1D4ED8; --focus: #1D4ED8;
+    --success-subtle: #DDF5EA; --success-text: #05603F;
+    --danger: #B91C1C; --danger-subtle: #FDE7E7; --danger-text: #991B1B;
+    --warning-subtle: #FEF0D2; --warning-text: #8A3B05;
+    --info-subtle: #E3EBFD; --info-text: #1E40AF;
+    --income: #047857; --expense: #B91C1C; --unpaid: #B45309;
+    --wash: #0369A1; --wash-subtle: #E0F0FA; --polish: #6D28D9; --polish-subtle: #EFE7FD;
+    --elev-1: 0 1px 2px rgb(15 26 42 / .06), 0 1px 3px rgb(15 26 42 / .08); --elev-2: 0 4px 12px rgb(15 26 42 / .12); --elev-3: 0 12px 32px rgb(15 26 42 / .2);
+  }
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #F4F6F9; --surface: #FFFFFF; --surface-2: #EDF0F4; --surface-inverse: #0F1A2A; --overlay: rgb(15 26 42 / 0.5);
+  --text: #0F1A2A; --text-2: #3D4A5C; --text-3: #5A6678; --text-inverse: #FFFFFF;
+  --border: #D9DFE7; --border-strong: #7B8798;
+  --primary: #1D4ED8; --primary-hover: #1E40AF; --primary-subtle: #E3EBFD; --link: #1D4ED8; --focus: #1D4ED8;
+  --success-subtle: #DDF5EA; --success-text: #05603F;
+  --danger: #B91C1C; --danger-subtle: #FDE7E7; --danger-text: #991B1B;
+  --warning-subtle: #FEF0D2; --warning-text: #8A3B05;
+  --info-subtle: #E3EBFD; --info-text: #1E40AF;
+  --income: #047857; --expense: #B91C1C; --unpaid: #B45309;
+  --wash: #0369A1; --wash-subtle: #E0F0FA; --polish: #6D28D9; --polish-subtle: #EFE7FD;
+  --elev-1: 0 1px 2px rgb(15 26 42 / .06), 0 1px 3px rgb(15 26 42 / .08); --elev-2: 0 4px 12px rgb(15 26 42 / .12); --elev-3: 0 12px 32px rgb(15 26 42 / .2);
+}
+@media (min-width: 600px) { :root { --gutter: 24px; } }
+@media (min-width: 1024px) { :root { --gutter: 32px; } }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 16px; line-height: 1.6; margin: 0; -webkit-font-smoothing: antialiased; }
+button, input, select { font: inherit; color: inherit; }
+h1, h2, h3, p { margin: 0; }
+h1 { font-size: 24px; line-height: 32px; font-weight: 700; text-wrap: balance; }
+h2 { font-size: 20px; line-height: 28px; font-weight: 600; }
+h3 { font-size: 18px; line-height: 28px; font-weight: 600; }
+.num { font-variant-numeric: tabular-nums; }
+.muted { color: var(--text-2); }
+.faint { color: var(--text-3); }
+.caption { font-size: 14px; line-height: 22px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
+svg.i { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+svg.i.lg { width: 24px; height: 24px; }
+svg.i.sm { width: 16px; height: 16px; }
+
+/* Shell */
+.statusbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 30; background: var(--env); color: #FFFFFF; font-size: 14px; font-weight: 600; text-align: center; padding: 6px var(--gutter); }
+.skip { position: absolute; left: 8px; top: -60px; background: var(--primary); color: var(--on-primary); padding: 8px 16px; border-radius: var(--r-md); z-index: 70; }
+.skip:focus { top: 44px; }
+.layout { display: block; }
+main { padding-inline: var(--gutter); padding-block: 20px calc(var(--nav-h) + 32px + env(safe-area-inset-bottom, 0px)); max-width: 720px; margin-inline: auto; display: grid; gap: 16px; min-width: 0; }
+main.has-actionbar { padding-bottom: calc(var(--nav-h) + 120px + env(safe-area-inset-bottom, 0px)); }
+.sidenav { display: none; }
+.bottomnav { position: fixed; inset: auto 0 0 0; z-index: 20; background: var(--surface); border-top: 1px solid var(--border); box-shadow: var(--elev-2); padding-bottom: env(safe-area-inset-bottom, 0px); }
+.bottomnav ul { list-style: none; margin: 0; padding: 0 4px; display: grid; grid-template-columns: repeat(5, 1fr); height: var(--nav-h); max-width: 720px; margin-inline: auto; }
+.navlink { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; height: 100%; min-height: 44px; text-decoration: none; color: var(--text-2); font-size: 14px; font-weight: 500; position: relative; border-radius: var(--r-md); }
+.navlink .pill { display: grid; place-items: center; width: 52px; height: 28px; border-radius: 999px; transition: background var(--dur-fast); }
+.navlink[aria-current="page"] { color: var(--link); }
+.navlink[aria-current="page"] .pill { background: var(--primary-subtle); }
+.navlink.add .fab { width: 48px; height: 48px; border-radius: 999px; background: var(--primary); color: var(--on-primary); display: grid; place-items: center; margin-top: -18px; box-shadow: var(--elev-2); }
+.navlink.add .fab svg { width: 24px; height: 24px; }
+.navbadge { position: absolute; top: 2px; right: calc(50% - 26px); min-width: 20px; height: 20px; padding: 0 5px; border-radius: 999px; background: var(--warning); color: #FFFFFF; font-size: 13px; font-weight: 700; line-height: 20px; text-align: center; }
+
+@media (min-width: 1024px) {
+  .layout { display: grid; grid-template-columns: 240px minmax(0, 1fr); }
+  .bottomnav { display: none; }
+  .sidenav { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 34px; height: calc(100vh - 34px); padding: 20px 16px; background: var(--surface); border-right: 1px solid var(--border); }
+  .sidenav ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .sidenav .navlink { flex-direction: row; justify-content: flex-start; gap: 12px; padding: 0 12px; height: 48px; font-size: 16px; }
+  .sidenav .navlink[aria-current="page"] { background: var(--primary-subtle); }
+  .sidenav .navlink .pill { width: auto; height: auto; background: none !important; }
+  .sidenav .navbadge { position: static; margin-left: auto; }
+  .sidenav .foot { margin-top: auto; display: grid; gap: 8px; border-top: 1px solid var(--border); padding-top: 16px; }
+  main, main.has-actionbar { max-width: 1200px; padding-bottom: 48px; width: 100%; }
+}
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; }
+.logo { width: 36px; height: 36px; border-radius: 10px; background: var(--primary); color: var(--on-primary); display: grid; place-items: center; }
+
+/* Components */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 16px; display: grid; gap: 12px; min-width: 0; box-shadow: var(--elev-1); }
+@media (min-width: 600px) { .card { padding: 20px; } }
+.card.warning { background: var(--warning-subtle); border-color: var(--warning); }
+.card-link { text-decoration: none; color: inherit; }
+.card-link:hover .card { border-color: var(--border-strong); }
+.row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.between { justify-content: space-between; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 20px; border-radius: var(--r-md); border: 1px solid transparent; font-weight: 600; font-size: 16px; cursor: pointer; text-decoration: none; transition: background var(--dur-fast), border-color var(--dur-fast), transform 80ms; }
+.btn:active:not(:disabled) { transform: scale(0.98); }
+.btn.lg { min-height: 56px; font-size: 18px; }
+.btn.full { width: 100%; }
+.btn.primary { background: var(--primary); color: var(--on-primary); }
+.btn.success { background: var(--success); color: #FFFFFF; }
+.btn.danger { background: var(--danger); color: #FFFFFF; }
+.btn.secondary { background: var(--surface); color: var(--text); border-color: var(--border-strong); }
+.btn.ghost { background: transparent; color: var(--link); padding-inline: 12px; }
+.btn.danger-ghost { background: transparent; color: var(--danger-text); padding-inline: 12px; }
+@media (hover: hover) and (pointer: fine) {
+  .btn.primary:hover:not(:disabled) { background: var(--primary-hover); }
+  .btn.secondary:hover:not(:disabled), .btn.ghost:hover:not(:disabled), .btn.danger-ghost:hover:not(:disabled) { background: var(--surface-2); }
+}
+.btn:disabled, .btn[aria-disabled="true"] { opacity: .5; cursor: not-allowed; }
+.iconbtn { width: 44px; height: 44px; display: inline-grid; place-items: center; border-radius: var(--r-md); border: 0; background: transparent; color: var(--text-2); cursor: pointer; }
+.iconbtn:hover { background: var(--surface-2); }
+.spin { width: 20px; height: 20px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.badge { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 8px; border-radius: var(--r-sm); font-size: 14px; font-weight: 500; line-height: 1; white-space: nowrap; }
+.badge.wash { background: var(--wash-subtle); color: var(--wash); }
+.badge.polish { background: var(--polish-subtle); color: var(--polish); }
+.badge.warning { background: var(--warning-subtle); color: var(--warning-text); }
+.badge.danger { background: var(--danger-subtle); color: var(--danger-text); }
+.badge.success { background: var(--success-subtle); color: var(--success-text); }
+.badge.info { background: var(--info-subtle); color: var(--info-text); }
+.badge.neutral { background: var(--surface-2); color: var(--text-2); }
+
+.banner { display: flex; gap: 12px; align-items: flex-start; padding: 12px 16px; border-radius: var(--r-md); border: 1px solid; }
+.banner.warning { background: var(--warning-subtle); color: var(--warning-text); border-color: var(--warning); }
+.banner.danger { background: var(--danger-subtle); color: var(--danger-text); border-color: var(--danger); }
+.banner.info { background: var(--info-subtle); color: var(--info-text); border-color: var(--info-text); }
+.banner.success { background: var(--success-subtle); color: var(--success-text); border-color: var(--success); }
+.banner p { color: var(--text); }
+.banner a { color: inherit; font-weight: 600; }
+
+.seg { display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--surface-2); border-radius: var(--r-md); padding: 4px; gap: 4px; }
+.seg button { min-height: 44px; padding: 0 14px; border: 0; border-radius: 9px; background: transparent; color: var(--text-2); font-weight: 600; cursor: pointer; }
+.seg button[aria-selected="true"], .seg button[aria-checked="true"] { background: var(--surface); color: var(--text); box-shadow: var(--elev-1); outline: 1px solid var(--border); }
+.seg.wide { display: grid; width: 100%; }
+
+.field { display: grid; gap: 6px; min-width: 0; }
+.field > label, .field > .label { font-weight: 500; color: var(--text); }
+.req { color: var(--danger-text); }
+.hint { font-size: 14px; color: var(--text-3); }
+.err { font-size: 14px; color: var(--danger-text); display: flex; gap: 6px; align-items: center; }
+.input { width: 100%; min-height: 48px; padding: 0 16px; border-radius: var(--r-md); border: 1px solid var(--border-strong); background: var(--surface); font-size: 18px; }
+.input:focus { outline: none; border: 2px solid var(--primary); box-shadow: 0 0 0 3px var(--primary-subtle); }
+.input[aria-invalid="true"] { border: 2px solid var(--danger-text); }
+.input:disabled { background: var(--surface-2); opacity: .7; }
+.input.plate { min-height: 64px; text-align: center; font-size: 24px; font-weight: 700; text-transform: uppercase; }
+.money { position: relative; }
+.money span { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 22px; color: var(--text-3); font-weight: 600; }
+.money .input { min-height: 64px; text-align: right; font-size: 28px; font-weight: 700; padding-left: 44px; }
+.money.expense .input { color: var(--expense); }
+
+.choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.choices.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.choices.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.chip { min-height: 44px; padding: 0 14px; border-radius: var(--r-md); border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-align: center; }
+.chip.tile { min-height: 72px; flex-direction: column; gap: 2px; padding: 8px; }
+.chip.tile small { font-size: 14px; color: var(--text-3); font-weight: 400; }
+.chip .tick { display: none; }
+.chip[aria-checked="true"] { border-width: 2px; background: var(--primary-subtle); border-color: var(--primary); color: var(--link); font-weight: 600; }
+.chip[aria-checked="true"] .tick { display: inline-block; }
+.chip.t-wash[aria-checked="true"] { background: var(--wash-subtle); border-color: var(--wash); color: var(--wash); }
+.chip.t-polish[aria-checked="true"] { background: var(--polish-subtle); border-color: var(--polish); color: var(--polish); }
+.chip.t-success[aria-checked="true"] { background: var(--success-subtle); border-color: var(--success); color: var(--success-text); }
+.chip.t-warning[aria-checked="true"] { background: var(--warning-subtle); border-color: var(--warning); color: var(--warning-text); }
+.chip.t-danger[aria-checked="true"] { background: var(--danger-subtle); border-color: var(--danger); color: var(--danger-text); }
+@media (hover: hover) and (pointer: fine) { .chip:hover { background: var(--surface-2); } }
+
+/* Domain */
+.hero .big { font-size: 40px; line-height: 48px; font-weight: 700; }
+@media (min-width: 1024px) { .hero .big { font-size: 48px; line-height: 56px; } }
+.stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
+@media (min-width: 600px) { .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.stat .v { font-size: 20px; font-weight: 700; line-height: 28px; }
+.stat .l { font-size: 14px; color: var(--text-2); font-weight: 500; }
+.trend { display: inline-flex; align-items: center; gap: 2px; font-size: 14px; font-weight: 600; }
+.trend.up { color: var(--success-text); } .trend.down { color: var(--danger-text); }
+
+.rows { display: grid; gap: 8px; }
+.rec { width: 100%; text-align: left; display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 14px 12px 16px; border-radius: var(--r-lg); border: 1px solid var(--border); background: var(--surface); cursor: pointer; position: relative; overflow: hidden; }
+.rec::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--wash); }
+.rec.polish::before { background: var(--polish); } .rec.expense::before { background: var(--expense); }
+.rec:hover { border-color: var(--border-strong); }
+.rec .ic { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--wash-subtle); color: var(--wash); }
+.rec.polish .ic { background: var(--polish-subtle); color: var(--polish); }
+.rec.expense .ic { background: var(--danger-subtle); color: var(--expense); }
+.rec .t1 { font-weight: 600; font-size: 18px; line-height: 26px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rec .t1 small { font-weight: 400; font-size: 14px; color: var(--text-2); margin-left: 6px; }
+.rec .meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 2px; }
+.rec .note { font-size: 14px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.rec .amt { text-align: right; font-weight: 700; font-size: 18px; }
+.rec .amt.unpaid { color: var(--unpaid); } .rec .amt.expense { color: var(--expense); }
+.rec .amt small { display: block; font-weight: 400; font-size: 14px; color: var(--text-3); }
+.rec.is-new { animation: newrow 2s var(--ease); }
+@keyframes newrow { 0%, 40% { background: var(--primary-subtle); } 100% { background: var(--surface); } }
+
+.dash { display: grid; gap: 16px; }
+@media (min-width: 1024px) { .dash { grid-template-columns: 7fr 5fr; align-items: start; } .dash > .col { display: grid; gap: 16px; min-width: 0; } }
+.dash > .col { display: grid; gap: 16px; min-width: 0; }
+.pagehead { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; justify-content: space-between; }
+.weather { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); cursor: pointer; font-weight: 500; }
+
+.chart svg { width: 100%; height: auto; display: block; }
+.chart .gridline { stroke: var(--border); stroke-width: 1; }
+.chart .axis { fill: var(--text-3); font-size: 11px; font-family: var(--font); }
+.chart .inc { fill: var(--income); } .chart .exp { fill: var(--expense); }
+.legend { display: flex; gap: 16px; font-size: 14px; color: var(--text-2); }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+details summary { cursor: pointer; color: var(--link); font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+.tbl-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { padding: 10px 8px; border-bottom: 1px solid var(--border); text-align: left; }
+th { color: var(--text-2); font-weight: 600; }
+td.r, th.r { text-align: right; }
+
+.bar { height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+.bar span { display: block; height: 100%; background: var(--primary); }
+.cust { display: grid; gap: 6px; padding-block: 8px; border-bottom: 1px solid var(--border); }
+.cust:last-child { border-bottom: 0; }
+
+.debtgrid { display: grid; gap: 16px; }
+@media (min-width: 1024px) { .debtgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; } }
+.debtitem { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 10px 12px; border: 0; background: transparent; width: 100%; text-align: left; cursor: pointer; border-top: 1px solid var(--border); min-height: 52px; }
+.debtitem:first-child { border-top: 0; }
+.debtitem:hover { background: var(--surface-2); }
+.debtlist { background: var(--surface-2); border-radius: var(--r-md); overflow: hidden; }
+.debtlist .debtitem:hover { background: var(--bg); }
+
+.formgrid { display: grid; gap: 20px; }
+@media (min-width: 1024px) { .formgrid { grid-template-columns: 1fr 1fr; align-items: start; } .formgrid > .col { display: grid; gap: 20px; } }
+.formgrid > .col { display: grid; gap: 20px; min-width: 0; }
+.actionbar { position: fixed; left: 0; right: 0; bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px)); z-index: 20; background: var(--surface); border-top: 1px solid var(--border); box-shadow: var(--elev-2); padding: 10px var(--gutter); }
+.actionbar .inner { max-width: 720px; margin-inline: auto; display: grid; gap: 8px; }
+.actionbar .btns { display: grid; grid-template-columns: 2fr 3fr; gap: 10px; }
+@media (min-width: 1024px) { .actionbar { position: static; box-shadow: none; border: 0; padding: 0; background: transparent; } .actionbar .inner { max-width: none; } }
+
+.tokens { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.sw { border: 1px solid var(--border); border-radius: var(--r-md); overflow: hidden; background: var(--surface); }
+.sw .c { height: 48px; border-bottom: 1px solid var(--border); }
+.sw .n { padding: 6px 10px; font-size: 14px; line-height: 20px; }
+.sw .n code { display: block; color: var(--text-3); font-size: 14px; }
+.typescale > div { border-bottom: 1px solid var(--border); padding-block: 8px; display: flex; gap: 16px; align-items: baseline; flex-wrap: wrap; }
+.typescale code { color: var(--text-3); font-size: 14px; min-width: 150px; }
+
+/* Dialog & toast */
+dialog { border: 0; padding: 0; background: var(--surface); color: var(--text); border-radius: var(--r-xl); width: min(480px, calc(100vw - 32px)); max-height: 90dvh; box-shadow: var(--elev-3); }
+dialog::backdrop { background: var(--overlay); }
+dialog[open] { animation: dlg var(--dur-base) var(--ease); }
+@keyframes dlg { from { opacity: 0; transform: scale(.98); } }
+@media (max-width: 599px) {
+  dialog.sheet { margin: auto 0 0 0; width: 100vw; max-width: 100vw; border-radius: var(--r-xl) var(--r-xl) 0 0; padding-bottom: env(safe-area-inset-bottom, 0px); }
+  dialog.sheet[open] { animation: sheet var(--dur-base) var(--ease); }
+}
+@keyframes sheet { from { transform: translateY(40px); opacity: 0; } }
+.dlg-h { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; padding: 18px 20px 10px; }
+.dlg-b { padding: 4px 20px 16px; display: grid; gap: 16px; overflow-y: auto; }
+.dlg-f { display: flex; gap: 10px; justify-content: flex-end; padding: 12px 20px 20px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+.dlg-f .spacer { flex: 1; }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; font-size: 16px; }
+.kv dt { color: var(--text-2); } .kv dd { margin: 0; font-weight: 600; text-align: right; }
+.toasts { position: fixed; z-index: 60; left: var(--gutter); right: var(--gutter); bottom: calc(var(--nav-h) + 16px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 8px; justify-items: center; pointer-events: none; }
+main.has-actionbar ~ .toasts, .toasts.raised { bottom: calc(var(--nav-h) + 140px + env(safe-area-inset-bottom, 0px)); }
+@media (min-width: 1024px) { .toasts, .toasts.raised { left: auto; right: 32px; bottom: 32px; justify-items: end; } }
+.toast { pointer-events: auto; display: flex; gap: 10px; align-items: center; max-width: 440px; padding: 12px 12px 12px 16px; border-radius: var(--r-md); background: var(--surface-inverse); color: var(--text-inverse); box-shadow: var(--elev-3); animation: toastin var(--dur-base) var(--ease); }
+.toast .iconbtn { color: inherit; width: 36px; height: 36px; }
+@keyframes toastin { from { opacity: 0; transform: translateY(8px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0ms !important; transition-duration: 0ms !important; }
+  .rec.is-new { animation: none; background: var(--primary-subtle); }
+  .spin { animation-duration: 2s !important; }
+  .btn:active:not(:disabled) { transform: none; }
+}
+</style>
+
+<a class="skip" href="#main">ข้ามไปเนื้อหา</a>
+<div class="statusbar" role="status">ตัวอย่างดีไซน์ · ข้อมูลสมมติทั้งหมด ไม่ใช่ข้อมูลจริงของร้าน</div>
+<div class="layout">
+  <nav class="sidenav" aria-label="เมนูหลัก">
+    <div class="brand"><span class="logo" data-icon="car"></span>คาร์แคร์</div>
+    <a class="btn primary lg full" href="#add" data-icon-before="plus">บันทึกรายการ</a>
+    <ul id="sidenav-list"></ul>
+    <div class="foot">
+      <button class="btn ghost" type="button" id="theme-side" style="justify-content:flex-start"></button>
+      <p class="caption faint">owner@example.com</p>
+      <p class="caption faint">เวอร์ชัน 2.0.0-preview</p>
+    </div>
+  </nav>
+  <main id="main" tabindex="-1"></main>
+</div>
+<nav class="bottomnav" aria-label="เมนูหลัก"><ul id="bottomnav-list"></ul></nav>
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+<div class="sr-only" id="alerts" role="alert"></div>
+<dialog id="dlg" aria-labelledby="dlg-title"></dialog>
+
+<script>
+(function () {
+  document.documentElement.lang = 'th';
+
+  /* ---------- icons (stroke set, 24 grid) ---------- */
+  const P = {
+    grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    history: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>',
+    more: '<circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/>',
+    wash: '<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/>',
+    polish: '<path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.7 1.8 1.8.7-1.8.7L19 20l-.7-1.8-1.8-.7 1.8-.7z"/>',
+    receipt: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>',
+    check: '<path d="M5 12l5 5 9-10"/>',
+    checkc: '<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>',
+    file: '<path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4M9 13h6M9 17h6"/>',
+    x: '<path d="M6 6l12 12M18 6L6 18"/>',
+    refresh: '<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/>',
+    rain: '<path d="M7 15a4 4 0 1 1 .6-8A5.5 5.5 0 0 1 18 8.5a3.3 3.3 0 0 1 0 6.5z"/><path d="M8 18l-1 2.5M12 18l-1 2.5M16 18l-1 2.5"/>',
+    alert: '<path d="M12 3l9.5 16.5h-19z"/><path d="M12 10v4M12 17.2v.1"/>',
+    info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.1"/>',
+    chev: '<path d="M9 6l6 6-6 6"/>',
+    search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>',
+    cal: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+    up: '<path d="M12 19V5M6 11l6-6 6 6"/>',
+    down: '<path d="M12 5v14M6 13l6 6 6-6"/>',
+    moon: '<path d="M20 14A8 8 0 1 1 10 4a6.5 6.5 0 0 0 10 10z"/>',
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+    logout: '<path d="M15 4h4v16h-4"/><path d="M10 8l-4 4 4 4M6 12h10"/>',
+    car: '<path d="M4 16v-3l2-5h12l2 5v3z"/><circle cx="8" cy="17" r="1.6"/><circle cx="16" cy="17" r="1.6"/>',
+    palette: '<circle cx="12" cy="12" r="9"/><circle cx="8" cy="10" r="1"/><circle cx="12" cy="7.5" r="1"/><circle cx="16" cy="10" r="1"/>'
+  };
+  const ic = (n, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidden="true">${P[n] || ''}</svg>`;
+  document.querySelectorAll('[data-icon]').forEach(el => { el.innerHTML = ic(el.dataset.icon); });
+  document.querySelectorAll('[data-icon-before]').forEach(el => { el.insertAdjacentHTML('afterbegin', ic(el.dataset.iconBefore)); });
+
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const baht = n => (n < 0 ? '−฿' : '฿') + Math.abs(n).toLocaleString('th-TH');
+
+  /* ---------- sample data (fictional) ---------- */
+  const CAR_TYPES = ['รถเก๋ง', 'SUV / MPV', 'รถกระบะ', 'รถตู้ / VIP', 'มอเตอร์ไซค์', 'บิ๊กไบค์'];
+  const BRANDS = ['TOYOTA', 'HONDA', 'ISUZU', 'MITSUBISHI', 'MAZDA', 'NISSAN', 'SUZUKI', 'FORD', 'MG', 'BYD', 'BENZ', 'BMW'];
+  const PRESETS = ['ค่าน้ำยา', 'ค่าแรง', 'ค่าข้าว', 'ค่าเช่า', 'ค่าไฟ', 'ค่าน้ำ', 'ค่าขยะ', 'อุปกรณ์'];
+  let seq = 100;
+  const rec = (o) => Object.assign({ id: 'r' + (++seq), kind: 'income', customer: '', note: '', days: 0, date: '14 ต.ค.' }, o);
+  const S = {
+    records: [
+      rec({ seq: 1, time: '08:15', plate: 'กข 1234', job: 'wash', type: 'รถเก๋ง', brand: 'TOYOTA', price: 150, paid: true }),
+      rec({ seq: 2, time: '08:40', plate: '1กท 5678', job: 'wash', type: 'รถกระบะ', brand: 'ISUZU', price: 200, paid: true }),
+      rec({ seq: 3, time: '08:55', plate: 'ฒข 3030', job: 'wash', type: 'รถเก๋ง', brand: 'NISSAN', price: 150, paid: true }),
+      rec({ seq: 4, time: '09:05', plate: 'ขก 9012', job: 'polish', type: 'SUV / MPV', brand: 'HONDA', price: 1200, paid: false, customer: 'เต็นท์ A', note: 'ขัดไฟหน้า' }),
+      rec({ seq: 5, time: '09:10', plate: '9กก 1001', job: 'wash', type: 'SUV / MPV', brand: 'HONDA', price: 250, paid: true }),
+      rec({ seq: 6, time: '09:20', plate: '3กฐ 4411', job: 'wash', type: 'รถตู้ / VIP', brand: 'TOYOTA', price: 250, paid: true, note: 'ล้างห้องเครื่อง' }),
+      rec({ seq: 7, time: '09:38', plate: 'งง 7788', job: 'wash', type: 'มอเตอร์ไซค์', brand: 'HONDA', price: 80, paid: true }),
+      rec({ seq: 8, time: '09:40', plate: 'กข 2345', job: 'polish', type: 'รถเก๋ง', brand: 'MAZDA', price: 900, paid: false, customer: 'เต็นท์ B' })
+    ],
+    older: [
+      rec({ seq: 6, time: '10:20', date: '29 ก.ย.', days: 15, plate: '2กก 7000', job: 'polish', type: 'รถเก๋ง', brand: 'TOYOTA', price: 1500, paid: false, customer: 'เต็นท์ A' }),
+      rec({ seq: 4, time: '11:05', date: '2 ต.ค.', days: 12, plate: 'กข 5521', job: 'polish', type: 'รถกระบะ', brand: 'FORD', price: 1400, paid: false, customer: 'เต็นท์ A' }),
+      rec({ seq: 9, time: '14:30', date: '5 ต.ค.', days: 9, plate: '1ขม 802', job: 'polish', type: 'SUV / MPV', brand: 'MG', price: 1200, paid: false, customer: 'เต็นท์ A', note: 'ลบรอยขีดข่วนประตู' }),
+      rec({ seq: 2, time: '09:12', date: '7 ต.ค.', days: 7, plate: '4กข 1188', job: 'polish', type: 'รถเก๋ง', brand: 'HONDA', price: 1000, paid: false, customer: 'เต็นท์ B' }),
+      rec({ seq: 7, time: '13:45', date: '10 ต.ค.', days: 4, plate: 'ขข 4120', job: 'wash', type: 'รถกระบะ', brand: 'ISUZU', price: 250, paid: false, customer: 'เต็นท์ A' }),
+      rec({ seq: 3, time: '16:00', date: '11 ต.ค.', days: 3, plate: 'ฉก 9090', job: 'wash', type: 'รถเก๋ง', brand: 'SUZUKI', price: 200, paid: false, customer: '' })
+    ],
+    expenses: [
+      { id: 'e1', kind: 'expense', time: '08:00', title: 'ค่าน้ำยา', note: 'แชมพูล้างรถ 2 แกลลอน', amount: 350 },
+      { id: 'e2', kind: 'expense', time: '12:05', title: 'ค่าข้าว', note: '', amount: 120 }
+    ],
+    yesterdayIncome: 2840,
+    recent: ['เต็นท์ A', 'เต็นท์ B', 'เต็นท์ C'],
+    chartMode: 7, custPeriod: 'month', debtSort: 'amount', newId: null,
+    form: null
+  };
+  const blankForm = (kind) => ({ kind, job: 'wash', plate: '', type: '', brand: '', price: '', paid: true, customer: '', note: '', amount: '', title: '', backdated: false, errors: {}, submitted: false });
+  S.form = blankForm('income');
+
+  const stats = () => {
+    const r = S.records, inc = r.reduce((s, x) => s + x.price, 0), paid = r.filter(x => x.paid).reduce((s, x) => s + x.price, 0);
+    const exp = S.expenses.reduce((s, x) => s + x.amount, 0);
+    const diff = inc - S.yesterdayIncome;
+    return { inc, paid, exp, net: paid - exp, wash: r.filter(x => x.job === 'wash').length, polish: r.filter(x => x.job === 'polish').length, pct: S.yesterdayIncome ? Math.round(diff / S.yesterdayIncome * 100) : 0, up: diff >= 0 };
+  };
+  const groups = () => {
+    const all = [...S.older, ...S.records].filter(x => !x.paid);
+    const m = new Map();
+    for (const x of all) { const k = x.customer.trim() || 'ลูกค้าทั่วไป'; if (!m.has(k)) m.set(k, []); m.get(k).push(x); }
+    let g = [...m].map(([name, items]) => ({ name, items: items.sort((a, b) => b.days - a.days), total: items.reduce((s, x) => s + x.price, 0), maxDays: Math.max(...items.map(i => i.days)) }));
+    g.sort(S.debtSort === 'age' ? (a, b) => b.maxDays - a.maxDays : (a, b) => b.total - a.total);
+    return g;
+  };
+
+  /* ---------- nav ---------- */
+  const NAV = [
+    { id: 'dashboard', label: 'ภาพรวม', icon: 'grid' },
+    { id: 'debts', label: 'ค้างชำระ', icon: 'clock' },
+    { id: 'add', label: 'บันทึก', icon: 'plus', center: true },
+    { id: 'history', label: 'ประวัติ', icon: 'history' },
+    { id: 'more', label: 'เพิ่มเติม', icon: 'more' }
+  ];
+  function renderNav(cur) {
+    const n = groups().length;
+    const badge = (id) => id === 'debts' && n ? `<span class="navbadge" aria-hidden="true">${n > 9 ? '9+' : n}</span><span class="sr-only"> ${n} ราย</span>` : '';
+    document.getElementById('bottomnav-list').innerHTML = NAV.map(t => t.center
+      ? `<li><a class="navlink add" href="#add" ${cur === 'add' ? 'aria-current="page"' : ''}><span class="fab">${ic('plus')}</span>${t.label}</a></li>`
+      : `<li><a class="navlink" href="#${t.id}" ${cur === t.id ? 'aria-current="page"' : ''}><span class="pill">${ic(t.icon)}</span>${t.label}${badge(t.id)}</a></li>`).join('');
+    document.getElementById('sidenav-list').innerHTML = NAV.filter(t => !t.center).map(t =>
+      `<li><a class="navlink" href="#${t.id}" ${cur === t.id ? 'aria-current="page"' : ''}><span class="pill">${ic(t.icon)}</span>${t.label}${badge(t.id)}</a></li>`).join('') +
+      `<li><a class="navlink" href="#tokens" ${cur === 'tokens' ? 'aria-current="page"' : ''}><span class="pill">${ic('palette')}</span>ระบบดีไซน์</a></li>`;
+  }
+
+  /* ---------- shared fragments ---------- */
+  const recRow = (x) => {
+    if (x.kind === 'expense') return `<button class="rec expense" type="button" data-edit="${x.id}" aria-label="รายจ่าย ${esc(x.title)} ${x.amount} บาท ${x.time} น. แตะเพื่อแก้ไข">
+      <span class="ic">${ic('receipt')}</span><span style="min-width:0"><span class="t1">${esc(x.title)}</span>${x.note ? `<span class="note" style="display:block">${esc(x.note)}</span>` : ''}</span>
+      <span class="amt expense num">${baht(-x.amount)}<small>${x.time} น.</small></span></button>`;
+    const job = x.job === 'wash' ? 'ล้างรถ' : 'ขัดสี';
+    const sub = [x.customer, x.note].filter(Boolean).join(' · ');
+    return `<button class="rec ${x.job}${S.newId === x.id ? ' is-new' : ''}" type="button" data-edit="${x.id}" aria-label="${job} ${esc(x.plate)} ${esc(x.brand)} ${x.price} บาท ${x.paid ? 'ชำระแล้ว' : 'ค้างชำระ'} ${x.time} น. แตะเพื่อแก้ไข">
+      <span class="ic">${ic(x.job)}</span>
+      <span style="min-width:0"><span class="t1">${esc(x.plate)}<small>${esc(x.brand)}</small></span>
+        <span class="meta"><span class="badge ${x.job}">${job}</span>${x.paid ? '' : `<span class="badge warning">${ic('clock', 'sm')}ค้างชำระ</span>`}<span class="caption faint">#${x.seq}</span></span>
+        ${sub ? `<span class="note" style="display:block">${esc(sub)}</span>` : ''}</span>
+      <span class="amt num ${x.paid ? '' : 'unpaid'}">${baht(x.price)}<small>${x.time} น.</small></span></button>`;
+  };
+  const seg = (name, opts, val, label) => `<div class="seg" role="radiogroup" aria-label="${label}">${opts.map(([v, t]) => `<button type="button" role="radio" aria-checked="${v === val}" data-seg="${name}" data-v="${v}">${t}</button>`).join('')}</div>`;
+
+  /* ---------- screens ---------- */
+  function chartSVG() {
+    const n = S.chartMode, st = stats();
+    const inc = n === 7 ? [3900, 3650, 4200, 4800, 3300, 2840, st.inc] : Array.from({ length: 30 }, (_, i) => i === 29 ? st.inc : i === 28 ? 2840 : 2600 + ((i * 7919) % 2600));
+    const exp = n === 7 ? [450, 300, 1200, 380, 260, 520, st.exp] : Array.from({ length: 30 }, (_, i) => i === 29 ? st.exp : 200 + ((i * 3571) % 900));
+    const max = Math.ceil(Math.max(...inc, ...exp) / 1000) * 1000;
+    const W = 320, H = 180, L = 36, B = 22, T = 8, ih = H - B - T, iw = W - L - 4, slot = iw / n, bw = Math.max(2, slot * (n === 7 ? 0.32 : 0.36));
+    const y = v => T + ih - (v / max) * ih;
+    const days = ['พ.', 'พฤ.', 'ศ.', 'ส.', 'อา.', 'จ.', 'อ.'];
+    let s = '';
+    [0, max / 2, max].forEach(v => { s += `<line class="gridline" x1="${L}" x2="${W - 4}" y1="${y(v)}" y2="${y(v)}"/><text class="axis" x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${v >= 1000 ? (v / 1000) + 'k' : v}</text>`; });
+    for (let i = 0; i < n; i++) {
+      const cx = L + slot * i + slot / 2;
+      s += `<rect class="inc" x="${cx - bw - 1}" y="${y(inc[i])}" width="${bw}" height="${T + ih - y(inc[i])}" rx="2"/><rect class="exp" x="${cx + 1}" y="${y(exp[i])}" width="${bw}" height="${T + ih - y(exp[i])}" rx="2"/>`;
+      const lab = n === 7 ? (i === 6 ? 'วันนี้' : days[(i + 1) % 7]) : ((i + 1) % 5 === 0 || i === 29 ? (i === 29 ? '14' : String(14 - (29 - i) + (14 - (29 - i) <= 0 ? 30 : 0))) : '');
+      if (lab) s += `<text class="axis" x="${cx}" y="${H - 6}" text-anchor="middle">${lab}</text>`;
+    }
+    const sumI = inc.reduce((a, b) => a + b, 0), sumE = exp.reduce((a, b) => a + b, 0);
+    return { svg: `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="กราฟแท่งรายรับและรายจ่าย ${n} วันล่าสุด">${s}</svg>`, sumI, sumE, inc, exp };
+  }
+
+  function screenDashboard() {
+    const st = stats(), g = groups(), totalDebt = g.reduce((s, x) => s + x.total, 0), cars = g.reduce((s, x) => s + x.items.length, 0);
+    const list = [...S.records].reverse();
+    const ch = chartSVG();
+    const cust = { week: [['เต็นท์ A', 6100, 4], ['เต็นท์ B', 3400, 3], ['เต็นท์ C', 1500, 1], ['ลูกค้าทั่วไป', 9850, 52]], month: [['เต็นท์ A', 14200, 11], ['เต็นท์ B', 8900, 8], ['เต็นท์ C', 4300, 3], ['ลูกค้าทั่วไป', 31600, 168]], year: [['เต็นท์ A', 118500, 96], ['เต็นท์ B', 74200, 61], ['เต็นท์ C', 39800, 28], ['ลูกค้าทั่วไป', 286400, 1490]] }[S.custPeriod];
+    const cmax = Math.max(...cust.map(c => c[1]));
+    return `
+    <header class="pagehead">
+      <div><p class="caption muted">พุธ 14 ต.ค. 2569</p><h1 tabindex="-1">ภาพรวมวันนี้</h1></div>
+      <div class="row"><button class="weather" type="button" id="wx">${ic('rain')}<span class="num">31°</span><span class="faint">·</span><span>ฝน 65%</span></button>
+      <button class="btn ghost" type="button" id="refresh">${ic('refresh')}<span class="caption">อัปเดต 09:41</span></button></div>
+    </header>
+    <div class="banner warning" role="status">${ic('rain')}<div><strong>มีโอกาสฝน 65% วันนี้</strong><p class="caption">ลูกค้าอาจเลื่อนมาล้างวันอื่น</p></div></div>
+    <div class="dash">
+      <div class="col">
+        <section class="card hero" aria-labelledby="hero-l">
+          <div><p id="hero-l" class="muted" style="font-weight:500">เงินสดสุทธิวันนี้</p>
+          <p class="big num" ${st.net < 0 ? 'style="color:var(--expense)"' : ''}>${baht(st.net)}${st.net < 0 ? '<span class="sr-only"> ติดลบ</span>' : ''}</p>
+          <p class="caption faint">รับเงินแล้ว ${baht(st.paid)} − รายจ่าย ${baht(st.exp)}</p></div>
+          <div class="stats">
+            <div class="stat"><p class="l">รายรับรวม</p><p class="v num">${baht(st.inc)}</p><p class="trend ${st.up ? 'up' : 'down'}">${ic(st.up ? 'up' : 'down', 'sm')}${Math.abs(st.pct)}%<span class="sr-only">${st.up ? 'เพิ่มขึ้น' : 'ลดลง'}</span> <span class="faint" style="font-weight:400">จากเมื่อวาน</span></p></div>
+            <div class="stat"><p class="l">รายจ่าย</p><p class="v num" style="color:var(--expense)">${baht(st.exp)}</p></div>
+            <div class="stat"><p class="l">ล้างรถ</p><p class="v num">${st.wash} <span class="caption muted">คัน</span></p></div>
+            <div class="stat"><p class="l">ขัดสี</p><p class="v num">${st.polish} <span class="caption muted">คัน</span></p></div>
+          </div>
+        </section>
+        <section class="card" aria-labelledby="today-h">
+          <div class="row between"><h2 id="today-h">รายการวันนี้ <span class="caption muted num">(${list.length})</span></h2><span class="caption faint">ใหม่ → เก่า</span></div>
+          ${list.length ? `<div class="rows">${list.map(recRow).join('')}</div>` : `<p class="muted">ยังไม่มีงานวันนี้</p>`}
+        </section>
+      </div>
+      <div class="col">
+        ${totalDebt ? `<a class="card-link" href="#debts"><section class="card warning" aria-labelledby="debt-h">
+          <div class="row between"><h2 id="debt-h" class="row" style="gap:8px;color:var(--warning-text)">${ic('clock')}ค้างชำระ</h2><span class="row" style="gap:2px;color:var(--warning-text);font-weight:600">ดูทั้งหมด ${ic('chev', 'sm')}</span></div>
+          <p class="num" style="font-size:28px;line-height:36px;font-weight:700;color:var(--unpaid)">${baht(totalDebt)}</p>
+          <p class="muted">${g.length} ราย · ${cars} คัน</p></section></a>` : ''}
+        <section class="card chart" aria-labelledby="chart-h">
+          <div class="row between"><h2 id="chart-h">รายรับ-รายจ่าย</h2>${seg('chart', [[7, '7 วัน'], [30, '30 วัน']], S.chartMode, 'ช่วงเวลา')}</div>
+          <div class="legend"><span><i style="background:var(--income)"></i>รายรับ</span><span><i style="background:var(--expense)"></i>รายจ่าย</span></div>
+          ${ch.svg}
+          <p class="caption muted">${S.chartMode} วันล่าสุด: รายรับ <span class="num">${baht(ch.sumI)}</span> · รายจ่าย <span class="num">${baht(ch.sumE)}</span></p>
+          <details><summary>ดูเป็นตาราง</summary><div class="tbl-wrap"><table><caption class="sr-only">รายรับรายจ่ายรายวัน</caption><thead><tr><th>วันที่ย้อนหลัง</th><th class="r">รายรับ</th><th class="r">รายจ่าย</th></tr></thead><tbody>
+          ${ch.inc.map((v, i) => `<tr><td>${i === ch.inc.length - 1 ? 'วันนี้' : (ch.inc.length - 1 - i) + ' วันก่อน'}</td><td class="r num">${baht(v)}</td><td class="r num">${baht(ch.exp[i])}</td></tr>`).join('')}</tbody></table></div></details>
+        </section>
+        <section class="card" aria-labelledby="cust-h">
+          <div class="row between"><h2 id="cust-h">รายรับตามลูกค้า</h2>${seg('cust', [['week', 'สัปดาห์'], ['month', 'เดือน'], ['year', 'ปี']], S.custPeriod, 'ช่วงเวลา')}</div>
+          <div>${cust.map(([n, v, c]) => `<div class="cust"><div class="row between"><span style="font-weight:600">${n}</span><span class="num" style="font-weight:700">${baht(v)}</span></div><div class="bar" aria-hidden="true"><span style="width:${Math.round(v / cmax * 100)}%"></span></div><p class="caption faint">${c.toLocaleString('th-TH')} คัน</p></div>`).join('')}</div>
+        </section>
+      </div>
+    </div>`;
+  }
+
+  function screenDebts() {
+    const g = groups(), total = g.reduce((s, x) => s + x.total, 0), cars = g.reduce((s, x) => s + x.items.length, 0);
+    const card = (x) => {
+      const urgent = x.maxDays >= 14;
+      const show = x.items.slice(0, 5);
+      return `<article class="card" aria-labelledby="dc-${esc(x.name)}">
+        <div class="row between" style="align-items:flex-start"><h2 id="dc-${esc(x.name)}">${esc(x.name)}</h2><p class="num" style="font-size:24px;font-weight:700;color:var(--unpaid)">${baht(x.total)}</p></div>
+        <div class="row" style="gap:8px"><span class="muted">${x.items.length} คัน</span>
+          <span class="badge ${urgent ? 'danger' : 'warning'}">${ic(urgent ? 'alert' : 'clock', 'sm')}ค้างนานสุด ${x.maxDays} วัน${urgent ? ' · เร่งด่วน' : ''}</span></div>
+        <div class="debtlist">${show.map(i => `<button class="debtitem" type="button" data-edit="${i.id}" aria-label="${esc(i.plate)} ${i.date} ค้าง ${i.days} วัน ${i.price} บาท แตะเพื่อแก้ไข">
+          <span style="min-width:0"><span style="font-weight:600">${esc(i.plate)}</span> <span class="caption muted">${i.date} · ${i.days} วัน</span>${i.note ? `<span class="caption faint" style="display:block">${esc(i.note)}</span>` : ''}</span>
+          <span class="num" style="font-weight:600">${baht(i.price)}</span></button>`).join('')}</div>
+        ${x.items.length > 5 ? `<p class="caption muted">และอีก ${x.items.length - 5} คัน</p>` : ''}
+        <div class="choices grid2"><button class="btn secondary" type="button" data-bill="${esc(x.name)}">${ic('file')}สร้างบิล</button><button class="btn success" type="button" data-settle="${esc(x.name)}">${ic('checkc')}เคลียร์ยอด</button></div>
+      </article>`;
+    };
+    return `<header class="pagehead"><div><h1 tabindex="-1">ค้างชำระ</h1>
+      ${g.length ? `<p class="num" style="font-size:28px;line-height:36px;font-weight:700;color:var(--unpaid)">${baht(total)}</p><p class="muted">${g.length} ราย · ${cars} คัน</p>` : ''}</div>
+      ${g.length ? seg('debtsort', [['amount', 'ยอดมากสุด'], ['age', 'ค้างนานสุด']], S.debtSort, 'เรียงตาม') : ''}</header>
+      ${g.length ? `<div class="debtgrid">${g.map(card).join('')}</div>` :
+      `<section class="card" style="text-align:center;justify-items:center;padding-block:40px"><span style="color:var(--success-text)">${ic('checkc', 'lg')}</span><h2>ไม่มีรายการค้างชำระ</h2><p class="muted">ทุกรายการได้รับชำระแล้ว</p><a class="btn secondary" href="#dashboard">กลับภาพรวม</a></section>`}`;
+  }
+
+  const plateHint = (v) => v.trim().toUpperCase() === 'กข 1234' ? `<span class="badge info">ลูกค้าประจำ · ครั้งที่ 3</span>` : `<span class="hint">ลองพิมพ์ "กข 1234" เพื่อดูการแจ้งลูกค้าประจำ</span>`;
+  function screenAdd() {
+    const f = S.form, e = f.errors, inc = f.kind === 'income';
+    const errMsg = (k) => e[k] ? `<p class="err" id="err-${k}">${ic('alert', 'sm')}${e[k]}</p>` : '';
+    const inv = (k) => e[k] ? `aria-invalid="true" aria-describedby="err-${k}"` : '';
+    const chips = (name, opts, val, tone = '', tile = false, grid = '') => `<div class="choices ${grid}" role="radiogroup" aria-labelledby="lbl-${name}">${opts.map(o => { const [v, t, sub, ti] = Array.isArray(o) ? o : [o, o]; return `<button type="button" role="radio" class="chip ${tile ? 'tile' : ''} ${ti || tone}" aria-checked="${String(v) === String(val)}" data-chip="${name}" data-v="${esc(v)}">${tile && ti ? '' : ''}<span class="row" style="gap:6px;justify-content:center"><span class="tick">${ic('check', 'sm')}</span>${ti ? ic(ti === 't-wash' ? 'wash' : 'polish') : ''}${esc(t)}</span>${sub ? `<small>${sub}</small>` : ''}</button>`; }).join('')}</div>`;
+    const nErr = Object.keys(e).length;
+    return `<header class="pagehead"><h1 tabindex="-1">บันทึกรายการ</h1></header>
+      <div class="seg wide" role="tablist" aria-label="ชนิดรายการ"><button role="tab" type="button" aria-selected="${inc}" data-kind="income">รายรับ</button><button role="tab" type="button" aria-selected="${!inc}" data-kind="expense">รายจ่าย</button></div>
+      ${nErr ? `<div class="banner danger" role="alert" tabindex="-1" id="errsum">${ic('alert')}<div><strong>กรุณาแก้ไข ${nErr} ช่อง</strong><p class="caption">${Object.keys(e).map(k => `<a href="#f-${k}">${e[k]}</a>`).join(' · ')}</p></div></div>` : ''}
+      <div class="formgrid" role="tabpanel">
+        <div class="col">
+          <div class="field"><span class="label" id="lbl-date">วันที่ทำรายการ</span>
+            <div class="row"><button type="button" class="btn secondary" id="f-date">${ic('cal')}${f.backdated ? 'เมื่อวาน · 13 ต.ค. 2569' : 'วันนี้ · 14 ต.ค. 2569'}</button>
+            <button type="button" class="chip" role="radio" aria-checked="${!f.backdated}" data-back="0">วันนี้</button><button type="button" class="chip" role="radio" aria-checked="${f.backdated}" data-back="1">เมื่อวาน</button></div>
+            ${f.backdated ? `<span class="badge warning">${ic('alert', 'sm')}บันทึกย้อนหลัง</span>` : ''}</div>
+          ${inc ? `
+          <div class="field"><span class="label" id="lbl-job">ประเภทงาน <span class="req">*</span></span>${chips('job', [['wash', 'ล้างรถ', 'บริการทั่วไป', 't-wash'], ['polish', 'ขัดสี', 'เต็นท์รถ', 't-polish']], f.job, '', true, 'grid2')}</div>
+          <div class="field"><label for="f-plate">ป้ายทะเบียน <span class="req">*</span></label><input class="input plate" id="f-plate" autocomplete="off" autocapitalize="characters" maxlength="20" value="${esc(f.plate)}" placeholder="กข 1234" ${inv('plate')}>${errMsg('plate')}
+            <span id="plate-hint" aria-live="polite">${plateHint(f.plate)}</span></div>
+          <div class="field" id="f-type"><span class="label" id="lbl-type">ประเภทรถ <span class="req">*</span></span>${chips('type', CAR_TYPES, f.type, '', false, 'grid3')}${errMsg('type')}</div>
+          <div class="field"><label for="f-price">ราคา (บาท) <span class="req">*</span></label><div class="money"><span aria-hidden="true">฿</span><input class="input num" id="f-price" inputmode="numeric" value="${esc(f.price)}" placeholder="0" ${inv('price')}></div>${errMsg('price')}${f.price === '0' ? '<p class="hint">ราคา 0 บาท ถูกต้องไหม?</p>' : ''}</div>
+        </div><div class="col">
+          <div class="field"><span class="label" id="lbl-paid">สถานะการชำระ</span>${chips('paid', [['1', 'ชำระแล้ว', '', 't-success'], ['0', 'ค้างชำระ', '', 't-warning']], f.paid ? '1' : '0')}</div>
+          ${f.paid ? `<details><summary>เพิ่มชื่อลูกค้า / เต็นท์</summary>` : ''}
+          <div class="field"><span class="label" id="lbl-cust">ลูกค้า / เต็นท์${f.paid ? '' : ' <span class="caption faint">(แนะนำสำหรับค้างชำระ)</span>'}</span>${chips('customer', S.recent, f.customer)}
+            <label class="sr-only" for="f-cust">พิมพ์ชื่อลูกค้า</label><input class="input" id="f-cust" list="dl-cust" maxlength="50" placeholder="หรือพิมพ์ชื่อ" value="${esc(f.customer)}"><datalist id="dl-cust">${S.recent.map(n => `<option value="${esc(n)}">`).join('')}</datalist></div>
+          ${f.paid ? `</details>` : ''}
+          <details><summary>ยี่ห้อรถ${f.brand ? ` · ${esc(f.brand)}` : ''}</summary><div class="field">${chips('brand', BRANDS, f.brand)}</div></details>
+          <div class="field"><label for="f-note">หมายเหตุ</label><input class="input" id="f-note" maxlength="200" placeholder="เช่น ล้างห้องเครื่อง" value="${esc(f.note)}"></div>
+          ` : `
+          <div class="field"><label for="f-amount">จำนวนเงินที่จ่าย (บาท) <span class="req">*</span></label><div class="money expense"><span aria-hidden="true">฿</span><input class="input num" id="f-amount" inputmode="numeric" value="${esc(f.amount)}" placeholder="0" ${inv('amount')}></div>${errMsg('amount')}</div>
+        </div><div class="col">
+          <div class="field" id="f-title-wrap"><span class="label" id="lbl-title">จ่ายค่าอะไร <span class="req">*</span></span>${chips('title', PRESETS, f.title, 't-danger')}
+            <label class="sr-only" for="f-title">พิมพ์รายการเอง</label><input class="input" id="f-title" maxlength="100" placeholder="หรือพิมพ์รายการเอง" value="${esc(f.title)}" ${inv('title')}>${errMsg('title')}</div>
+          <div class="field"><label for="f-note">หมายเหตุ</label><input class="input" id="f-note" maxlength="200" value="${esc(f.note)}"></div>`}
+        </div>
+      </div>
+      <div class="actionbar"><div class="inner">
+        ${f.backdated ? `<p class="caption" style="color:var(--warning-text);font-weight:600">บันทึกย้อนหลัง: 13 ต.ค. 2569</p>` : ''}
+        <div class="btns"><button type="button" class="btn secondary lg" data-save="bulk">${ic('plus')}บันทึกแล้วทำต่อ</button>
+        <button type="button" class="btn ${inc ? 'primary' : 'danger'} lg" data-save="one">${ic('check')}${inc ? 'บันทึก' : 'บันทึกรายจ่าย'}</button></div>
+      </div></div>`;
+  }
+
+  function screenHistory() {
+    const all = [...S.records, ...S.older.filter(x => x.date.includes('ต.ค.'))];
+    const inc = all.reduce((s, x) => s + x.price, 0);
+    const byDay = new Map();
+    for (const x of [...S.records].reverse()) { (byDay.get('14 ต.ค. 2569 · พุธ') || byDay.set('14 ต.ค. 2569 · พุธ', []).get('14 ต.ค. 2569 · พุธ')).push(x); }
+    for (const x of S.older.filter(o => o.date.includes('ต.ค.'))) { const k = x.date + ' 2569'; (byDay.get(k) || byDay.set(k, []).get(k)).push(x); }
+    return `<header class="pagehead"><h1 tabindex="-1">ประวัติ</h1>
+      <div class="row"><label class="sr-only" for="h-m">เดือน</label><select class="input" id="h-m" style="width:auto"><option>ตุลาคม</option><option>ทั้งปี</option></select>
+      <label class="sr-only" for="h-y">ปี</label><select class="input" id="h-y" style="width:auto"><option>2569</option><option>2568</option></select></div></header>
+      <div class="seg wide" role="tablist" aria-label="ชนิดรายการ"><button role="tab" type="button" aria-selected="true">รายรับ</button><button role="tab" type="button" aria-selected="false" id="h-exp">รายจ่าย</button></div>
+      <section class="card" aria-labelledby="ps-h"><div class="row between"><div><p id="ps-h" class="muted">ยอดรวม ตุลาคม 2569 (ตัวอย่างบางส่วน)</p><p class="num" style="font-size:28px;line-height:36px;font-weight:700">${baht(inc)}</p></div>
+      <button class="btn secondary" type="button" id="export">${ic('file')}ส่งออก Excel</button></div>
+      <div class="stats" style="grid-template-columns:repeat(2,minmax(0,1fr))"><div class="stat"><p class="l">ล้างรถ</p><p class="v num">${all.filter(x => x.job === 'wash').length} คัน · ${baht(all.filter(x => x.job === 'wash').reduce((s, x) => s + x.price, 0))}</p></div>
+      <div class="stat"><p class="l">ขัดสี</p><p class="v num">${all.filter(x => x.job === 'polish').length} คัน · ${baht(all.filter(x => x.job === 'polish').reduce((s, x) => s + x.price, 0))}</p></div></div></section>
+      <div class="field"><label class="sr-only" for="h-q">ค้นหา</label><input class="input" id="h-q" type="search" placeholder="ค้นหาทะเบียน หรือชื่อลูกค้า"></div>
+      ${[...byDay].map(([d, items]) => `<section aria-label="${d}" style="display:grid;gap:8px"><div class="row between" style="position:sticky;top:34px;background:var(--bg);padding-block:6px;z-index:5"><h2 style="font-size:16px">${d}</h2><span class="num" style="font-weight:700;color:var(--income)">${baht(items.reduce((s, x) => s + x.price, 0))}</span></div><div class="rows">${items.map(recRow).join('')}</div></section>`).join('')}`;
+  }
+
+  function screenMore() {
+    const dark = isDark();
+    return `<header class="pagehead"><h1 tabindex="-1">เพิ่มเติม</h1></header>
+      <section class="card"><h2>บัญชี</h2><p>owner@example.com <span class="caption faint">(ตัวอย่าง)</span></p></section>
+      <section class="card"><h2>การแสดงผล</h2><div class="row between"><label for="sw-theme">ธีมมืด</label>
+        <button id="sw-theme" type="button" role="switch" aria-checked="${dark}" class="btn ${dark ? 'primary' : 'secondary'}" style="min-width:96px">${dark ? 'เปิด' : 'ปิด'}</button></div></section>
+      <section class="card"><h2>เกี่ยวกับ</h2><p class="muted">เวอร์ชัน 2.0.0-preview · หน้าตัวอย่างดีไซน์</p><p class="muted">ลืมรหัสผ่านหรือต้องการบัญชีใหม่ ติดต่อผู้ดูแลร้าน</p><a class="btn ghost" href="#tokens" style="justify-self:start">${ic('palette')}ดูระบบดีไซน์ (สำหรับทีมพัฒนา)</a></section>
+      <button class="btn danger-ghost lg full" type="button" id="logout">${ic('logout')}ออกจากระบบ</button>`;
+  }
+
+  function screenTokens() {
+    const sw = [['--bg', 'พื้นหลัง'], ['--surface', 'การ์ด'], ['--surface-2', 'พื้นรอง'], ['--text', 'ข้อความหลัก'], ['--text-2', 'ข้อความรอง'], ['--text-3', 'ข้อความเล็ก'], ['--border-strong', 'ขอบ input'], ['--primary', 'action หลัก'], ['--success', 'เคลียร์ยอด'], ['--danger', 'ลบ / รายจ่าย'], ['--warning', 'ค้างชำระ'], ['--income', 'ยอดรายรับ'], ['--expense', 'ยอดรายจ่าย'], ['--unpaid', 'ยอดค้างชำระ'], ['--wash', 'ล้างรถ'], ['--polish', 'ขัดสี']];
+    const cs = getComputedStyle(document.documentElement);
+    return `<header class="pagehead"><div><h1 tabindex="-1">ระบบดีไซน์</h1><p class="muted">ค่าจาก design-tokens.md · ธีม${isDark() ? 'มืด' : 'สว่าง'} · contrast ผ่าน AA 38/38 คู่</p></div></header>
+      <section class="card"><h2>สี (semantic)</h2><div class="tokens">${sw.map(([t, n]) => `<div class="sw"><div class="c" style="background:var(${t})"></div><div class="n">${n}<code>${t} ${cs.getPropertyValue(t).trim()}</code></div></div>`).join('')}</div></section>
+      <section class="card typescale"><h2>ตัวอักษร (Sarabun)</h2>
+        <div><code>display 40/48 · 700</code><span class="num" style="font-size:40px;font-weight:700;line-height:48px">฿12,800</span></div>
+        <div><code>title-lg 28/36 · 700</code><span style="font-size:28px;font-weight:700">ยอดค้างชำระ</span></div>
+        <div><code>title 24/32 · 700</code><span style="font-size:24px;font-weight:700">ภาพรวมวันนี้</span></div>
+        <div><code>heading 20/28 · 600</code><span style="font-size:20px;font-weight:600">รายการวันนี้</span></div>
+        <div><code>body 16/26 · 400</code><span>ข้อความเนื้อหาทั่วไป ขั้นต่ำ 16px</span></div>
+        <div><code>caption 14/22 · 400</code><span class="caption">ข้อความเล็กสุดของระบบ 14px</span></div></section>
+      <section class="card"><h2>ปุ่ม</h2><div class="row"><button class="btn primary" type="button">บันทึก</button><button class="btn secondary" type="button">บันทึกแล้วทำต่อ</button><button class="btn success" type="button">${ic('checkc')}เคลียร์ยอด</button><button class="btn danger" type="button">ลบรายการ</button><button class="btn ghost" type="button">ดูทั้งหมด</button><button class="btn primary" type="button" disabled>ปิดใช้งาน</button><button class="btn primary" type="button" aria-busy="true" disabled><span class="spin" aria-hidden="true"></span>กำลังบันทึก…</button></div>
+        <p class="caption faint">กด Tab เพื่อดูวงแหวน focus</p></section>
+      <section class="card"><h2>Badge และ Banner</h2><div class="row"><span class="badge wash">${ic('wash', 'sm')}ล้างรถ</span><span class="badge polish">${ic('polish', 'sm')}ขัดสี</span><span class="badge success">${ic('check', 'sm')}ชำระแล้ว</span><span class="badge warning">${ic('clock', 'sm')}ค้างชำระ</span><span class="badge danger">${ic('alert', 'sm')}เร่งด่วน</span><span class="badge info">ลูกค้าประจำ · ครั้งที่ 3</span></div>
+        <div class="banner info">${ic('info')}<div><strong>กู้ข้อมูลที่กรอกค้างไว้แล้ว</strong></div></div>
+        <div class="banner danger">${ic('alert')}<div><strong>บันทึกไม่สำเร็จ</strong><p class="caption">ตรวจอินเทอร์เน็ตแล้วกด ลองอีกครั้ง</p></div></div></section>
+      <section class="card"><h2>ช่องกรอก</h2>
+        <div class="field"><label for="t1">ปกติ</label><input class="input" id="t1" placeholder="พิมพ์ชื่อ"></div>
+        <div class="field"><label for="t2">ไม่ถูกต้อง</label><input class="input" id="t2" aria-invalid="true" aria-describedby="t2e" value=""><p class="err" id="t2e">${ic('alert', 'sm')}กรุณากรอกป้ายทะเบียน</p></div>
+        <div class="field"><label for="t3">ปิดใช้งาน</label><input class="input" id="t3" disabled value="ไม่สามารถแก้ไขได้"></div></section>`;
+  }
+
+  /* ---------- routing ---------- */
+  const SCREENS = { dashboard: screenDashboard, debts: screenDebts, add: screenAdd, history: screenHistory, more: screenMore, tokens: screenTokens };
+  let current = null;
+  function render(focus) {
+    const id = SCREENS[location.hash.slice(1)] ? location.hash.slice(1) : 'dashboard';
+    const main = document.getElementById('main');
+    main.className = id === 'add' ? 'has-actionbar' : '';
+    document.getElementById('toasts').classList.toggle('raised', id === 'add');
+    main.innerHTML = SCREENS[id]();
+    renderNav(id);
+    if (focus && id !== current) { const h = main.querySelector('h1'); if (h) h.focus({ preventScroll: false }); window.scrollTo(0, 0); }
+    current = id;
+    S.newId = null;
+  }
+  window.addEventListener('hashchange', () => render(true));
+
+  /* ---------- theme ---------- */
+  const mq = window.matchMedia('(prefers-color-scheme: light)');
+  function isDark() { const t = document.documentElement.getAttribute('data-theme'); return t ? t === 'dark' : !mq.matches; }
+  function setTheme(dark) { document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light'); try { localStorage.setItem('cc-preview-theme', dark ? 'dark' : 'light'); } catch (e) { /* storage unavailable */ } paintThemeBtn(); render(false); }
+  function paintThemeBtn() { const b = document.getElementById('theme-side'); b.innerHTML = ic(isDark() ? 'sun' : 'moon') + (isDark() ? 'ธีมสว่าง' : 'ธีมมืด'); }
+  try { const t = localStorage.getItem('cc-preview-theme'); if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); } catch (e) { /* ignore */ }
+  document.getElementById('theme-side').addEventListener('click', () => setTheme(!isDark()));
+
+  /* ---------- toast ---------- */
+  function toast(msg, tone = 'success') {
+    const box = tone === 'error' ? document.getElementById('toasts') : document.getElementById('toasts');
+    const el = document.createElement('div');
+    el.className = 'toast'; if (tone === 'error') el.setAttribute('role', 'alert');
+    el.innerHTML = `${ic(tone === 'error' ? 'alert' : tone === 'info' ? 'info' : 'checkc')}<span style="flex:1">${esc(msg)}</span><button class="iconbtn" type="button" aria-label="ปิดข้อความ">${ic('x')}</button>`;
+    el.querySelector('button').onclick = () => el.remove();
+    box.appendChild(el); while (box.children.length > 3) box.firstChild.remove();
+    if (tone !== 'error') { let t = setTimeout(() => el.remove(), 5000); el.addEventListener('mouseenter', () => clearTimeout(t)); el.addEventListener('focusin', () => clearTimeout(t)); }
+  }
+
+  /* ---------- dialog ---------- */
+  const dlg = document.getElementById('dlg');
+  let opener = null;
+  function openDialog(html, { sheet = false, focus } = {}) {
+    opener = document.activeElement;
+    dlg.className = sheet ? 'sheet' : '';
+    dlg.setAttribute('role', sheet ? 'dialog' : 'alertdialog');
+    dlg.innerHTML = html; dlg.showModal();
+    const f = focus ? dlg.querySelector(focus) : dlg.querySelector('[data-autofocus]');
+    if (f) f.focus();
+  }
+  function closeDialog() { if (dlg.open) dlg.close(); }
+  dlg.addEventListener('close', () => { if (opener && document.contains(opener)) opener.focus(); });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg && dlg.className === 'sheet') closeDialog(); if (e.target.closest('[data-close]')) closeDialog(); });
+  const confirmHTML = (title, body, actions) => `<div class="dlg-h"><h2 id="dlg-title">${title}</h2></div><div class="dlg-b">${body}</div><div class="dlg-f">${actions}</div>`;
+
+  function findRec(id) { return [...S.records, ...S.older].find(x => x.id === id) || S.expenses.find(x => x.id === id); }
+  function openEdit(id) {
+    const x = findRec(id); if (!x) { toast('ไม่พบรายการนี้ อาจถูกลบไปแล้ว', 'error'); return; }
+    const isExp = x.kind === 'expense';
+    const orig = isExp ? String(x.amount) : x.price + '|' + x.paid;
+    openDialog(`<div class="dlg-h"><div><h2 id="dlg-title">${isExp ? 'แก้ไขรายจ่าย' : 'แก้ไขรายรับ'}</h2><p class="caption muted">${esc(isExp ? x.title : x.plate)} · ${x.date || '14 ต.ค.'} 2569 · ${x.time} น.</p></div><button class="iconbtn" type="button" data-close aria-label="ปิด">${ic('x')}</button></div>
+      <div class="dlg-b">
+        ${isExp ? `<div class="field"><label for="e-amt">จำนวนเงิน (บาท)</label><div class="money expense"><span aria-hidden="true">฿</span><input class="input num" id="e-amt" inputmode="numeric" value="${x.amount}"></div></div>` :
+        `<div class="field"><label for="e-plate">ป้ายทะเบียน</label><input class="input plate" id="e-plate" value="${esc(x.plate)}" disabled></div>
+         <div class="field"><label for="e-price">ราคา (บาท)</label><div class="money"><span aria-hidden="true">฿</span><input class="input num" id="e-price" inputmode="numeric" value="${x.price}"></div><p class="err" id="e-err" hidden>${ic('alert', 'sm')}กรุณากรอกราคา</p></div>
+         <div class="field"><span class="label" id="lbl-epaid">สถานะการชำระ</span><div class="choices" role="radiogroup" aria-labelledby="lbl-epaid"><button type="button" role="radio" class="chip t-success" aria-checked="${x.paid}" data-epaid="1"><span class="tick">${ic('check', 'sm')}</span>ชำระแล้ว</button><button type="button" role="radio" class="chip t-warning" aria-checked="${!x.paid}" data-epaid="0"><span class="tick">${ic('check', 'sm')}</span>ค้างชำระ</button></div></div>`}
+        <dl class="kv caption"><dt>เพิ่มโดย</dt><dd>staff@example.com</dd><dt>แก้ไขล่าสุดโดย</dt><dd>—</dd></dl>
+        <p class="caption faint">หน้าแก้ไขจริงมีทุกช่องเหมือนหน้าบันทึก (ตัวอย่างนี้แสดงบางส่วน)</p>
+      </div>
+      <div class="dlg-f" id="e-foot"><button class="btn danger-ghost" type="button" id="e-del">ลบ</button><span class="spacer"></span><button class="btn primary" type="button" id="e-save" disabled>บันทึกการแก้ไข</button></div>`, { sheet: true, focus: '#dlg-title' });
+    const title = dlg.querySelector('#dlg-title'); title.tabIndex = -1; title.focus();
+    let paid = x.paid;
+    const cur = () => isExp ? dlg.querySelector('#e-amt').value : dlg.querySelector('#e-price').value + '|' + paid;
+    const sync = () => { dlg.querySelector('#e-save').disabled = cur() === orig; };
+    dlg.querySelectorAll('input').forEach(i => i.addEventListener('input', () => { i.value = i.value.replace(/\D/g, ''); sync(); }));
+    dlg.querySelectorAll('[data-epaid]').forEach(b => b.onclick = () => { paid = b.dataset.epaid === '1'; dlg.querySelectorAll('[data-epaid]').forEach(o => o.setAttribute('aria-checked', o === b)); sync(); });
+    dlg.querySelector('#e-save').onclick = () => {
+      const v = (isExp ? dlg.querySelector('#e-amt') : dlg.querySelector('#e-price')).value;
+      if (!v) { const er = dlg.querySelector('#e-err'); if (er) { er.hidden = false; dlg.querySelector('#e-price').setAttribute('aria-invalid', 'true'); dlg.querySelector('#e-price').focus(); } return; }
+      if (isExp) x.amount = +v; else { x.price = +v; x.paid = paid; }
+      closeDialog(); render(false); toast(`บันทึกการแก้ไข ${isExp ? x.title : x.plate} แล้ว`);
+    };
+    dlg.querySelector('#e-del').onclick = () => {
+      const foot = dlg.querySelector('#e-foot');
+      foot.innerHTML = `<p style="flex-basis:100%;font-weight:600">ลบ ${esc(isExp ? x.title : x.plate)} ${baht(isExp ? x.amount : x.price)} ใช่ไหม?</p><span class="spacer"></span><button class="btn secondary" type="button" id="d-no">ยกเลิก</button><button class="btn danger" type="button" id="d-yes">ลบรายการ</button>`;
+      foot.querySelector('#d-no').focus();
+      foot.querySelector('#d-no').onclick = () => { closeDialog(); openEdit(id); };
+      foot.querySelector('#d-yes').onclick = () => {
+        S.records = S.records.filter(r => r.id !== id); S.older = S.older.filter(r => r.id !== id); S.expenses = S.expenses.filter(r => r.id !== id);
+        closeDialog(); render(false); toast(`ลบ ${isExp ? x.title : x.plate} แล้ว (ตัวอย่างเท่านั้น)`);
+      };
+    };
+  }
+
+  function openSettle(name) {
+    const g = groups().find(x => x.name === name); if (!g) { toast('ไม่มียอดค้างชำระของลูกค้านี้', 'info'); return; }
+    const plates = g.items.slice(0, 6).map(i => esc(i.plate)).join(', ') + (g.items.length > 6 ? ` และอีก ${g.items.length - 6} คัน` : '');
+    openDialog(confirmHTML(`เคลียร์ยอด ${esc(name)}?`,
+      `<dl class="kv"><dt>จำนวน</dt><dd class="num">${g.items.length} คัน</dd><dt>ยอดรวม</dt><dd class="num" style="color:var(--unpaid)">${baht(g.total)}</dd></dl><p class="caption muted">${plates}</p><p>ทุกรายการจะเปลี่ยนเป็น <strong>ชำระแล้ว</strong></p>`,
+      `<button class="btn secondary" type="button" data-close data-autofocus>ยกเลิก</button><button class="btn success" type="button" id="s-yes">${ic('checkc')}เคลียร์ยอด</button>`));
+    dlg.querySelector('#s-yes').onclick = (ev) => {
+      const b = ev.currentTarget; b.disabled = true; b.setAttribute('aria-busy', 'true'); b.innerHTML = '<span class="spin" aria-hidden="true"></span>กำลังเคลียร์ยอด…';
+      setTimeout(() => { g.items.forEach(i => { i.paid = true; }); closeDialog(); render(false); toast(`เคลียร์ยอด ${name} ${baht(g.total)} แล้ว`); }, 700);
+    };
+  }
+
+  /* ---------- add form logic ---------- */
+  function readForm() {
+    const f = S.form, v = id => { const el = document.getElementById(id); return el ? el.value : null; };
+    if (v('f-plate') !== null) f.plate = v('f-plate');
+    if (v('f-price') !== null) f.price = v('f-price').replace(/\D/g, '');
+    if (v('f-cust') !== null) f.customer = v('f-cust');
+    if (v('f-note') !== null) f.note = v('f-note');
+    if (v('f-amount') !== null) f.amount = v('f-amount').replace(/\D/g, '');
+    if (v('f-title') !== null) f.title = v('f-title');
+  }
+  function validate() {
+    const f = S.form, e = {};
+    if (f.kind === 'income') { if (!f.plate.trim()) e.plate = 'กรุณากรอกป้ายทะเบียน'; if (!f.type) e.type = 'กรุณาเลือกประเภทรถ'; if (f.price === '') e.price = 'กรุณากรอกราคา'; }
+    else { if (!f.amount || +f.amount < 1) e.amount = 'กรุณากรอกจำนวนเงินมากกว่า 0'; if (!f.title.trim()) e.title = 'กรุณาระบุรายการจ่าย'; }
+    f.errors = e; return Object.keys(e).length === 0;
+  }
+  function save(mode, skipNameCheck) {
+    readForm(); S.form.submitted = true;
+    if (!validate()) { render(false); const s = document.getElementById('errsum'); if (s) s.focus(); return; }
+    const f = S.form;
+    if (f.kind === 'income' && !f.paid && !f.customer.trim() && !skipNameCheck) {
+      openDialog(confirmHTML('ยังไม่ได้ใส่ชื่อลูกค้า', `<p>รายการค้างชำระที่ไม่มีชื่อจะไปอยู่ในกลุ่ม "ลูกค้าทั่วไป" และติดตามได้ยาก</p>`,
+        `<button class="btn secondary" type="button" id="n-skip">บันทึกโดยไม่ใส่ชื่อ</button><button class="btn primary" type="button" id="n-add" data-autofocus>ใส่ชื่อลูกค้า</button>`));
+      dlg.querySelector('#n-add').onclick = () => { closeDialog(); const c = document.getElementById('f-cust'); if (c) c.focus(); };
+      dlg.querySelector('#n-skip').onclick = () => { closeDialog(); save(mode, true); };
+      return;
+    }
+    document.querySelectorAll('[data-save]').forEach(b => { b.disabled = true; b.setAttribute('aria-busy', 'true'); });
+    const btn = document.querySelector(`[data-save="${mode}"]`); btn.innerHTML = '<span class="spin" aria-hidden="true"></span>กำลังบันทึก…';
+    setTimeout(() => {
+      let msg;
+      if (f.kind === 'income') {
+        const r = rec({ seq: S.records.length + 1, time: '09:4' + (S.records.length % 10), plate: f.plate.trim().toUpperCase(), job: f.job, type: f.type, brand: f.brand || '—', price: +f.price, paid: f.paid, customer: f.customer.trim(), note: f.note.trim(), date: f.backdated ? '13 ต.ค.' : '14 ต.ค.' });
+        if (!f.backdated) S.records.push(r); S.newId = r.id;
+        if (r.customer && !S.recent.includes(r.customer)) S.recent.unshift(r.customer);
+        msg = `บันทึก ${r.plate} ${baht(r.price)} แล้ว`;
+        if (mode === 'bulk') { Object.assign(f, { plate: '', price: '', customer: '', note: '', errors: {}, submitted: false }); }
+      } else {
+        S.expenses.push({ id: 'e' + (++seq), kind: 'expense', time: '09:45', title: f.title.trim(), note: f.note.trim(), amount: +f.amount });
+        msg = `บันทึกรายจ่าย ${f.title.trim()} ${baht(+f.amount)} แล้ว`;
+        if (mode === 'bulk') Object.assign(f, { amount: '', title: '', note: '', errors: {}, submitted: false });
+      }
+      if (mode === 'one') { S.form = blankForm(f.kind); location.hash = '#dashboard'; toast(msg); return; }
+      render(false); toast(msg + ' · พร้อมบันทึกคันถัดไป');
+      const first = document.getElementById(f.kind === 'income' ? 'f-plate' : 'f-amount'); if (first) first.focus();
+      S.newId = null;
+    }, 600);
+  }
+
+  /* ---------- events (delegated) ---------- */
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('button, a'); if (!t) return;
+    if (t.dataset.edit) return openEdit(t.dataset.edit);
+    if (t.dataset.settle) return openSettle(t.dataset.settle);
+    if (t.dataset.bill) return toast(`ตัวอย่าง: แอปจริงจะสร้างบิล PDF ของ ${t.dataset.bill}`, 'info');
+    if (t.dataset.seg) { const v = t.dataset.v; if (t.dataset.seg === 'chart') S.chartMode = +v; if (t.dataset.seg === 'cust') S.custPeriod = v; if (t.dataset.seg === 'debtsort') S.debtSort = v; render(false); const again = document.querySelector(`[data-seg="${t.dataset.seg}"][data-v="${v}"]`); if (again) again.focus(); return; }
+    if (t.dataset.kind) { readForm(); S.form = Object.assign(blankForm(t.dataset.kind), { backdated: S.form.backdated }); render(false); document.querySelector(`[data-kind="${t.dataset.kind}"]`).focus(); return; }
+    if (t.dataset.back !== undefined) { readForm(); S.form.backdated = t.dataset.back === '1'; render(false); return; }
+    if (t.dataset.chip) {
+      readForm(); const f = S.form, k = t.dataset.chip, v = t.dataset.v;
+      if (k === 'job') f.job = v;
+      if (k === 'type') f.type = f.type === v ? '' : v;
+      if (k === 'brand') f.brand = f.brand === v ? '' : v;
+      if (k === 'paid') f.paid = v === '1';
+      if (k === 'customer') f.customer = f.customer === v ? '' : v;
+      if (k === 'title') f.title = f.title === v ? '' : v;
+      if (f.submitted) validate();
+      const openDetails = [...document.querySelectorAll('details[open] summary')].map(s => s.textContent.split(' ·')[0]);
+      render(false);
+      document.querySelectorAll('details summary').forEach(s => { if (openDetails.includes(s.textContent.split(' ·')[0])) s.parentElement.open = true; });
+      const again = document.querySelector(`[data-chip="${k}"][data-v="${CSS.escape(v)}"]`); if (again) again.focus();
+      return;
+    }
+    if (t.dataset.save) return save(t.dataset.save);
+    if (t.id === 'refresh') return toast('อัปเดตข้อมูลแล้ว', 'info');
+    if (t.id === 'wx') return openDialog(`<div class="dlg-h"><h2 id="dlg-title">สภาพอากาศ · ตัวอย่าง</h2><button class="iconbtn" type="button" data-close aria-label="ปิด">${ic('x')}</button></div><div class="dlg-b"><p class="row">${ic('rain', 'lg')}<span style="font-size:24px;font-weight:700">31°C</span><span class="muted">มีเมฆ ฝนบางพื้นที่</span></p><dl class="kv"><dt>รู้สึกเหมือน</dt><dd>35°C</dd><dt>ความชื้น</dt><dd>72%</dd><dt>ลม</dt><dd>9 km/h</dd><dt>โอกาสฝนวันนี้</dt><dd>65%</dd><dt>ฝุ่น (AQI)</dt><dd>48 · ดี</dd></dl><p class="caption faint">อัปเดต 09:41</p></div>`, { sheet: true });
+    if (t.id === 'export') return toast('ตัวอย่าง: แอปจริงจะเปิดหน้าต่างส่งออก Excel', 'info');
+    if (t.id === 'h-exp') return toast('ตัวอย่างนี้แสดงเฉพาะแท็บรายรับ', 'info');
+    if (t.id === 'sw-theme') return setTheme(!isDark());
+    if (t.id === 'logout') {
+      openDialog(confirmHTML('ออกจากระบบ?', '<p>บัญชี owner@example.com</p><p class="caption muted">ข้อมูลที่กรอกค้างในเครื่องนี้จะถูกล้าง</p>', '<button class="btn secondary" type="button" data-close data-autofocus>ยกเลิก</button><button class="btn danger" type="button" id="lo-yes">ออกจากระบบ</button>'));
+      dlg.querySelector('#lo-yes').onclick = () => { closeDialog(); toast('ตัวอย่าง: ไม่ได้ออกจากระบบจริง', 'info'); };
+    }
+  });
+  document.addEventListener('input', (e) => {
+    const t = e.target;
+    if (t.id === 'f-price' || t.id === 'f-amount') { t.value = t.value.replace(/\D/g, ''); }
+    if (t.id === 'f-plate') { const pos = t.selectionStart; t.value = t.value.toUpperCase(); t.setSelectionRange(pos, pos); document.getElementById('plate-hint').innerHTML = plateHint(t.value); }
+  });
+
+  paintThemeBtn();
+  render(false);
+})();
+</script>
