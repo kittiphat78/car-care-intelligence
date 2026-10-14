@@ -14,10 +14,12 @@
 | A9: error reporting | `chore/error-reporting` | `75d7613` | 242/242 · production: `/api/client-errors` ไม่มี session → 401 ✅ | ✅ **Production** · PR #7 → `152fd26` |
 | B1: เวลาไทย | `refactor/time-bangkok` (rebase บน `152fd26`) | `776780b` | 287/287 ทั้ง TZ Bangkok และ UTC · test ใหม่ fail กับโค้ดเดิมเมื่อ TZ=UTC/NY ✅ | 🔄 push แล้ว · รอ PR + ทดสอบ Preview + merge |
 | B2: data-access layer | `refactor/data-access-layer` (ต่อจาก B1) | `c402e3b` | 323/323 (รวม A4 `next`) ทั้ง TZ Bangkok และ UTC ✅ | ✅ เสร็จในเครื่อง · ไม่ push |
-| A5: DB baseline | `db/baseline` | `e67140c` | รันบน staging: M000 สำเร็จ · RLS on · anon ไม่มีสิทธิ์ · seed 1,263/141 แถว ✅ | 🔄 push แล้ว · รอ PR + merge (CLI config + CI `db` job ทำต่อ) |
-| A8: ลบ API ที่ไม่ใช้ | `chore/remove-unused-api` (จาก `152fd26`) | `e99c31c` | 241/241 · build เหลือแค่ `/api/client-errors` ✅ | ✅ เสร็จในเครื่อง · รออนุมัติ push |
-| P-3/P-4: staging | — (Supabase + Vercel โดยเจ้าของ) | — | Preview ส่ง login ไปที่ staging (Auth log) ✅ · key production ตรวจภายนอกแล้ว ✅ | 🔄 เหลือบัญชีทดสอบที่ login ได้ (S07-17) |
-| A3, A6, A7, B3–B7, C1–C9 | — | — | — | ยังไม่เริ่ม (P-9, Q-12, S06-02 ตอบแล้ว 2026-10-14) |
+| A5: DB baseline | `db/baseline` | `e67140c` | รันบน staging: M000 สำเร็จ · RLS on · anon ไม่มีสิทธิ์ · seed 1,263/141 แถว ✅ | ✅ PR #11 merge แล้ว (CLI config + CI `db` job ยังเหลือ) |
+| A8: ลบ API ที่ไม่ใช้ | `chore/remove-unused-api` | `e99c31c` | 241/241 · production: `/api/insights`, `/api/export-excel` → 404 ✅ | ✅ **Production** · PR #10 |
+| P-3/P-4: staging | — (Supabase + Vercel โดยเจ้าของ) | — | Preview login + ทดสอบ B2 บน staging ✅ · `PRODUCTION_SUPABASE_PROJECT_REF` ตั้งแล้ว | ✅ |
+| A3: env guard | `feature/env-guard` | `7528cb0` | 333/333 · จำลอง build Preview→production ไม่ผ่าน ✅ | ✅ **Production** · PR #13 |
+| A6: สมาชิกร้าน + RLS | `db/app-members-rls` | `c3cc5bf`, `fa32310` | staging: `ALL MEMBER RLS TESTS PASSED` ✅ · production 2026-10-15: 4/4 บัญชีเป็นสมาชิก, แอปปกติ, anon ถูกปฏิเสธทุกตาราง/ฟังก์ชัน ✅ | ✅ **ใช้กับ production แล้ว** · ไฟล์ SQL รอ PR |
+| A7, B3–B7, C1–C9 | — | — | — | ยังไม่เริ่ม |
 
 ## 2. A1 — CI quality gates
 
@@ -53,7 +55,7 @@
 
 | ID | เรื่อง | Severity | สถานะ |
 |---|---|---|---|
-| S07-01 | Incident ด้านสิทธิ์เข้าถึงฐานข้อมูล (สรุป: `docs/incidents/2026-10-14-summary.md`) แก้และยืนยันแล้ว 2026-10-14 | Critical → Mitigated | NEEDS_APPROVAL: ยืนยันแอปใช้งานได้, ยืนยัน 4 บัญชี, ตรวจ log ย้อนหลัง |
+| S07-01 | Incident ด้านสิทธิ์เข้าถึงฐานข้อมูล (`docs/incidents/2026-10-14-summary.md`) mitigated 2026-10-14 · แก้ถาวรด้วย A6 2026-10-15 | Critical → Resolved | RESOLVED (เหลือตรวจ log ย้อนหลัง) |
 | S07-02 | Audit gate ระดับ `critical` แทน `high` ตามแผน เพราะหลัง hotfix ยังมี high 5 ตัวใน production deps (HF-01) และถ้าใช้ `high` gate จะ fail ถาวรจนถึง R1 | Medium | RESOLVED (ตัดสินใจในงาน) → ยกเป็น `high` เมื่อ HF-01 ปิด |
 | S07-03 | ไม่ใส่ `engines.node` ใน `package.json` ตามแผน A1 เพราะ Vercel ใช้ค่านี้เลือก Node ตอน build ซึ่ง**เปลี่ยนพฤติกรรม production** และยังไม่รู้ Node version ปัจจุบันของ Vercel (S05-05) → CI ใช้ Node 22 [I] ไปก่อน | Low | NEEDS_APPROVAL (ต้องรู้ Node version บน Vercel) |
 | S07-04 | Secret scan ใช้ grep ใน workflow แทน gitleaks action เพื่อไม่พึ่ง action ภายนอกและ license | Low | RESOLVED |
@@ -69,11 +71,14 @@
 | S07-14 | ทดสอบเส้นทางบันทึก/แก้/ลบจริงบน Preview ไม่ได้ เพราะ Preview ใช้ production DB ทำให้ unit test ใช้ mock | Medium | BLOCKED (P-3/P-4 staging) |
 | S07-15 | `fetchAllPages` ใช้ offset pagination ซึ่งถ้ามีการบันทึกระหว่างโหลดหลายหน้า อาจได้แถวซ้ำ 1 แถว [I] (ร้านบันทึก ~3 รายการ/วัน) | Low | UNRESOLVED (แก้ด้วย RPC ใน B3) |
 | S07-16 | สภาพอากาศ (`useWeather`) ยังใช้ชั่วโมงของเครื่อง | Low | — (ย้ายใน `features/weather`) |
-| S07-17 | login บน Preview ไม่ได้: staging Auth log = `Invalid login credentials` (Preview ชี้ staging ถูกแล้ว) [I] พิมพ์รหัสขณะแป้นเป็นภาษาไทย | Low | UNRESOLVED (เจ้าของสร้างบัญชีทดสอบใหม่) |
-| S07-18 | `pr-title` ไม่รันใหม่เมื่อแก้หัวข้อ PR (workflow ไม่ฟัง event `edited`) ทำให้ PR #6 แสดง fail ทั้งที่หัวข้อถูก | Low | UNRESOLVED (แก้ใน CI follow-up) |
+| S07-17 | login บน Preview ไม่ได้: สาเหตุจริงคือ `NEXT_PUBLIC_SUPABASE_URL` ของ Preview เป็นค่า production แต่ key เป็นของ staging (ตรวจด้วย F12) → แก้ค่าแล้ว | Low | RESOLVED |
+| S07-18 | `pr-title` ไม่รันใหม่เมื่อแก้หัวข้อ PR → แยกเป็น workflow `pr-title.yml` ที่ฟัง `edited` | Low | RESOLVED (merge แล้ว) |
 | S07-19 | PR #4–#7 ถูก merge แบบ merge commit ไม่ใช่ squash ตาม `git-workflow.md` §3.1 | Low | — (ไม่เสียหาย) |
 | S07-20 | Ignored Build Step ไม่ยกเว้น `supabase/` ทำให้ merge PR ที่แก้แค่ SQL จะ deploy production ใหม่ด้วยโค้ดเดิม | Low | NEEDS_APPROVAL (เพิ่ม `':(exclude)supabase'` ใน Vercel) |
-| S07-21 | หลัง merge A8 ตัวแปร `GEMINI_API_KEY` ใน Vercel (ถ้ามี) ไม่ถูกใช้แล้ว | Low | NEEDS_APPROVAL (เจ้าของลบ) |
+| S07-21 | `GEMINI_API_KEY` ใน Vercel | Low | RESOLVED (ไม่มีตัวแปรนี้อยู่แล้ว) |
+| S07-22 | ไฟล์ test RLS แบบหลายคำสั่งใช้ไม่ได้ใน SQL Editor ของ Supabase (รันแต่ละคำสั่งแยก transaction) → เขียนใหม่เป็น DO block เดียวที่ rollback ตัวเอง | Low | RESOLVED (`fa32310`) |
+| S07-23 | VS Code บันทึกไฟล์ test เวอร์ชันเก่าทับไฟล์ใหม่ (เนื้อหาซ้อนกัน) → กู้จาก commit | Low | RESOLVED |
+| S07-24 | Backup production (P-5) เป็น CSV ที่เจ้าของ export เอง ยังไม่ได้ทดลอง restore | Medium | UNRESOLVED (ก่อน B6 ที่แก้ข้อมูล) |
 
 ## 4. รออนุมัติ (ต่อ feature)
 | # | ขอ | ผล |
