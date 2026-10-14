@@ -10,7 +10,7 @@
 |---|---|---|---|
 | S05-01 | Schema/RLS จริงของ production ยังไม่รู้ ทำให้ M000 baseline สร้างไม่ได้ | Critical | BLOCKED |
 | S05-02 | ADR-01..14 รออนุมัติ โดยเฉพาะ ADR-02 (ไม่ใช้ Server Actions) และ ADR-04 (allowlist) | High | NEEDS_APPROVAL |
-| S05-03 | รายชื่อบัญชีที่ถูกต้องสำหรับ `app_members` | High | NEEDS_APPROVAL |
+| S05-03 | รายชื่อบัญชีที่ถูกต้องสำหรับ `app_members` | High | RESOLVED (2026-10-14: บัญชีทั้ง 4 ใน production เป็นของเจ้าของ 2 และครอบครัว 2 ทั้งหมดถูกต้อง) |
 | S05-04 | คำถามที่ gate schema: Q-01, Q-02, Q-05, Q-06, Q-13 | Medium | NEEDS_APPROVAL |
 | S05-05 | Node version และ function region บน Vercel | Medium | BLOCKED |
 | S05-06 | `records.note` ประกาศใน type แต่ไม่มีโค้ดเขียน | Low | UNRESOLVED |
@@ -36,7 +36,7 @@ Carry-over: S01-01 (Supabase), S01-02 (Vercel), S01-03/S01-04 (hotfix), S01-08/0
 - **ความเสี่ยงถ้าไม่ตัดสิน:** Step 07 เริ่มงาน data layer ไม่ได้
 - **Prompt:** > "S05-02: อนุมัติ ADR-01..14 ยกเว้น <ระบุ> …"
 
-## S05-03 — รายชื่อสมาชิก · High · `NEEDS_APPROVAL`
+## S05-03 — รายชื่อสมาชิก · High · `RESOLVED` (ทั้ง 4 บัญชีถูกต้อง 2026-10-14)
 - **เหตุผล:** M001 backfill `app_members` จาก `auth.users` ถ้ามีบัญชีที่ไม่ควรมีสิทธิ์ (เช่น สมัครเองตอน sign-up เปิด) ต้องไม่ถูกใส่ และถ้าลืมบัญชีจริง ผู้ใช้คนนั้นจะเห็นข้อมูลว่าง
 - **ต้องการ:** เจ้าของยืนยันรายชื่ออีเมลที่ควรเข้าระบบได้ (ส่งแบบไม่เปิดเผยต่อสาธารณะ) และ SQL ตรวจ: `select email, created_at, last_sign_in_at from auth.users order by created_at;`
 
