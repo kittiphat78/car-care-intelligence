@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { Record as AppRecord, DEFAULT_CUSTOMER_NAME_UNPAID } from '@/types'
 import { useToast } from '@/hooks/useToast'
 import { parseDateMs } from '@/lib/dateUtils'
-import { loadDashboard, markCustomerPaid } from '@/features/dashboard/api'
+import { loadDashboard, settleRecords } from '@/features/dashboard/api'
 import {
   EMPTY_TODAY, toChartData, toCustomerBreakdown, toStats,
   type ChartMode, type CustomerTotals, type DayTotal, type TodayTotals,
@@ -17,7 +17,7 @@ export type { ChartMode, CustomerTimePeriod, CustomerBreakdownItem, DashboardSta
 
 export function useDashboard() {
   const router = useRouter()
-  const { error: toastError, success: toastSuccess } = useToast()
+  const { error: toastError, success: toastSuccess, info: toastInfo } = useToast()
   
   // ── States ──
   const [userEmail, setUserEmail]               = useState('')
@@ -101,41 +101,6 @@ export function useDashboard() {
     }
   }, [router])
 
-  const markAllAsPaidByCustomer = useCallback(async (customerName: string) => {
-    const isGeneral = customerName === DEFAULT_CUSTOMER_NAME_UNPAID
-    const confirmMsg = isGeneral
-      ? `ยืนยันว่า "${DEFAULT_CUSTOMER_NAME_UNPAID}" ชำระเงินครบแล้วทั้งหมด?`
-      : `ยืนยันว่าเต็นท์/ลูกค้า "${customerName}" ชำระเงินครบแล้วทั้งหมด?`
-    
-    if (!window.confirm(confirmMsg)) return
-
-    const targetName = isGeneral ? '' : customerName
-
-    try {
-      // Optimistic update
-      setUnpaidRecords(prev => prev.filter(r => {
-        const name = (r.customer_name || '').trim() || DEFAULT_CUSTOMER_NAME_UNPAID
-        return name !== (isGeneral ? DEFAULT_CUSTOMER_NAME_UNPAID : customerName)
-      }))
-
-      const result = await markCustomerPaid(targetName, userEmail)
-
-      if (result.ok) {
-        fetchData()
-        toastSuccess('ทำเครื่องหมายชำระเงินเรียบร้อย')
-      } else {
-        fetchData() // Rollback
-        console.error('[Dashboard] markAllAsPaidByCustomer DB Error:', result.error)
-        reportAppError(result.error)
-        toastError('บันทึกข้อมูลไม่สำเร็จ: ' + toUserMessage(result.error))
-      }
-    } catch (err) {
-      fetchData() // Rollback
-      console.error('[Dashboard] markAllAsPaidByCustomer Unexpected Error:', err)
-      toastError('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์')
-    }
-  }, [userEmail, fetchData, toastSuccess, toastError])
-
   // ── Derived State & Computations (Memoized) ──
 
   // 1. สถิติภาพรวม
@@ -170,6 +135,34 @@ export function useDashboard() {
     () => unpaidRecords.reduce((s, r) => s + r.price, 0), 
     [unpaidRecords]
   )
+
+  // เคลียร์ยอด: ส่งเฉพาะรายการที่แสดงบนจอ แล้วเทียบจำนวนที่ฐานข้อมูลเคลียร์จริง (M007, ER-03)
+  const markAllAsPaidByCustomer = useCallback(async (customerName: string) => {
+    const group = groupedUnpaid.find(g => g.customerName === customerName)
+    if (!group || group.items.length === 0) return
+
+    const count = group.items.length
+    const label = customerName === DEFAULT_CUSTOMER_NAME_UNPAID ? customerName : `เต็นท์/ลูกค้า "${customerName}"`
+    if (!window.confirm(`เคลียร์ยอด ${label}
+${count} รายการ รวม ฿${group.total.toLocaleString()} ว่าชำระครบแล้ว?`)) return
+
+    const ids = new Set(group.items.map(r => r.id))
+    // Optimistic update
+    setUnpaidRecords(prev => prev.filter(r => !ids.has(r.id)))
+
+    const result = await settleRecords([...ids])
+    fetchData(true)
+
+    if (!result.ok) {
+      console.error('[Dashboard] settleRecords DB Error:', result.error)
+      reportAppError(result.error)
+      toastError('บันทึกข้อมูลไม่สำเร็จ: ' + toUserMessage(result.error))
+    } else if (result.data.updatedCount === count) {
+      toastSuccess(`เคลียร์ยอด ${count} รายการ ฿${result.data.total.toLocaleString()} เรียบร้อย`)
+    } else {
+      toastInfo(`เคลียร์ได้ ${result.data.updatedCount} จาก ${count} รายการ (฿${result.data.total.toLocaleString()}) รายการที่เหลือถูกเคลียร์หรือแก้ไขจากเครื่องอื่นแล้ว`)
+    }
+  }, [groupedUnpaid, fetchData, toastSuccess, toastError, toastInfo])
 
   // 5. รายรับตามลูกค้า แยก wash/polish (สัปดาห์ / เดือน / ปี)
   const customerBreakdown = useMemo(() => toCustomerBreakdown(customers), [customers])

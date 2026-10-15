@@ -88,16 +88,22 @@ export async function loadDashboard(today: string): Promise<DashboardData> {
   }
 }
 
+export interface SettleResult {
+  /** Rows that were still unpaid and are now paid */
+  updatedCount: number
+  /** Their total in baht */
+  total: number
+}
+
 /**
- * Mark all unpaid income of one customer as paid ("เคลียร์ยอด").
- * `customerName` is the stored name; '' means the unnamed general customer.
+ * "เคลียร์ยอด": mark exactly these records as paid (settle_records, M007).
+ * Rows already paid, deleted or not visible to the user are skipped, so
+ * `updatedCount` can be lower than `ids.length`.
  */
-export async function markCustomerPaid(customerName: string, updatedByEmail: string): Promise<Result<void>> {
-  const result = await run(
-    supabase.from('records')
-      .update({ payment_status: 'paid', updated_at: new Date().toISOString(), updated_by_email: updatedByEmail })
-      .eq('payment_status', 'unpaid')
-      .eq('customer_name', customerName),
-  )
-  return result.ok ? ok(undefined) : result
+export async function settleRecords(ids: string[]): Promise<Result<SettleResult>> {
+  const result = await run(supabase.rpc('settle_records', { p_ids: ids }))
+  return map(result, rows => {
+    const row = (rows as { updated_count: number; total: number }[] | null)?.[0]
+    return { updatedCount: num(row?.updated_count), total: num(row?.total) }
+  })
 }

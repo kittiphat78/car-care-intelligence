@@ -22,7 +22,7 @@ vi.mock('@/lib/supabase', () => ({
   },
 }))
 
-import { loadDashboard } from '@/features/dashboard/api'
+import { loadDashboard, settleRecords } from '@/features/dashboard/api'
 
 describe('loadDashboard', () => {
   beforeEach(() => {
@@ -65,5 +65,25 @@ describe('loadDashboard', () => {
     const data = await loadDashboard('2026-10-14')
     expect(data.customers.ok).toBe(false)
     expect(data.today.ok && data.series.ok).toBe(true)
+  })
+})
+
+describe('settleRecords', () => {
+  beforeEach(() => {
+    fake.state.rpc = []
+    fake.state.responses = {}
+  })
+
+  it('sends exactly the ids shown and returns how many were cleared', async () => {
+    fake.state.responses['rpc:settle_records'] = { data: [{ updated_count: 1, total: '1500' }], error: null }
+    const result = await settleRecords(['a', 'b'])
+    expect(fake.state.rpc).toEqual([['settle_records', { p_ids: ['a', 'b'] }]])
+    expect(result).toEqual({ ok: true, data: { updatedCount: 1, total: 1500 } })
+  })
+
+  it('returns a classified error instead of throwing', async () => {
+    fake.state.responses['rpc:settle_records'] = { data: null, error: { code: '42501', message: 'denied' } }
+    const result = await settleRecords(['a'])
+    expect(!result.ok && result.error.code).toBe('FORBIDDEN')
   })
 })
