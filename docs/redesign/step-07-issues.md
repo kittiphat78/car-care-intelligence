@@ -20,7 +20,10 @@
 | A3: env guard | `feature/env-guard` | `7528cb0` | 333/333 · จำลอง build Preview→production ไม่ผ่าน ✅ | ✅ **Production** · PR #13 |
 | A6: สมาชิกร้าน + RLS | `db/app-members-rls` | `c3cc5bf`, `fa32310` | staging: `ALL MEMBER RLS TESTS PASSED` ✅ · production 2026-10-15: 4/4 บัญชีเป็นสมาชิก, แอปปกติ, anon ถูกปฏิเสธทุกตาราง/ฟังก์ชัน ✅ | ✅ **ใช้กับ production แล้ว** · ไฟล์ SQL รอ PR |
 | A7: index + client_request_id + audit trigger | `db/indexes-idempotency-audit` | `ea15a4a` | ในเครื่อง (Supabase local) + staging: `ALL INDEX / IDEMPOTENCY / AUDIT TESTS PASSED` ✅ · production 2026-10-15: index 4 / column 2 / trigger 2 ✅ · บันทึกและแก้ไขในแอปแสดงชื่อจาก session ✅ | ✅ **ใช้กับ production แล้ว** · PR #16 |
-| B3–B7, C1–C9 | — | — | — | ยังไม่เริ่ม |
+| B3: ยอดหน้าแรกในฐานข้อมูล (M006) | `feature/dashboard-rpc` | `e4f147b` | SQL tests ✅ · ยอดบน seed ตรงกับสูตรแยก ✅ · production: ยอดค้างชำระ/รายรับตามลูกค้าเท่าเดิม ✅ | ✅ **Production** · PR #18 |
+| B4: เคลียร์ยอดตาม id (M007) | `fix/debts-settle` | `7b556c1` | SQL tests ✅ · production: ยืนยัน "4 รายการ รวม ฿6,500" ✅ | ✅ **Production** · PR #18 |
+| B5: กฎบันทึกชุดเดียว + กันซ้ำ + กันแก้ทับ | `fix/records-validation-shared` | `067c073` | 357/357 · production: แก้ไขโดยลบทะเบียน → "กรุณากรอกป้ายทะเบียน" ✅ | ✅ **Production** · PR #18 |
+| B6, B7, C1–C9 | — | — | — | ยังไม่เริ่ม (B6 รอทดลองกู้ backup) |
 
 ## 2. A1 — CI quality gates
 
@@ -83,6 +86,9 @@
 | S07-25 | Supabase CLI บน Windows ต้องตั้ง `TMP`/`TEMP` เป็นโฟลเดอร์ที่เขียนได้ ไม่งั้น `supabase start` ล้มด้วย `makeTempDirectoryScoped NotFound` (CI บน Linux ไม่เป็น) | Low | RESOLVED (วิธีแก้บันทึกไว้) |
 | S07-26 | ทดสอบ A7 บน production ด้วยการบันทึกรายการ "7788 TEST" ฿500 ลงข้อมูลจริง ต้องลบออก | Low | NEEDS_APPROVAL (เจ้าของลบในแอป) |
 | S07-27 | ตั้ง required checks (`lint`, `typecheck`, `test`, `build`, `audit`, `secrets`, `pr-title`, `db`) ใน ruleset ของ `main` | Medium | NEEDS_APPROVAL (เจ้าของ, A1-c / P-7) |
+| S07-28 | PR #18 ถูก merge ก่อนรัน M006/M007 บน production → ยอดบนหน้าแรกโหลดไม่ได้และเคลียร์ยอดล้มเหลว (ไม่แก้ข้อมูล) ประมาณ 22:45–22:48 2026-10-15 จนรัน SQL แล้ว | Medium | RESOLVED · ป้องกัน: บรรทัดแรกของ PR template บอกไฟล์ SQL ที่ต้องรันก่อน merge |
+| S07-29 | B3–B5 ทดสอบบน production หลัง merge แทน Preview (ทดสอบเฉพาะสิ่งที่ไม่เขียนข้อมูล) · เรื่องแก้ชนกัน 2 เครื่องและบันทึกซ้ำทดสอบด้วย unit test + SQL test เท่านั้น | Low | — (ยอมรับ) |
+| S07-30 | ลบ `isomorphic-dompurify` (ADR-10) ข้อความที่บันทึกก่อนนี้ซึ่งถูกแปลงเป็น `&lt;` ยังคงอยู่ | Low | — (ตาม ADR-10) |
 
 ## 4. รออนุมัติ (ต่อ feature)
 | # | ขอ | ผล |

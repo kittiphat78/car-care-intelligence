@@ -1,3 +1,6 @@
+> **SQL ที่ต้องรันบน production _ก่อน_ merge:** ไม่มี
+<!-- ถ้ามี ให้แทน "ไม่มี" ด้วยชื่อไฟล์ supabase/migrations/*.sql ตามลำดับ และห้าม merge จนกว่าจะรันแล้ว -->
+
 ## สรุป
 <!-- เปลี่ยนอะไร 1–3 บรรทัด -->
 
@@ -16,7 +19,7 @@ Refs:
 Preview URL:
 ตรวจที่ viewport: [ ] 360  [ ] 768  [ ] 1440 · Theme: [ ] มืด  [ ] สว่าง
 
-> ⚠ Preview ใช้ Supabase **production** จนกว่าจะแยก staging: ห้ามบันทึก แก้ไข หรือลบข้อมูลบน Preview
+> Preview ใช้ Supabase **staging** (ข้อมูลปลอม) และ build ไม่ผ่านถ้าชี้ production (A3)
 
 ## การทดสอบ (ผลจริง — ที่ไม่ได้รันให้เขียน NOT RUN + เหตุผล)
 | Check | ผล | หลักฐาน |
@@ -32,7 +35,8 @@ Preview URL:
 - [ ] Expand-only และเข้ากันได้กับ client ที่ deploy อยู่
 - [ ] มี down script และทดสอบบน staging แล้ว
 - [ ] ไม่แก้หรือลบข้อมูลผู้ใช้
-- ลำดับ deploy: [ ] DB ก่อน app  [ ] app ก่อน DB  [ ] ไม่เกี่ยว
+- ลำดับ deploy: [ ] DB ก่อน app (ระบุไฟล์ในบรรทัดแรกของ PR)  [ ] app ก่อน DB  [ ] ไม่เกี่ยว
+- [ ] รันบน staging แล้ว + `supabase/tests/*.test.sql` ผ่าน
 
 ## Security / Privacy
 - [ ] ไม่มี secret, service role key หรือข้อมูลลูกค้าจริงใน diff, log หรือ screenshot
