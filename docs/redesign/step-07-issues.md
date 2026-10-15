@@ -23,7 +23,9 @@
 | B3: ยอดหน้าแรกในฐานข้อมูล (M006) | `feature/dashboard-rpc` | `e4f147b` | SQL tests ✅ · ยอดบน seed ตรงกับสูตรแยก ✅ · production: ยอดค้างชำระ/รายรับตามลูกค้าเท่าเดิม ✅ | ✅ **Production** · PR #18 |
 | B4: เคลียร์ยอดตาม id (M007) | `fix/debts-settle` | `7b556c1` | SQL tests ✅ · production: ยืนยัน "4 รายการ รวม ฿6,500" ✅ | ✅ **Production** · PR #18 |
 | B5: กฎบันทึกชุดเดียว + กันซ้ำ + กันแก้ทับ | `fix/records-validation-shared` | `067c073` | 357/357 · production: แก้ไขโดยลบทะเบียน → "กรุณากรอกป้ายทะเบียน" ✅ | ✅ **Production** · PR #18 |
-| B6, B7, C1–C9 | — | — | — | ยังไม่เริ่ม (B6 รอทดลองกู้ backup) |
+| B7: Excel export กันสูตร | `fix/export-complete` | `0c43ee5` | 365/365 · test สร้างไฟล์จริงแล้วอ่านกลับ ✅ | ✅ **Production** · PR #20 |
+| B6: กฎข้อมูล (M008) + เลขลำดับ (M009, ตัวเลือก ก) | `db/constraints-seq` | — | ข้อมูล production ผ่านกฎ 9/9 · SQL tests ✅ · 2 session พร้อมกันได้เลข 1, 2 ✅ | 🔄 รอ staging + อนุมัติ production |
+| C1–C9 | — | — | — | ยังไม่เริ่ม |
 
 ## 2. A1 — CI quality gates
 
@@ -89,6 +91,9 @@
 | S07-28 | PR #18 ถูก merge ก่อนรัน M006/M007 บน production → ยอดบนหน้าแรกโหลดไม่ได้และเคลียร์ยอดล้มเหลว (ไม่แก้ข้อมูล) ประมาณ 22:45–22:48 2026-10-15 จนรัน SQL แล้ว | Medium | RESOLVED · ป้องกัน: บรรทัดแรกของ PR template บอกไฟล์ SQL ที่ต้องรันก่อน merge |
 | S07-29 | B3–B5 ทดสอบบน production หลัง merge แทน Preview (ทดสอบเฉพาะสิ่งที่ไม่เขียนข้อมูล) · เรื่องแก้ชนกัน 2 เครื่องและบันทึกซ้ำทดสอบด้วย unit test + SQL test เท่านั้น | Low | — (ยอมรับ) |
 | S07-30 | ลบ `isomorphic-dompurify` (ADR-10) ข้อความที่บันทึกก่อนนี้ซึ่งถูกแปลงเป็น `&lt;` ยังคงอยู่ | Low | — (ตาม ADR-10) |
+| S07-31 | ทดลองกู้ backup (G5): CSV จาก production (962 รายรับ / 91 รายจ่าย) import ลงตาราง `restore_*` บน staging แล้ว fingerprint และ hash ของ id ตรงกันทุกค่า · ลบตาราง restore แล้ว · ไฟล์เก็บที่ `backup-2026-10-15` ของเจ้าของ | High | RESOLVED 2026-10-15 |
+| S07-32 | เลขลำดับเดิมที่ซ้ำ 10 วัน / ข้าม 8 วัน: เจ้าของเลือก (ก) ไม่แก้ของเก่า M009 ใช้กับรายการใหม่เท่านั้น | Low | RESOLVED (ตัดสินแล้ว) |
+| S07-33 | แอปยังคำนวณ `seq_number` เองแล้วส่งไป (trigger แทนที่ให้) จึงยังมี request นับเกินมา 1 ครั้งต่อการบันทึก | Low | — (ลบใน Phase C เพื่อไม่ผูกลำดับ deploy) |
 
 ## 4. รออนุมัติ (ต่อ feature)
 | # | ขอ | ผล |
