@@ -8,22 +8,22 @@ export function LoadingSkeleton() {
           <div className="skeleton h-7 w-56" />
         </div>
         <div className="flex gap-2">
-          <div className="skeleton w-11 h-11 rounded-[var(--radius-md)]" />
-          <div className="skeleton w-24 h-11 rounded-[var(--radius-md)]" />
+          <div className="skeleton w-11 h-11 rounded-[var(--legacy-radius-md)]" />
+          <div className="skeleton w-24 h-11 rounded-[var(--legacy-radius-md)]" />
         </div>
       </div>
 
       {/* Weather skeleton */}
-      <div className="skeleton h-44 rounded-[var(--radius-lg)] fade-up delay-1" />
+      <div className="skeleton h-44 rounded-[var(--legacy-radius-lg)] fade-up delay-1" />
 
       {/* Net profit hero skeleton */}
-      <div className="skeleton h-36 rounded-[var(--radius-xl)] fade-up delay-2" />
+      <div className="skeleton h-36 rounded-[var(--legacy-radius-xl)] fade-up delay-2" />
 
       {/* Stats row skeleton */}
       <div className="grid grid-cols-3 gap-3 fade-up delay-3">
-        <div className="skeleton h-32 rounded-[var(--radius-lg)]" />
-        <div className="skeleton h-32 rounded-[var(--radius-lg)]" />
-        <div className="skeleton h-32 rounded-[var(--radius-lg)]" />
+        <div className="skeleton h-32 rounded-[var(--legacy-radius-lg)]" />
+        <div className="skeleton h-32 rounded-[var(--legacy-radius-lg)]" />
+        <div className="skeleton h-32 rounded-[var(--legacy-radius-lg)]" />
       </div>
 
       {/* Chart skeleton */}
@@ -32,7 +32,7 @@ export function LoadingSkeleton() {
           <div className="skeleton h-5 w-28" />
           <div className="skeleton h-9 w-32 rounded-xl" />
         </div>
-        <div className="skeleton h-52 rounded-[var(--radius-lg)]" />
+        <div className="skeleton h-52 rounded-[var(--legacy-radius-lg)]" />
       </div>
 
       {/* Record list skeleton */}
@@ -42,9 +42,9 @@ export function LoadingSkeleton() {
           <div className="skeleton h-5 w-16" />
         </div>
         <div className="space-y-3">
-          <div className="skeleton h-20 rounded-[var(--radius-lg)]" />
-          <div className="skeleton h-20 rounded-[var(--radius-lg)]" />
-          <div className="skeleton h-20 rounded-[var(--radius-lg)]" />
+          <div className="skeleton h-20 rounded-[var(--legacy-radius-lg)]" />
+          <div className="skeleton h-20 rounded-[var(--legacy-radius-lg)]" />
+          <div className="skeleton h-20 rounded-[var(--legacy-radius-lg)]" />
         </div>
       </div>
     </div>

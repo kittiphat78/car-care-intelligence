@@ -1,0 +1,287 @@
+/* Design tokens — source of truth: docs/redesign/design-tokens.md
+ *
+ * Layers (design-tokens.md §1):
+ *   primitive  --neutral-950, --blue-700 …   defined here only, never used by components
+ *   semantic   --color-bg, --space-4 …       used by components through Tailwind utilities
+ *
+ * The dark theme is the default. Semantic colours live in `@theme static` so Tailwind
+ * makes utilities that read the variable at run time (bg-bg → var(--color-bg)) and always
+ * emits them; [data-theme="light"] overrides the same names. Keeping one name per token
+ * avoids the self-reference that `@theme inline { --color-bg: var(--color-bg) }` creates
+ * (S04-04, checked against Tailwind 4.2.2).
+ */
+
+/* ── Primitive palette (§2) ── */
+:root {
+  --neutral-0: #FFFFFF;
+  --neutral-25: #F4F6F9;
+  --neutral-50: #F1F5F9;
+  --neutral-75: #EDF0F4;
+  --neutral-100: #D9DFE7;
+  --neutral-200: #CBD5E1;
+  --neutral-300: #A3B0C2;
+  --neutral-400: #7B8798;
+  --neutral-450: #6B7A90;
+  --neutral-500: #5A6678;
+  --neutral-600: #3D4A5C;
+  --neutral-700: #2A3647;
+  --neutral-800: #1B2533;
+  --neutral-850: #131B26;
+  --neutral-900: #0F1A2A;
+  --neutral-950: #0B111A;
+
+  --blue-100: #E3EBFD;
+  --blue-300: #8AB4FF;
+  --blue-600: #2563EB;
+  --blue-700: #1D4ED8;
+  --blue-800: #1E40AF;
+  --blue-950: #16274A;
+
+  --green-100: #DDF5EA;
+  --green-300: #4ADE9B;
+  --green-700: #047857;
+  --green-800: #05603F;
+  --green-950: #0E2E24;
+
+  --red-100: #FDE7E7;
+  --red-300: #FF8A8A;
+  --red-700: #B91C1C;
+  --red-750: #C62828;
+  --red-800: #991B1B;
+  --red-950: #3A1517;
+
+  --amber-100: #FEF0D2;
+  --amber-300: #FBBF4D;
+  --amber-700: #B45309;
+  --amber-800: #8A3B05;
+  --amber-950: #3A2610;
+
+  --sky-100: #E0F0FA;
+  --sky-300: #4FC3F7;
+  --sky-700: #0369A1;
+  --sky-950: #0E2A3A;
+
+  --violet-100: #EFE7FD;
+  --violet-300: #C4A8FF;
+  --violet-700: #6D28D9;
+  --violet-950: #26193F;
+}
+
+/* ── Semantic tokens, dark theme (default) ── */
+@theme static {
+  /* Surface, text, border, action (§3.1) */
+  --color-bg: var(--neutral-950);
+  --color-surface: var(--neutral-850);
+  --color-surface-2: var(--neutral-800);
+  --color-surface-inverse: var(--neutral-50);
+  --color-overlay: rgb(0 0 0 / 0.6);
+  --color-text: var(--neutral-50);
+  --color-text-secondary: var(--neutral-200);
+  --color-text-tertiary: var(--neutral-300);
+  --color-text-inverse: var(--neutral-950);
+  --color-border: var(--neutral-700);
+  --color-border-strong: var(--neutral-450);
+  --color-action-primary: var(--blue-600);
+  --color-action-primary-hover: var(--blue-700);
+  --color-on-action-primary: var(--neutral-0);
+  --color-action-primary-subtle: var(--blue-950);
+  --color-text-link: var(--blue-300);
+  --color-focus-ring: var(--blue-300);
+
+  /* Status & domain (§3.2) */
+  --color-success: var(--green-700);
+  --color-success-subtle: var(--green-950);
+  --color-success-text: var(--green-300);
+  --color-danger: var(--red-750);
+  --color-danger-subtle: var(--red-950);
+  --color-danger-text: var(--red-300);
+  --color-warning: var(--amber-700);
+  --color-warning-subtle: var(--amber-950);
+  --color-warning-text: var(--amber-300);
+  --color-info-subtle: var(--blue-950);
+  --color-info-text: var(--blue-300);
+  --color-income: var(--green-300);
+  --color-expense: var(--red-300);
+  --color-unpaid: var(--amber-300);
+  --color-job-wash: var(--sky-300);
+  --color-job-wash-subtle: var(--sky-950);
+  --color-job-polish: var(--violet-300);
+  --color-job-polish-subtle: var(--violet-950);
+  --color-env-banner: var(--amber-700);
+
+  /* Typography (§4) — every size in rem so system font scaling works */
+  --font-sans: var(--font-sarabun), "Sarabun", "Noto Sans Thai", system-ui, sans-serif;
+  --text-display: 2.5rem;
+  --text-display--line-height: 3rem;
+  --text-display--font-weight: 700;
+  --text-display-lg: 3rem;
+  --text-display-lg--line-height: 3.5rem;
+  --text-display-lg--font-weight: 700;
+  --text-title-lg: 1.75rem;
+  --text-title-lg--line-height: 2.25rem;
+  --text-title-lg--font-weight: 700;
+  --text-title: 1.5rem;
+  --text-title--line-height: 2rem;
+  --text-title--font-weight: 700;
+  --text-heading: 1.25rem;
+  --text-heading--line-height: 1.75rem;
+  --text-heading--font-weight: 600;
+  --text-subheading: 1.125rem;
+  --text-subheading--line-height: 1.75rem;
+  --text-subheading--font-weight: 600;
+  --text-body-lg: 1.125rem;
+  --text-body-lg--line-height: 1.75rem;
+  --text-body: 1rem;
+  --text-body--line-height: 1.625rem;
+  --text-label: 1rem;
+  --text-label--line-height: 1.5rem;
+  --text-label--font-weight: 500;
+  --text-caption: 0.875rem;
+  --text-caption--line-height: 1.375rem;
+  --text-plate: 1.5rem;
+  --text-plate--line-height: 2rem;
+  --text-plate--font-weight: 700;
+  --text-money-input: 1.75rem;
+  --text-money-input--line-height: 2.25rem;
+  --text-money-input--font-weight: 700;
+
+  /* Radius (§7) */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  /* Elevation (§8). Level 0 is a border, level 1 in dark is a surface change */
+  --shadow-elevation-1: 0 0 #0000;
+  --shadow-elevation-2: 0 4px 12px rgb(0 0 0 / 0.5);
+  --shadow-elevation-3: 0 12px 32px rgb(0 0 0 / 0.6);
+
+  /* Motion (§10) */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 1, 1);
+
+  /* Breakpoints (§12): md = 600px, lg = 1024px instead of Tailwind's 768/1024 */
+  --breakpoint-md: 600px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-wide: 1440px;
+}
+
+/* ── Tokens without a Tailwind namespace (used as var() in component CSS) ── */
+:root {
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  --page-gutter: 16px;
+  --card-padding: 16px;
+  --field-gap: 20px;
+  --target-gap: 8px;
+
+  --size-target-min: 44px;
+  --size-control-md: 48px;
+  --size-control-lg: 56px;
+  --size-icon-sm: 16px;
+  --size-icon-md: 20px;
+  --size-icon-lg: 24px;
+  --size-nav-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  --size-sidebar: 240px;
+  --size-content-max: 720px;
+  --size-dialog-max: 480px;
+
+  --border-width: 1px;
+  --border-width-strong: 2px;
+  --focus-ring: 0 0 0 3px var(--color-focus-ring);
+  --focus-ring-offset: 2px;
+
+  --duration-instant: 80ms;
+  --duration-fast: 150ms;
+  --duration-base: 220ms;
+  --duration-slow: 320ms;
+
+  --z-base: 0;
+  --z-sticky: 10;
+  --z-nav: 20;
+  --z-status: 30;
+  --z-overlay: 40;
+  --z-dialog: 50;
+  --z-toast: 60;
+}
+
+@media (min-width: 600px) {
+  :root {
+    --page-gutter: 24px;
+    --card-padding: 20px;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --page-gutter: 32px;
+    --card-padding: 24px;
+    --size-content-max: 1200px;
+  }
+}
+
+/* ── Light theme ── */
+[data-theme="light"] {
+  --color-bg: var(--neutral-25);
+  --color-surface: var(--neutral-0);
+  --color-surface-2: var(--neutral-75);
+  --color-surface-inverse: var(--neutral-900);
+  --color-overlay: rgb(15 26 42 / 0.5);
+  --color-text: var(--neutral-900);
+  --color-text-secondary: var(--neutral-600);
+  --color-text-tertiary: var(--neutral-500);
+  --color-text-inverse: var(--neutral-0);
+  --color-border: var(--neutral-100);
+  --color-border-strong: var(--neutral-400);
+  --color-action-primary: var(--blue-700);
+  --color-action-primary-hover: var(--blue-800);
+  --color-on-action-primary: var(--neutral-0);
+  --color-action-primary-subtle: var(--blue-100);
+  --color-text-link: var(--blue-700);
+  --color-focus-ring: var(--blue-700);
+
+  --color-success: var(--green-700);
+  --color-success-subtle: var(--green-100);
+  --color-success-text: var(--green-800);
+  --color-danger: var(--red-700);
+  --color-danger-subtle: var(--red-100);
+  --color-danger-text: var(--red-800);
+  --color-warning: var(--amber-700);
+  --color-warning-subtle: var(--amber-100);
+  --color-warning-text: var(--amber-800);
+  --color-info-subtle: var(--blue-100);
+  --color-info-text: var(--blue-800);
+  --color-income: var(--green-700);
+  --color-expense: var(--red-700);
+  --color-unpaid: var(--amber-700);
+  --color-job-wash: var(--sky-700);
+  --color-job-wash-subtle: var(--sky-100);
+  --color-job-polish: var(--violet-700);
+  --color-job-polish-subtle: var(--violet-100);
+  --color-env-banner: var(--amber-700);
+
+  --shadow-elevation-1: 0 1px 2px rgb(15 26 42 / 0.06), 0 1px 3px rgb(15 26 42 / 0.08);
+  --shadow-elevation-2: 0 4px 12px rgb(15 26 42 / 0.12);
+  --shadow-elevation-3: 0 12px 32px rgb(15 26 42 / 0.2);
+}
+
+/* ── Reduced motion (accessibility-guidelines.md §6) ──
+ * Movement stops; colour changes stay (≤ 150ms) so state changes are still visible. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-instant: 0ms;
+    --duration-base: 150ms;
+    --duration-slow: 0ms;
+  }
+}

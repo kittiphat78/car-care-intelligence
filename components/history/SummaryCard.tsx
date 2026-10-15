@@ -31,7 +31,7 @@ export const SummaryCard = memo(function SummaryCard({ activeTab, selectedMonth,
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <div
-            className={`flex items-center gap-2.5 bg-white/10 border border-white/10 rounded-[var(--radius-md)] px-3.5 py-2.5 cursor-pointer hover:bg-white/15 transition-colors ${activeTab !== 'income' ? 'opacity-0 pointer-events-none' : ''}`}
+            className={`flex items-center gap-2.5 bg-white/10 border border-white/10 rounded-[var(--legacy-radius-md)] px-3.5 py-2.5 cursor-pointer hover:bg-white/15 transition-colors ${activeTab !== 'income' ? 'opacity-0 pointer-events-none' : ''}`}
             onClick={() => setShowRevenue(!showRevenue)}
             role="button"
             aria-label="สลับการแสดงผลจำนวนคันและรายได้"
@@ -52,7 +52,7 @@ export const SummaryCard = memo(function SummaryCard({ activeTab, selectedMonth,
           </div>
           <div className="flex items-center gap-2">
             {activeTab === 'income' && (
-              <button onClick={onExport} className="flex items-center gap-2 text-sm font-bold text-white/70 bg-white/10 border border-white/10 px-3.5 py-3 rounded-[var(--radius-md)] active:scale-95 transition-transform" aria-label="ดาวน์โหลด Excel">
+              <button onClick={onExport} className="flex items-center gap-2 text-sm font-bold text-white/70 bg-white/10 border border-white/10 px-3.5 py-3 rounded-[var(--legacy-radius-md)] active:scale-95 transition-transform" aria-label="ดาวน์โหลด Excel">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /><path d="M8 13h2" /><path d="M8 17h2" /><path d="M14 13h2" /><path d="M14 17h2" /></svg>
                 Excel
               </button>

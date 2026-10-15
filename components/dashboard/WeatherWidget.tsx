@@ -20,7 +20,7 @@ export const WeatherWidget = memo(function WeatherWidget({
 
   return (
     <section
-      className={`rounded-[var(--radius-lg)] shadow-[var(--shadow-sm)] p-5 bg-gradient-to-br ${weather.bgClass} border fade-up delay-1 transition-colors duration-500`}
+      className={`rounded-[var(--legacy-radius-lg)] shadow-[var(--shadow-sm)] p-5 bg-gradient-to-br ${weather.bgClass} border fade-up delay-1 transition-colors duration-500`}
       aria-label="สภาพอากาศเชียงราย"
     >
       <div className="flex justify-between items-start mb-4 gap-2">

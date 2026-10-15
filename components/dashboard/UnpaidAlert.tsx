@@ -7,7 +7,7 @@ export const UnpaidAlert = memo(function UnpaidAlert({ totalAmount, onClick }: {
       tabIndex={0}
       onClick={onClick}
       onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onClick()}
-      className="bg-gradient-to-r from-[var(--red)] to-[#B91C1C] p-5 rounded-[var(--radius-xl)] flex items-center justify-between shadow-lg cursor-pointer active:scale-[0.98] transition-transform duration-150 fade-up delay-1 pulse-urgent"
+      className="bg-gradient-to-r from-[var(--red)] to-[#B91C1C] p-5 rounded-[var(--legacy-radius-xl)] flex items-center justify-between shadow-lg cursor-pointer active:scale-[0.98] transition-transform duration-150 fade-up delay-1 pulse-urgent"
       style={{ boxShadow: '0 4px 24px rgba(239, 68, 68, 0.25)' }}
       aria-label={`ยอดค้างชำระ ${totalAmount.toLocaleString()} บาท กดเพื่อดูรายละเอียด`}
     >
