@@ -4,14 +4,16 @@ import { supabase } from '@/lib/supabase'
 import { Record, Expense, PaymentStatus, CAR_TYPES, CAR_BRANDS } from '@/types'
 import { splitDateTime, resolveCreatedAt } from '@/lib/dateUtils'
 import { formatBangkok } from '@/lib/time/bangkok'
-import DOMPurify from 'isomorphic-dompurify'
+import { changedFields, expenseSchema, incomeSchema, validate } from '@/features/records/schema'
+import type { EntryPatch } from '@/features/records/api'
 
 interface EditModalProps {
   item: Record | Expense | null
   type: 'income' | 'expense'
   isOpen: boolean
   onClose: () => void
-  onSave: (updatedFields: Partial<Record & Expense>) => void
+  /** Resolves to null when saved, or a message to show in the dialog */
+  onSave: (patch: EntryPatch) => Promise<string | null>
   onDelete: (id: string) => void
 }
 
@@ -35,6 +37,8 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
   const [editDate, setEditDate] = useState('')
   const [editTime, setEditTime] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const [currentUserEmail, setCurrentUserEmail] = useState('')
 
   const modalRef = useRef<HTMLDivElement>(null)
@@ -70,8 +74,8 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
   // Populate fields
   useEffect(() => {
     if (!item) return
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setConfirmDelete(false)
+    setSaveError('')
     const { date, time } = splitDateTime(item.created_at)
     setEditDate(date); setEditTime(time)
 
@@ -88,33 +92,43 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
     }
   }, [item, type, isOpen])
 
-  const handleSave = useCallback(() => {
-    if (!item) return
+  // ตรวจข้อมูลด้วยกฎเดียวกับหน้าบันทึก แล้วส่งเฉพาะช่องที่เปลี่ยน (B5)
+  const handleSave = useCallback(async () => {
+    if (!item || saving) return
+    setSaveError('')
     const created_at = resolveCreatedAt(item.created_at, editDate, editTime)
-    const now = new Date().toISOString()
+
+    let patch: EntryPatch
     if (type === 'income') {
-      onSave({
-        type: recordType,
-        plate: DOMPurify.sanitize(plate.trim()),
-        price: parseInt(price) || 0,
-        customer_name: DOMPurify.sanitize(customerName.trim()),
-        payment_status: paymentStatus,
-        services: [DOMPurify.sanitize(selectedType), DOMPurify.sanitize(selectedBrand), DOMPurify.sanitize(incomeNote.trim())],
+      const r = item as Record
+      const checked = validate(incomeSchema, { type: recordType, plate, price, customerName, note: incomeNote, paymentStatus })
+      if (!checked.ok) { setSaveError(checked.message); return }
+      const v = checked.data
+      patch = changedFields<EntryPatch>(r, {
+        type: v.type,
+        plate: v.plate,
+        price: v.price,
+        customer_name: v.customerName,
+        payment_status: v.paymentStatus,
+        services: [selectedType, selectedBrand, v.note],
         created_at,
-        updated_by_email: currentUserEmail,
-        updated_at: now
       })
     } else {
-      onSave({
-        title: DOMPurify.sanitize(title.trim()),
-        amount: parseInt(amount) || 0,
-        note: DOMPurify.sanitize(note.trim()),
-        created_at,
-        updated_by_email: currentUserEmail,
-        updated_at: now
-      })
+      const e = item as Expense
+      const checked = validate(expenseSchema, { title, amount, note })
+      if (!checked.ok) { setSaveError(checked.message); return }
+      const v = checked.data
+      patch = changedFields<EntryPatch>(e, { title: v.title, amount: v.amount, note: v.note, created_at })
     }
-  }, [item, type, recordType, plate, price, customerName, paymentStatus, selectedType, selectedBrand, incomeNote, editDate, editTime, currentUserEmail, title, amount, note, onSave])
+
+    setSaving(true)
+    try {
+      const message = await onSave(patch)
+      if (message) setSaveError(message)
+    } finally {
+      setSaving(false)
+    }
+  }, [item, saving, type, recordType, plate, price, customerName, paymentStatus, selectedType, selectedBrand, incomeNote, editDate, editTime, title, amount, note, onSave])
 
   if (!isOpen || !item) return null
 
@@ -277,11 +291,15 @@ export default function EditModal({ item, type, isOpen, onClose, onSave, onDelet
           </div>
         )}
 
+        {saveError && !confirmDelete && (
+          <p role="alert" className="mx-6 mb-1 px-4 py-3 rounded-[var(--radius-md)] bg-[var(--red-light)] text-sm font-bold text-[var(--red)] shrink-0">{saveError}</p>
+        )}
+
         {/* Action buttons */}
         {!confirmDelete && (
           <div className="flex gap-3 px-6 pb-8 pt-4 shrink-0 border-t border-[var(--border)]">
-            <button onClick={() => setConfirmDelete(true)} className="btn btn-danger py-3.5 text-[15px]" aria-label="ลบรายการ">🗑️ ลบ</button>
-            <button onClick={handleSave} className="btn btn-primary flex-1 py-3.5 text-[15px]">บันทึกการแก้ไข</button>
+            <button onClick={() => setConfirmDelete(true)} disabled={saving} className="btn btn-danger py-3.5 text-[15px]" aria-label="ลบรายการ">🗑️ ลบ</button>
+            <button onClick={handleSave} disabled={saving} aria-busy={saving} className="btn btn-primary flex-1 py-3.5 text-[15px] disabled:opacity-60">{saving ? 'กำลังบันทึก…' : 'บันทึกการแก้ไข'}</button>
           </div>
         )}
       </div>

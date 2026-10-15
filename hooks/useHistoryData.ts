@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { Record as AppRecord, Expense } from '@/types'
 import { TabType } from '@/components/history/constants'
 import { loadYear } from '@/features/history/api'
-import { deleteEntry, updateEntry } from '@/features/records/api'
+import { deleteEntry, updateEntry, type EntryPatch } from '@/features/records/api'
 import { toUserMessage } from '@/lib/errors'
 import { reportAppError } from '@/lib/observability'
 
@@ -47,22 +47,26 @@ export function useHistoryData(selectedYear: number, activeTab: TabType) {
     }
   }, [activeTab, fetchAllData])
 
-  const handleSave = useCallback(async (updatedFields: Partial<AppRecord & Expense>, id: string, onCloseModal: () => void) => {
+  /**
+   * Save only the changed fields of `item`, and only if nobody edited it meanwhile.
+   * Returns null on success (dialog closes) or a message for the dialog to show.
+   */
+  const handleSave = useCallback(async (patch: EntryPatch, item: AppRecord | Expense, onCloseModal: () => void): Promise<string | null> => {
     setError('')
-    const table = activeTab === 'income' ? 'records' : 'expenses'
-    const updateData = activeTab === 'income'
-      ? { type: updatedFields.type, plate: updatedFields.plate, price: updatedFields.price, services: updatedFields.services, customer_name: updatedFields.customer_name, payment_status: updatedFields.payment_status, created_at: updatedFields.created_at, updated_by_email: updatedFields.updated_by_email, updated_at: updatedFields.updated_at }
-      : { title: updatedFields.title, amount: updatedFields.amount, note: updatedFields.note, created_at: updatedFields.created_at, updated_by_email: updatedFields.updated_by_email, updated_at: updatedFields.updated_at }
+    if (Object.keys(patch).length === 0) { onCloseModal(); return null }
 
-    const result = await updateEntry(table, id, updateData)
+    const table = activeTab === 'income' ? 'records' : 'expenses'
+    const result = await updateEntry(table, item.id, patch, item.updated_at)
 
     if (!result.ok) {
       console.error('[History] Update Error:', result.error)
       reportAppError(result.error)
-      setError('บันทึกข้อมูลไม่สำเร็จ: ' + toUserMessage(result.error))
-    } else {
-      onCloseModal(); fetchAllData()
+      // แก้ชนกับเครื่องอื่นหรือรายการถูกลบ: โหลดรายการใหม่ให้เห็นข้อมูลล่าสุด
+      if (result.error.code === 'CONFLICT' || result.error.code === 'NOT_FOUND') fetchAllData()
+      return 'บันทึกไม่สำเร็จ: ' + toUserMessage(result.error)
     }
+    onCloseModal(); fetchAllData()
+    return null
   }, [activeTab, fetchAllData])
 
   return { records, expenses, loading, error, setError, handleDelete, handleSave }

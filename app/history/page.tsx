@@ -151,7 +151,7 @@ export default function HistoryPage() {
 
       <EditModal
         item={selectedItem} type={activeTab} isOpen={isModalOpen} onClose={closeModal}
-        onSave={(fields) => handleSave(fields, selectedItem!.id, closeModal)}
+        onSave={(patch) => handleSave(patch, selectedItem!, closeModal)}
         onDelete={(id) => handleDelete(id, closeModal)}
       />
       {isExportModalOpen && (
