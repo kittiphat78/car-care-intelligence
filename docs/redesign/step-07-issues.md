@@ -14,12 +14,13 @@
 | A9: error reporting | `chore/error-reporting` | `75d7613` | 242/242 · production: `/api/client-errors` ไม่มี session → 401 ✅ | ✅ **Production** · PR #7 → `152fd26` |
 | B1: เวลาไทย | `refactor/time-bangkok` (rebase บน `152fd26`) | `776780b` | 287/287 ทั้ง TZ Bangkok และ UTC · test ใหม่ fail กับโค้ดเดิมเมื่อ TZ=UTC/NY ✅ | 🔄 push แล้ว · รอ PR + ทดสอบ Preview + merge |
 | B2: data-access layer | `refactor/data-access-layer` (ต่อจาก B1) | `c402e3b` | 323/323 (รวม A4 `next`) ทั้ง TZ Bangkok และ UTC ✅ | ✅ เสร็จในเครื่อง · ไม่ push |
-| A5: DB baseline | `db/baseline` | `e67140c` | รันบน staging: M000 สำเร็จ · RLS on · anon ไม่มีสิทธิ์ · seed 1,263/141 แถว ✅ | ✅ PR #11 merge แล้ว (CLI config + CI `db` job ยังเหลือ) |
+| A5: DB baseline + CI `db` | `db/baseline`, `db/indexes-idempotency-audit` | `e67140c`, `978af00` | CI `db` job บน GitHub: migration ทั้งหมด + seed + SQL tests + rollback ทุกไฟล์ ✅ (2 นาที 15 วินาที) | ✅ merge แล้ว (PR #11, #16) |
 | A8: ลบ API ที่ไม่ใช้ | `chore/remove-unused-api` | `e99c31c` | 241/241 · production: `/api/insights`, `/api/export-excel` → 404 ✅ | ✅ **Production** · PR #10 |
 | P-3/P-4: staging | — (Supabase + Vercel โดยเจ้าของ) | — | Preview login + ทดสอบ B2 บน staging ✅ · `PRODUCTION_SUPABASE_PROJECT_REF` ตั้งแล้ว | ✅ |
 | A3: env guard | `feature/env-guard` | `7528cb0` | 333/333 · จำลอง build Preview→production ไม่ผ่าน ✅ | ✅ **Production** · PR #13 |
 | A6: สมาชิกร้าน + RLS | `db/app-members-rls` | `c3cc5bf`, `fa32310` | staging: `ALL MEMBER RLS TESTS PASSED` ✅ · production 2026-10-15: 4/4 บัญชีเป็นสมาชิก, แอปปกติ, anon ถูกปฏิเสธทุกตาราง/ฟังก์ชัน ✅ | ✅ **ใช้กับ production แล้ว** · ไฟล์ SQL รอ PR |
-| A7, B3–B7, C1–C9 | — | — | — | ยังไม่เริ่ม |
+| A7: index + client_request_id + audit trigger | `db/indexes-idempotency-audit` | `ea15a4a` | ในเครื่อง (Supabase local) + staging: `ALL INDEX / IDEMPOTENCY / AUDIT TESTS PASSED` ✅ · production 2026-10-15: index 4 / column 2 / trigger 2 ✅ · บันทึกและแก้ไขในแอปแสดงชื่อจาก session ✅ | ✅ **ใช้กับ production แล้ว** · PR #16 |
+| B3–B7, C1–C9 | — | — | — | ยังไม่เริ่ม |
 
 ## 2. A1 — CI quality gates
 
@@ -79,6 +80,9 @@
 | S07-22 | ไฟล์ test RLS แบบหลายคำสั่งใช้ไม่ได้ใน SQL Editor ของ Supabase (รันแต่ละคำสั่งแยก transaction) → เขียนใหม่เป็น DO block เดียวที่ rollback ตัวเอง | Low | RESOLVED (`fa32310`) |
 | S07-23 | VS Code บันทึกไฟล์ test เวอร์ชันเก่าทับไฟล์ใหม่ (เนื้อหาซ้อนกัน) → กู้จาก commit | Low | RESOLVED |
 | S07-24 | Backup production (P-5) เป็น CSV ที่เจ้าของ export เอง ยังไม่ได้ทดลอง restore | Medium | UNRESOLVED (ก่อน B6 ที่แก้ข้อมูล) |
+| S07-25 | Supabase CLI บน Windows ต้องตั้ง `TMP`/`TEMP` เป็นโฟลเดอร์ที่เขียนได้ ไม่งั้น `supabase start` ล้มด้วย `makeTempDirectoryScoped NotFound` (CI บน Linux ไม่เป็น) | Low | RESOLVED (วิธีแก้บันทึกไว้) |
+| S07-26 | ทดสอบ A7 บน production ด้วยการบันทึกรายการ "7788 TEST" ฿500 ลงข้อมูลจริง ต้องลบออก | Low | NEEDS_APPROVAL (เจ้าของลบในแอป) |
+| S07-27 | ตั้ง required checks (`lint`, `typecheck`, `test`, `build`, `audit`, `secrets`, `pr-title`, `db`) ใน ruleset ของ `main` | Medium | NEEDS_APPROVAL (เจ้าของ, A1-c / P-7) |
 
 ## 4. รออนุมัติ (ต่อ feature)
 | # | ขอ | ผล |
