@@ -4,22 +4,22 @@ type Call = [method: string, ...args: unknown[]]
 
 /** Chainable stand-in for a Supabase query that records every call and resolves to `response`. */
 const fake = vi.hoisted(() => {
-  const state = { calls: [] as [string, ...unknown[]][], response: { data: [] as unknown, error: null as unknown, count: 0 as number | null } }
+  const state = { queue: [] as { data: unknown; error: unknown; count: number | null }[], calls: [] as [string, ...unknown[]][], response: { data: [] as unknown, error: null as unknown, count: 0 as number | null } }
   const builder: Record<string, unknown> = {}
-  for (const method of ['from', 'select', 'insert', 'update', 'delete', 'eq', 'gte', 'lt', 'order', 'range', 'overrideTypes']) {
+  for (const method of ['from', 'select', 'insert', 'update', 'delete', 'eq', 'is', 'gte', 'lt', 'order', 'range', 'overrideTypes']) {
     builder[method] = (...args: unknown[]) => {
       state.calls.push([method, ...args])
       return builder
     }
   }
   builder.then = (resolve: (value: unknown) => unknown, reject?: (reason: unknown) => unknown) =>
-    Promise.resolve(state.response).then(resolve, reject)
+    Promise.resolve(state.queue.shift() ?? state.response).then(resolve, reject)
   return { state, builder }
 })
 
 vi.mock('@/lib/supabase', () => ({ supabase: { from: (table: string) => (fake.builder.from as (t: string) => unknown)(table) } }))
 
-import { countIncomeOn, deleteEntry, listBetween, run, updateEntry } from '@/features/records/api'
+import { countIncomeOn, createIncome, deleteEntry, listBetween, run, updateEntry, type IncomeInsert } from '@/features/records/api'
 
 const methods = () => fake.state.calls.map(c => c[0])
 const callOf = (method: string): Call | undefined => fake.state.calls.find(c => c[0] === method) as Call | undefined
@@ -27,6 +27,7 @@ const callOf = (method: string): Call | undefined => fake.state.calls.find(c => 
 describe('records api', () => {
   beforeEach(() => {
     fake.state.calls = []
+    fake.state.queue = []
     fake.state.response = { data: [], error: null, count: 0 }
   })
 
@@ -62,11 +63,39 @@ describe('records api', () => {
     expect(methods()).not.toContain('lt')
   })
 
-  it('updates and deletes by id and reports failures as Results', async () => {
-    expect(await updateEntry('records', 'id-1', { price: 300 })).toEqual({ ok: true, data: undefined })
+  it('updates only when updated_at still matches what was loaded', async () => {
+    fake.state.queue = [{ data: [{ id: 'id-1' }], error: null, count: null }]
+    expect(await updateEntry('records', 'id-1', { price: 300 }, '2026-10-14T05:00:00.123456+00:00')).toEqual({ ok: true, data: undefined })
     expect(callOf('update')).toEqual(['update', { price: 300 }])
-    expect(callOf('eq')).toEqual(['eq', 'id', 'id-1'])
+    expect(fake.state.calls.filter(c => c[0] === 'eq')).toEqual([['eq', 'id', 'id-1'], ['eq', 'updated_at', '2026-10-14T05:00:00.123456+00:00']])
 
+    fake.state.calls = []
+    fake.state.queue = [{ data: [{ id: 'id-1' }], error: null, count: null }]
+    await updateEntry('records', 'id-1', { price: 300 }, null)
+    expect(callOf('is')).toEqual(['is', 'updated_at', null])
+  })
+
+  it('reports CONFLICT when someone else changed the row and NOT_FOUND when it is gone', async () => {
+    fake.state.queue = [{ data: [], error: null, count: null }, { data: [{ id: 'id-1' }], error: null, count: null }]
+    const conflict = await updateEntry('records', 'id-1', { price: 300 }, null)
+    expect(!conflict.ok && conflict.error.code).toBe('CONFLICT')
+
+    fake.state.queue = [{ data: [], error: null, count: null }, { data: [], error: null, count: null }]
+    const gone = await updateEntry('records', 'id-1', { price: 300 }, null)
+    expect(!gone.ok && gone.error.code).toBe('NOT_FOUND')
+  })
+
+  it('treats a retried save that already reached the database as saved', async () => {
+    const row = { client_request_id: 'req-1' } as IncomeInsert
+    fake.state.response = { data: null, error: { code: '23505', message: 'duplicate key value violates unique constraint "records_client_request_id_key"' }, count: null }
+    expect(await createIncome(row)).toEqual({ ok: true, data: undefined })
+    expect(callOf('insert')).toEqual(['insert', row])
+
+    fake.state.response = { data: null, error: { code: '23514', message: 'check' }, count: null }
+    expect((await createIncome(row)).ok).toBe(false)
+  })
+
+  it('deletes by id and reports failures as Results', async () => {
     fake.state.response = { data: null, error: { code: '23514', message: 'check' }, count: null }
     const result = await deleteEntry('expenses', 'id-2')
     expect(!result.ok && result.error.code).toBe('VALIDATION')

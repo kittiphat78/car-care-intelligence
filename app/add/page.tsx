@@ -1,13 +1,12 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { countIncomeOn, createExpense, createIncome } from '@/features/records/api'
 import { toAppError, toUserMessage } from '@/lib/errors'
 import { reportAppError } from '@/lib/observability'
 import { RecordType, CAR_TYPES, CAR_BRANDS, PaymentStatus } from '@/types'
-import { z } from 'zod'
-import DOMPurify from 'isomorphic-dompurify'
+import { expenseSchema, newIncomeSchema, validate } from '@/features/records/schema'
 
 import { useAuthUser, useRecentCustomers, useCustomerVisitCount } from '@/hooks/useAddRecord'
 import { FormMode } from '@/components/add/Shared'
@@ -51,6 +50,13 @@ export default function AddPage() {
   const [expenseAmount, setExpenseAmount] = useState('')
   const [expenseNote, setExpenseNote] = useState('')
 
+  // เลขประจำการบันทึก 1 ครั้ง: กดซ้ำหรือลองใหม่ด้วยข้อมูลเดิมใช้เลขเดิม ฐานข้อมูลจึงไม่สร้างรายการซ้ำ (M004)
+  const pendingSave = useRef<{ key: string; id: string } | null>(null)
+  const requestIdFor = (key: string) => {
+    if (pendingSave.current?.key !== key) pendingSave.current = { key, id: crypto.randomUUID() }
+    return pendingSave.current.id
+  }
+
   const resetIncomeForm = useCallback(() => {
     setPlate(''); setPrice(''); setNote(''); setCustomerName('')
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -61,34 +67,14 @@ export default function AddPage() {
   }, [])
 
   const submitIncome = useCallback(async (isBulk: boolean) => {
-    // 1. กำหนด Schema ด้วย Zod สำหรับ Income
-    const incomeSchema = z.object({
-      plate: z.string().min(1, 'กรุณากรอกป้ายทะเบียน').max(20, 'ป้ายทะเบียนยาวเกินไป'),
-      selectedType: z.string().min(1, 'กรุณาเลือกประเภทรถ'),
-      price: z.number().min(0, 'ราคาต้องมากกว่าหรือเท่ากับ 0'),
-      customerName: z.string().max(50, 'ชื่อลูกค้ายาวเกินไป').optional(),
-      note: z.string().max(200, 'หมายเหตุยาวเกินไป').optional()
-    })
+    const checked = validate(newIncomeSchema, { type, plate, price, customerName, note, paymentStatus, carType: selectedType })
+    if (!checked.ok) return setError(checked.message)
 
-    // 2. Validate ข้อมูลด้วย Zod
-    const validationResult = incomeSchema.safeParse({
-      plate: plate.trim(),
-      selectedType,
-      price: price ? parseInt(price, 10) : -1, // ส่ง -1 ไปให้ Zod ตีตกถ้าราคาว่าง
-      customerName: customerName.trim(),
-      note: note.trim()
-    })
-
-    if (!validationResult.success) {
-      // ดึง Error ตัวแรกมาแสดง
-      return setError(validationResult.error.issues[0].message)
-    }
-
-    // 3. Sanitize ข้อมูลป้องกัน XSS
-    const safePlate = DOMPurify.sanitize(validationResult.data.plate).toUpperCase()
-    const safeCustomerName = DOMPurify.sanitize(validationResult.data.customerName || '')
-    const safeNote = DOMPurify.sanitize(validationResult.data.note || '')
-    const safePrice = validationResult.data.price
+    // บันทึกตามที่พิมพ์ (ตัด space หัวท้าย) ไม่แปลง < เป็น &lt; อีกต่อไป (ADR-10)
+    const safePlate = checked.data.plate.toUpperCase()
+    const safeCustomerName = checked.data.customerName
+    const safeNote = checked.data.note
+    const safePrice = checked.data.price
 
     const timestamp = generateTimestamp(date)
     // นับไม่สำเร็จ = เริ่มลำดับที่ 1 เหมือนเดิม (ลำดับซ้ำแก้ถาวรใน B6)
@@ -99,13 +85,15 @@ export default function AddPage() {
     const brandName = CAR_BRANDS.find(b => b.id === selectedBrand)?.name || ''
     const services = [typeName, brandName, safeNote]
 
+    const client_request_id = requestIdFor(JSON.stringify(['income', date, type, safePlate, services, safePrice, safeCustomerName, paymentStatus]))
     const result = await createIncome({
-      type, plate: safePlate, services, price: safePrice,
+      type, plate: safePlate, services, price: safePrice, client_request_id,
       seq_number: count + 1, created_at: timestamp, created_by: userId,
       created_by_email: userEmail, payment_method: 'cash', customer_name: safeCustomerName,
       payment_status: paymentStatus, job_status: 'done',
     })
     if (!result.ok) throw result.error
+    pendingSave.current = null
     if (safeCustomerName) addCustomer(safeCustomerName)
     if (isBulk) {
       setSuccessMsg(`บันทึก ${safePlate} สำเร็จ`)
@@ -114,34 +102,21 @@ export default function AddPage() {
   }, [plate, selectedType, price, customerName, note, date, type, selectedBrand, paymentStatus, userId, userEmail, addCustomer, resetIncomeForm, router])
 
   const submitExpense = useCallback(async (isBulk: boolean) => {
-    // 1. Zod Schema สำหรับ Expense
-    const expenseSchema = z.object({
-      title: z.string().min(1, 'กรุณาระบุรายการจ่าย').max(100, 'รายการยาวเกินไป'),
-      amount: z.number().min(1, 'จำนวนเงินต้องมากกว่า 0'),
-      note: z.string().max(200, 'หมายเหตุยาวเกินไป').optional()
-    })
+    const checked = validate(expenseSchema, { title: expenseTitle, amount: expenseAmount, note: expenseNote })
+    if (!checked.ok) return setError(checked.message)
 
-    const validationResult = expenseSchema.safeParse({
-      title: expenseTitle.trim(),
-      amount: expenseAmount ? parseInt(expenseAmount, 10) : -1,
-      note: expenseNote.trim()
-    })
-
-    if (!validationResult.success) {
-      return setError(validationResult.error.issues[0].message)
-    }
-
-    // 2. Sanitize ข้อมูลป้องกัน XSS
-    const safeTitle = DOMPurify.sanitize(validationResult.data.title)
-    const safeNote = DOMPurify.sanitize(validationResult.data.note || '')
-    const safeAmount = validationResult.data.amount
+    const safeTitle = checked.data.title
+    const safeNote = checked.data.note
+    const safeAmount = checked.data.amount
+    const client_request_id = requestIdFor(JSON.stringify(['expense', date, safeTitle, safeAmount, safeNote]))
 
     const result = await createExpense({
-      title: safeTitle, amount: safeAmount,
+      title: safeTitle, amount: safeAmount, client_request_id,
       created_at: generateTimestamp(date), created_by: userId, created_by_email: userEmail,
       note: safeNote,
     })
     if (!result.ok) throw result.error
+    pendingSave.current = null
     if (isBulk) {
       setSuccessMsg(`บันทึกรายจ่าย ${safeTitle} สำเร็จ`)
       resetExpenseForm(); setTimeout(() => setSuccessMsg(''), 4000)

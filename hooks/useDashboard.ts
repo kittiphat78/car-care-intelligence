@@ -1,55 +1,34 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Record as AppRecord, Expense, DEFAULT_CUSTOMER_NAME, DEFAULT_CUSTOMER_NAME_UNPAID } from '@/types'
+import { Record as AppRecord, DEFAULT_CUSTOMER_NAME_UNPAID } from '@/types'
 import { useToast } from '@/hooks/useToast'
-import { getStartOfDay, getStartOfYesterday, getStartOfWeek, getStartOfMonth, getStartOfYear, parseDateMs } from '@/lib/dateUtils'
-import { loadDashboard, markCustomerPaid } from '@/features/dashboard/api'
+import { parseDateMs } from '@/lib/dateUtils'
+import { loadDashboard, settleRecords } from '@/features/dashboard/api'
+import {
+  EMPTY_TODAY, toChartData, toCustomerBreakdown, toStats,
+  type ChartMode, type CustomerTotals, type DayTotal, type TodayTotals,
+} from '@/features/dashboard/logic'
 import { toUserMessage } from '@/lib/errors'
 import { reportAppError } from '@/lib/observability'
-import { addDays, bangkokToday, formatBangkok, startOfBangkokDay } from '@/lib/time/bangkok'
+import { bangkokToday } from '@/lib/time/bangkok'
 
-export type ChartMode = 'week' | 'month'
-export interface CustomerTimePeriod {
-  washCount: number
-  washAmount: number
-  polishCount: number
-  polishAmount: number
-  total: number
-}
-
-export interface CustomerBreakdownItem {
-  customerName: string
-  week: CustomerTimePeriod
-  month: CustomerTimePeriod
-  year: CustomerTimePeriod
-}
-
-export interface DashboardStats {
-  todayTotalIncome: number
-  todayPaid: number
-  todayUnpaid: number
-  todayExpense: number
-  netProfit: number
-  washCount: number
-  polishCount: number
-  diffAmount: number
-  diffPct: number
-  isUp: boolean
-}
+export type { ChartMode, CustomerTimePeriod, CustomerBreakdownItem, DashboardStats } from '@/features/dashboard/logic'
 
 export function useDashboard() {
   const router = useRouter()
-  const { error: toastError, success: toastSuccess } = useToast()
+  const { error: toastError, success: toastSuccess, info: toastInfo } = useToast()
   
   // ── States ──
   const [userEmail, setUserEmail]               = useState('')
-  const [allRecords, setAllRecords]             = useState<AppRecord[]>([])
-  const [expenses, setExpenses]                 = useState<Expense[]>([])
+  const [todayRecords, setTodayRecords]         = useState<AppRecord[]>([])
+  const [todayTotals, setTodayTotals]           = useState<TodayTotals>(EMPTY_TODAY)
+  const [series, setSeries]                     = useState<DayTotal[]>([])
+  const [customers, setCustomers]               = useState<CustomerTotals[]>([])
   const [chartMode, setChartMode]               = useState<ChartMode>('week')
   const [loading, setLoading]                   = useState(true)
   const [unpaidRecords, setUnpaidRecords]       = useState<AppRecord[]>([])
-  const [yearRecords, setYearRecords]           = useState<AppRecord[]>([])
+  const [today, setToday]                       = useState(bangkokToday)
 
   // ── Data Fetching ──
   const fetchData = useCallback(async (skipAuth = false) => {
@@ -66,19 +45,23 @@ export function useDashboard() {
         setUserEmail(user.email ?? '')
       }
 
-      const { recentRecords, recentExpenses, unpaidRecords, yearRecords } = await loadDashboard()
+      // ยอดรวมคำนวณในฐานข้อมูล (M006) แทนการโหลดข้อมูลทั้งปีมารวมใน browser
+      const day = bangkokToday()
+      const data = await loadDashboard(day)
 
-      const failure = [recentRecords, recentExpenses, unpaidRecords, yearRecords].find(r => !r.ok)
+      const failure = [data.todayRecords, data.today, data.series, data.customers, data.unpaidRecords].find(r => !r.ok)
       if (failure && !failure.ok) {
         console.error('[Dashboard] DB Fetch Error:', failure.error)
         reportAppError(failure.error)
         toastError(`ไม่สามารถดึงข้อมูลได้ครบถ้วน: ${toUserMessage(failure.error)}`)
       }
 
-      setAllRecords(recentRecords.ok ? recentRecords.data : [])
-      setExpenses(recentExpenses.ok ? recentExpenses.data : [])
-      setUnpaidRecords(unpaidRecords.ok ? unpaidRecords.data : [])
-      setYearRecords(yearRecords.ok ? yearRecords.data : [])
+      setToday(day)
+      setTodayRecords(data.todayRecords.ok ? data.todayRecords.data : [])
+      setTodayTotals(data.today.ok ? data.today.data : EMPTY_TODAY)
+      setSeries(data.series.ok ? data.series.data : [])
+      setCustomers(data.customers.ok ? data.customers.data : [])
+      setUnpaidRecords(data.unpaidRecords.ok ? data.unpaidRecords.data : [])
     } catch (err) {
       console.error('[Dashboard] Unexpected Error during fetchData:', err)
       toastError('เกิดข้อผิดพลาดเครือข่าย หรือเซิร์ฟเวอร์ไม่ตอบสนอง')
@@ -118,141 +101,16 @@ export function useDashboard() {
     }
   }, [router])
 
-  const markAllAsPaidByCustomer = useCallback(async (customerName: string) => {
-    const isGeneral = customerName === DEFAULT_CUSTOMER_NAME_UNPAID
-    const confirmMsg = isGeneral
-      ? `ยืนยันว่า "${DEFAULT_CUSTOMER_NAME_UNPAID}" ชำระเงินครบแล้วทั้งหมด?`
-      : `ยืนยันว่าเต็นท์/ลูกค้า "${customerName}" ชำระเงินครบแล้วทั้งหมด?`
-    
-    if (!window.confirm(confirmMsg)) return
-
-    const targetName = isGeneral ? '' : customerName
-
-    try {
-      // Optimistic update
-      setUnpaidRecords(prev => prev.filter(r => {
-        const name = (r.customer_name || '').trim() || DEFAULT_CUSTOMER_NAME_UNPAID
-        return name !== (isGeneral ? DEFAULT_CUSTOMER_NAME_UNPAID : customerName)
-      }))
-
-      const result = await markCustomerPaid(targetName, userEmail)
-
-      if (result.ok) {
-        fetchData()
-        toastSuccess('ทำเครื่องหมายชำระเงินเรียบร้อย')
-      } else {
-        fetchData() // Rollback
-        console.error('[Dashboard] markAllAsPaidByCustomer DB Error:', result.error)
-        reportAppError(result.error)
-        toastError('บันทึกข้อมูลไม่สำเร็จ: ' + toUserMessage(result.error))
-      }
-    } catch (err) {
-      fetchData() // Rollback
-      console.error('[Dashboard] markAllAsPaidByCustomer Unexpected Error:', err)
-      toastError('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์')
-    }
-  }, [userEmail, fetchData, toastSuccess, toastError])
-
   // ── Derived State & Computations (Memoized) ──
 
   // 1. สถิติภาพรวม
-  const stats = useMemo<DashboardStats>(() => {
-    const todayStartMs = getStartOfDay().getTime()
-    const yesterdayStartMs = getStartOfYesterday().getTime()
+  const stats = useMemo(() => toStats(todayTotals), [todayTotals])
 
-    const todayRecords = []
-    let yesterdayIncome = 0
+  // Today's records
+  const records = todayRecords
 
-    for (let i = allRecords.length - 1; i >= 0; i--) {
-      const r = allRecords[i]
-      const t = parseDateMs(r.created_at)
-      if (t >= todayStartMs) {
-        todayRecords.push(r)
-      } else if (t >= yesterdayStartMs) {
-        yesterdayIncome += r.price
-      } else {
-        break
-      }
-    }
-
-    let todayTotalIncome = 0
-    let todayPaid = 0
-    let todayUnpaid = 0
-    let washCount = 0
-    let polishCount = 0
-
-    for (const r of todayRecords) {
-      todayTotalIncome += r.price
-      if (r.payment_status === 'paid') todayPaid += r.price
-      if (r.payment_status === 'unpaid') todayUnpaid += r.price
-      if (r.type === 'wash') washCount++
-      if (r.type === 'polish') polishCount++
-    }
-
-    const todayExpense = expenses
-      .filter(e => parseDateMs(e.created_at) >= todayStartMs)
-      .reduce((s, e) => s + e.amount, 0)
-      
-    const diffAmount = todayTotalIncome - yesterdayIncome
-
-    return {
-      todayTotalIncome,
-      todayPaid,
-      todayUnpaid,
-      todayExpense,
-      netProfit: todayPaid - todayExpense,
-      washCount,
-      polishCount,
-      diffAmount,
-      diffPct: yesterdayIncome > 0 ? Math.round((diffAmount / yesterdayIncome) * 100) : 0,
-      isUp: diffAmount >= 0
-    }
-  }, [allRecords, expenses])
-
-  // Today's records (derived from allRecords)
-  const records = useMemo<AppRecord[]>(() => {
-    const todayStartMs = getStartOfDay().getTime()
-    return allRecords.filter(r => parseDateMs(r.created_at) >= todayStartMs)
-  }, [allRecords])
-
-  // 2. ข้อมูลกราฟ (bucket map — O(n))
-  const chartData = useMemo(() => {
-    const days = chartMode === 'week' ? 7 : 30
-    
-    const today = bangkokToday()
-    const firstDay = addDays(today, -(days - 1))
-    const startMs = startOfBangkokDay(firstDay).getTime()
-    const endMs = startOfBangkokDay(addDays(today, 1)).getTime()
-    const dayMs = 24 * 60 * 60 * 1000
-
-    const buckets = Array.from({ length: days }, () => ({ income: 0, expense: 0 }))
-
-    for (const r of allRecords) {
-      const t = parseDateMs(r.created_at)
-      if (t >= startMs && t < endMs) {
-        const idx = Math.floor((t - startMs) / dayMs)
-        if (idx >= 0 && idx < days) buckets[idx].income += r.price
-      }
-    }
-    for (const e of expenses) {
-      const t = parseDateMs(e.created_at)
-      if (t >= startMs && t < endMs) {
-        const idx = Math.floor((t - startMs) / dayMs)
-        if (idx >= 0 && idx < days) buckets[idx].expense += e.amount
-      }
-    }
-
-    return buckets.map((b, i) => {
-      const dayStart = startOfBangkokDay(addDays(firstDay, i))
-      return {
-        label: chartMode === 'week'
-          ? formatBangkok(dayStart, { weekday: 'short' })
-          : formatBangkok(dayStart, { day: 'numeric' }),
-        income: b.income,
-        expense: b.expense,
-      }
-    })
-  }, [allRecords, expenses, chartMode])
+  // 2. ข้อมูลกราฟ 7 หรือ 30 วัน
+  const chartData = useMemo(() => toChartData(series, chartMode, today), [series, chartMode, today])
 
   // 3. จัดกลุ่มสมุดทวงหนี้ตามลูกค้า
   const groupedUnpaid = useMemo(() => {
@@ -278,44 +136,36 @@ export function useDashboard() {
     [unpaidRecords]
   )
 
-  // 5. รายรับตามลูกค้า แยก wash/polish — คำนวณ 3 ช่วงเวลาในรอบเดียว
-  const customerBreakdown = useMemo<CustomerBreakdownItem[]>(() => {
-    const weekMs = getStartOfWeek().getTime()
-    const monthMs = getStartOfMonth().getTime()
-    const yearMs = getStartOfYear().getTime()
+  // เคลียร์ยอด: ส่งเฉพาะรายการที่แสดงบนจอ แล้วเทียบจำนวนที่ฐานข้อมูลเคลียร์จริง (M007, ER-03)
+  const markAllAsPaidByCustomer = useCallback(async (customerName: string) => {
+    const group = groupedUnpaid.find(g => g.customerName === customerName)
+    if (!group || group.items.length === 0) return
 
-    const emptyPeriod = (): CustomerTimePeriod => ({ washCount: 0, washAmount: 0, polishCount: 0, polishAmount: 0, total: 0 })
+    const count = group.items.length
+    const label = customerName === DEFAULT_CUSTOMER_NAME_UNPAID ? customerName : `เต็นท์/ลูกค้า "${customerName}"`
+    if (!window.confirm(`เคลียร์ยอด ${label}
+${count} รายการ รวม ฿${group.total.toLocaleString()} ว่าชำระครบแล้ว?`)) return
 
-    const grouped: globalThis.Record<string, { week: CustomerTimePeriod; month: CustomerTimePeriod; year: CustomerTimePeriod }> = {}
+    const ids = new Set(group.items.map(r => r.id))
+    // Optimistic update
+    setUnpaidRecords(prev => prev.filter(r => !ids.has(r.id)))
 
-    for (const r of yearRecords) {
-      const name = (r.customer_name || '').trim() || DEFAULT_CUSTOMER_NAME
-      const t = parseDateMs(r.created_at)
-      if (t < yearMs) continue
+    const result = await settleRecords([...ids])
+    fetchData(true)
 
-      if (!grouped[name]) grouped[name] = { week: emptyPeriod(), month: emptyPeriod(), year: emptyPeriod() }
-      const g = grouped[name]
-
-      const periods: CustomerTimePeriod[] = [g.year]
-      if (t >= monthMs) periods.push(g.month)
-      if (t >= weekMs) periods.push(g.week)
-
-      for (const p of periods) {
-        if (r.type === 'wash') {
-          p.washCount++
-          p.washAmount += r.price
-        } else {
-          p.polishCount++
-          p.polishAmount += r.price
-        }
-        p.total += r.price
-      }
+    if (!result.ok) {
+      console.error('[Dashboard] settleRecords DB Error:', result.error)
+      reportAppError(result.error)
+      toastError('บันทึกข้อมูลไม่สำเร็จ: ' + toUserMessage(result.error))
+    } else if (result.data.updatedCount === count) {
+      toastSuccess(`เคลียร์ยอด ${count} รายการ ฿${result.data.total.toLocaleString()} เรียบร้อย`)
+    } else {
+      toastInfo(`เคลียร์ได้ ${result.data.updatedCount} จาก ${count} รายการ (฿${result.data.total.toLocaleString()}) รายการที่เหลือถูกเคลียร์หรือแก้ไขจากเครื่องอื่นแล้ว`)
     }
+  }, [groupedUnpaid, fetchData, toastSuccess, toastError, toastInfo])
 
-    return Object.entries(grouped)
-      .map(([customerName, v]) => ({ customerName, ...v }))
-      .sort((a, b) => b.month.total - a.month.total)
-  }, [yearRecords])
+  // 5. รายรับตามลูกค้า แยก wash/polish (สัปดาห์ / เดือน / ปี)
+  const customerBreakdown = useMemo(() => toCustomerBreakdown(customers), [customers])
 
   return {
     userEmail,
