@@ -2,6 +2,7 @@ import type { Record as AppRecord, Expense } from '@/types'
 import ExcelJS from 'exceljs'
 import { saveAs } from 'file-saver'
 import { formatBangkok, toBangkokDay } from '@/lib/time/bangkok'
+import { cellText } from '@/lib/spreadsheet-text'
 
 export type ExportMode = 'bank' | 'internal'
 
@@ -83,7 +84,7 @@ export async function exportToExcel(
         totalAmount += exp.amount || 0
         monthlyTotals[monthKey] = (monthlyTotals[monthKey] || 0) + (exp.amount || 0)
         rowValues = {
-          no: idx + 1, date: dateStr, title: exp.title || '-', note: exp.note || '-', amount: exp.amount || 0
+          no: idx + 1, date: dateStr, title: cellText(exp.title), note: cellText(exp.note), amount: exp.amount || 0
         }
       } else {
         const rec = item as AppRecord
@@ -93,9 +94,9 @@ export async function exportToExcel(
         if (rec.type === 'polish') totalPolishCount++
         const services = rec.services || []
         rowValues = {
-          no: idx + 1, date: dateStr, plate: rec.plate || '-', customer: rec.customer_name || '-',
-          type: rec.type === 'wash' ? 'ล้างรถ' : 'ขัดสี', brand: services[1] || '-', carType: services[0] || '-',
-          status: rec.payment_status === 'paid' ? 'ชำระแล้ว' : 'ค้างชำระ', note: services[2] || '-', price: rec.price || 0
+          no: idx + 1, date: dateStr, plate: cellText(rec.plate), customer: cellText(rec.customer_name),
+          type: rec.type === 'wash' ? 'ล้างรถ' : 'ขัดสี', brand: cellText(services[1]), carType: cellText(services[0]),
+          status: rec.payment_status === 'paid' ? 'ชำระแล้ว' : 'ค้างชำระ', note: cellText(services[2]), price: rec.price || 0
         }
       }
 
