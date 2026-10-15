@@ -99,3 +99,38 @@ jobs:
             -- . ':(exclude)package-lock.json'; then
             echo "Possible secret committed. Remove it and rotate the key."; exit 1
           fi
+
+  # Applies every migration and the seed to a throwaway local Supabase database,
+  # runs the SQL tests, then runs every rollback file newest-first.
+  db:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
+        with:
+          version: 2.118.0
+      - name: Start database (migrations + seed)
+        run: >-
+          supabase start
+          -x gotrue,realtime,storage-api,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+      - name: Add a test member
+        run: psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/ci_fixtures.sql
+      - name: SQL tests
+        run: |
+          for f in supabase/tests/*.test.sql; do
+            echo "::group::$f"
+            psql "$DB_URL" -v ON_ERROR_STOP=1 -f "$f"
+            echo "::endgroup::"
+          done
+      - name: Rollback files (newest first)
+        run: |
+          for f in $(ls supabase/rollback/*.down.sql | sort -r); do
+            echo "$f"
+            psql "$DB_URL" -v ON_ERROR_STOP=1 -q -f "$f"
+          done
+      - name: Stop database
+        if: always()
+        run: supabase stop --no-backup

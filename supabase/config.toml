@@ -1,0 +1,11 @@
+# Supabase CLI config for local runs and CI only (`supabase start`, `supabase db reset`).
+# The hosted projects (production, staging) do not read this file.
+project_id = "car-care-intelligence"
+
+[db]
+port = 54322
+major_version = 17
+
+[db.seed]
+enabled = true
+sql_paths = ["./seed.sql"]
