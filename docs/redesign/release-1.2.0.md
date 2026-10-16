@@ -2,6 +2,7 @@
 
 > วันที่: 2026-10-16 · อนุมัติโดยเจ้าของ: "อนุมัติ v1.2.0" (2026-10-15)
 > ฐาน: `v1.0.1` (`d748ac6`) → production ปัจจุบัน `9145eec` (Merge PR #21) [V GitHub deployments]
+> **ขึ้น production แล้ว:** PR #22 → `b5213db` · Vercel deploy success 2026-10-16 18:34 (เวลาไทย) · CI 8/8 · tag `v1.2.0`
 > หน้าจอเหมือน v1.0.1 ทุกหน้า: การเปลี่ยนแปลงอยู่ที่ความถูกต้องของข้อมูล ความปลอดภัย และความเร็ว
 > Phase B (หน้าตาใหม่) จะออกเป็น v2.0.0 แยกต่างหาก
 
@@ -61,6 +62,6 @@ Backup ก่อนเปลี่ยนฐานข้อมูล: CSV `backup
 | S07-11 | log ของ Vercel Hobby เก็บสั้น ไม่มี alert | ทบทวนหลัง 1 เดือน (ADR-11) |
 | S07-15 | `fetchAllPages` แบบ offset อาจได้แถวซ้ำ 1 แถวถ้ามีการบันทึกระหว่างโหลด | ย้ายไป RPC ใน Phase B |
 | S07-33 | แอปยังนับ `seq_number` เองก่อนส่ง (trigger แทนที่ให้) | ลบใน Phase B |
-| HF-01 | dependency ระดับ high 4 / moderate 5 ใน production deps | ตาม audit gate |
+| HF-01 | dependency ระดับ high 4 / moderate 5 ใน production deps | ตาม audit gate (production deps: high 4, moderate 5, critical 0) |
 | — | Realtime ปิดอยู่บน production (publication ว่าง) | ตัดสินใน Phase B |
-| S07-27 | required checks ใน ruleset ของ `main` ยังไม่ได้ตั้ง | เจ้าของ |
+| S07-27 | required checks ใน ruleset ของ `main` ยังไม่มีผล (กรอกฟอร์มแล้ว รอกด Create) | เจ้าของ |
