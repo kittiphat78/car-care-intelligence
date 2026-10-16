@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from 'next'
 import { Sarabun } from 'next/font/google'
 import './globals.css'
-import ClientLayout from '@/components/ClientLayout'
+import { Providers } from '@/components/patterns/Providers'
+import { THEME_COLOR, THEME_STORAGE_KEY } from '@/components/patterns/theme-constants'
 
 const sarabun = Sarabun({
   subsets: ['thai', 'latin'],
@@ -39,36 +40,39 @@ export const metadata: Metadata = {
   },
 }
 
+// Pinch-zoom stays on (AC-32-1, ER-19). Theme colour follows the saved theme via the
+// script below; this is the dark default.
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  // ── Kiosk / Tablet Mode: ป้องกันการ Pinch-Zoom โดยไม่ตั้งใจ ──
-  maximumScale: 1,
-  userScalable: false,
-  themeColor: [
-    { media: '(prefers-color-scheme: dark)',  color: '#0A0A0F' },
-    { media: '(prefers-color-scheme: light)', color: '#FFFFFF' },
-  ],
+  viewportFit: 'cover',
+  themeColor: THEME_COLOR.dark,
 }
 
-// Inline script to prevent flash of wrong theme
+// Applies the saved theme before the first paint, so the page never flashes the wrong one
 const themeScript = `
   (function() {
     try {
-      var t = localStorage.getItem('car-care-theme') || 'dark';
+      var t = localStorage.getItem('${THEME_STORAGE_KEY}') === 'light' ? 'light' : 'dark';
       document.documentElement.setAttribute('data-theme', t);
+      var setMeta = function() {
+        var m = document.querySelector('meta[name="theme-color"]');
+        if (m) m.setAttribute('content', t === 'light' ? '${THEME_COLOR.light}' : '${THEME_COLOR.dark}');
+      };
+      setMeta();
+      document.addEventListener('DOMContentLoaded', setMeta);
     } catch(e) {}
   })();
 `
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="th" className={sarabun.variable} suppressHydrationWarning>
+    <html lang="th" className={sarabun.variable} data-theme="dark" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="font-[family-name:var(--font-sarabun)] antialiased min-h-dvh">
-        <ClientLayout>{children}</ClientLayout>
+      <body className="min-h-dvh bg-bg font-sans text-text antialiased">
+        <Providers>{children}</Providers>
       </body>
     </html>
   )
