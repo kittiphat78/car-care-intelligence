@@ -9,5 +9,5 @@ export const SectionLabel = ({ children, required }: { children: ReactNode; requ
 )
 
 export const Card = ({ children, className = '', onClick }: { children: ReactNode; className?: string; onClick?: () => void }) => (
-  <div className={`bg-[var(--surface)] rounded-[var(--radius-xl)] p-5 shadow-[var(--shadow-sm)] border border-[var(--border)] ${className}`} onClick={onClick}>{children}</div>
+  <div className={`bg-[var(--surface)] rounded-[var(--legacy-radius-xl)] p-5 shadow-[var(--shadow-sm)] border border-[var(--border)] ${className}`} onClick={onClick}>{children}</div>
 )

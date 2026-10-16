@@ -14,7 +14,7 @@ export function EnvironmentBar() {
   return (
     <div
       role="status"
-      className={`sticky top-0 z-50 w-full px-4 py-1.5 text-center text-xs font-bold ${onProductionData ? 'bg-[var(--red)] text-white' : 'bg-[var(--amber)] text-black'}`}
+      className={`sticky top-0 z-30 w-full px-4 py-1.5 text-center text-caption font-semibold text-on-primary ${onProductionData ? 'bg-danger' : 'bg-env-banner'}`}
     >
       {LABELS[APP_ENV] ?? APP_ENV}
       {onProductionData && ' · ⚠ กำลังใช้ฐานข้อมูลจริงของร้าน'}

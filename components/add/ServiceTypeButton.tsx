@@ -11,7 +11,7 @@ export function ServiceTypeButton({ active, onClick, icon, label, sublabel, colo
     <button
       type="button"
       onClick={onClick}
-      className={`relative flex items-center gap-3.5 p-4 rounded-[var(--radius-xl)] border-2 transition-all duration-150 active:scale-[0.97]
+      className={`relative flex items-center gap-3.5 p-4 rounded-[var(--legacy-radius-xl)] border-2 transition-all duration-150 active:scale-[0.97]
         ${active ? `${colors.border} ${colors.bg}` : 'border-[var(--border)] bg-[var(--surface)]'
         }`}
       aria-pressed={active}
