@@ -1,8 +1,8 @@
 /* v1 design system, kept until every page has moved to the tokens in tokens.css; C8 deletes
- * this file (design-to-code-map.md §5). It is imported into the `components` layer, so
- * Tailwind utilities used by the new UI always win over it, and its element rules (body,
- * h1…) cannot restyle new components. Radius variables are --legacy-radius-* so they do
- * not override the new --radius-* tokens.
+ * it (design-to-code-map.md §5). Class rules stay unlayered, exactly as in v1, so the old
+ * pages look the same; the new UI never uses these classes. Rules that style plain
+ * elements (body, h1, buttons…) live in legacy-base.css instead, in the `base` layer, so
+ * they cannot restyle new components. Radius variables are --legacy-radius-*.
  */
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -128,39 +128,7 @@
   color-scheme: light;
 }
 
-/* ━━━━━━━━ Reset ━━━━━━━━ */
-*, *::before, *::after {
-  box-sizing: border-box;
-  -webkit-tap-highlight-color: transparent;
-}
-input, textarea, select {
-  user-select: text;
-  font-family: inherit;
-}
-html {
-  font-size: 16px;
-  scroll-behavior: smooth;
-  -webkit-text-size-adjust: 100%;
-}
-body {
-  background: var(--bg);
-  color: var(--text-primary);
-  font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  min-height: 100dvh;
-  font-size: 1.0625rem;
-  line-height: 1.6;
-  letter-spacing: -0.01em;
-  overflow-x: hidden;
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
 
-/* ━━━━━━━━ Typography ━━━━━━━━ */
-h1 { font-size: 1.875rem; font-weight: 800; letter-spacing: -0.03em; line-height: 1.2; color: var(--text-primary); }
-h2 { font-size: 1.5rem;   font-weight: 700; letter-spacing: -0.025em; line-height: 1.25; }
-h3 { font-size: 1.1875rem;font-weight: 700; letter-spacing: -0.015em; line-height: 1.35; }
-h4 { font-size: 1rem;     font-weight: 600; letter-spacing: -0.01em;  line-height: 1.4; }
 
 /* Tabular numbers for financial data */
 .tabular-nums { font-variant-numeric: tabular-nums; }
@@ -524,28 +492,8 @@ h4 { font-size: 1rem;     font-weight: 600; letter-spacing: -0.01em;  line-heigh
 }
 
 /* ━━━━━━━━ Body scroll lock (for modals) ━━━━━━━━ */
-body.modal-open { overflow: hidden; touch-action: none; }
 
-/* ━━━━━━━━ Focus Visible ━━━━━━━━ */
-:focus-visible {
-  outline: 3px solid var(--accent);
-  outline-offset: 2px;
-  border-radius: var(--legacy-radius-sm);
-}
-input:focus-visible,
-input:focus,
-textarea:focus-visible,
-textarea:focus,
-select:focus-visible,
-select:focus,
-button:focus-visible,
-button:focus {
-  outline: none;
-}
-:focus:not(:focus-visible) { outline: none; }
 
-/* ━━━━━━━━ Selection ━━━━━━━━ */
-::selection { background: rgba(99, 102, 241, 0.25); color: inherit; }
 
 /* ━━━━━━━━ Toast ━━━━━━━━ */
 .toast-container {
@@ -628,7 +576,6 @@ button:focus {
 /* ━━━━━━━━ Responsive ━━━━━━━━ */
 @media (min-width: 768px) {
   :root, [data-theme="dark"], [data-theme="light"] { --nav-height: 64px; }
-  body { font-size: 1rem; }
   .card, .card-elevated, .card-glass, .card-interactive { border-radius: var(--legacy-radius-xl); }
 }
 @media (min-width: 1024px) {
