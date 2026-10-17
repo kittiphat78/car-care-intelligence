@@ -38,8 +38,14 @@ const eslintConfig = defineConfig([
   ...nextTs,
   {
     files: NEW_UI,
-    // v1 component kept for the old pages until they move to <Banner> (C3–C7)
-    ignores: ["components/ui/ErrorBanner.tsx"],
+    // v1 files kept until their screens are rebuilt (C3–C7); each leaves this list then
+    ignores: [
+      "components/ui/ErrorBanner.tsx",
+      "app/(app)/page.tsx",
+      "app/(app)/add/page.tsx",
+      "app/(app)/history/page.tsx",
+      "app/(auth)/login/page.tsx",
+    ],
     rules: {
       "no-restricted-syntax": ["error", ...restrictedSyntax],
     },

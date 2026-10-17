@@ -21,6 +21,17 @@ const SIZES: Record<ButtonSize, string> = {
   lg: 'min-h-14 px-5 text-body-lg font-semibold',
 }
 
+/** Classes of a Button, for a link that must look like one (e.g. "บันทึกรายการ" in SideNav) */
+export function buttonClassName({ variant = 'primary', size = 'md', fullWidth = false }: { variant?: ButtonVariant; size?: ButtonSize; fullWidth?: boolean } = {}) {
+  return cn(
+    'press focus-ring inline-flex items-center justify-center gap-2 rounded-md border border-transparent text-center select-none',
+    'disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-not-allowed',
+    VARIANTS[variant],
+    SIZES[size],
+    fullWidth && 'w-full',
+  )
+}
+
 export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'> {
   children: ReactNode
   variant?: ButtonVariant
@@ -61,14 +72,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       aria-busy={isLoading || undefined}
       data-state={isLoading ? 'loading' : undefined}
       onClick={isLoading ? (e) => e.preventDefault() : onClick}
-      className={cn(
-        'press focus-ring inline-flex items-center justify-center gap-2 rounded-md border border-transparent text-center select-none',
-        'disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-not-allowed',
-        VARIANTS[variant],
-        SIZES[size],
-        fullWidth && 'w-full',
-        className,
-      )}
+      className={cn(buttonClassName({ variant, size, fullWidth }), className)}
       {...rest}
     >
       {isLoading ? <Spinner /> : leadingIcon && <Icon name={leadingIcon} />}

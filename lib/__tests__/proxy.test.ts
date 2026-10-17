@@ -46,6 +46,8 @@ describe('proxy', () => {
     ['/', '/login'],
     ['/history', '/login?next=%2Fhistory'],
     ['/add', '/login?next=%2Fadd'],
+    ['/debts', '/login?next=%2Fdebts'],
+    ['/more', '/login?next=%2Fmore'],
     ['/history/anything?tab=expense', '/login?next=%2Fhistory%2Fanything%3Ftab%3Dexpense'],
   ])('redirects a signed-out visitor from %s to %s', async (path, target) => {
     const res = await proxy(request(path))
@@ -109,6 +111,20 @@ describe('proxy', () => {
     expect(res.headers.get('location')).toBe('https://shop.example/login')
     expect((await proxy(request('/login'))).headers.get('location')).toBeNull()
     warn.mockRestore()
+  })
+
+  it('tells the (app) layout which page is open, ignoring a value sent by the browser', async () => {
+    mockState.user = { id: 'user-1' }
+    const req = request('/history?tab=expense')
+    req.headers.set('x-app-path', '//evil.example')
+    const res = await proxy(req)
+    // NextResponse.next({ request }) forwards request headers through this middleware header
+    expect(res.headers.get('x-middleware-request-x-app-path')).toBe('/history?tab=expense')
+  })
+
+  it('does not treat a path that only starts like a protected one as protected', async () => {
+    const res = await proxy(request('/historyx'))
+    expect(res.headers.get('location')).toBeNull()
   })
 
   it('does not run on API routes or static assets', () => {
