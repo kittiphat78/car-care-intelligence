@@ -114,10 +114,10 @@ export function ChoiceGroup<V extends string>({
             onClick={() => onChange(checked && clearable ? null : option.value)}
             onKeyDown={(e) => onKeyDown(e, index)}
             className={cn(
-              'press focus-ring inline-flex items-center justify-center rounded-md border border-border-strong bg-surface text-text',
+              'press focus-ring inline-flex items-center justify-center rounded-md border bg-surface text-text',
               'hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-50',
               'aria-checked:border-2 aria-checked:font-semibold',
-              invalid && !value && 'border-2 border-danger-text',
+              invalid && !value ? 'border-2 border-danger-text' : 'border-border-strong',
               variant === 'chip'
                 ? 'min-h-11 gap-1.5 px-3.5 text-body font-medium'
                 : 'min-h-18 flex-col gap-0.5 p-2 text-body font-medium',

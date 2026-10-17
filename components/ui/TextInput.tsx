@@ -4,26 +4,30 @@ import { cn } from '@/lib/cn'
 // component-specifications.md §1.3 — 48px, 18px text (no iOS zoom), label from FormField.
 // Prefix/suffix sit inside the border (฿, search icon, clear button).
 
-export interface TextInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'prefix'> {
+export interface TextInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'prefix' | 'size'> {
   invalid?: boolean
   prefix?: ReactNode
   suffix?: ReactNode
-  /** Extra classes for the <input> itself (size, alignment) */
+  /** Extra classes for the <input> itself (text size, alignment) */
   inputClassName?: string
+  /** md = 48px; lg = 64px for plate and money fields */
+  size?: 'md' | 'lg'
 }
 
 export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function TextInput(
-  { invalid = false, prefix, suffix, className, inputClassName, disabled, ...rest },
+  { invalid = false, prefix, suffix, className, inputClassName, disabled, size = 'md', ...rest },
   ref,
 ) {
   return (
     <div
       data-state={invalid ? 'invalid' : undefined}
       className={cn(
-        'flex min-h-12 items-center gap-2 rounded-md border bg-surface px-4 text-body-lg text-text',
+        'flex items-center gap-2 rounded-md border text-body-lg text-text',
+        size === 'md' ? 'min-h-12' : 'min-h-16',
         'focus-within:border-2 focus-within:border-primary focus-within:px-[15px] focus-within:outline-3 focus-within:outline-offset-2 focus-within:outline-focus',
-        invalid ? 'border-2 border-danger-text px-[15px]' : 'border-border-strong',
-        disabled && 'bg-surface-2 opacity-70',
+        // 2px border when invalid, with 1px less padding so the text does not move
+        invalid ? 'border-2 border-danger-text px-[15px]' : 'border-border-strong px-4',
+        disabled ? 'bg-surface-2 opacity-70' : 'bg-surface',
         className,
       )}
     >

@@ -51,7 +51,7 @@ export const PlateField = forwardRef<HTMLInputElement, PlateFieldProps>(function
         autoCorrect="off"
         spellCheck={false}
         enterKeyHint="next"
-        className="min-h-16"
+        size="lg"
         inputClassName="text-center text-plate"
       />
       {below}
@@ -101,7 +101,7 @@ export const MoneyField = forwardRef<HTMLInputElement, MoneyFieldProps>(function
         aria-describedby={describedBy(id, { hint, error })}
         aria-required={required || undefined}
         prefix={<span className="text-money-input">฿</span>}
-        className="min-h-16"
+        size="lg"
         inputClassName={cn('text-right text-money-input tabular-nums', tone === 'expense' && 'text-expense')}
       />
     </FormField>
