@@ -1,4 +1,4 @@
-import { DEFAULT_CUSTOMER_NAME } from '@/types'
+import { DEFAULT_CUSTOMER_NAME, type Record as AppRecord } from '@/types'
 import { addDays, formatBangkok, startOfBangkokDay } from '@/lib/time/bangkok'
 
 /** dashboard_today(): today's totals (M006) */
@@ -119,4 +119,70 @@ export function toCustomerBreakdown(rows: CustomerTotals[]): CustomerBreakdownIt
       : { customerName, week: row.week, month: row.month, year: row.year })
   }
   return [...byName.values()].sort((a, b) => b.month.total - a.month.total || b.year.total - a.year.total)
+}
+
+// ── Redesign (C4) ────────────────────────────────────────────────────────────
+
+export interface DebtSummary {
+  total: number
+  /** Customers with something unpaid; all unnamed jobs count as one ("ลูกค้าทั่วไป") */
+  customers: number
+  cars: number
+}
+
+export function toDebtSummary(unpaid: readonly AppRecord[]): DebtSummary {
+  const names = new Set(unpaid.map((r) => (r.customer_name ?? '').trim()))
+  return { total: unpaid.reduce((sum, r) => sum + r.price, 0), customers: names.size, cars: unpaid.length }
+}
+
+/** Today's list: newest first (S03-03) */
+export function newestFirst(records: readonly AppRecord[]): AppRecord[] {
+  return [...records].sort((a, b) => b.created_at.localeCompare(a.created_at) || b.id.localeCompare(a.id))
+}
+
+/** Sentence under the chart, so the numbers do not depend on reading the bars */
+export function chartSummary(data: ReadonlyArray<{ income: number; expense: number }>): { income: number; expense: number } {
+  return data.reduce((acc, d) => ({ income: acc.income + d.income, expense: acc.expense + d.expense }), { income: 0, expense: 0 })
+}
+
+/** Greeting by Bangkok hour */
+export function greeting(hour: number): string {
+  if (hour < 12) return 'สวัสดีตอนเช้า'
+  if (hour < 17) return 'สวัสดีตอนบ่าย'
+  return 'สวัสดีตอนเย็น'
+}
+
+export type CustomerPeriodKey = 'week' | 'month' | 'year'
+
+export interface CustomerShare {
+  name: string
+  total: number
+  /** 0–100, of the period's total */
+  percent: number
+  washCount: number
+  washAmount: number
+  polishCount: number
+  polishAmount: number
+}
+
+/**
+ * Top customers for a period plus the general customer (D-04). Customers with nothing
+ * in the period are left out.
+ */
+export function topCustomers(items: readonly CustomerBreakdownItem[], period: CustomerPeriodKey, top = 4): CustomerShare[] {
+  const withSales = items.filter((i) => i[period].total > 0)
+  const grand = withSales.reduce((sum, i) => sum + i[period].total, 0)
+  const toShare = (i: CustomerBreakdownItem): CustomerShare => ({
+    name: i.customerName,
+    total: i[period].total,
+    percent: grand > 0 ? Math.round((i[period].total / grand) * 100) : 0,
+    washCount: i[period].washCount,
+    washAmount: i[period].washAmount,
+    polishCount: i[period].polishCount,
+    polishAmount: i[period].polishAmount,
+  })
+  const sorted = [...withSales].sort((a, b) => b[period].total - a[period].total)
+  const named = sorted.filter((i) => i.customerName !== DEFAULT_CUSTOMER_NAME).slice(0, top)
+  const general = sorted.find((i) => i.customerName === DEFAULT_CUSTOMER_NAME)
+  return [...named, ...(general ? [general] : [])].map(toShare)
 }

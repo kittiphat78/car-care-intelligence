@@ -38,7 +38,7 @@ import {
   type FieldError,
   type IncomeDraft,
 } from '../editor'
-import { draftKey, useDraft, usePlateVisits, useRecentCustomers, useRequestId } from '../hooks'
+import { draftKey, rememberLastSaved, useDraft, usePlateVisits, useRecentCustomers, useRequestId } from '../hooks'
 
 // RecordEditor in create mode (screen-specifications.md §4). Edit mode joins in C4.
 
@@ -209,6 +209,7 @@ export function IncomeEditor({ userId, email }: EditorProps) {
       plateRef.current?.focus()
     } else {
       draft.reset()
+      rememberLastSaved(row.client_request_id)
       router.push('/')
     }
   }

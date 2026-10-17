@@ -5,7 +5,7 @@ import { Icon, Spinner, type IconName } from './Icon'
 // component-specifications.md §1.1–1.2
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'danger-ghost' | 'success'
-export type ButtonSize = 'md' | 'lg'
+export type ButtonSize = 'sm' | 'md' | 'lg'
 
 // Each variant sets its own border colour: two border-colour utilities on one element
 // would leave the winner to stylesheet order
@@ -19,6 +19,8 @@ const VARIANTS: Record<ButtonVariant, string> = {
 }
 
 const SIZES: Record<ButtonSize, string> = {
+  // Compact header controls (still a 44px target)
+  sm: 'min-h-11 text-caption font-semibold',
   md: 'min-h-12 text-body font-semibold',
   lg: 'min-h-14 text-body-lg font-semibold',
 }
@@ -31,7 +33,7 @@ export function buttonClassName({ variant = 'primary', size = 'md', fullWidth = 
     VARIANTS[variant],
     SIZES[size],
     // Text-only buttons sit closer to their neighbours
-    variant === 'ghost' || variant === 'danger-ghost' ? 'px-3' : 'px-5',
+    variant === 'ghost' || variant === 'danger-ghost' || size === 'sm' ? 'px-3' : 'px-5',
     fullWidth && 'w-full',
   )
 }

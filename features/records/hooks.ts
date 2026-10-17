@@ -133,3 +133,27 @@ export function useRequestId() {
   }, [])
   return { idFor, clear }
 }
+
+// ── Just-saved record (RecordRow highlight, component-specifications.md §3.4) ──
+// /add remembers the request id it saved; the dashboard highlights the row with that id
+// once, then forgets it.
+
+const LAST_SAVED_KEY = 'car-care-last-saved'
+
+export function rememberLastSaved(requestId: string): void {
+  try {
+    sessionStorage.setItem(LAST_SAVED_KEY, requestId)
+  } catch {
+    // Only the highlight is lost
+  }
+}
+
+export function takeLastSaved(): string | null {
+  try {
+    const id = sessionStorage.getItem(LAST_SAVED_KEY)
+    sessionStorage.removeItem(LAST_SAVED_KEY)
+    return id
+  } catch {
+    return null
+  }
+}

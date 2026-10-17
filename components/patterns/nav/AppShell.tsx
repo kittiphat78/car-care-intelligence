@@ -23,7 +23,8 @@ export function AppShell({ children, email, dialogs, badges }: AppShellProps) {
       >
         ข้ามไปเนื้อหา
       </a>
-      <div className="min-h-dvh bg-bg text-text lg:pl-(--size-sidebar)">
+      {/* overflow-x-clip: nothing wider than the screen can make the whole page slide sideways */}
+      <div className="min-h-dvh overflow-x-clip bg-bg text-text lg:pl-(--size-sidebar)">
         <StatusBar />
         <main
           id="main"
