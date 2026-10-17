@@ -98,8 +98,8 @@ export function HistoryScreen() {
   const reload = useCallback(() => void load(filters.year), [load, filters.year])
 
   const current = data?.year === filters.year ? data : null
-  const records = current?.records.ok ? current.records.data : []
-  const expenses = current?.expenses.ok ? current.expenses.data : []
+  const records = useMemo(() => (current?.records.ok ? current.records.data : []), [current])
+  const expenses = useMemo(() => (current?.expenses.ok ? current.expenses.data : []), [current])
   const side = filters.tab === 'income' ? current?.records : current?.expenses
   const loading = !current
   const failed = side && !side.ok ? side : null

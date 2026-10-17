@@ -10,6 +10,8 @@ const NEW_UI = [
   "features/*/components/**/*.{ts,tsx}",
   "app/(app)/**/*.{ts,tsx}",
   "app/(auth)/**/*.{ts,tsx}",
+  "app/error.tsx",
+  "app/not-found.tsx",
 ];
 
 const PALETTE = "white|black|slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose";
@@ -38,11 +40,6 @@ const eslintConfig = defineConfig([
   ...nextTs,
   {
     files: NEW_UI,
-    // v1 files kept until their screens are rebuilt (C3–C7); each leaves this list then
-    ignores: [
-      "components/ui/ErrorBanner.tsx",
-      "app/(auth)/login/page.tsx",
-    ],
     rules: {
       "no-restricted-syntax": ["error", ...restrictedSyntax],
     },

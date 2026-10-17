@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
+import { useToast } from '@/components/ui/Toast'
 import { toUserMessage } from '@/lib/errors'
 import { signOut } from '../api'
 import { clearLocalDrafts } from '../drafts'
@@ -13,6 +14,7 @@ import { clearLocalDrafts } from '../drafts'
 // back button closes it (URL state, design-to-code-map.md §4).
 export function LogoutDialog({ email }: { email: string }) {
   const router = useRouter()
+  const toast = useToast()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const cancelRef = useRef<HTMLButtonElement>(null)
@@ -40,6 +42,8 @@ export function LogoutDialog({ email }: { email: string }) {
       return
     }
     clearLocalDrafts()
+    // The server could not be reached, but this device is signed out (UF-AUTH-04)
+    if (result.data.localOnly) toast.info('ออกจากระบบในเครื่องนี้แล้ว')
     router.replace('/login')
     router.refresh()
   }
