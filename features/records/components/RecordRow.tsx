@@ -18,7 +18,24 @@ export function incomeLabel(r: AppRecord): string {
   return `${job} ${r.plate} ${baht(r.price)}${unpaid} ${timeOf(r.created_at)} แตะเพื่อแก้ไข`
 }
 
-export function IncomeRow({ record, highlight = false, onOpen }: { record: AppRecord; highlight?: boolean; onOpen: (r: AppRecord) => void }) {
+/** "เพิ่มโดย x · แก้โดย y" under a row in history (component-specifications.md §3.4) */
+function auditLine(row: { created_by_email?: string; updated_by_email?: string; updated_at?: string }): string | null {
+  const who = (email?: string) => email?.split('@')[0]
+  const parts = [row.created_by_email && `เพิ่มโดย ${who(row.created_by_email)}`, row.updated_at && row.updated_by_email && `แก้โดย ${who(row.updated_by_email)}`]
+  return parts.filter(Boolean).join(' · ') || null
+}
+
+export function IncomeRow({
+  record,
+  highlight = false,
+  showAudit = false,
+  onOpen,
+}: {
+  record: AppRecord
+  highlight?: boolean
+  showAudit?: boolean
+  onOpen: (r: AppRecord) => void
+}) {
   const [, brand, note] = record.services ?? []
   const polish = record.type === 'polish'
   const unpaid = record.payment_status === 'unpaid'
@@ -54,6 +71,7 @@ export function IncomeRow({ record, highlight = false, onOpen }: { record: AppRe
           {record.seq_number != null && <span className="text-caption text-text-tertiary">#{record.seq_number}</span>}
         </span>
         {extra && <span className="truncate text-caption text-text-tertiary">{extra}</span>}
+        {showAudit && auditLine(record) && <span className="truncate text-caption text-text-tertiary">{auditLine(record)}</span>}
       </span>
       <span className="grid shrink-0 justify-items-end gap-0.5">
         <span className={cn('text-subheading font-bold tabular-nums', unpaid ? 'text-unpaid' : 'text-text')}>{baht(record.price)}</span>
@@ -63,7 +81,7 @@ export function IncomeRow({ record, highlight = false, onOpen }: { record: AppRe
   )
 }
 
-export function ExpenseRow({ expense, onOpen }: { expense: Expense; onOpen: (e: Expense) => void }) {
+export function ExpenseRow({ expense, showAudit = false, onOpen }: { expense: Expense; showAudit?: boolean; onOpen: (e: Expense) => void }) {
   return (
     <button
       type="button"
@@ -78,6 +96,7 @@ export function ExpenseRow({ expense, onOpen }: { expense: Expense; onOpen: (e: 
       <span className="grid min-w-0 flex-1 gap-0.5">
         <span className="truncate text-subheading text-text">{expense.title}</span>
         {expense.note && <span className="truncate text-caption text-text-tertiary">{expense.note}</span>}
+        {showAudit && auditLine(expense) && <span className="truncate text-caption text-text-tertiary">{auditLine(expense)}</span>}
       </span>
       <span className="grid shrink-0 justify-items-end gap-0.5">
         <span className="text-subheading font-bold text-expense tabular-nums">−{baht(expense.amount)}</span>

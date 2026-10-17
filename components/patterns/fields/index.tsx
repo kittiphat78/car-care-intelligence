@@ -308,3 +308,111 @@ export function BrandPicker({ id, label, error, brands, value, onChange, popular
     </FormField>
   )
 }
+
+// ── SearchField ──────────────────────────────────────────────────────────────
+
+export function SearchField({
+  id,
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  id: string
+  /** Accessible name; the field shows only a placeholder and an icon */
+  label: string
+  value: string
+  onChange: (value: string) => void
+  placeholder?: string
+}) {
+  return (
+    <TextInput
+      id={id}
+      type="search"
+      aria-label={label}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      enterKeyHint="search"
+      autoComplete="off"
+      placeholder={placeholder}
+      prefix={<Icon name="search" />}
+      suffix={
+        value ? (
+          <button type="button" aria-label="ล้างคำค้นหา" onClick={() => onChange('')} className="focus-ring -mr-2 grid size-11 place-items-center rounded-md text-text-secondary">
+            <Icon name="x" />
+          </button>
+        ) : undefined
+      }
+    />
+  )
+}
+
+// ── MonthYearPicker ──────────────────────────────────────────────────────────
+
+const THAI_MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม']
+
+const selectClass =
+  'focus-ring min-h-12 w-full min-w-0 appearance-none rounded-md border border-border-strong bg-surface bg-no-repeat px-3 pr-8 text-body-lg text-text'
+
+export function MonthYearPicker({
+  id,
+  label,
+  month,
+  year,
+  onChange,
+  years,
+  allowWholeYear = false,
+  error,
+}: {
+  id: string
+  label: string
+  /** 1–12, or 0 for the whole year when allowed */
+  month: number
+  year: number
+  onChange: (value: { month: number; year: number }) => void
+  /** Christian years to offer, newest first */
+  years: readonly number[]
+  allowWholeYear?: boolean
+  error?: string | null
+}) {
+  return (
+    <FormField id={id} label={label} asGroup error={error}>
+      <div role="group" aria-labelledby={labelId(id)} className="grid grid-cols-[3fr_2fr] gap-2">
+        <span className="relative">
+          <select
+            id={`${id}-month`}
+            aria-label={`${label}: เดือน`}
+            aria-invalid={!!error || undefined}
+            value={month}
+            onChange={(e) => onChange({ month: Number(e.target.value), year })}
+            className={selectClass}
+          >
+            {allowWholeYear && <option value={0}>ทั้งปี</option>}
+            {THAI_MONTHS.map((name, i) => (
+              <option key={name} value={i + 1}>
+                {name}
+              </option>
+            ))}
+          </select>
+          <Icon name="chevron-down" className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-text-secondary" />
+        </span>
+        <span className="relative">
+          <select
+            id={`${id}-year`}
+            aria-label={`${label}: ปี`}
+            value={year}
+            onChange={(e) => onChange({ month, year: Number(e.target.value) })}
+            className={selectClass}
+          >
+            {years.map((y) => (
+              <option key={y} value={y}>
+                {y + 543}
+              </option>
+            ))}
+          </select>
+          <Icon name="chevron-down" className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-text-secondary" />
+        </span>
+      </div>
+    </FormField>
+  )
+}

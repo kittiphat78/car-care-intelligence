@@ -41,7 +41,6 @@ const eslintConfig = defineConfig([
     // v1 files kept until their screens are rebuilt (C3–C7); each leaves this list then
     ignores: [
       "components/ui/ErrorBanner.tsx",
-      "app/(app)/history/page.tsx",
       "app/(auth)/login/page.tsx",
     ],
     rules: {
