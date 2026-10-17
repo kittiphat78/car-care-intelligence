@@ -62,7 +62,7 @@ export function LogoutDialog({ email }: { email: string }) {
         </>
       }
     >
-      <div className="grid gap-2 text-body">
+      <div className="grid grid-cols-1 gap-2 text-body">
         {email && <p className="text-text">บัญชี {email}</p>}
         <p className="text-text-secondary">ข้อมูลที่กรอกค้างในเครื่องนี้จะถูกล้าง</p>
         {error && (

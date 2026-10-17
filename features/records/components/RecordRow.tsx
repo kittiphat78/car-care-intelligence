@@ -56,7 +56,7 @@ export function IncomeRow({
       <span aria-hidden="true" className={cn('grid size-10 shrink-0 place-items-center rounded-md', polish ? 'bg-polish-subtle text-polish' : 'bg-wash-subtle text-wash')}>
         <Icon name={polish ? 'polish' : 'wash'} size="lg" />
       </span>
-      <span className="grid min-w-0 flex-1 gap-0.5">
+      <span className="grid grid-cols-1 min-w-0 flex-1 gap-0.5">
         <span className="flex min-w-0 items-baseline gap-2">
           <span className="truncate text-subheading text-text">{record.plate}</span>
           {brand && <span className="shrink-0 text-caption text-text-secondary">{brand}</span>}
@@ -73,7 +73,7 @@ export function IncomeRow({
         {extra && <span className="truncate text-caption text-text-tertiary">{extra}</span>}
         {showAudit && auditLine(record) && <span className="truncate text-caption text-text-tertiary">{auditLine(record)}</span>}
       </span>
-      <span className="grid shrink-0 justify-items-end gap-0.5">
+      <span className="grid grid-cols-1 shrink-0 justify-items-end gap-0.5">
         <span className={cn('text-subheading font-bold tabular-nums', unpaid ? 'text-unpaid' : 'text-text')}>{baht(record.price)}</span>
         <span className="text-caption text-text-tertiary tabular-nums">{timeOf(record.created_at)}</span>
       </span>
@@ -93,12 +93,12 @@ export function ExpenseRow({ expense, showAudit = false, onOpen }: { expense: Ex
       <span aria-hidden="true" className="grid size-10 shrink-0 place-items-center rounded-md bg-danger-subtle text-danger-text">
         <Icon name="receipt" size="lg" />
       </span>
-      <span className="grid min-w-0 flex-1 gap-0.5">
+      <span className="grid grid-cols-1 min-w-0 flex-1 gap-0.5">
         <span className="truncate text-subheading text-text">{expense.title}</span>
         {expense.note && <span className="truncate text-caption text-text-tertiary">{expense.note}</span>}
         {showAudit && auditLine(expense) && <span className="truncate text-caption text-text-tertiary">{auditLine(expense)}</span>}
       </span>
-      <span className="grid shrink-0 justify-items-end gap-0.5">
+      <span className="grid grid-cols-1 shrink-0 justify-items-end gap-0.5">
         <span className="text-subheading font-bold text-expense tabular-nums">−{baht(expense.amount)}</span>
         <span className="text-caption text-text-tertiary tabular-nums">{timeOf(expense.created_at)}</span>
       </span>

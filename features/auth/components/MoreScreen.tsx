@@ -19,7 +19,7 @@ const DATABASE = process.env.NEXT_PUBLIC_APP_DATABASE ?? 'unknown'
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <Card as="section" aria-label={title} className="grid gap-2">
+    <Card as="section" aria-label={title} className="grid grid-cols-1 gap-2">
       <h2 className="text-subheading text-text">{title}</h2>
       {children}
     </Card>
@@ -33,7 +33,7 @@ export function MoreScreen({ email }: { email: string }) {
   const env = envLabel(APP_ENV, DATABASE)
 
   return (
-    <div className="mx-auto grid max-w-140 gap-4 pb-6">
+    <div className="mx-auto grid max-w-140 grid-cols-1 gap-4 pb-6">
       <PageHeader title="เพิ่มเติม" />
 
       <Section title="บัญชี">

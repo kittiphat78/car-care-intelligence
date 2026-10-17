@@ -226,13 +226,13 @@ export function IncomeEditor({ userId, email }: EditorProps) {
   }
 
   return (
-    <form noValidate onSubmit={onSubmit} aria-busy={busy || undefined} className="grid gap-5">
+    <form noValidate onSubmit={onSubmit} aria-busy={busy || undefined} className="grid grid-cols-1 gap-5">
       {draft.restored && <RestoredBanner onClear={() => draft.reset()} />}
       <FormErrorSummary errors={errors} attempt={attempt} />
       <FailureBanner error={failure} />
 
-      <div className="grid gap-5 lg:grid-cols-2 lg:gap-x-8">
-        <div className="grid content-start gap-5">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 lg:gap-x-8">
+        <div className="grid grid-cols-1 content-start gap-5">
           <DateField id="income-date" label="วันที่ทำรายการ" value={day} onChange={setDay} today={today} />
 
           <FormField id="income-type" label="ประเภทงาน" required asGroup error={errorFor(errors, 'income-type')}>
@@ -277,7 +277,7 @@ export function IncomeEditor({ userId, email }: EditorProps) {
           <MoneyField id="income-price" label="ราคา (บาท)" required value={d.price} onChange={(v) => set('price', v)} error={errorFor(errors, 'income-price')} />
         </div>
 
-        <div className="grid content-start gap-5">
+        <div className="grid grid-cols-1 content-start gap-5">
           <FormField id="income-payment" label="สถานะการชำระ" asGroup>
             <ChoiceGroup
               labelledBy={labelId('income-payment')}
@@ -412,13 +412,13 @@ export function ExpenseEditor({ userId, email }: EditorProps) {
   }
 
   return (
-    <form noValidate onSubmit={onSubmit} aria-busy={busy || undefined} className="grid gap-5">
+    <form noValidate onSubmit={onSubmit} aria-busy={busy || undefined} className="grid grid-cols-1 gap-5">
       {draft.restored && <RestoredBanner onClear={() => draft.reset()} />}
       <FormErrorSummary errors={errors} attempt={attempt} />
       <FailureBanner error={failure} />
 
-      <div className="grid gap-5 lg:grid-cols-2 lg:gap-x-8">
-        <div className="grid content-start gap-5">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 lg:gap-x-8">
+        <div className="grid grid-cols-1 content-start gap-5">
           <DateField id="expense-date" label="วันที่ทำรายการ" value={day} onChange={setDay} today={today} />
           <MoneyField
             ref={amountRef}
@@ -431,7 +431,7 @@ export function ExpenseEditor({ userId, email }: EditorProps) {
             error={errorFor(errors, 'expense-amount')}
           />
         </div>
-        <div className="grid content-start gap-5">
+        <div className="grid grid-cols-1 content-start gap-5">
           <FormField
             id="expense-title"
             label="จ่ายค่าอะไร"

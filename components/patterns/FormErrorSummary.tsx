@@ -36,7 +36,7 @@ export function FormErrorSummary({ errors, attempt }: FormErrorSummaryProps) {
         <Icon name="alert" />
         กรุณาแก้ไข {errors.length} ช่อง
       </p>
-      <ul className="mt-1 grid gap-1 pl-7">
+      <ul className="mt-1 grid grid-cols-1 gap-1 pl-7">
         {errors.map((e) => (
           <li key={e.id}>
             <a

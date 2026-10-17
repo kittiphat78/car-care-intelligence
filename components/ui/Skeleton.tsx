@@ -21,7 +21,7 @@ export function SkeletonGroup({ children, label = 'กำลังโหลด�
 /** One line of body text (or several) */
 export function SkeletonText({ lines = 1, className }: { lines?: number; className?: string }) {
   return (
-    <div className={cn('grid gap-2', className)}>
+    <div className={cn('grid grid-cols-1 gap-2', className)}>
       {Array.from({ length: lines }, (_, i) => (
         <Skeleton key={i} className={cn('h-4', i === lines - 1 && lines > 1 ? 'w-3/5' : 'w-full')} />
       ))}
@@ -39,7 +39,7 @@ export function SkeletonRow({ className }: { className?: string }) {
   return (
     <div className={cn('flex items-center gap-3 py-3', className)}>
       <Skeleton className="size-10 rounded-md" />
-      <div className="grid flex-1 gap-2">
+      <div className="grid grid-cols-1 flex-1 gap-2">
         <Skeleton className="h-4 w-2/5" />
         <Skeleton className="h-3.5 w-1/4" />
       </div>

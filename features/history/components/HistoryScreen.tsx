@@ -135,8 +135,10 @@ export function HistoryScreen() {
   const now = bangkokParts()
   const exportDefault = { year: filters.year, month: filters.month === 0 ? (filters.year === now.year ? now.month : 12) : filters.month }
 
+  // grid-cols-1 = minmax(0, 1fr): nothing inside (e.g. an Android <select>, which is as
+  // wide as its longest option) can make the column wider than the screen
   return (
-    <div className="grid gap-4 pb-4">
+    <div className="grid grid-cols-1 gap-4 pb-4">
       <header className="flex flex-wrap items-end justify-between gap-3 pt-6">
         <h1 className="text-title text-text">ประวัติ</h1>
         <div className="w-full sm:w-auto sm:min-w-72">
@@ -163,7 +165,7 @@ export function HistoryScreen() {
         ]}
       />
 
-      <section id={tabPanelId('history', filters.tab)} role="tabpanel" aria-labelledby={tabId('history', filters.tab)} className="grid gap-4">
+      <section id={tabPanelId('history', filters.tab)} role="tabpanel" aria-labelledby={tabId('history', filters.tab)} className="grid grid-cols-1 gap-4">
         <PeriodSummary filters={filters} records={current?.records} expenses={current?.expenses} onExport={() => toggleExport(true)} />
 
         <FilterPanel filters={filters} query={query} onQuery={setQuery} onChange={setFilters} count={filterCount} onClear={clearFilters} />
@@ -233,8 +235,8 @@ function PeriodSummary({
   const id = useId()
   const side = filters.tab === 'income' ? records : expenses
   return (
-    <Card as="section" aria-labelledby={id} className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
-      <div className="grid gap-3">
+    <Card as="section" aria-labelledby={id} className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
+      <div className="grid grid-cols-1 gap-3">
         <h2 id={id} className="text-label text-text-secondary">
           {filters.tab === 'income' ? 'รายรับรวม' : 'รายจ่ายรวม'} {periodLabel(filters)}
         </h2>
@@ -307,7 +309,7 @@ function FilterPanel({
   const [open, setOpen] = useState(!!(filters.from || filters.to || (filters.job !== 'all' && filters.tab === 'income')))
   const panelId = useId()
   return (
-    <div className="grid gap-3">
+    <div className="grid grid-cols-1 gap-3">
       <div className="flex gap-2">
         <div className="min-w-0 flex-1">
           <SearchField
@@ -322,7 +324,7 @@ function FilterPanel({
           ตัวกรอง{count > 0 ? ` (${count})` : ''}
         </Button>
       </div>
-      <div id={panelId} className={cn('grid gap-3 lg:grid lg:grid-cols-[1fr_1fr_auto] lg:items-end', open ? 'grid' : 'hidden')}>
+      <div id={panelId} className={cn('grid-cols-1 gap-3 lg:grid lg:grid-cols-[1fr_1fr_auto] lg:items-end', open ? 'grid' : 'hidden')}>
         <div className="grid grid-cols-2 gap-2 lg:col-span-2">
           <FormField id="history-from" label="ตั้งแต่วันที่">
             <TextInput id="history-from" type="date" value={filters.from} onChange={(e) => onChange({ from: e.target.value })} />
@@ -394,12 +396,12 @@ function RecordList({
 
   return (
     <>
-      <div className="grid gap-4 lg:hidden">
+      <div className="grid grid-cols-1 gap-4 lg:hidden">
         {groups.map((g) => (
           <section key={g.day} aria-label={g.label}>
             <DayGroupHeader group={g} kind={kind} />
             <Card className="p-2!">
-              <ul className="grid divide-y divide-border">
+              <ul className="grid grid-cols-1 divide-y divide-border">
                 {(g.items as Array<AppRecord | Expense>).map((row) => (
                   <li key={row.id}>
                     {kind === 'income' ? (
@@ -423,7 +425,7 @@ function RecordList({
 
 function DayGroupHeader({ group, kind }: { group: DayGroup<AppRecord> | DayGroup<Expense>; kind: 'income' | 'expense' }) {
   return (
-    <h2 className="sticky top-0 z-10 -mx-1 mb-2 flex items-baseline justify-between gap-3 bg-bg px-1 py-2">
+    <h2 className="sticky top-0 z-10 -mx-1 mb-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 bg-bg px-1 py-2">
       <span className="text-body font-semibold text-text">{group.label}</span>
       <span className="flex items-baseline gap-2">
         {kind === 'income' && (

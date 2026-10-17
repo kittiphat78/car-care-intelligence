@@ -97,8 +97,8 @@ function ExportBody({ onClose, defaultMonth, years, loaded }: ExportDialogProps)
         </>
       }
     >
-      <div className="grid gap-5 pb-2">
-        <div className="grid gap-2">
+      <div className="grid grid-cols-1 gap-5 pb-2">
+        <div className="grid grid-cols-1 gap-2">
           <ChoiceGroup label="แบบไฟล์" columns={2} value={mode} onChange={(v) => v && setMode(v)} options={MODES} />
           <p className="text-caption text-text-secondary">{MODES.find((m) => m.value === mode)!.hint}</p>
         </div>

@@ -156,7 +156,7 @@ function EditBody({ target, onClose, onChanged }: { target: EditTarget; onClose:
   }
 
   const footer: ReactNode = confirmDelete ? (
-    <div className="grid w-full gap-2">
+    <div className="grid grid-cols-1 w-full gap-2">
       <p className="text-body font-semibold text-text">ลบ {summary}?</p>
       <div className="flex gap-3 *:flex-1">
         <Button ref={cancelDeleteRef} variant="secondary" onClick={() => setConfirmDelete(false)} disabled={busy === 'delete'}>
@@ -197,7 +197,7 @@ function EditBody({ target, onClose, onChanged }: { target: EditTarget; onClose:
         description={`${isIncome ? (row as AppRecord).plate : (row as Expense).title} · ${thaiDate(when.date)}`}
         footer={footer}
       >
-        <div className="grid gap-5 pb-2">
+        <div className="grid grid-cols-1 gap-5 pb-2">
           <FormErrorSummary errors={errors} attempt={attempt} />
           {failure && (
             <Banner tone="danger" title={failure.code === 'CONFLICT' ? 'มีการแก้รายการนี้จากเครื่องอื่น' : 'บันทึกไม่สำเร็จ'}>
@@ -205,7 +205,7 @@ function EditBody({ target, onClose, onChanged }: { target: EditTarget; onClose:
             </Banner>
           )}
 
-          <div className="grid gap-3 md:grid-cols-[3fr_2fr]">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-[3fr_2fr]">
             <DateField id="edit-date" label="วันที่" value={day} onChange={setDay} />
             <TimeField id="edit-time" label="เวลา" value={time} onChange={setTime} />
           </div>

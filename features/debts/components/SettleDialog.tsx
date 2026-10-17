@@ -83,7 +83,7 @@ function SettleBody({ group, onClose, onSettled }: { group: DebtGroup; onClose: 
         </>
       }
     >
-      <div className="grid gap-3 text-body">
+      <div className="grid grid-cols-1 gap-3 text-body">
         <dl className="grid grid-cols-2 gap-y-1">
           <dt className="text-text-secondary">จำนวน</dt>
           <dd className="text-right font-semibold text-text tabular-nums">{count} คัน</dd>
