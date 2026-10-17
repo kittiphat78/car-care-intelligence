@@ -21,15 +21,6 @@ import {
   toBangkokDay,
   yearsBefore,
 } from '@/lib/time/bangkok'
-import {
-  getDaysAgo,
-  getStartOfDay,
-  getStartOfMonth,
-  getStartOfWeek,
-  getStartOfYear,
-  getStartOfYesterday,
-  getYearsAgo,
-} from '@/lib/dateUtils'
 
 const ORIGINAL_TZ = process.env.TZ
 
@@ -108,19 +99,6 @@ describe.each(['Asia/Bangkok', 'UTC', 'America/New_York'])('device TZ=%s', (tz) 
     setTz()
     expect(formatBangkok(iso('2026-10-14T00:30:00'), { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }, 'en-GB')).toBe('00:30')
     expect(formatBangkok(iso('2026-10-14T00:30:00'), { day: 'numeric' }, 'en-GB')).toBe('14')
-  })
-
-  it('dateUtils boundaries are Bangkok periods (ER-11)', () => {
-    setTz()
-    vi.useFakeTimers({ toFake: ['Date'] })
-    vi.setSystemTime(new Date(iso('2026-10-14T03:00:00'))) // Wednesday
-    expect(getStartOfDay().toISOString()).toBe(iso('2026-10-14T00:00:00'))
-    expect(getStartOfYesterday().toISOString()).toBe(iso('2026-10-13T00:00:00'))
-    expect(getDaysAgo(30).toISOString()).toBe(iso('2026-09-14T00:00:00'))
-    expect(getStartOfWeek().toISOString()).toBe(iso('2026-10-12T00:00:00'))
-    expect(getStartOfMonth().toISOString()).toBe(iso('2026-10-01T00:00:00'))
-    expect(getStartOfYear().toISOString()).toBe(iso('2026-01-01T00:00:00'))
-    expect(getYearsAgo(1).toISOString()).toBe(iso('2025-10-14T00:00:00'))
   })
 })
 

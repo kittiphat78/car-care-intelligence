@@ -2,17 +2,9 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 
-// Design-system rules (S04-05) for code written against the new tokens. Old pages are
-// left alone until they move to the new UI; C8 then removes the legacy CSS.
-const NEW_UI = [
-  "components/ui/**/*.{ts,tsx}",
-  "components/patterns/**/*.{ts,tsx}",
-  "features/*/components/**/*.{ts,tsx}",
-  "app/(app)/**/*.{ts,tsx}",
-  "app/(auth)/**/*.{ts,tsx}",
-  "app/error.tsx",
-  "app/not-found.tsx",
-];
+// Design-system rules (S04-05). Since C8 every screen is on the new design, so they
+// cover all UI code.
+const NEW_UI = ["app/**/*.{ts,tsx}", "components/**/*.{ts,tsx}", "features/**/*.{ts,tsx}"];
 
 const PALETTE = "white|black|slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose";
 const COLOR_UTIL = "bg|text|border|ring|outline|fill|stroke|from|via|to|shadow|divide|decoration|placeholder|caret|accent";
