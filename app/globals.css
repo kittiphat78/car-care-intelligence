@@ -43,6 +43,11 @@
   }
 }
 
+/* Toasts sit above the save bar on pages that have one (component-specifications.md §1.9) */
+:root:has([data-action-bar]) {
+  --toast-offset: calc(var(--size-nav-bottom) + 96px);
+}
+
 /* No page scroll behind an open dialog */
 html:has(dialog[open]) {
   overflow: hidden;
