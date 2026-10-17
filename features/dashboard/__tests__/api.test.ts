@@ -22,7 +22,8 @@ vi.mock('@/lib/supabase', () => ({
   },
 }))
 
-import { loadDashboard, settleRecords } from '@/features/dashboard/api'
+import { loadDashboard } from '@/features/dashboard/api'
+import { settleRecords } from '@/features/debts/api'
 
 describe('loadDashboard', () => {
   beforeEach(() => {

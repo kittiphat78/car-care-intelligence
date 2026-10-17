@@ -1,21 +1,18 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { useEffect, useId, useMemo, useState } from 'react'
 import { bangkokParts, formatBangkok, startOfBangkokDay } from '@/lib/time/bangkok'
 import { toUserMessage } from '@/lib/errors'
 import { buttonClassName, Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Icon } from '@/components/ui/Icon'
 import { SkeletonGroup, SkeletonRow } from '@/components/ui/Skeleton'
-import { useToast } from '@/components/ui/Toast'
 import { EmptyState, ErrorState } from '@/components/patterns/EmptyState'
 import { IncomeRow } from '@/features/records/components/RecordRow'
-import { EditRecordDialog, type EditTarget } from '@/features/records/components/EditRecordDialog'
-import { getEntry } from '@/features/records/api'
+import { EditRecordDialog } from '@/features/records/components/EditRecordDialog'
+import { useEditParam } from '@/features/records/useEditParam'
 import { takeLastSaved } from '@/features/records/hooks'
-import type { Record as AppRecord } from '@/types'
 import { useDashboardData } from '../hooks'
 import { greeting, newestFirst, toCustomerBreakdown, toDebtSummary, toStats } from '../logic'
 import { ChartCard } from './ChartCard'
@@ -31,10 +28,6 @@ const messageOf = <T,>(r: { ok: true; data: T } | { ok: false; error: Parameters
   r && !r.ok ? toUserMessage(r.error) : undefined
 
 export function DashboardScreen({ email }: { email: string }) {
-  const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const toast = useToast()
   const { day, data, loading, refreshing, loadedAt, refresh } = useDashboardData()
   const { weather, refetch: refetchWeather, isRefetching: weatherRefreshing } = useDashboardWeather()
   const weatherDetail = useWeatherDetail()
@@ -63,45 +56,7 @@ export function DashboardScreen({ email }: { email: string }) {
   }, [data])
 
   // ── Edit dialog in the URL (?edit=income:<id>) so the back button closes it ──
-  const editParam = searchParams.get('edit')
-  const [fetched, setFetched] = useState<EditTarget | null>(null)
-  const openedHere = useRef(false)
-  const editId = editParam?.startsWith('income:') ? editParam.slice('income:'.length) : null
-  const inList = editId ? records.find((r) => r.id === editId) : undefined
-  const target: EditTarget | null = inList ? { kind: 'income', row: inList } : fetched?.row.id === editId ? fetched : null
-
-  const closeEdit = useCallback(() => {
-    if (openedHere.current) {
-      openedHere.current = false
-      router.back()
-    } else {
-      router.replace(pathname, { scroll: false })
-    }
-  }, [router, pathname])
-
-  // A link to a record that is not in today's list: look it up once
-  useEffect(() => {
-    if (!editId || inList || loading || fetched?.row.id === editId) return
-    let cancelled = false
-    void getEntry<AppRecord>('records', editId).then((result) => {
-      if (cancelled) return
-      if (result.ok && result.data) setFetched({ kind: 'income', row: result.data })
-      else {
-        toast.info('ไม่พบรายการนี้ อาจถูกลบไปแล้ว')
-        router.replace(pathname, { scroll: false })
-      }
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [editId, inList, loading, fetched, toast, router, pathname])
-
-  function openEdit(r: AppRecord) {
-    openedHere.current = true
-    const params = new URLSearchParams(searchParams.toString())
-    params.set('edit', `income:${r.id}`)
-    router.push(`${pathname}?${params.toString()}`, { scroll: false })
-  }
+  const edit = useEditParam({ income: records, ready: !loading })
 
   const dateLine = formatBangkok(startOfBangkokDay(day), { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' })
   const updatedAt = loadedAt ? formatBangkok(loadedAt, { hour: '2-digit', minute: '2-digit', hour12: false }) : null
@@ -184,7 +139,7 @@ export function DashboardScreen({ email }: { email: string }) {
               <ul className="-mx-2 grid divide-y divide-border">
                 {visible.map((r) => (
                   <li key={r.id}>
-                    <IncomeRow record={r} highlight={!!highlight && r.client_request_id === highlight} onOpen={openEdit} />
+                    <IncomeRow record={r} highlight={!!highlight && r.client_request_id === highlight} onOpen={(row) => edit.open('income', row.id)} />
                   </li>
                 ))}
               </ul>
@@ -206,7 +161,7 @@ export function DashboardScreen({ email }: { email: string }) {
         </div>
       </div>
 
-      <EditRecordDialog target={target} onClose={closeEdit} onChanged={refresh} />
+      <EditRecordDialog target={edit.target} onClose={edit.close} onChanged={refresh} />
       <WeatherDetail
         open={weatherDetail.open}
         onClose={weatherDetail.hide}
