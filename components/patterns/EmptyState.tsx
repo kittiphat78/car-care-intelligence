@@ -20,7 +20,7 @@ export function EmptyState({
   className?: string
 }) {
   return (
-    <div className={cn('grid justify-items-center gap-2 px-4 py-8 text-center', className)}>
+    <div className={cn('grid grid-cols-1 justify-items-center gap-2 px-4 py-8 text-center', className)}>
       <Icon name={icon} className="size-10 text-text-tertiary" />
       <p className="text-subheading text-text">{title}</p>
       {children && <p className="max-w-80 text-body text-text-secondary">{children}</p>}
@@ -43,7 +43,7 @@ export function ErrorState({
   className?: string
 }) {
   return (
-    <div role="alert" className={cn('grid justify-items-center gap-2 px-4 py-6 text-center', className)}>
+    <div role="alert" className={cn('grid grid-cols-1 justify-items-center gap-2 px-4 py-6 text-center', className)}>
       <Icon name="alert" className="size-10 text-danger-text" />
       <p className="text-subheading text-text">{title}</p>
       {message && <p className="max-w-80 text-caption text-text-secondary">{message}</p>}

@@ -25,7 +25,7 @@ function DebtRow({ record, today, onOpen }: { record: AppRecord; today: string; 
       aria-label={`${record.plate} ${date} ค้าง ${days} วัน ${baht(record.price)} แตะเพื่อแก้ไข`}
       className="focus-ring flex w-full items-center gap-3 rounded-md px-2 py-2.5 text-left hover:bg-surface-2"
     >
-      <span className="grid min-w-0 flex-1">
+      <span className="grid grid-cols-1 min-w-0 flex-1">
         <span className="truncate text-body font-semibold text-text">{record.plate}</span>
         <span className="truncate text-caption text-text-tertiary">
           {date} · {days} วัน{note ? ` · ${note}` : ''}
@@ -53,7 +53,7 @@ export function DebtCustomerCard({ group, today, online, billing, onBill, onSett
   const hidden = group.items.length - FIRST_ROWS
 
   return (
-    <Card as="article" aria-labelledby={id} className="grid content-start gap-3">
+    <Card as="article" aria-labelledby={id} className="grid grid-cols-1 content-start gap-3">
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 id={id} className="truncate text-heading text-text">
@@ -69,7 +69,7 @@ export function DebtCustomerCard({ group, today, online, billing, onBill, onSett
         <p className="shrink-0 text-title text-unpaid tabular-nums">{baht(group.total)}</p>
       </header>
 
-      <ul className="-mx-2 grid divide-y divide-border border-y border-border">
+      <ul className="-mx-2 grid grid-cols-1 divide-y divide-border border-y border-border">
         {rows.map((r) => (
           <li key={r.id}>
             <DebtRow record={r} today={today} onOpen={onOpenRow} />

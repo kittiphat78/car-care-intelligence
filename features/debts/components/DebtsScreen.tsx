@@ -101,7 +101,7 @@ export function DebtsScreen() {
   }
 
   return (
-    <div className="grid gap-4 pb-4">
+    <div className="grid grid-cols-1 gap-4 pb-4">
       <header className="flex flex-wrap items-end justify-between gap-3 pt-6">
         <div className="min-w-0">
           <h1 className="text-title text-text">ค้างชำระ</h1>
@@ -128,7 +128,7 @@ export function DebtsScreen() {
       </header>
 
       {unpaid === null ? (
-        <SkeletonGroup className="grid gap-4 md:grid-cols-2">
+        <SkeletonGroup className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <SkeletonCard className="h-64" />
           <SkeletonCard className="h-64" />
           <SkeletonCard className="h-64" />
@@ -148,7 +148,7 @@ export function DebtsScreen() {
           ทุกรายการได้รับชำระแล้ว
         </EmptyState>
       ) : (
-        <div className="grid items-start gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
           {groups.map((g) => (
             <DebtCustomerCard
               key={g.key}

@@ -70,19 +70,19 @@ export function WeatherDetail({
   return (
     <Dialog open={open} onClose={onClose} title={`สภาพอากาศ · ${AREA}`}>
       {!weather ? (
-        <div className="grid gap-3 py-2">
+        <div className="grid grid-cols-1 gap-3 py-2">
           <p className="text-body text-text-secondary">โหลดข้อมูลอากาศไม่สำเร็จ</p>
           <Button variant="secondary" leadingIcon="refresh" onClick={onRefresh} isLoading={refreshing}>
             ลองใหม่
           </Button>
         </div>
       ) : (
-        <div className="grid gap-4 pb-2">
+        <div className="grid grid-cols-1 gap-4 pb-2">
           <p className="flex items-center gap-3">
             <span aria-hidden="true" className="text-display leading-none">
               {weather.icon}
             </span>
-            <span className="grid">
+            <span className="grid grid-cols-1">
               <span className="text-title text-text tabular-nums">{weather.temp}°C</span>
               <span className="text-body text-text-secondary">{weather.condition}</span>
             </span>

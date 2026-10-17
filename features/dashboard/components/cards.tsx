@@ -44,7 +44,7 @@ function StatItem({
   trend?: { up: boolean; pct: number }
 }) {
   return (
-    <div className="grid min-w-0 gap-0.5">
+    <div className="grid grid-cols-1 min-w-0 gap-0.5">
       <p className="flex items-center gap-1.5 text-caption font-medium text-text-secondary">
         <Icon name={icon} className={tone} />
         {label}
@@ -67,7 +67,7 @@ export function MoneyHero({ stats, error, onRetry }: { stats: DashboardStats | n
   const id = useId()
   const negative = (stats?.netProfit ?? 0) < 0
   return (
-    <Card as="section" aria-labelledby={id} className="grid gap-4">
+    <Card as="section" aria-labelledby={id} className="grid grid-cols-1 gap-4">
       <div>
         <h2 id={id} className="text-label text-text-secondary">
           เงินสดสุทธิวันนี้
@@ -75,7 +75,7 @@ export function MoneyHero({ stats, error, onRetry }: { stats: DashboardStats | n
         {error ? (
           <ErrorState message={error} onRetry={onRetry} />
         ) : !stats ? (
-          <SkeletonGroup className="mt-2 grid gap-2">
+          <SkeletonGroup className="mt-2 grid grid-cols-1 gap-2">
             <SkeletonMoney />
             <SkeletonText className="w-40" />
           </SkeletonGroup>
@@ -115,7 +115,7 @@ export function DebtSummaryCard({ debt }: { debt: DebtSummary }) {
   if (debt.total <= 0) return null
   return (
     <Link href="/debts" className="focus-ring block rounded-lg">
-      <Card tone="warning" interactive className="grid gap-1">
+      <Card tone="warning" interactive className="grid grid-cols-1 gap-1">
         <p className="flex items-center gap-2 text-label text-warning-text">
           <Icon name="clock" />
           ค้างชำระ
@@ -161,9 +161,9 @@ export function CustomerBreakdownCard({ items, error, onRetry }: { items: Custom
       ) : rows.length === 0 ? (
         <p className="py-4 text-center text-body text-text-secondary">ยังไม่มีรายรับในช่วงนี้</p>
       ) : (
-        <ul className="grid gap-4">
+        <ul className="grid grid-cols-1 gap-4">
           {rows.map((r) => (
-            <li key={r.name} className="grid gap-1.5">
+            <li key={r.name} className="grid grid-cols-1 gap-1.5">
               <div className="flex items-baseline justify-between gap-3">
                 <span className="truncate text-body font-semibold text-text">{r.name}</span>
                 <span className="shrink-0 text-body font-bold text-text tabular-nums">{baht(r.total)}</span>

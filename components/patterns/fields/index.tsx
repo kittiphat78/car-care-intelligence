@@ -377,8 +377,8 @@ export function MonthYearPicker({
 }) {
   return (
     <FormField id={id} label={label} asGroup error={error}>
-      <div role="group" aria-labelledby={labelId(id)} className="grid grid-cols-[3fr_2fr] gap-2">
-        <span className="relative">
+      <div role="group" aria-labelledby={labelId(id)} className="grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-2">
+        <span className="relative min-w-0">
           <select
             id={`${id}-month`}
             aria-label={`${label}: เดือน`}
@@ -396,7 +396,7 @@ export function MonthYearPicker({
           </select>
           <Icon name="chevron-down" className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-text-secondary" />
         </span>
-        <span className="relative">
+        <span className="relative min-w-0">
           <select
             id={`${id}-year`}
             aria-label={`${label}: ปี`}

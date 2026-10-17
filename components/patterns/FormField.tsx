@@ -36,7 +36,7 @@ export function FormField({ id, label, required, hint, error, length, asGroup, a
   const left = length ? length.max - length.value : null
   const LabelTag = asGroup ? 'p' : 'label'
   return (
-    <div className={cn('grid min-w-0 gap-1.5', className)}>
+    <div className={cn('grid min-w-0 grid-cols-1 gap-1.5', className)}>
       <div className="flex items-center gap-2">
         <LabelTag id={labelId(id)} htmlFor={asGroup ? undefined : id} className="text-label text-text">
           {label}

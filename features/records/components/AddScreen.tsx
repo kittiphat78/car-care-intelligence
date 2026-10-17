@@ -23,7 +23,7 @@ export function AddScreen({ userId, email }: EditorProps) {
   }
 
   return (
-    <div className="grid gap-4 pb-4">
+    <div className="grid grid-cols-1 gap-4 pb-4">
       <PageHeader title="บันทึกรายการ" />
       <Tabs
         idBase="add"

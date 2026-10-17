@@ -62,7 +62,7 @@ export function DashboardScreen({ email }: { email: string }) {
   const updatedAt = loadedAt ? formatBangkok(loadedAt, { hour: '2-digit', minute: '2-digit', hour12: false }) : null
 
   return (
-    <div className="grid gap-4 pb-4">
+    <div className="grid grid-cols-1 gap-4 pb-4">
       <header className="flex flex-wrap items-end justify-between gap-3 pt-6">
         <div className="min-w-0">
           <p className="text-caption text-text-secondary">{dateLine}</p>
@@ -94,7 +94,7 @@ export function DashboardScreen({ email }: { email: string }) {
 
       <RainAlert weather={weather} />
 
-      <div className="grid items-start gap-4 lg:grid-cols-12">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-12">
         <div className="lg:col-span-7 lg:row-start-1">
           <MoneyHero stats={stats} error={messageOf(data?.today)} onRetry={refresh} />
         </div>
@@ -136,7 +136,7 @@ export function DashboardScreen({ email }: { email: string }) {
             />
           ) : (
             <>
-              <ul className="-mx-2 grid divide-y divide-border">
+              <ul className="-mx-2 grid grid-cols-1 divide-y divide-border">
                 {visible.map((r) => (
                   <li key={r.id}>
                     <IncomeRow record={r} highlight={!!highlight && r.client_request_id === highlight} onOpen={(row) => edit.open('income', row.id)} />

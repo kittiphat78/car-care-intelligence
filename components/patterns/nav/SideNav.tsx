@@ -40,7 +40,7 @@ export function SideNav({ email, badges = {} }: SideNavProps) {
       </div>
 
       <nav aria-label="เมนูหลัก" className="flex-1 overflow-y-auto px-3">
-        <ul className="grid gap-1">
+        <ul className="grid grid-cols-1 gap-1">
           {NAV_ITEMS.filter((item) => !item.isPrimary).map((item) => {
             const active = isActivePath(pathname, item.href)
             const count = badges[item.href] ?? 0
@@ -69,7 +69,7 @@ export function SideNav({ email, badges = {} }: SideNavProps) {
         </ul>
       </nav>
 
-      <div className="grid gap-2 border-t border-border px-4 pt-3 pb-5">
+      <div className="grid grid-cols-1 gap-2 border-t border-border px-4 pt-3 pb-5">
         <Switch label="ธีมมืด" checked={theme === 'dark'} onChange={(dark) => setTheme(dark ? 'dark' : 'light')} />
         {email && <p className="truncate text-caption text-text-secondary">{email}</p>}
         <Link

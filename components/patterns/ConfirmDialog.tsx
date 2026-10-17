@@ -56,7 +56,7 @@ export function ConfirmDialog({
         </>
       }
     >
-      {children && <div className="grid gap-2 text-body text-text-secondary">{children}</div>}
+      {children && <div className="grid grid-cols-1 gap-2 text-body text-text-secondary">{children}</div>}
     </Dialog>
   )
 }

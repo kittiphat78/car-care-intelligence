@@ -34,6 +34,9 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
       {prefix && <span className="shrink-0 text-text-tertiary">{prefix}</span>}
       <input
         ref={ref}
+        // size=1: no built-in 20-character minimum width, so the box can be as narrow
+        // as the screen allows (the width comes from flex-1)
+        size={1}
         disabled={disabled}
         aria-invalid={invalid || undefined}
         className={cn('h-full min-w-0 flex-1 bg-transparent py-2 outline-none placeholder:text-text-tertiary disabled:cursor-not-allowed', inputClassName)}
