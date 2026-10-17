@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { useRef, useState } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Badge, Banner, Button, ChoiceGroup, Dialog, Icon, IconButton, SkeletonGroup, SkeletonRow, ToastProvider, useToast, TOAST_DURATION_MS } from '@/components/ui'
+import { Badge, Banner, Button, buttonClassName, ChoiceGroup, Dialog, Icon, IconButton, SkeletonGroup, SkeletonRow, ToastProvider, useToast, TOAST_DURATION_MS } from '@/components/ui'
 
 afterEach(() => {
   vi.useRealTimers()
@@ -26,6 +26,16 @@ describe('Button', () => {
     fireEvent.click(button)
     expect(onClick).not.toHaveBeenCalled()
   })
+
+  it.each(['primary', 'secondary', 'ghost', 'danger', 'danger-ghost', 'success'] as const)(
+    '%s sets exactly one border colour and one horizontal padding',
+    (variant) => {
+      // Two utilities for the same property would leave the result to stylesheet order
+      const classes = buttonClassName({ variant }).split(' ')
+      expect(classes.filter((c) => /^border-(transparent|border|primary|danger|success)/.test(c))).toHaveLength(1)
+      expect(classes.filter((c) => /^px-/.test(c))).toHaveLength(1)
+    },
+  )
 
   it('IconButton takes its name from aria-label and hides the icon', () => {
     const { container } = render(<IconButton icon="x" aria-label="ปิด" />)

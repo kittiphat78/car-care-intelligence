@@ -69,9 +69,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="th" className={sarabun.variable} data-theme="dark" suppressHydrationWarning>
       <head>
+        {/* The app has its own light and dark themes. This asks "force dark" extensions
+            (Dark Reader) to leave the page alone: they rewrite the colour variables the
+            new UI is built on, which left it with no colours or spacing. */}
+        <meta name="darkreader-lock" />
+        <meta name="color-scheme" content="dark light" />
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="min-h-dvh bg-bg font-sans text-text antialiased">
+      <body className="min-h-dvh bg-bg font-sans text-body tracking-normal text-text antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>

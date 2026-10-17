@@ -7,27 +7,31 @@ import { Icon, Spinner, type IconName } from './Icon'
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'danger-ghost' | 'success'
 export type ButtonSize = 'md' | 'lg'
 
+// Each variant sets its own border colour: two border-colour utilities on one element
+// would leave the winner to stylesheet order
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary: 'bg-primary text-on-primary hover:bg-primary-hover',
-  secondary: 'bg-surface text-text border-border-strong hover:bg-surface-2',
-  ghost: 'bg-transparent text-link px-3 hover:bg-surface-2',
-  danger: 'bg-danger text-on-primary',
-  'danger-ghost': 'bg-transparent text-danger-text px-3 hover:bg-surface-2',
-  success: 'bg-success text-on-primary',
+  primary: 'border-transparent bg-primary text-on-primary hover:bg-primary-hover',
+  secondary: 'border-border-strong bg-surface text-text hover:bg-surface-2',
+  ghost: 'border-transparent bg-transparent text-link hover:bg-surface-2',
+  danger: 'border-transparent bg-danger text-on-primary',
+  'danger-ghost': 'border-transparent bg-transparent text-danger-text hover:bg-surface-2',
+  success: 'border-transparent bg-success text-on-primary',
 }
 
 const SIZES: Record<ButtonSize, string> = {
-  md: 'min-h-12 px-5 text-body font-semibold',
-  lg: 'min-h-14 px-5 text-body-lg font-semibold',
+  md: 'min-h-12 text-body font-semibold',
+  lg: 'min-h-14 text-body-lg font-semibold',
 }
 
 /** Classes of a Button, for a link that must look like one (e.g. "บันทึกรายการ" in SideNav) */
 export function buttonClassName({ variant = 'primary', size = 'md', fullWidth = false }: { variant?: ButtonVariant; size?: ButtonSize; fullWidth?: boolean } = {}) {
   return cn(
-    'press focus-ring inline-flex items-center justify-center gap-2 rounded-md border border-transparent text-center select-none',
+    'press focus-ring inline-flex items-center justify-center gap-2 rounded-md border text-center select-none',
     'disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-not-allowed',
     VARIANTS[variant],
     SIZES[size],
+    // Text-only buttons sit closer to their neighbours
+    variant === 'ghost' || variant === 'danger-ghost' ? 'px-3' : 'px-5',
     fullWidth && 'w-full',
   )
 }

@@ -16,19 +16,12 @@ function block(selector: string): Record<string, string> {
   return vars
 }
 
-const primitives = block(':root')
 const dark = block('@theme static')
 const light = block('[data-theme="light"]')
 
 function resolve(theme: Record<string, string>, name: string): string {
-  let value = theme[name] ?? dark[name]
+  const value = theme[name] ?? dark[name]
   if (value === undefined) throw new Error(`token not defined: ${name}`)
-  for (let i = 0; i < 5 && value.startsWith('var('); i++) {
-    const ref = /^var\((--[\w-]+)\)$/.exec(value)?.[1]
-    if (!ref) break
-    value = primitives[ref] ?? theme[ref] ?? dark[ref]
-    if (value === undefined) throw new Error(`${name} points at missing ${ref}`)
-  }
   return value
 }
 
@@ -73,6 +66,15 @@ const PAIRS: Array<[string, string, number]> = [
 describe('design tokens', () => {
   it('lists all 38 pairs from design-tokens.md §3.3', () => {
     expect(PAIRS).toHaveLength(38)
+  })
+
+  it('writes every colour as its final value, never through another variable', () => {
+    // A var() chain resolves to nothing if any link is missing (the bug fixed in C3-fix)
+    for (const theme of [dark, light]) {
+      for (const [name, value] of Object.entries(theme)) {
+        if (name.startsWith('--color-')) expect(value, name).not.toContain('var(')
+      }
+    }
   })
 
   it('defines every semantic colour in both themes', () => {
