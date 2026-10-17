@@ -42,7 +42,6 @@ const eslintConfig = defineConfig([
     ignores: [
       "components/ui/ErrorBanner.tsx",
       "app/(app)/page.tsx",
-      "app/(app)/add/page.tsx",
       "app/(app)/history/page.tsx",
       "app/(auth)/login/page.tsx",
     ],

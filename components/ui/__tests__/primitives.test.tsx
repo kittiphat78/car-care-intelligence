@@ -1,20 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { useRef, useState } from 'react'
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Badge, Banner, Button, ChoiceGroup, Dialog, Icon, IconButton, SkeletonGroup, SkeletonRow, ToastProvider, useToast, TOAST_DURATION_MS } from '@/components/ui'
-
-// jsdom has no showModal(); this stand-in keeps the parts the component relies on
-beforeAll(() => {
-  const proto = HTMLDialogElement.prototype as HTMLDialogElement & { showModal?: () => void }
-  if (!proto.showModal) {
-    proto.showModal = function (this: HTMLDialogElement) {
-      this.setAttribute('open', '')
-    }
-    proto.close = function (this: HTMLDialogElement) {
-      this.removeAttribute('open')
-    }
-  }
-})
 
 afterEach(() => {
   vi.useRealTimers()

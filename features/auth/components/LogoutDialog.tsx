@@ -6,7 +6,8 @@ import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import { toUserMessage } from '@/lib/errors'
-import { clearLocalDrafts, signOut } from '../api'
+import { signOut } from '../api'
+import { clearLocalDrafts } from '../drafts'
 
 // screen-specifications.md §12 — opened from any page with ?logout=1, so the browser's
 // back button closes it (URL state, design-to-code-map.md §4).

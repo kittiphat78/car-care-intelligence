@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const nav = vi.hoisted(() => ({ search: 'logout=1', replace: vi.fn(), refresh: vi.fn() }))
 vi.mock('next/navigation', () => ({
@@ -12,19 +12,7 @@ const auth = vi.hoisted(() => ({ signOut: vi.fn() }))
 vi.mock('@/lib/supabase', () => ({ supabase: { auth: auth } }))
 
 import { LogoutDialog } from '../components/LogoutDialog'
-import { LOCAL_DRAFT_PREFIX, clearLocalDrafts } from '../api'
-
-beforeAll(() => {
-  const proto = HTMLDialogElement.prototype as HTMLDialogElement & { showModal?: () => void }
-  if (!proto.showModal) {
-    proto.showModal = function (this: HTMLDialogElement) {
-      this.setAttribute('open', '')
-    }
-    proto.close = function (this: HTMLDialogElement) {
-      this.removeAttribute('open')
-    }
-  }
-})
+import { LOCAL_DRAFT_PREFIX, clearLocalDrafts } from '../drafts'
 
 beforeEach(() => {
   nav.search = 'logout=1'
@@ -32,6 +20,7 @@ beforeEach(() => {
   nav.refresh.mockReset()
   auth.signOut.mockReset()
   localStorage.clear()
+  sessionStorage.clear()
 })
 
 describe('clearLocalDrafts', () => {
@@ -43,6 +32,14 @@ describe('clearLocalDrafts', () => {
     expect(localStorage.getItem(`${LOCAL_DRAFT_PREFIX}add-income`)).toBeNull()
     expect(localStorage.getItem('car-care-theme')).toBe('light')
     expect(localStorage.getItem('remembered_email')).toBe('a@b.c')
+  })
+
+  it('also clears drafts kept in this tab (sessionStorage)', () => {
+    sessionStorage.setItem(`${LOCAL_DRAFT_PREFIX}user-1:income`, '{}')
+    sessionStorage.setItem('other', 'x')
+    clearLocalDrafts()
+    expect(sessionStorage.getItem(`${LOCAL_DRAFT_PREFIX}user-1:income`)).toBeNull()
+    expect(sessionStorage.getItem('other')).toBe('x')
   })
 })
 
