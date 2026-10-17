@@ -19,6 +19,7 @@ vi.mock('next/navigation', () => ({
 // The shell itself is covered by its own tests
 vi.mock('@/components/patterns/nav/AppShell', () => ({ AppShell: () => null }))
 vi.mock('@/features/auth/components/LogoutDialog', () => ({ LogoutDialog: () => null }))
+vi.mock('@/features/auth/components/SessionExpiredDialog', () => ({ SessionExpiredDialog: () => null }))
 vi.mock('@/features/debts/server', () => ({ countUnpaidCustomers: async () => 3 }))
 
 import AppLayout from '../layout'

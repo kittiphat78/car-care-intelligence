@@ -5,6 +5,7 @@ import { getSessionUser } from '@/lib/auth/session'
 import { APP_PATH_HEADER, loginPathFor } from '@/lib/auth/redirect'
 import { AppShell } from '@/components/patterns/nav/AppShell'
 import { LogoutDialog } from '@/features/auth/components/LogoutDialog'
+import { SessionExpiredDialog } from '@/features/auth/components/SessionExpiredDialog'
 import { countUnpaidCustomers } from '@/features/debts/server'
 
 // Second sign-in check, on the server (ADR-13). proxy.ts already redirects signed-out
@@ -28,6 +29,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       dialogs={
         <Suspense fallback={null}>
           <LogoutDialog email={email} />
+          <SessionExpiredDialog />
         </Suspense>
       }
     >
