@@ -156,12 +156,12 @@ export function DateField({ id, label, required, error, value, onChange, today =
           onChange={(e) => e.target.value && onChange(e.target.value)}
           invalid={!!error}
           aria-describedby={describedBy(id, { hint: hintText, error })}
-          className="min-w-44 flex-1"
+          className="min-w-36 flex-1"
         />
-        <Button variant={value === today ? 'primary' : 'secondary'} aria-pressed={value === today} onClick={() => onChange(today)}>
+        <Button size="sm" variant={value === today ? 'primary' : 'secondary'} aria-pressed={value === today} onClick={() => onChange(today)}>
           วันนี้
         </Button>
-        <Button variant={value === yesterday ? 'primary' : 'secondary'} aria-pressed={value === yesterday} onClick={() => onChange(yesterday)}>
+        <Button size="sm" variant={value === yesterday ? 'primary' : 'secondary'} aria-pressed={value === yesterday} onClick={() => onChange(yesterday)}>
           เมื่อวาน
         </Button>
       </div>

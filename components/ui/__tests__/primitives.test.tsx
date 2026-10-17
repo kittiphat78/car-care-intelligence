@@ -135,6 +135,17 @@ describe('Dialog', () => {
     expect(screen.getByRole('button', { name: 'ยกเลิก' })).toHaveFocus()
   })
 
+  it('cannot be scrolled by the browser while the sheet slides in (Android bug)', () => {
+    const focus = vi.spyOn(HTMLElement.prototype, 'focus')
+    render(<Harness />)
+    fireEvent.click(screen.getByRole('button', { name: 'เปิด' }))
+    // overflow: clip (not hidden) is not scrollable, so focusing a control inside the
+    // sliding sheet cannot shift it up and push its header off screen
+    expect(screen.getByRole('dialog')).toHaveClass('overflow-clip', 'h-dvh')
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true })
+    focus.mockRestore()
+  })
+
   it('Esc closes it and focus returns to the opener', () => {
     render(<Harness />)
     const opener = screen.getByRole('button', { name: 'เปิด' })
