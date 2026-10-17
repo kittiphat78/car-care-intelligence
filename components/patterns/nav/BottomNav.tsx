@@ -36,7 +36,9 @@ export function BottomNav({ badges = {} }: BottomNavProps) {
                 )}
               >
                 {item.isPrimary ? (
-                  <span className="-mt-5 grid size-14 place-items-center rounded-full bg-primary text-on-primary shadow-elevation-2">
+                  // Inside the bar, not raised above it: a raised button covered the save
+                  // buttons on /add and the content while scrolling
+                  <span className="grid size-10 place-items-center rounded-full bg-primary text-on-primary">
                     <Icon name={item.icon} size="lg" />
                   </span>
                 ) : (

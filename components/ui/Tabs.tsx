@@ -54,7 +54,7 @@ export function Tabs<V extends string>({ idBase, label, tabs, value, onChange, c
             onKeyDown={(e) => onKeyDown(e, index)}
             className={cn(
               'focus-ring min-h-11 rounded-[9px] px-3.5 text-body font-semibold transition-colors duration-150',
-              selected ? 'bg-surface text-text shadow-elevation-1 outline-1 outline-border' : 'text-text-secondary hover:text-text',
+              selected ? 'bg-primary-subtle text-link' : 'text-text-secondary hover:text-text',
             )}
           >
             {tab.label}
