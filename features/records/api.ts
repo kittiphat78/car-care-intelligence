@@ -100,6 +100,12 @@ export async function updateEntry(
   return err(appError((still.data as unknown[] | null)?.length ? 'CONFLICT' : 'NOT_FOUND'))
 }
 
+/** One row by id, or null when it no longer exists (or is not visible to this account) */
+export async function getEntry<T>(table: EntryTable, id: string): Promise<Result<T | null>> {
+  const result = await run(supabase.from(table).select('*').eq('id', id))
+  return result.ok ? ok(((result.data as T[] | null) ?? [])[0] ?? null) : result
+}
+
 export async function deleteEntry(table: EntryTable, id: string): Promise<Result<void>> {
   return done(await run(supabase.from(table).delete().eq('id', id)))
 }

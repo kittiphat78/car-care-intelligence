@@ -169,6 +169,30 @@ export function DateField({ id, label, required, error, value, onChange, today =
   )
 }
 
+// ── TimeField ────────────────────────────────────────────────────────────────
+
+export interface TimeFieldProps extends FieldBase {
+  /** HH:mm, 24-hour */
+  value: string
+  onChange: (time: string) => void
+}
+
+export function TimeField({ id, label, required, error, hint, value, onChange }: TimeFieldProps) {
+  return (
+    <FormField id={id} label={label} required={required} error={error} hint={hint}>
+      <TextInput
+        id={id}
+        type="time"
+        step={60}
+        value={value}
+        onChange={(e) => e.target.value && onChange(e.target.value)}
+        invalid={!!error}
+        aria-describedby={describedBy(id, { hint, error })}
+      />
+    </FormField>
+  )
+}
+
 // ── CustomerField ────────────────────────────────────────────────────────────
 
 export interface CustomerFieldProps extends FieldBase {

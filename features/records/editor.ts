@@ -1,7 +1,7 @@
-import { CAR_BRANDS, CAR_TYPES, type PaymentStatus, type RecordType } from '@/types'
-import { bangkokTimestampOn } from '@/lib/time/bangkok'
-import { expenseSchema, newIncomeSchema } from './schema'
-import type { ExpenseInsert, IncomeInsert } from './api'
+import { CAR_BRANDS, CAR_TYPES, type Expense, type PaymentStatus, type Record as AppRecord, type RecordType } from '@/types'
+import { bangkokTimestampOn, joinBangkok, splitBangkok } from '@/lib/time/bangkok'
+import { changedFields, expenseSchema, incomeSchema, newIncomeSchema } from './schema'
+import type { EntryPatch, ExpenseInsert, IncomeInsert } from './api'
 
 // Pure rules of the record editor (screen-specifications.md §4, user-flows UF-REC-01..05).
 // No React here, so every rule is unit-tested.
@@ -167,4 +167,74 @@ export function isIncomeDirty(d: IncomeDraft): boolean {
 
 export function isExpenseDirty(d: ExpenseDraft): boolean {
   return !!(d.title || d.amount || d.note)
+}
+
+// ── Edit mode (screen-specifications.md §8) ──────────────────────────────────
+
+const typeIdOf = (name: string | undefined) => CAR_TYPES.find((t) => t.name === name)?.id ?? null
+const brandIdOf = (name: string | undefined) => CAR_BRANDS.find((b) => b.name === name)?.id ?? null
+
+/** Form values of a stored income record. `services` is [car type name, brand name, note]. */
+export function incomeDraftFrom(r: AppRecord): IncomeDraft {
+  const [typeName, brandName, note] = r.services ?? []
+  return {
+    type: r.type ?? 'wash',
+    plate: r.plate ?? '',
+    carType: typeIdOf(typeName),
+    brand: brandIdOf(brandName),
+    price: r.price != null ? String(r.price) : '',
+    paymentStatus: r.payment_status ?? 'paid',
+    customerName: r.customer_name ?? '',
+    note: note ?? '',
+  }
+}
+
+export function expenseDraftFrom(e: Expense): ExpenseDraft {
+  return { title: e.title ?? '', amount: e.amount != null ? String(e.amount) : '', note: e.note ?? '' }
+}
+
+/** Date and time (Bangkok) of a stored row, for the DateField/TimeField pair */
+export const whenOf = (createdAt: string) => splitBangkok(createdAt)
+
+/** created_at to save: the stored value untouched unless the date or time changed */
+export function editedCreatedAt(stored: string, day: string, time: string): string {
+  const original = splitBangkok(stored)
+  return original.date === day && original.time === time ? stored : joinBangkok(day, time)
+}
+
+/** Edits are checked with the v1 edit rule: an old record may have no car type */
+export function checkIncomeEdit(draft: IncomeDraft) {
+  const parsed = incomeSchema.safeParse(draft)
+  return parsed.success
+    ? ({ ok: true, data: parsed.data } as const)
+    : ({ ok: false, errors: collect(INCOME_FIELDS, parsed.error.issues) } as const)
+}
+
+type CheckedIncomeEdit = Extract<ReturnType<typeof checkIncomeEdit>, { ok: true }>['data']
+
+/**
+ * Only the changed fields (B5). A car type or brand name the catalogue no longer knows
+ * is kept as stored unless the user picks another one.
+ */
+export function incomePatch(original: AppRecord, draft: IncomeDraft, data: CheckedIncomeEdit, createdAt: string): EntryPatch {
+  const [storedType = '', storedBrand = ''] = original.services ?? []
+  const typeName = draft.carType
+    ? CAR_TYPES.find((t) => t.id === draft.carType)!.name
+    : typeIdOf(storedType) === null ? storedType : ''
+  const brandName = draft.brand
+    ? CAR_BRANDS.find((b) => b.id === draft.brand)!.name
+    : brandIdOf(storedBrand) === null ? storedBrand : ''
+  return changedFields<EntryPatch>(original, {
+    type: data.type,
+    plate: data.plate.toUpperCase(),
+    price: data.price,
+    customer_name: data.customerName,
+    payment_status: data.paymentStatus,
+    services: [typeName, brandName, data.note],
+    created_at: createdAt,
+  })
+}
+
+export function expensePatch(original: Expense, data: CheckedExpense, createdAt: string): EntryPatch {
+  return changedFields<EntryPatch>(original, { title: data.title, amount: data.amount, note: data.note, created_at: createdAt })
 }

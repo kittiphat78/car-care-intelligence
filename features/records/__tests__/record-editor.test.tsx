@@ -145,7 +145,9 @@ describe('IncomeEditor', () => {
     renderIncome()
     fillIncome()
     await press('บันทึก')
-    await waitFor(() => expect(Object.keys(sessionStorage)).toEqual([]))
+    await waitFor(() => expect(Object.keys(sessionStorage).filter((k) => k.startsWith('car-care-draft:'))).toEqual([]))
+    // …and remembers it so the dashboard can highlight the new row
+    expect(sessionStorage.getItem('car-care-last-saved')).toBe(api.createIncome.mock.calls[0][0].client_request_id)
   })
 
   it('shows a regular customer after the plate lookup (AC-08-1)', async () => {

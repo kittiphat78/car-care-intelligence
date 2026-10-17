@@ -25,16 +25,16 @@ export function FilterSection({ activeTab, search, setSearch, dateFrom, setDateF
         />
       </div>
       <div className="flex items-center gap-2">
-        <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="input flex-1 text-sm py-2.5 text-center cursor-pointer !min-h-[44px]" aria-label="วันที่เริ่มต้น" />
+        <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="input min-w-0 flex-1 text-sm py-2.5 text-center cursor-pointer !min-h-[44px]" aria-label="วันที่เริ่มต้น" />
         <span className="text-[var(--text-tertiary)] text-base font-bold shrink-0" aria-hidden="true">—</span>
-        <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="input flex-1 text-sm py-2.5 text-center cursor-pointer !min-h-[44px]" aria-label="วันที่สิ้นสุด" />
+        <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="input min-w-0 flex-1 text-sm py-2.5 text-center cursor-pointer !min-h-[44px]" aria-label="วันที่สิ้นสุด" />
       </div>
       {activeTab === 'income' && (
         <div className="flex gap-2" role="group" aria-label="กรองประเภท">
           {(['all', 'wash', 'polish'] as FilterType[]).map(t => (
             <button key={t} onClick={() => setFilterType(t)} aria-pressed={filterType === t}
               className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all duration-150 border-2 ${filterType === t
-                  ? (t === 'all' ? 'bg-[var(--text-primary)] text-white border-transparent' : t === 'wash' ? 'bg-[var(--accent-light)] text-[var(--accent)] border-blue-200' : 'bg-[var(--amber-light)] text-[var(--amber)] border-amber-200')
+                  ? (t === 'all' ? 'bg-[var(--text-primary)] text-[var(--bg)] border-transparent' : t === 'wash' ? 'bg-[var(--accent-light)] text-[var(--accent)] border-blue-200' : 'bg-[var(--amber-light)] text-[var(--amber)] border-amber-200')
                   : 'bg-[var(--surface)] text-[var(--text-secondary)] border-[var(--border)]'
                 }`}
             >{t === 'all' ? 'ทั้งหมด' : t === 'wash' ? 'ล้างรถ' : 'ขัดสี'}</button>

@@ -26,6 +26,8 @@ export interface Record {
   payment_status:   PaymentStatus
   job_status:       JobStatus
   note?:            string
+  /** One id per save from the app (M004); lets the dashboard highlight what was just saved */
+  client_request_id?: string | null
 }
 
 export interface Expense {
