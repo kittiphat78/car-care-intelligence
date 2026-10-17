@@ -46,6 +46,9 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
+  // The on-screen keyboard shrinks the page instead of covering it, so the save
+  // buttons of a form or dialog stay above the keyboard
+  interactiveWidget: 'resizes-content',
   themeColor: THEME_COLOR.dark,
 }
 

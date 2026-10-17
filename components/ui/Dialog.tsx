@@ -73,7 +73,7 @@ export function Dialog({
     if (open && !dialog.open) {
       returnFocusTo.current = document.activeElement as HTMLElement | null
       dialog.showModal()
-      initialFocusRef?.current?.focus()
+      initialFocusRef?.current?.focus({ preventScroll: true })
     } else if (!open && dialog.open) {
       dialog.close()
     }
@@ -102,7 +102,11 @@ export function Dialog({
         e.preventDefault()
         onCloseRef.current()
       }}
-      className="fixed inset-0 m-0 size-full max-h-none max-w-none overflow-hidden bg-transparent p-0 text-text backdrop:bg-transparent"
+      // h-dvh: the height of the screen as it is now (URL bar, keyboard).
+      // overflow-clip, not hidden: while the sheet slides in from below, the browser
+      // focuses a button in it and would scroll a "hidden" box to show it, leaving the
+      // sheet stuck too high with its header off screen (seen on Android)
+      className="fixed inset-0 m-0 h-dvh w-full max-h-none max-w-none overflow-clip bg-transparent p-0 text-text backdrop:bg-transparent"
     >
       {open && (
         <>
