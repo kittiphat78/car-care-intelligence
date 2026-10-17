@@ -24,7 +24,9 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
       className={cn(
         'flex items-center gap-2 rounded-md border text-body-lg text-text',
         size === 'md' ? 'min-h-12' : 'min-h-16',
-        'focus-within:border-2 focus-within:border-primary focus-within:px-[15px] focus-within:outline-3 focus-within:outline-offset-2 focus-within:outline-focus',
+        // Focus: one blue 2px border with a soft halo hugging it (style preview), not a
+        // second ring with a gap, which read as two boxes on top of each other
+        'focus-within:border-2 focus-within:border-primary focus-within:px-[15px] focus-within:ring-3 focus-within:ring-primary-subtle',
         // 2px border when invalid, with 1px less padding so the text does not move
         invalid ? 'border-2 border-danger-text px-[15px]' : 'border-border-strong px-4',
         disabled ? 'bg-surface-2 opacity-70' : 'bg-surface',

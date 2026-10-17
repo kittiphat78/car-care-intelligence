@@ -6,7 +6,8 @@ import { THEME_COLOR, THEME_STORAGE_KEY } from '@/components/patterns/theme-cons
 
 const sarabun = Sarabun({
   subsets: ['thai', 'latin'],
-  weight: ['400', '500', '600', '700', '800'],
+  // 800 was only used by the v1 design (design-to-code-map.md §6)
+  weight: ['400', '500', '600', '700'],
   display: 'swap',
   variable: '--font-sarabun',
 })
