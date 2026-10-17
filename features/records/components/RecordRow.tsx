@@ -48,11 +48,10 @@ export function IncomeRow({
       aria-label={incomeLabel(record)}
       data-highlight={highlight || undefined}
       className={cn(
-        'focus-ring relative flex w-full items-center gap-3 overflow-hidden rounded-md py-3 pr-2 pl-4 text-left transition-colors duration-(--duration-slow) hover:bg-surface-2',
+        'focus-ring flex w-full items-center gap-3 rounded-md px-2 py-3 text-left transition-colors duration-(--duration-slow) hover:bg-surface-2',
         highlight && 'bg-primary-subtle',
       )}
     >
-      <span aria-hidden="true" className={cn('absolute inset-y-2 left-0 w-1 rounded-full', polish ? 'bg-polish' : 'bg-wash')} />
       <span aria-hidden="true" className={cn('grid size-10 shrink-0 place-items-center rounded-md', polish ? 'bg-polish-subtle text-polish' : 'bg-wash-subtle text-wash')}>
         <Icon name={polish ? 'polish' : 'wash'} size="lg" />
       </span>
@@ -87,9 +86,8 @@ export function ExpenseRow({ expense, showAudit = false, onOpen }: { expense: Ex
       type="button"
       onClick={() => onOpen(expense)}
       aria-label={`รายจ่าย ${expense.title} ${baht(expense.amount)} ${timeOf(expense.created_at)} แตะเพื่อแก้ไข`}
-      className="focus-ring relative flex w-full items-center gap-3 overflow-hidden rounded-md py-3 pr-2 pl-4 text-left hover:bg-surface-2"
+      className="focus-ring flex w-full items-center gap-3 rounded-md px-2 py-3 text-left hover:bg-surface-2"
     >
-      <span aria-hidden="true" className="absolute inset-y-2 left-0 w-1 rounded-full bg-danger" />
       <span aria-hidden="true" className="grid size-10 shrink-0 place-items-center rounded-md bg-danger-subtle text-danger-text">
         <Icon name="receipt" size="lg" />
       </span>
