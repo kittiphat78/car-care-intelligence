@@ -11,7 +11,8 @@ export function ActionBar({ children, note }: { children: ReactNode; note?: Reac
       className="sticky bottom-(--size-nav-bottom) z-10 -mx-(--page-gutter) mt-2 border-t border-border bg-surface px-(--page-gutter) pt-3 pb-3 shadow-elevation-2 lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:px-0 lg:shadow-none"
     >
       {note && <div className="mb-2">{note}</div>}
-      <div className="grid grid-cols-[2fr_3fr] gap-3">{children}</div>
+      {/* Secondary sizes to its label (never wraps), primary takes the rest */}
+      <div className="grid grid-cols-[auto_1fr] gap-3 *:whitespace-nowrap">{children}</div>
     </div>
   )
 }
