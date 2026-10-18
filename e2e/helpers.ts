@@ -3,10 +3,10 @@ import { expect, type Page, type TestInfo } from '@playwright/test'
 import { E2E_EMAIL, E2E_PASSWORD } from './global-setup'
 
 /** Sign in through the login page, as a person would, and land on the dashboard */
-export async function signIn(page: Page, next = '/') {
+export async function signIn(page: Page, next = '/', account = { email: E2E_EMAIL, password: E2E_PASSWORD }) {
   await page.goto(next === '/' ? '/login' : `/login?next=${encodeURIComponent(next)}`)
-  await page.getByLabel('อีเมล', { exact: true }).fill(E2E_EMAIL)
-  await page.getByLabel('รหัสผ่าน', { exact: true }).fill(E2E_PASSWORD)
+  await page.getByLabel('อีเมล', { exact: true }).fill(account.email)
+  await page.getByLabel('รหัสผ่าน', { exact: true }).fill(account.password)
   await page.getByRole('button', { name: 'เข้าสู่ระบบ' }).click()
   await page.waitForURL((u) => u.pathname === next.split('?')[0])
 }

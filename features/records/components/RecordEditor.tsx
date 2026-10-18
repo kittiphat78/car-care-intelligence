@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { useCallback, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { CAR_BRANDS, CAR_TYPES } from '@/types'
 import { bangkokToday } from '@/lib/time/bangkok'
@@ -160,6 +160,21 @@ function SaveButtons({
   )
 }
 
+/**
+ * Enter in a field moves to the next field instead of saving (interaction-specifications
+ * §2: "Enter ในช่องสุดท้ายไม่ submit อัตโนมัติ"). Without this the browser presses the
+ * form's first submit button, "บันทึกแล้วทำต่อ", and saves by accident.
+ */
+export function enterMovesToNextField(e: KeyboardEvent<HTMLFormElement>) {
+  const field = e.target as HTMLElement
+  if (e.key !== 'Enter' || !(field instanceof HTMLInputElement) || e.nativeEvent.isComposing) return
+  e.preventDefault()
+  const focusable = [...e.currentTarget.querySelectorAll<HTMLElement>('input, button, select, textarea, [tabindex="0"]')].filter(
+    (el) => !el.hasAttribute('disabled') && el.tabIndex >= 0 && !el.closest('[hidden], [aria-hidden="true"]'),
+  )
+  focusable[focusable.indexOf(field) + 1]?.focus()
+}
+
 const submitIntent = (e: FormEvent<HTMLFormElement>) =>
   ((e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null)?.value === 'continue' ? 'continue' : 'save'
 
@@ -226,7 +241,7 @@ export function IncomeEditor({ userId, email }: EditorProps) {
   }
 
   return (
-    <form noValidate onSubmit={onSubmit} aria-busy={busy || undefined} className="grid grid-cols-1 gap-5">
+    <form noValidate onSubmit={onSubmit} onKeyDown={enterMovesToNextField} aria-busy={busy || undefined} className="grid grid-cols-1 gap-5">
       {draft.restored && <RestoredBanner onClear={() => draft.reset()} />}
       <FormErrorSummary errors={errors} attempt={attempt} />
       <FailureBanner error={failure} />
@@ -412,7 +427,7 @@ export function ExpenseEditor({ userId, email }: EditorProps) {
   }
 
   return (
-    <form noValidate onSubmit={onSubmit} aria-busy={busy || undefined} className="grid grid-cols-1 gap-5">
+    <form noValidate onSubmit={onSubmit} onKeyDown={enterMovesToNextField} aria-busy={busy || undefined} className="grid grid-cols-1 gap-5">
       {draft.restored && <RestoredBanner onClear={() => draft.reset()} />}
       <FormErrorSummary errors={errors} attempt={attempt} />
       <FailureBanner error={failure} />

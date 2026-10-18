@@ -162,6 +162,18 @@ describe('IncomeEditor', () => {
     expect(api.countVisitsByPlate).toHaveBeenCalledWith('กข 1234')
   })
 
+  it('Enter in a field moves to the next field and never saves (interaction-specifications §2)', async () => {
+    renderIncome()
+    fillIncome()
+    const price = screen.getByLabelText(/ราคา \(บาท\)/)
+    price.focus()
+    await act(async () => {
+      fireEvent.keyDown(price, { key: 'Enter' })
+    })
+    expect(api.createIncome).not.toHaveBeenCalled()
+    expect(price).not.toHaveFocus()
+  })
+
   it('cannot save while offline and says why', () => {
     const onLine = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
     renderIncome()
