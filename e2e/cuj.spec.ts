@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { LOGOUT_EMAIL, LOGOUT_PASSWORD } from './global-setup'
 import { expectAccessible, signIn, uniquePlate } from './helpers'
 
 // Critical user journeys (feature-inventory.md §7), each on a phone and a desktop.
@@ -140,7 +141,8 @@ test('CUJ-7 · export the month to Excel', async ({ page }) => {
 })
 
 test('CUJ-8 · sign out, with a confirmation; /more is accessible', async ({ page }, info) => {
-  await signIn(page)
+  // Its own account: signing out ends every session of the account (see defect-log D-03)
+  await signIn(page, '/', { email: LOGOUT_EMAIL, password: LOGOUT_PASSWORD })
   await page.goto('/more')
   await expectAccessible(page, info, 'more')
   await page.getByRole('main').getByRole('link', { name: 'ออกจากระบบ' }).click()
