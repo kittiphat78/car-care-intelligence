@@ -64,7 +64,15 @@ export function ChartCard({ series, today, error, onRetry }: { series: DayTotal[
           </p>
           <div aria-hidden="true" className="h-50 lg:h-60">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data} margin={{ top: 8, right: 4, left: -16, bottom: 0 }} barGap={2}>
+              <BarChart
+                data={data}
+                margin={{ top: 8, right: 4, left: -16, bottom: 0 }}
+                barGap={2}
+                // The bars are decoration for sighted users (hidden from screen readers);
+                // the sentence above and the table carry the numbers, so no keyboard stops
+                // inside a hidden chart (axe: aria-hidden-focus)
+                accessibilityLayer={false}
+              >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={c['--color-border']} />
                 <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: c['--color-text-tertiary'], fontSize: 14 }} interval={mode === 'week' ? 0 : 'preserveStartEnd'} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fill: c['--color-text-tertiary'], fontSize: 14 }} width={56} />

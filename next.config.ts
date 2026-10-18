@@ -14,6 +14,18 @@ if (environment.errors.length > 0) {
   throw new Error(['[env-guard] Environment misconfigured:', ...environment.errors.map(e => `  • ${e}`)].join('\n'))
 }
 
+// The Supabase project this build talks to, allowed in the CSP below. On staging and
+// production it is already covered by *.supabase.co; it matters for the local Supabase
+// the end-to-end tests run against (http://127.0.0.1:54321).
+function supabaseOrigins(url: string | undefined): string[] {
+  try {
+    const origin = new URL(url ?? '').origin
+    return [origin, origin.replace(/^http/, 'ws')]
+  } catch {
+    return []
+  }
+}
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   // แนบเลขเวอร์ชันไปกับรายงาน error (lib/observability.ts)
@@ -71,7 +83,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob:",
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.open-meteo.com https://air-quality-api.open-meteo.com",
+              ["connect-src 'self' https://*.supabase.co wss://*.supabase.co", ...supabaseOrigins(process.env.NEXT_PUBLIC_SUPABASE_URL), 'https://api.open-meteo.com https://air-quality-api.open-meteo.com'].join(' '),
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",

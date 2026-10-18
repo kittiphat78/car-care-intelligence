@@ -134,3 +134,48 @@ jobs:
       - name: Stop database
         if: always()
         run: supabase stop --no-backup
+
+  # Critical user journeys (CUJ-1..8) and accessibility checks in a real browser, on a
+  # phone-size and a desktop-size screen. Runs against a local Supabase created for
+  # this job (migrations + seed) and thrown away after it: never staging or production,
+  # and no secrets. The keys used are the CLI's fixed local development keys.
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+      - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
+        with:
+          version: 2.118.0
+      - run: npm ci
+      - name: Start Supabase (database, auth, API)
+        run: >-
+          supabase start
+          -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+      - name: Local Supabase address and keys
+        run: |
+          supabase status -o env | sed -n 's/^\(API_URL\|ANON_KEY\|SERVICE_ROLE_KEY\)="\(.*\)"$/E2E_\1=\2/p' \
+            | sed 's/^E2E_API_URL=/E2E_SUPABASE_URL=/' >> "$GITHUB_ENV"
+      - name: Build against the local Supabase
+        run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ env.E2E_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ env.E2E_ANON_KEY }}
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - name: Keep the report when something failed
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop --no-backup

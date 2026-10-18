@@ -82,6 +82,14 @@ html:has(dialog[open]) {
   html {
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
+    /* When the browser scrolls something into view (keyboard focus, links to a field),
+       keep it clear of the fixed bottom nav and the save bar (WCAG 2.4.11) */
+    scroll-padding-bottom: calc(var(--toast-offset, var(--size-nav-bottom)) + 1rem);
+  }
+  @media (min-width: 1024px) {
+    html {
+      scroll-padding-bottom: 1rem;
+    }
   }
   @media (prefers-reduced-motion: no-preference) {
     html {
