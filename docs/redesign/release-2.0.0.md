@@ -1,6 +1,6 @@
 # Release v2.0.0 — หน้าตาใหม่ทั้งแอป (Phase B)
 
-> วันที่เตรียม: 2026-10-18 · สถานะ: **UAT ผ่าน** (เจ้าของ 2026-10-18 บน `v2.0.0-rc.1` = `28be954`) · พร้อม PR เข้า `main`
+> วันที่เตรียม: 2026-10-18 · สถานะ: **Production** · PR #40 merge commit `99b7311` · Vercel deploy success 2026-10-18 19:04 (เวลาไทย) · tag `v2.0.0` · UAT เจ้าของผ่านบน `v2.0.0-rc.1` (`28be954`) · เจ้าของตรวจ production ผ่าน
 > ฐาน: `v1.2.0` (`b5213db`, production) → `develop` @ `a0c439f` (PR #24–#39)
 > **ไม่มีการเปลี่ยนฐานข้อมูล** ทุก migration ขึ้น production ไปแล้วใน v1.2.0 จึงย้อนกลับได้ด้วย Vercel อย่างเดียว
 
@@ -53,11 +53,11 @@ Preview ใช้ฐานข้อมูล staging กดบันทึก/�
 
 ## 5. ลำดับขึ้น production
 
-1. เจ้าของผ่าน UAT → bump `2.0.0` บน `release/2.0.0`
-2. PR `release/2.0.0` → `main` แบบ **merge commit** · ไม่มี SQL ต้องรันก่อน · merge ตอนร้านปิด
-3. ตรวจ production (login, ภาพรวม, บันทึก 1 รายการแล้วลบ ทำโดยเจ้าของ) → tag `v2.0.0` บน SHA ที่ deploy
-4. Back-merge `main` → `develop`
-5. เพิ่ม `e2e` เป็น required check ใน ruleset ของ `main`
+1. เจ้าของผ่าน UAT → bump `2.0.0` บน `release/2.0.0` ✅
+2. PR `release/2.0.0` → `main` แบบ **merge commit** · ไม่มี SQL ต้องรันก่อน ✅ PR #40
+3. ตรวจ production (login, ภาพรวม, บันทึก 1 รายการแล้วลบ ทำโดยเจ้าของ) → tag `v2.0.0` บน SHA ที่ deploy ✅ `99b7311`
+4. Back-merge `main` → `develop` ✅ (fast-forward)
+5. เพิ่ม `e2e` เป็น required check ใน ruleset ของ `main` ✅ (เจ้าของ 2026-10-18)
 
 ## 6. ย้อนกลับ
 
