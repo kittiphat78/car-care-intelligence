@@ -37,6 +37,14 @@ const eslintConfig = defineConfig([
     },
   },
   {
+    // Zod is configured for the CSP in one place (lib/zod.ts, defect-log D-05)
+    files: ["**/*.{ts,tsx}"],
+    ignores: ["lib/zod.ts"],
+    rules: {
+      "no-restricted-imports": ["error", { paths: [{ name: "zod", message: "import { z } from '@/lib/zod' (ตั้งค่าไว้ให้ผ่าน CSP แล้ว · D-05)" }] }],
+    },
+  },
+  {
     // Layering (folder-structure.md §2): primitives and patterns know nothing about
     // the shop's data or Supabase
     files: ["components/ui/**/*.{ts,tsx}", "components/patterns/**/*.{ts,tsx}"],

@@ -16,7 +16,7 @@
 | Secrets ใน client bundle | **Passed** | ไม่พบ service role key, `sb_secret_`, `service_role`, project ref ของ production/staging หรืออีเมลเจ้าของ ใน `.next/static` 48 ไฟล์ · พบเฉพาะ anon key (ตั้งใจให้เป็น public) [V] |
 | Secrets ใน git | **Passed** | ไฟล์ env ที่ track มีแค่ `.env.example` (ค่าว่าง) · CI `secrets` ตรวจ JWT/คีย์ทุก PR · history ไม่มี `sb_secret_` [V] |
 | Service role ในโค้ดแอป | **Passed** | แอปไม่ใช้ service role เลย (มีแค่ใน E2E setup ที่บังคับ localhost และใน CI) [V] |
-| Security headers | **Passed** (มีข้อสังเกต) | ครบทั้งในเครื่องและ production · CSP ยังมี `'unsafe-eval'` (D-05) [V] |
+| Security headers | **Passed** (มีข้อสังเกต) | ครบทั้งในเครื่องและ production · production v2.0.0 ยังมี `'unsafe-eval'` → ตัดแล้วใน `fix/csp-no-unsafe-eval` (D-05) [V] |
 | `/api/client-errors` | **Passed** | ไม่มี session → 401 (ในเครื่องและ production), origin อื่น → 403, body เกิน 4KB → 413 (unit) [V] |
 | Dependency | **Passed ตามเกณฑ์ CI** (ไม่มี Critical ใน production deps) · มี High ที่ประเมินแล้วว่าไม่ถึงได้ (D-04) | §5 |
 | XSS | **Passed** (ตรวจโค้ด) | React escape ทุกข้อความ · `dangerouslySetInnerHTML` มีที่เดียวคือ theme script ค่าคงที่ (`app/layout.tsx:57-81`) [V] · Excel กันสูตร (unit) [V] |
@@ -62,7 +62,7 @@ SQL tests บน Postgres จริงอีกชั้น: `member_rls.test.sq
 
 | Header | ค่า | ผล |
 |---|---|---|
-| Content-Security-Policy | `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; … frame-ancestors 'none'; base-uri 'self'; form-action 'self'` | Passed · ข้อสังเกต D-05 (`'unsafe-eval'`) และ `connect-src` อนุญาต `*.supabase.co` ทุกโปรเจกต์ (Low) |
+| Content-Security-Policy | `default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; … frame-ancestors 'none'; base-uri 'self'; form-action 'self'` | Passed · `'unsafe-eval'` ตัดแล้วใน `fix/csp-no-unsafe-eval` (D-05, ยังไม่ขึ้น production) และ `connect-src` อนุญาต `*.supabase.co` ทุกโปรเจกต์ (Low) |
 | Strict-Transport-Security | `max-age=63072000; includeSubDomains; preload` | Passed |
 | X-Frame-Options | `SAMEORIGIN` (+ CSP `frame-ancestors 'none'`) | Passed |
 | X-Content-Type-Options | `nosniff` | Passed |

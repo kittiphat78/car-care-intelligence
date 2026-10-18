@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from '@/lib/zod'
 
 /**
  * Client-safe Environment Variables Schema (NEXT_PUBLIC_*)

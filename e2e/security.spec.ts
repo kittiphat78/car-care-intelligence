@@ -150,12 +150,62 @@ test.describe('database access by account type', () => {
     const h = r.headers()
     expect(h['content-security-policy']).toContain("frame-ancestors 'none'")
     expect(h['content-security-policy']).toContain("default-src 'self'")
+    expect(h['content-security-policy']).not.toContain('unsafe-eval') // D-05
     expect(h['x-frame-options']).toBe('SAMEORIGIN')
     expect(h['x-content-type-options']).toBe('nosniff')
     expect(h['strict-transport-security']).toContain('max-age=')
     expect(h['referrer-policy']).toBe('origin-when-cross-origin')
     expect(h['x-powered-by']).toBeUndefined()
   })
+})
+
+test('nothing in the app is blocked by the content security policy (D-05)', async ({ page }, info) => {
+  // Collect every CSP violation the browser reports, from the first script on
+  await page.addInitScript(() => {
+    const seen: string[] = []
+    ;(window as unknown as { cspViolations: string[] }).cspViolations = seen
+    document.addEventListener('securitypolicyviolation', (e) => seen.push(`${e.violatedDirective} ${e.blockedURI} ${e.sourceFile}:${e.lineNumber}`))
+  })
+  const blocked: string[] = []
+  page.on('console', (m) => {
+    if (m.type() === 'error' && /content security policy/i.test(m.text())) blocked.push(m.text())
+  })
+  const violations = () => page.evaluate(() => (window as unknown as { cspViolations: string[] }).cspViolations)
+
+  await signIn(page)
+  const all: string[] = [...(await violations())]
+  // Every screen, plus the parts that load heavier code: validation, the edit dialog,
+  // Excel export (exceljs) and the PDF bill (jspdf)
+  for (const path of ['/', '/add', '/add?type=expense', '/debts', '/more']) {
+    await page.goto(path)
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+    all.push(...(await violations()))
+  }
+  await page.goto('/add')
+  await page.getByRole('button', { name: 'บันทึก', exact: true }).click() // empty form: validation runs
+  await expect(page.getByRole('alert').first()).toBeVisible()
+  all.push(...(await violations()))
+  await page.goto(`/history?m=0&q=${encodeURIComponent('ทดสอบ')}`)
+  await page.getByRole('button', { name: /แตะเพื่อแก้ไข|^แก้ไข / }).first().click()
+  await expect(page.getByRole('dialog', { name: /แก้ไขราย/ })).toBeVisible()
+  all.push(...(await violations()))
+  await page.goto('/history?export=1')
+  const excel = page.waitForEvent('download')
+  await page.getByRole('dialog', { name: 'ส่งออก Excel' }).getByRole('button', { name: 'ดาวน์โหลด Excel' }).click()
+  await excel
+  all.push(...(await violations()))
+  await page.goto('/debts')
+  const bill = page.getByRole('button', { name: /^สร้างบิล / }).first()
+  if (await bill.count()) {
+    const pdf = page.waitForEvent('download')
+    await bill.click()
+    await pdf
+  } else {
+    info.annotations.push({ type: 'note', description: 'no unpaid customer to bill in this run' })
+  }
+  all.push(...(await violations()))
+  expect([...new Set(all)], 'CSP violations').toEqual([])
+  expect(blocked, 'CSP errors in the console').toEqual([])
 })
 
 test.describe('sign-in rules in the app', () => {
