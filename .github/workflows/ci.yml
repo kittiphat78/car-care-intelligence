@@ -165,6 +165,14 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ env.E2E_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ env.E2E_ANON_KEY }}
+      # What the browser downloads may hold the public key, never a server key
+      - name: No server keys in the browser bundle
+        run: |
+          grep -rqF "$E2E_ANON_KEY" .next/static || { echo "Public key not found: is this the right folder?"; exit 1; }
+          if grep -rlF "$E2E_SERVICE_ROLE_KEY" .next/static \
+            || grep -rlE 'service_role|sb_secret_|SERVICE_ROLE|PRODUCTION_SUPABASE_PROJECT_REF' .next/static; then
+            echo "A server-only key or name is in the browser bundle."; exit 1
+          fi
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - name: Keep the report when something failed
