@@ -40,20 +40,33 @@ let signingOut = false
 export const isSigningOut = () => signingOut
 
 /**
- * Ends the session. If the server cannot be reached the session is still removed from
- * this device (`local`), so the person is signed out here either way.
+ * Ends the session on this device only (defect-log D-03): other phones or tablets
+ * signed in to the same account stay signed in. The server forgets this session too.
+ *
+ * Supabase keeps the session when it cannot reach the server, so in that case it is
+ * removed here instead and the person is still signed out on this device (UF-AUTH-04).
  * `localOnly` tells the caller to say "ออกจากระบบในเครื่องนี้แล้ว".
  */
 export async function signOut(): Promise<Result<{ localOnly: boolean }>> {
   signingOut = true
   try {
-    const { error } = await supabase.auth.signOut()
+    const { error } = await supabase.auth.signOut({ scope: 'local' })
     if (!error) return ok({ localOnly: false })
-    const local = await supabase.auth.signOut({ scope: 'local' })
-    return local.error ? err(toAppError(local.error)) : ok({ localOnly: true })
+    const failure = toAppError(error)
+    if (failure.code !== 'NETWORK') return err(failure)
+    forgetSessionOnThisDevice()
+    return ok({ localOnly: true })
   } catch (e) {
     return err(toAppError(e))
   } finally {
     signingOut = false
+  }
+}
+
+/** Deletes the Supabase session cookies (`sb-<project>-auth-token`, possibly split into .0, .1 …) */
+export function forgetSessionOnThisDevice() {
+  for (const part of document.cookie.split(';')) {
+    const name = part.split('=')[0].trim()
+    if (/^sb-.+-auth-token/.test(name)) document.cookie = `${name}=; Max-Age=0; path=/; SameSite=Lax`
   }
 }

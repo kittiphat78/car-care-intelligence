@@ -27,7 +27,7 @@
 | F-01 | Login | unit `login.test.tsx` (11) · E2E CUJ-1, security sign-in | Passed [V] |
 | F-02 | จดจำอีเมล | unit "fills in a remembered email", "signs in, remembers the email" | Passed [V] |
 | F-03 | Route guard | unit `proxy.test.ts` (10), `layout.test.tsx` · E2E 5 หน้า → `/login?next=`, UF-AUTH-02, open redirect · production `/history` → 307 | Passed [V] |
-| F-04 | Logout | unit `logout.test.tsx` (8) · E2E CUJ-8 | Passed [V] · ออกทุกเครื่องเหมือน v1 → D-03 |
+| F-04 | Logout | unit `logout.test.tsx` (8) · E2E CUJ-8, `logout.spec.ts` (2 เครื่อง, เน็ตหลุด) | Passed [V] · v1 ออกทุกเครื่อง ตอนนี้ออกเฉพาะเครื่องที่กด (D-03 ตามที่เจ้าของเลือก) |
 | F-05 | Bottom navigation | unit `shell.test.tsx` (5 ปลายทาง, badge) · E2E ใช้เมนูจริงบน phone | Passed [V] · เปลี่ยนจาก 3 เป็น 5 แท็บตามแบบ |
 | F-06 | ธีมมืด/สว่าง | unit "keeps the v1 storage key" · E2E `regression.spec.ts` สลับแล้ว reload ยังจำ · axe ธีมสว่าง | Passed [V] |
 | F-07 | Kiosk mode | — | ถอดตามการตัดสินใจ (`feature-prioritization.md` F-07 Replace) · พฤติกรรมแทน: reload อยู่หน้าเดิม + draft ไม่หาย (unit AC-12-1) Passed [V] |
