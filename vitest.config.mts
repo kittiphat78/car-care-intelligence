@@ -16,7 +16,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, './'),
     },
     passWithNoTests: true,
-    // e2e/ is Playwright (npm run test:e2e), not Vitest
-    exclude: ['**/node_modules/**', '**/.next/**', 'e2e/**'],
+    // e2e/ and e2e-preview/ are Playwright, not Vitest
+    exclude: ['**/node_modules/**', '**/.next/**', 'e2e/**', 'e2e-preview/**'],
   },
 })
