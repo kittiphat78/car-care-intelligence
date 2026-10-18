@@ -7,11 +7,11 @@ import { MAX_REPORT_BYTES } from '@/lib/observability'
 
 const reportSchema = z.strictObject({
   code: z.enum(APP_ERROR_CODES),
-  ref: z.string().regex(ERROR_REF_PATTERN),
-  route: z.string().max(100),
-  message: z.string().max(300),
-  appVersion: z.string().max(40),
-  userAgent: z.string().max(200).optional(),
+  ref: z.string().check(z.regex(ERROR_REF_PATTERN)),
+  route: z.string().check(z.maxLength(100)),
+  message: z.string().check(z.maxLength(300)),
+  appVersion: z.string().check(z.maxLength(40)),
+  userAgent: z.optional(z.string().check(z.maxLength(200))),
   at: z.iso.datetime(),
 })
 

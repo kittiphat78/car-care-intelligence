@@ -6,19 +6,21 @@ import { z } from '@/lib/zod'
  */
 const clientEnvSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z
-    .string()
-    .min(1, 'NEXT_PUBLIC_SUPABASE_URL is required')
-    .url('NEXT_PUBLIC_SUPABASE_URL must be a valid URL (e.g. https://xyz.supabase.co)'),
+    .string({ error: 'NEXT_PUBLIC_SUPABASE_URL is required' })
+    .check(
+      z.minLength(1, 'NEXT_PUBLIC_SUPABASE_URL is required'),
+      z.url('NEXT_PUBLIC_SUPABASE_URL must be a valid URL (e.g. https://xyz.supabase.co)'),
+    ),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z
-    .string()
-    .min(10, 'NEXT_PUBLIC_SUPABASE_ANON_KEY must be a valid non-empty string'),
-  NEXT_PUBLIC_WEATHER_LAT: z.string().default('19.91'),
-  NEXT_PUBLIC_WEATHER_LON: z.string().default('99.84'),
+    .string({ error: 'NEXT_PUBLIC_SUPABASE_ANON_KEY is required' })
+    .check(z.minLength(10, 'NEXT_PUBLIC_SUPABASE_ANON_KEY must be a valid non-empty string')),
+  NEXT_PUBLIC_WEATHER_LAT: z._default(z.string(), '19.91'),
+  NEXT_PUBLIC_WEATHER_LON: z._default(z.string(), '99.84'),
 })
 
-function formatZodErrors(error: z.ZodError): string {
+function formatZodErrors(error: { issues: ReadonlyArray<{ path: PropertyKey[]; message: string }> }): string {
   return error.issues
-    .map((issue) => `  • ${issue.path.join('.')}: ${issue.message}`)
+    .map((issue) => `  • ${issue.path.map(String).join('.')}: ${issue.message}`)
     .join('\n')
 }
 

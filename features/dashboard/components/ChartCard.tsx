@@ -1,15 +1,23 @@
 'use client'
 
 import { useEffect, useId, useMemo, useState } from 'react'
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ChoiceGroup } from '@/components/ui/ChoiceGroup'
-import { SkeletonCard, SkeletonGroup } from '@/components/ui/Skeleton'
+import { Skeleton, SkeletonGroup } from '@/components/ui/Skeleton'
 import { ErrorState } from '@/components/patterns/EmptyState'
 import { useTheme } from '@/components/patterns/theme'
 import { chartSummary, toChartData, type ChartMode, type DayTotal } from '../logic'
 import { CardHeader, baht } from './cards'
+
+// The bars come from recharts (about 110 KB gzip). Loaded after the rest of the page so
+// today's numbers are not waiting for it; the box keeps its height meanwhile, so nothing
+// moves when the bars appear (optimization-log O-07)
+const ChartBars = dynamic(() => import('./ChartBars'), {
+  ssr: false,
+  loading: () => <div className="size-full rounded-md bg-surface-2" />,
+})
 
 // component-specifications.md §2.11 — bars plus a sentence and a table, so the numbers
 // never depend on reading colours. Colours come from the tokens of the current theme.
@@ -53,8 +61,13 @@ export function ChartCard({ series, today, error, onRetry }: { series: DayTotal[
       {error ? (
         <ErrorState message={error} onRetry={onRetry} />
       ) : !series ? (
+        // Same lines as below (sentence, chart box, table button) so nothing moves (O-10)
         <SkeletonGroup>
-          <SkeletonCard className="h-50" />
+          <div className="mb-2 text-body">
+            <Skeleton className="h-[1lh] w-3/4" />
+          </div>
+          <Skeleton className="h-50 lg:h-60" />
+          <Skeleton className="mt-2 h-12 w-32" />
         </SkeletonGroup>
       ) : (
         <>
@@ -63,28 +76,7 @@ export function ChartCard({ series, today, error, onRetry }: { series: DayTotal[
             <span className="font-semibold text-expense tabular-nums">{baht(sum.expense)}</span>
           </p>
           <div aria-hidden="true" className="h-50 lg:h-60">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={data}
-                margin={{ top: 8, right: 4, left: -16, bottom: 0 }}
-                barGap={2}
-                // The bars are decoration for sighted users (hidden from screen readers);
-                // the sentence above and the table carry the numbers, so no keyboard stops
-                // inside a hidden chart (axe: aria-hidden-focus)
-                accessibilityLayer={false}
-              >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={c['--color-border']} />
-                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: c['--color-text-tertiary'], fontSize: 14 }} interval={mode === 'week' ? 0 : 'preserveStartEnd'} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: c['--color-text-tertiary'], fontSize: 14 }} width={56} />
-                <Tooltip
-                  cursor={{ fill: c['--color-border'], opacity: 0.4 }}
-                  contentStyle={{ background: c['--color-surface'], border: `1px solid ${c['--color-border']}`, borderRadius: 12, color: c['--color-text'] }}
-                  formatter={(value, name) => [baht(Number(value)), name === 'income' ? 'รายรับ' : 'รายจ่าย']}
-                />
-                <Bar dataKey="income" fill={c['--color-income']} radius={[4, 4, 0, 0]} maxBarSize={18} />
-                <Bar dataKey="expense" fill={c['--color-expense']} radius={[4, 4, 0, 0]} maxBarSize={18} />
-              </BarChart>
-            </ResponsiveContainer>
+            <ChartBars data={data} mode={mode} colours={c} />
           </div>
           <Button variant="ghost" size="md" onClick={() => setShowTable((v) => !v)} aria-expanded={showTable} className="mt-2">
             {showTable ? 'ซ่อนตาราง' : 'ดูเป็นตาราง'}

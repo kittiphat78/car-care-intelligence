@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { CAR_BRANDS, CAR_TYPES } from '@/types'
 import { bangkokToday } from '@/lib/time/bangkok'
@@ -83,12 +83,21 @@ function useSave() {
 }
 
 function FailureBanner({ error }: { error: AppError | null }) {
+  const ref = useRef<HTMLDivElement>(null)
+  // The banner is at the top of the form while the save button is at the bottom, so on
+  // a phone it appeared out of sight and the tap seemed to do nothing. Move focus to it
+  // (which scrolls it into view) on every new failure, like FormErrorSummary (IS-1, U-01)
+  useEffect(() => {
+    if (error) ref.current?.focus()
+  }, [error])
   if (!error) return null
   const title = error.code === 'NETWORK' || error.code === 'TIMEOUT' ? 'บันทึกไม่สำเร็จ ข้อมูลยังอยู่ในฟอร์ม' : 'บันทึกไม่สำเร็จ'
   return (
-    <Banner tone="danger" title={title}>
-      {toUserMessage(error)}
-    </Banner>
+    <div ref={ref} tabIndex={-1} className="focus-ring scroll-mt-4 rounded-md">
+      <Banner tone="danger" title={title}>
+        {toUserMessage(error)}
+      </Banner>
+    </div>
   )
 }
 

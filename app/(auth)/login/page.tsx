@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import { Suspense } from 'react'
 import { Card } from '@/components/ui/Card'
 import { Icon } from '@/components/ui/Icon'
 import { LoginForm } from '@/features/auth/components/LoginForm'
@@ -21,9 +20,7 @@ export default function LoginPage() {
           <p className="text-body text-text-secondary">ระบบจัดการร้านล้างรถ</p>
         </header>
         <Card>
-          <Suspense fallback={null}>
-            <LoginForm />
-          </Suspense>
+          <LoginForm />
         </Card>
         <p className="text-center text-caption text-text-tertiary">
           Car Care Intelligence{VERSION && ` · v${VERSION}`}

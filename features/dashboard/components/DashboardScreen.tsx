@@ -16,7 +16,7 @@ import { takeLastSaved } from '@/features/records/hooks'
 import { useDashboardData } from '../hooks'
 import { greeting, newestFirst, toCustomerBreakdown, toDebtSummary, toStats } from '../logic'
 import { ChartCard } from './ChartCard'
-import { CardHeader, CustomerBreakdownCard, DebtSummaryCard, MoneyHero } from './cards'
+import { CardHeader, CustomerBreakdownCard, DebtSummaryCard, DebtSummarySkeleton, MoneyHero } from './cards'
 import { RainAlert, WeatherDetail, WeatherStrip, useDashboardWeather, useWeatherDetail } from './Weather'
 
 // screen-specifications.md §2 — "/" ภาพรวมวันนี้
@@ -73,7 +73,10 @@ export function DashboardScreen({ email }: { email: string }) {
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        {/* On phones the buttons always have their own line, kept to the right. Before,
+            they shared the title's line until the weather and the update time arrived,
+            then wrapped and pushed every card down (CLS 0.5, Step 09 O-08) */}
+        <div className="flex items-center gap-2 max-md:basis-full max-md:justify-end">
           <WeatherStrip weather={weather} onOpen={weatherDetail.show} />
           <Button
             variant="secondary"
@@ -81,13 +84,13 @@ export function DashboardScreen({ email }: { email: string }) {
               refresh()
               refetchWeather()
             }}
-            aria-label={refreshing ? 'กำลังอัปเดต' : `อัปเดตข้อมูล${updatedAt ? ` (ล่าสุด ${updatedAt} น.)` : ''}`}
             leadingIcon="refresh"
             isLoading={refreshing}
             loadingText="กำลังอัปเดต…"
             size="sm"
           >
             {updatedAt ? `อัปเดต ${updatedAt}` : 'อัปเดต'}
+            <span className="sr-only">{updatedAt ? ' น. (โหลดข้อมูลใหม่)' : ' (โหลดข้อมูลใหม่)'}</span>
           </Button>
         </div>
       </header>
@@ -100,6 +103,7 @@ export function DashboardScreen({ email }: { email: string }) {
         </div>
 
         <div className="empty:hidden lg:col-span-5 lg:col-start-8 lg:row-start-1">
+          {loading && <DebtSummarySkeleton />}
           {debt && <DebtSummaryCard debt={debt} />}
           {data && !data.unpaidRecords.ok && (
             <Card tone="warning">
@@ -116,7 +120,7 @@ export function DashboardScreen({ email }: { email: string }) {
             </Link>
           </CardHeader>
           {loading ? (
-            <SkeletonGroup>
+            <SkeletonGroup className="grid grid-cols-1 divide-y divide-border">
               <SkeletonRow />
               <SkeletonRow />
               <SkeletonRow />

@@ -65,7 +65,14 @@ describe('DashboardScreen', () => {
     expect(screen.getByRole('link', { name: /ค้างชำระ/ })).toHaveAttribute('href', '/debts')
     const list = screen.getByRole('region', { name: /รายการวันนี้ \(2\)/ })
     const rows = within(list).getAllByRole('button', { name: /แตะเพื่อแก้ไข/ })
-    expect(rows[0]).toHaveAccessibleName(/กข 2 ฿150 ค้างชำระ/)
+    // The name is the text on screen in the same order, plus a hint (WCAG 2.5.3 Label in Name)
+    expect(rows[0]).toHaveAccessibleName(/^กข 2.*ค้างชำระ.*฿150.*แตะเพื่อแก้ไข$/)
+  })
+
+  it('keeps a place for the debt card while loading, so the cards below do not jump (O-09)', async () => {
+    load.loadDashboard.mockReturnValue(new Promise(() => {}))
+    await renderScreen()
+    expect(screen.getByText('กำลังโหลดยอดค้างชำระ…')).toBeInTheDocument()
   })
 
   it('opens the edit dialog through the URL so the back button closes it', async () => {

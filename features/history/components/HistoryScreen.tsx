@@ -22,6 +22,7 @@ import { EditRecordDialog } from '@/features/records/components/EditRecordDialog
 import { ExpenseRow, IncomeRow } from '@/features/records/components/RecordRow'
 import { useEditParam } from '@/features/records/useEditParam'
 import type { Expense, Record as AppRecord } from '@/types'
+import { useMediaQuery, WIDE_SCREEN } from '@/lib/use-media-query'
 import { loadYear } from '../api'
 import {
   activeFilterCount,
@@ -374,6 +375,7 @@ function RecordList({
   onClear: () => void
   onOpen: (id: string) => void
 }) {
+  const wide = useMediaQuery(WIDE_SCREEN)
   if (empty || groups.length === 0) {
     return (
       <Card>
@@ -394,32 +396,31 @@ function RecordList({
     )
   }
 
+  // One layout only: rendering both and hiding one doubled the work of every row
+  // (optimization-log O-04)
+  if (wide) return <DataTable groups={groups} kind={kind} onOpen={onOpen} />
+
   return (
-    <>
-      <div className="grid grid-cols-1 gap-4 lg:hidden">
-        {groups.map((g) => (
-          <section key={g.day} aria-label={g.label}>
-            <DayGroupHeader group={g} kind={kind} />
-            <Card className="p-2!">
-              <ul className="grid grid-cols-1 divide-y divide-border">
-                {(g.items as Array<AppRecord | Expense>).map((row) => (
-                  <li key={row.id}>
-                    {kind === 'income' ? (
-                      <IncomeRow record={row as AppRecord} showAudit onOpen={(r) => onOpen(r.id)} />
-                    ) : (
-                      <ExpenseRow expense={row as Expense} showAudit onOpen={(e) => onOpen(e.id)} />
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          </section>
-        ))}
-      </div>
-      <div className="hidden lg:block">
-        <DataTable groups={groups} kind={kind} onOpen={onOpen} />
-      </div>
-    </>
+    <div className="grid grid-cols-1 gap-4">
+      {groups.map((g) => (
+        <section key={g.day} aria-label={g.label}>
+          <DayGroupHeader group={g} kind={kind} />
+          <Card className="p-2!">
+            <ul className="grid grid-cols-1 divide-y divide-border">
+              {(g.items as Array<AppRecord | Expense>).map((row) => (
+                <li key={row.id}>
+                  {kind === 'income' ? (
+                    <IncomeRow record={row as AppRecord} showAudit onOpen={(r) => onOpen(r.id)} />
+                  ) : (
+                    <ExpenseRow expense={row as Expense} showAudit onOpen={(e) => onOpen(e.id)} />
+                  )}
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </section>
+      ))}
+    </div>
   )
 }
 

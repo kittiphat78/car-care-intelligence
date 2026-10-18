@@ -22,16 +22,16 @@ function DebtRow({ record, today, onOpen }: { record: AppRecord; today: string; 
     <button
       type="button"
       onClick={() => onOpen(record)}
-      aria-label={`${record.plate} ${date} ค้าง ${days} วัน ${baht(record.price)} แตะเพื่อแก้ไข`}
       className="focus-ring flex w-full items-center gap-3 rounded-md px-2 py-2.5 text-left hover:bg-surface-2"
     >
       <span className="grid grid-cols-1 min-w-0 flex-1">
         <span className="truncate text-body font-semibold text-text">{record.plate}</span>
         <span className="truncate text-caption text-text-tertiary">
-          {date} · {days} วัน{note ? ` · ${note}` : ''}
+          {date} · <span className="sr-only">ค้าง </span>{days} วัน{note ? ` · ${note}` : ''}
         </span>
       </span>
       <span className="shrink-0 text-body font-bold text-unpaid tabular-nums">{baht(record.price)}</span>
+      <span className="sr-only">แตะเพื่อแก้ไข</span>
     </button>
   )
 }

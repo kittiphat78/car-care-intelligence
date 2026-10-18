@@ -113,6 +113,24 @@ describe('HistoryScreen', () => {
     expect(screen.queryByText('กข 3')).toBeNull()
   })
 
+  it('renders one layout only: the list on phones, the table on wide screens (O-04)', async () => {
+    await renderScreen()
+    expect(screen.getByRole('region', { name: '15 ต.ค. 2569 · วันพฤหัสบดี' })).toBeInTheDocument()
+    expect(screen.queryByRole('table')).toBeNull()
+  })
+
+  it('shows only the table on a wide screen', async () => {
+    const original = window.matchMedia
+    window.matchMedia = ((query: string) => ({ matches: query === '(min-width: 1024px)', media: query, addEventListener: () => {}, removeEventListener: () => {} })) as unknown as typeof window.matchMedia
+    try {
+      await renderScreen()
+      expect(screen.getByRole('table', { name: 'รายการรายรับ' })).toHaveTextContent('กข 1')
+      expect(screen.queryByRole('region', { name: '15 ต.ค. 2569 · วันพฤหัสบดี' })).toBeNull()
+    } finally {
+      window.matchMedia = original
+    }
+  })
+
   it('keeps the tab in the URL', async () => {
     await renderScreen()
     fireEvent.click(screen.getByRole('tab', { name: 'รายจ่าย' }))

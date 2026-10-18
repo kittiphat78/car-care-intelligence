@@ -6,7 +6,7 @@ import { cn } from '@/lib/cn'
 import { Card } from '@/components/ui/Card'
 import { ChoiceGroup } from '@/components/ui/ChoiceGroup'
 import { Icon, type IconName } from '@/components/ui/Icon'
-import { SkeletonGroup, SkeletonMoney, SkeletonText } from '@/components/ui/Skeleton'
+import { Skeleton, SkeletonGroup, SkeletonText } from '@/components/ui/Skeleton'
 import { ErrorState } from '@/components/patterns/EmptyState'
 import { topCustomers, type CustomerBreakdownItem, type CustomerPeriodKey, type DashboardStats, type DebtSummary } from '../logic'
 
@@ -35,6 +35,7 @@ function StatItem({
   icon,
   tone,
   trend,
+  reserveTrend = false,
 }: {
   label: string
   value: string
@@ -42,6 +43,8 @@ function StatItem({
   icon: IconName
   tone: string
   trend?: { up: boolean; pct: number }
+  /** Keep the trend line's height even without a trend, so the card's height never depends on the data */
+  reserveTrend?: boolean
 }) {
   return (
     <div className="grid grid-cols-1 min-w-0 gap-0.5">
@@ -57,6 +60,11 @@ function StatItem({
         <p className={cn('flex items-center gap-0.5 text-caption font-semibold', trend.up ? 'text-success-text' : 'text-danger-text')}>
           <Icon name={trend.up ? 'arrow-up' : 'arrow-down'} size="sm" />
           {trend.pct}% <span className="font-normal text-text-tertiary">จากเมื่อวาน</span>
+        </p>
+      )}
+      {!trend && reserveTrend && (
+        <p aria-hidden="true" className="invisible text-caption">
+          –
         </p>
       )}
     </div>
@@ -75,9 +83,15 @@ export function MoneyHero({ stats, error, onRetry }: { stats: DashboardStats | n
         {error ? (
           <ErrorState message={error} onRetry={onRetry} />
         ) : !stats ? (
-          <SkeletonGroup className="mt-2 grid grid-cols-1 gap-2">
-            <SkeletonMoney />
-            <SkeletonText className="w-40" />
+          // Same lines as the loaded card, each bar one line of the same text style,
+          // so nothing below moves when the numbers arrive (Step 09 O-10)
+          <SkeletonGroup>
+            <div className="text-display lg:text-display-lg">
+              <Skeleton className="h-[1lh] w-48" />
+            </div>
+            <div className="text-caption">
+              <Skeleton className="h-[1lh] w-40" />
+            </div>
           </SkeletonGroup>
         ) : (
           <>
@@ -90,6 +104,26 @@ export function MoneyHero({ stats, error, onRetry }: { stats: DashboardStats | n
           </>
         )}
       </div>
+      {!stats && !error && (
+        <div aria-hidden="true" className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-border pt-4 md:grid-cols-4">
+          {[true, false, false, false].map((withTrend, i) => (
+            <div key={i} className="grid grid-cols-1 gap-0.5">
+              <div className="text-caption">
+                <Skeleton className="h-[1lh] w-20" />
+              </div>
+              <div className="text-heading">
+                <Skeleton className="h-[1lh] w-16" />
+              </div>
+              {/* Income usually shows the change against yesterday */}
+              {withTrend && (
+                <div className="text-caption">
+                  <Skeleton className="h-[1lh] w-24" />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
       {stats && !error && (
         <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-border pt-4 md:grid-cols-4">
           <StatItem
@@ -98,6 +132,7 @@ export function MoneyHero({ stats, error, onRetry }: { stats: DashboardStats | n
             icon="arrow-down"
             tone="text-income"
             trend={stats.diffPct !== 0 ? { up: stats.isUp, pct: Math.abs(stats.diffPct) } : undefined}
+            reserveTrend
           />
           <StatItem label="รายจ่าย" value={baht(stats.todayExpense)} icon="receipt" tone="text-expense" />
           <StatItem label="ล้างรถ" value={String(stats.washCount)} unit="คัน" icon="wash" tone="text-wash" />
@@ -132,6 +167,29 @@ export function DebtSummaryCard({ debt }: { debt: DebtSummary }) {
         </p>
       </Card>
     </Link>
+  )
+}
+
+/**
+ * Holds the debt card's place while loading, line for line (each bar is one line of the
+ * same text style), so the cards below do not jump down when it arrives (Step 09 O-09).
+ * Most days there is something owed; when there is not, the card goes away after loading.
+ */
+export function DebtSummarySkeleton() {
+  return (
+    <SkeletonGroup label="กำลังโหลดยอดค้างชำระ…">
+      <Card tone="warning" className="grid grid-cols-1 gap-1">
+        <div className="text-label">
+          <Skeleton className="h-[1lh] w-24" />
+        </div>
+        <div className="text-title-lg">
+          <Skeleton className="h-[1lh] w-36" />
+        </div>
+        <div className="text-caption">
+          <Skeleton className="h-[1lh] w-32" />
+        </div>
+      </Card>
+    </SkeletonGroup>
   )
 }
 

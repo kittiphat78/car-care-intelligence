@@ -102,6 +102,37 @@ describe.each(['Asia/Bangkok', 'UTC', 'America/New_York'])('device TZ=%s', (tz) 
   })
 })
 
+describe('formatBangkok', () => {
+  it('gives exactly what toLocaleString gives, for every option set the app uses (O-03)', () => {
+    const sets: Intl.DateTimeFormatOptions[] = [
+      { hour: '2-digit', minute: '2-digit', hour12: false },
+      { day: 'numeric', month: 'short' },
+      { day: 'numeric', month: 'short', year: 'numeric' },
+      { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' },
+      { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false },
+      { month: 'long', year: 'numeric' },
+      { month: 'short', year: '2-digit' },
+      { weekday: 'short' },
+      { day: 'numeric' },
+      { day: 'numeric', month: 'long', year: 'numeric' },
+      {},
+    ]
+    for (const at of ['2026-10-14T16:59:59Z', '2026-10-14T17:00:00Z', '2024-02-29T03:04:05Z', new Date('2026-01-01T00:00:00+07:00')]) {
+      for (const options of sets) {
+        for (const locale of ['th-TH', 'en-GB']) {
+          const expected = new Date(at).toLocaleString(locale, { ...options, timeZone: 'Asia/Bangkok' })
+          expect(formatBangkok(at, options, locale)).toBe(expected)
+          expect(formatBangkok(at, options, locale)).toBe(expected) // second call uses the kept formatter
+        }
+      }
+    }
+  })
+
+  it('keeps "Invalid Date" for a bad value instead of throwing', () => {
+    expect(formatBangkok('not a date', { day: 'numeric' })).toBe(new Date('x').toLocaleString('th-TH'))
+  })
+})
+
 describe('calendar arithmetic', () => {
   it('adds days across month, year and leap-day boundaries', () => {
     expect(addDays('2026-10-31', 1)).toBe('2026-11-01')

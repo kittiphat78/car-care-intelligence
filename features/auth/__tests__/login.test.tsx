@@ -28,6 +28,7 @@ beforeEach(() => {
   nav.replace.mockReset()
   nav.refresh.mockReset()
   nav.search = ''
+  window.history.replaceState(null, '', '/login')
   auth.signInWithPassword.mockReset()
   auth.signOut.mockReset()
   localStorage.clear()
@@ -78,7 +79,7 @@ describe('LoginForm', () => {
   })
 
   it('signs in, remembers the email and goes back to the page that asked (same site only)', async () => {
-    nav.search = 'next=%2Fhistory%3Ftab%3Dexpense'
+    window.history.replaceState(null, '', '/login?next=%2Fhistory%3Ftab%3Dexpense')
     auth.signInWithPassword.mockResolvedValue({ data: { session: {} }, error: null })
     render(<LoginForm />)
     fill(' owner@example.com ', 'secret')
@@ -90,7 +91,7 @@ describe('LoginForm', () => {
   })
 
   it('ignores a next link to another website', async () => {
-    nav.search = 'next=https%3A%2F%2Fevil.example'
+    window.history.replaceState(null, '', '/login?next=https%3A%2F%2Fevil.example')
     auth.signInWithPassword.mockResolvedValue({ data: { session: {} }, error: null })
     render(<LoginForm />)
     fill('owner@example.com', 'secret')
