@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/Checkbox'
 import { TextInput } from '@/components/ui/TextInput'
 import { FormField, describedBy } from '@/components/patterns/FormField'
 import { useOnline } from '@/components/patterns/StatusBar'
+import { useHydrated } from '@/lib/use-hydrated'
 import { SIGN_IN_MESSAGES, signIn, type SignInFailure } from '../api'
 
 // component-specifications.md §3.14 · user-flows UF-AUTH-01
@@ -24,13 +25,20 @@ export function checkLogin(email: string, password: string): { email?: string; p
   return errors
 }
 
+/**
+ * The form comes with the HTML (Step 09 O-01), so it can be seen and typed into before
+ * the JavaScript has loaded. Two consequences (Step 10, D-07):
+ * - email and password are uncontrolled, so what was typed early is not wiped when React
+ *   takes over the form;
+ * - the button stays disabled until then and the form posts, so a tap (or Enter) never
+ *   lets the browser submit by itself with the password in the address.
+ */
 export function LoginForm() {
   const router = useRouter()
   const online = useOnline()
   const emailRef = useRef<HTMLInputElement>(null)
   const passwordRef = useRef<HTMLInputElement>(null)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const ready = useHydrated()
   const [remember, setRemember] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
@@ -42,8 +50,9 @@ export function LoginForm() {
     try {
       const saved = localStorage.getItem(REMEMBER_KEY)
       if (saved) {
+        // Never over what someone already typed
+        if (emailRef.current && !emailRef.current.value) emailRef.current.value = saved
         // eslint-disable-next-line react-hooks/set-state-in-effect
-        setEmail(saved)
         setRemember(true)
       }
     } catch {
@@ -55,6 +64,8 @@ export function LoginForm() {
     e.preventDefault()
     if (busy) return
     setFailure(null)
+    const email = emailRef.current?.value ?? ''
+    const password = passwordRef.current?.value ?? ''
     const found = checkLogin(email, password)
     setErrors(found)
     if (found.email) return emailRef.current?.focus()
@@ -63,9 +74,9 @@ export function LoginForm() {
     setBusy(true)
     const result = await signIn(email.trim(), password)
     if (!result.ok) {
-      // Clear the wrong password in the same update that shows the message, so
-      // anything typed after the message appears is kept
-      if (result.reason === 'invalid') setPassword('')
+      // Clear the wrong password before the message shows, so anything typed after
+      // the message appears is kept
+      if (result.reason === 'invalid' && passwordRef.current) passwordRef.current.value = ''
       setFailure(result.reason)
       setBusy(false)
       if (result.reason === 'invalid') passwordRef.current?.focus()
@@ -85,7 +96,7 @@ export function LoginForm() {
   }
 
   return (
-    <form noValidate onSubmit={onSubmit} aria-busy={busy || undefined} className="grid grid-cols-1 gap-5">
+    <form method="post" noValidate onSubmit={onSubmit} aria-busy={busy || undefined} className="grid grid-cols-1 gap-5">
       {failure && (
         <Banner tone="danger" title={SIGN_IN_MESSAGES[failure]}>
           {failure === 'invalid' ? 'ตรวจอีเมลและรหัสผ่านแล้วลองใหม่' : undefined}
@@ -102,8 +113,7 @@ export function LoginForm() {
           autoComplete="username"
           autoCapitalize="none"
           spellCheck={false}
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          defaultValue=""
           invalid={!!errors.email}
           aria-describedby={describedBy('login-email', { error: errors.email })}
         />
@@ -116,8 +126,7 @@ export function LoginForm() {
           type={showPassword ? 'text' : 'password'}
           name="password"
           autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          defaultValue=""
           invalid={!!errors.password}
           aria-describedby={describedBy('login-password', { error: errors.password })}
           suffix={
@@ -134,7 +143,7 @@ export function LoginForm() {
 
       <Checkbox label="จดจำอีเมล" checked={remember} onChange={setRemember} />
 
-      <Button type="submit" size="lg" fullWidth disabled={!online} isLoading={busy} loadingText="กำลังเข้าสู่ระบบ…">
+      <Button type="submit" size="lg" fullWidth disabled={!online || !ready} isLoading={busy} loadingText="กำลังเข้าสู่ระบบ…">
         {online ? 'เข้าสู่ระบบ' : 'ไม่มีอินเทอร์เน็ต'}
       </Button>
 

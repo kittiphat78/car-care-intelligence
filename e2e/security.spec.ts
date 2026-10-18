@@ -208,6 +208,45 @@ test('nothing in the app is blocked by the content security policy (D-05)', asyn
   expect(blocked, 'CSP errors in the console').toEqual([])
 })
 
+test('signing in before the JavaScript has loaded never puts the password in the address (D-07)', async ({ page }) => {
+  // Hold the scripts: the page stays exactly as the server sent it
+  let release!: () => void
+  const held = new Promise<void>((r) => (release = r))
+  await page.route(/\/_next\/static\/chunks\/.*\.js/, async (route) => {
+    await held
+    await route.continue().catch(() => {})
+  })
+  await page.goto('/login', { waitUntil: 'domcontentloaded' })
+  await page.getByLabel('อีเมล', { exact: true }).fill(E2E_EMAIL)
+  await page.getByLabel('รหัสผ่าน', { exact: true }).fill('typed-before-ready')
+  await expect(page.locator('form')).toHaveAttribute('method', 'post')
+  await expect(page.getByRole('button', { name: 'เข้าสู่ระบบ' })).toBeDisabled()
+  await page.getByLabel('รหัสผ่าน', { exact: true }).press('Enter')
+  await page.waitForTimeout(500)
+  expect(page.url()).not.toContain('password')
+  expect(new URL(page.url()).pathname).toBe('/login')
+  // When the JavaScript arrives, what was typed is still there and the button works
+  release()
+  await expect(page.getByRole('button', { name: 'เข้าสู่ระบบ' })).toBeEnabled()
+  await expect(page.getByLabel('อีเมล', { exact: true })).toHaveValue(E2E_EMAIL)
+  await expect(page.getByLabel('รหัสผ่าน', { exact: true })).toHaveValue('typed-before-ready')
+})
+
+test('the record form cannot be submitted by the browser before the JavaScript has loaded (D-07)', async ({ page }) => {
+  await signIn(page)
+  let release!: () => void
+  const held = new Promise<void>((r) => (release = r))
+  await page.route(/\/_next\/static\/chunks\/.*\.js/, async (route) => {
+    await held
+    await route.continue().catch(() => {})
+  })
+  await page.goto('/add', { waitUntil: 'domcontentloaded' })
+  await expect(page.locator('form')).toHaveAttribute('method', 'post')
+  await expect(page.getByRole('button', { name: 'บันทึก', exact: true })).toBeDisabled()
+  release()
+  await expect(page.getByRole('button', { name: 'บันทึก', exact: true })).toBeEnabled()
+})
+
 test.describe('sign-in rules in the app', () => {
   test('every protected page sends a signed-out visitor to login and remembers where', async ({ page }) => {
     for (const path of ['/', '/add', '/history', '/debts', '/more']) {
