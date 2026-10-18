@@ -36,6 +36,7 @@
 | C8: ลบ v1 design system | `chore/remove-legacy-css` | `ca39a07` | CSS 92→60 KB | ✅ `develop` · PR #36 |
 | C9: E2E CUJ-1..8 + axe (Playwright, Supabase จำลองใน CI) | `test/e2e-cuj` | `60da757` | 18/18 ในเครื่อง ×3 · CI `e2e` ✅ (4 นาที) | ✅ `develop` · PR #39 |
 | แก้หลังเจ้าของทดสอบ | `fix/ui-tokens-robust`, `fix/legacy-css-scope`, `fix/mobile-sheet`, `fix/mobile-width`, `fix/ui-overlaps` | — | ภาพจาก build จริง 390/1440 px | ✅ `develop` · PR #27, #29, #33, #34, #38 |
+| RC: `v2.0.0-rc.1` | `release/2.0.0` | `28be954` | CI 9/9 รวม `e2e` ✅ · Preview deploy ✅ · **UAT เจ้าของผ่าน** 2026-10-18 | 🔄 bump `2.0.0` แล้ว · รอ PR → `main` (merge commit) · tag `v2.0.0-rc.1` → `28be954` ✅ |
 | C1–C9 | — | — | — | ยังไม่เริ่ม |
 
 ## 2. A1 — CI quality gates
