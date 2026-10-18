@@ -12,19 +12,21 @@
 | A2: Ignored Build Step | — (ตั้งใน Vercel โดยเจ้าของ) | — | commit docs-only ถูกข้าม build ✅ | ✅ (S07-08) |
 | A4: proxy + server client + `next` param | `refactor/proxy-and-server-client` | `9ca9719`, `a73e770` | 222/222 · production: `/history` → `/login?next=%2Fhistory` ✅ · เจ้าของ login ใช้งานได้ ✅ | ✅ **Production** · PR #6 → `24c6c8c` |
 | A9: error reporting | `chore/error-reporting` | `75d7613` | 242/242 · production: `/api/client-errors` ไม่มี session → 401 ✅ | ✅ **Production** · PR #7 → `152fd26` |
-| B1: เวลาไทย | `refactor/time-bangkok` (rebase บน `152fd26`) | `776780b` | 287/287 ทั้ง TZ Bangkok และ UTC · test ใหม่ fail กับโค้ดเดิมเมื่อ TZ=UTC/NY ✅ | 🔄 push แล้ว · รอ PR + ทดสอบ Preview + merge |
-| B2: data-access layer | `refactor/data-access-layer` (ต่อจาก B1) | `c402e3b` | 323/323 (รวม A4 `next`) ทั้ง TZ Bangkok และ UTC ✅ | ✅ เสร็จในเครื่อง · ไม่ push |
+| B1: เวลาไทย | `refactor/time-bangkok` (rebase บน `152fd26`) | `776780b` | 287/287 ทั้ง TZ Bangkok และ UTC · test ใหม่ fail กับโค้ดเดิมเมื่อ TZ=UTC/NY ✅ | ✅ **Production** · PR #8 |
+| B2: data-access layer | `refactor/data-access-layer` (ต่อจาก B1) | `c402e3b` | 323/323 (รวม A4 `next`) ทั้ง TZ Bangkok และ UTC ✅ | ✅ **Production** · PR #9 |
 | A5: DB baseline + CI `db` | `db/baseline`, `db/indexes-idempotency-audit` | `e67140c`, `978af00` | CI `db` job บน GitHub: migration ทั้งหมด + seed + SQL tests + rollback ทุกไฟล์ ✅ (2 นาที 15 วินาที) | ✅ merge แล้ว (PR #11, #16) |
 | A8: ลบ API ที่ไม่ใช้ | `chore/remove-unused-api` | `e99c31c` | 241/241 · production: `/api/insights`, `/api/export-excel` → 404 ✅ | ✅ **Production** · PR #10 |
 | P-3/P-4: staging | — (Supabase + Vercel โดยเจ้าของ) | — | Preview login + ทดสอบ B2 บน staging ✅ · `PRODUCTION_SUPABASE_PROJECT_REF` ตั้งแล้ว | ✅ |
 | A3: env guard | `feature/env-guard` | `7528cb0` | 333/333 · จำลอง build Preview→production ไม่ผ่าน ✅ | ✅ **Production** · PR #13 |
-| A6: สมาชิกร้าน + RLS | `db/app-members-rls` | `c3cc5bf`, `fa32310` | staging: `ALL MEMBER RLS TESTS PASSED` ✅ · production 2026-10-15: 4/4 บัญชีเป็นสมาชิก, แอปปกติ, anon ถูกปฏิเสธทุกตาราง/ฟังก์ชัน ✅ | ✅ **ใช้กับ production แล้ว** · ไฟล์ SQL รอ PR |
+| A6: สมาชิกร้าน + RLS | `db/app-members-rls` | `c3cc5bf`, `fa32310` | staging: `ALL MEMBER RLS TESTS PASSED` ✅ · production 2026-10-15: 4/4 บัญชีเป็นสมาชิก, แอปปกติ, anon ถูกปฏิเสธทุกตาราง/ฟังก์ชัน ✅ | ✅ **ใช้กับ production แล้ว** · PR #15 |
 | A7: index + client_request_id + audit trigger | `db/indexes-idempotency-audit` | `ea15a4a` | ในเครื่อง (Supabase local) + staging: `ALL INDEX / IDEMPOTENCY / AUDIT TESTS PASSED` ✅ · production 2026-10-15: index 4 / column 2 / trigger 2 ✅ · บันทึกและแก้ไขในแอปแสดงชื่อจาก session ✅ | ✅ **ใช้กับ production แล้ว** · PR #16 |
 | B3: ยอดหน้าแรกในฐานข้อมูล (M006) | `feature/dashboard-rpc` | `e4f147b` | SQL tests ✅ · ยอดบน seed ตรงกับสูตรแยก ✅ · production: ยอดค้างชำระ/รายรับตามลูกค้าเท่าเดิม ✅ | ✅ **Production** · PR #18 |
 | B4: เคลียร์ยอดตาม id (M007) | `fix/debts-settle` | `7b556c1` | SQL tests ✅ · production: ยืนยัน "4 รายการ รวม ฿6,500" ✅ | ✅ **Production** · PR #18 |
 | B5: กฎบันทึกชุดเดียว + กันซ้ำ + กันแก้ทับ | `fix/records-validation-shared` | `067c073` | 357/357 · production: แก้ไขโดยลบทะเบียน → "กรุณากรอกป้ายทะเบียน" ✅ | ✅ **Production** · PR #18 |
 | B7: Excel export กันสูตร | `fix/export-complete` | `0c43ee5` | 365/365 · test สร้างไฟล์จริงแล้วอ่านกลับ ✅ | ✅ **Production** · PR #20 |
-| B6: กฎข้อมูล (M008) + เลขลำดับ (M009, ตัวเลือก ก) | `db/constraints-seq` | — | ข้อมูล production ผ่านกฎ 9/9 · SQL tests ✅ · 2 session พร้อมกันได้เลข 1, 2 ✅ | 🔄 รอ staging + อนุมัติ production |
+| B6: กฎข้อมูล (M008) + เลขลำดับ (M009, ตัวเลือก ก) | `db/constraints-seq` | — | ข้อมูล production ผ่านกฎ 9/9 · SQL tests ✅ · 2 session พร้อมกันได้เลข 1, 2 ✅ | ✅ **ใช้กับ production แล้ว** 2026-10-15 · PR #21 |
+| **R1: release v1.2.0** | `release/1.2.0` | `425e9ab` | CI 8/8 บน merge commit ✅ · Vercel production deploy success 2026-10-16 18:34 (เวลาไทย) | ✅ **Production** · PR #22 merge `b5213db` (merge commit) · tag `v1.2.0` → `b5213db` ✅ · `docs/redesign/release-1.2.0.md` |
+| C1: tokens + primitives (Phase B) | `feature/ui-tokens-and-primitives` (จาก `develop`) | `7bb3aca` | 461/461 · contrast 38 คู่ × 2 theme ✅ · lint/type/build ✅ | 🔄 push แล้ว · รอ PR → `develop` (ไม่ขึ้น production จนถึง v2.0.0) |
 | C1–C9 | — | — | — | ยังไม่เริ่ม |
 
 ## 2. A1 — CI quality gates
@@ -73,8 +75,8 @@
 | S07-10 | `proxy.ts` ของ Next 16 รันบน Node runtime (middleware เดิมเป็น Edge) [I จากเอกสาร Next 16] | Low | RESOLVED (architecture §8 เลือก Node อยู่แล้ว) |
 | S07-11 | Vercel Hobby เก็บ runtime log สั้น [I ~1 ชั่วโมง] และไม่มี alert ดังนั้น A9 ช่วยตอนตรวจย้อนหลังได้จำกัด | Medium | UNRESOLVED (ADR-11: ทบทวนหลัง 1 เดือน / Sentry ต้องอนุมัติ) |
 | S07-12 | B2 ยังไม่ย้ายการเรียก Auth (login, `getUser`, `signOut`) และ realtime channel เพราะเป็นงาน Authentication (`features/auth`, Phase C) และ B3 | Low | — (ตามแผน) |
-| S07-13 | ถ้านับลำดับรายการของวัน (`seq_number`) ไม่สำเร็จ จะเริ่มที่ 1 เหมือนเดิม และลำดับซ้ำยังไม่แก้ | Low | — (แก้ถาวรใน B6) |
-| S07-14 | ทดสอบเส้นทางบันทึก/แก้/ลบจริงบน Preview ไม่ได้ เพราะ Preview ใช้ production DB ทำให้ unit test ใช้ mock | Medium | BLOCKED (P-3/P-4 staging) |
+| S07-13 | ถ้านับลำดับรายการของวัน (`seq_number`) ไม่สำเร็จ จะเริ่มที่ 1 เหมือนเดิม และลำดับซ้ำยังไม่แก้ | Low | RESOLVED (M009 ใน B6) |
+| S07-14 | ทดสอบเส้นทางบันทึก/แก้/ลบจริงบน Preview ไม่ได้ เพราะ Preview ใช้ production DB ทำให้ unit test ใช้ mock | Medium | RESOLVED (staging + Preview ใช้ได้ตั้งแต่ A6) |
 | S07-15 | `fetchAllPages` ใช้ offset pagination ซึ่งถ้ามีการบันทึกระหว่างโหลดหลายหน้า อาจได้แถวซ้ำ 1 แถว [I] (ร้านบันทึก ~3 รายการ/วัน) | Low | UNRESOLVED (แก้ด้วย RPC ใน B3) |
 | S07-16 | สภาพอากาศ (`useWeather`) ยังใช้ชั่วโมงของเครื่อง | Low | — (ย้ายใน `features/weather`) |
 | S07-17 | login บน Preview ไม่ได้: สาเหตุจริงคือ `NEXT_PUBLIC_SUPABASE_URL` ของ Preview เป็นค่า production แต่ key เป็นของ staging (ตรวจด้วย F12) → แก้ค่าแล้ว | Low | RESOLVED |
@@ -84,16 +86,19 @@
 | S07-21 | `GEMINI_API_KEY` ใน Vercel | Low | RESOLVED (ไม่มีตัวแปรนี้อยู่แล้ว) |
 | S07-22 | ไฟล์ test RLS แบบหลายคำสั่งใช้ไม่ได้ใน SQL Editor ของ Supabase (รันแต่ละคำสั่งแยก transaction) → เขียนใหม่เป็น DO block เดียวที่ rollback ตัวเอง | Low | RESOLVED (`fa32310`) |
 | S07-23 | VS Code บันทึกไฟล์ test เวอร์ชันเก่าทับไฟล์ใหม่ (เนื้อหาซ้อนกัน) → กู้จาก commit | Low | RESOLVED |
-| S07-24 | Backup production (P-5) เป็น CSV ที่เจ้าของ export เอง ยังไม่ได้ทดลอง restore | Medium | UNRESOLVED (ก่อน B6 ที่แก้ข้อมูล) |
+| S07-24 | Backup production (P-5) เป็น CSV ที่เจ้าของ export เอง ยังไม่ได้ทดลอง restore | Medium | RESOLVED (ดู S07-31) |
 | S07-25 | Supabase CLI บน Windows ต้องตั้ง `TMP`/`TEMP` เป็นโฟลเดอร์ที่เขียนได้ ไม่งั้น `supabase start` ล้มด้วย `makeTempDirectoryScoped NotFound` (CI บน Linux ไม่เป็น) | Low | RESOLVED (วิธีแก้บันทึกไว้) |
-| S07-26 | ทดสอบ A7 บน production ด้วยการบันทึกรายการ "7788 TEST" ฿500 ลงข้อมูลจริง ต้องลบออก | Low | NEEDS_APPROVAL (เจ้าของลบในแอป) |
-| S07-27 | ตั้ง required checks (`lint`, `typecheck`, `test`, `build`, `audit`, `secrets`, `pr-title`, `db`) ใน ruleset ของ `main` | Medium | NEEDS_APPROVAL (เจ้าของ, A1-c / P-7) |
+| S07-26 | ทดสอบ A7 บน production ด้วยการบันทึกรายการ "7788 TEST" ฿500 ลงข้อมูลจริง ต้องลบออก | Low | RESOLVED (เจ้าของลบแล้ว · ดู S07-34) |
+| S07-27 | ตั้ง required checks (`lint`, `typecheck`, `test`, `build`, `audit`, `secrets`, `pr-title`, `db`) ใน ruleset ของ `main` | Medium | NEEDS_APPROVAL · 2026-10-16 เจ้าของกรอกฟอร์ม ruleset ครบแล้ว (8 checks, PR 0 approval, กัน delete/force push) แต่ API ยังไม่เห็น ruleset → ต้องกด **Create** แล้วตรวจซ้ำ |
 | S07-28 | PR #18 ถูก merge ก่อนรัน M006/M007 บน production → ยอดบนหน้าแรกโหลดไม่ได้และเคลียร์ยอดล้มเหลว (ไม่แก้ข้อมูล) ประมาณ 22:45–22:48 2026-10-15 จนรัน SQL แล้ว | Medium | RESOLVED · ป้องกัน: บรรทัดแรกของ PR template บอกไฟล์ SQL ที่ต้องรันก่อน merge |
 | S07-29 | B3–B5 ทดสอบบน production หลัง merge แทน Preview (ทดสอบเฉพาะสิ่งที่ไม่เขียนข้อมูล) · เรื่องแก้ชนกัน 2 เครื่องและบันทึกซ้ำทดสอบด้วย unit test + SQL test เท่านั้น | Low | — (ยอมรับ) |
 | S07-30 | ลบ `isomorphic-dompurify` (ADR-10) ข้อความที่บันทึกก่อนนี้ซึ่งถูกแปลงเป็น `&lt;` ยังคงอยู่ | Low | — (ตาม ADR-10) |
 | S07-31 | ทดลองกู้ backup (G5): CSV จาก production (962 รายรับ / 91 รายจ่าย) import ลงตาราง `restore_*` บน staging แล้ว fingerprint และ hash ของ id ตรงกันทุกค่า · ลบตาราง restore แล้ว · ไฟล์เก็บที่ `backup-2026-10-15` ของเจ้าของ | High | RESOLVED 2026-10-15 |
 | S07-32 | เลขลำดับเดิมที่ซ้ำ 10 วัน / ข้าม 8 วัน: เจ้าของเลือก (ก) ไม่แก้ของเก่า M009 ใช้กับรายการใหม่เท่านั้น | Low | RESOLVED (ตัดสินแล้ว) |
 | S07-33 | แอปยังคำนวณ `seq_number` เองแล้วส่งไป (trigger แทนที่ให้) จึงยังมี request นับเกินมา 1 ครั้งต่อการบันทึก | Low | — (ลบใน Phase C เพื่อไม่ผูกลำดับ deploy) |
+| S07-34 | ทดสอบบน production ด้วยรายการ TEST1 (฿2,000), TEST2 (฿1,500), TEST3 (฿500) ลงข้อมูลจริง → เจ้าของลบแล้ว 2026-10-16 · การทดสอบที่เขียนข้อมูลต้องทำบน Preview (staging) | Low | RESOLVED |
+| S07-35 | C1: ตัวแปร radius ของ v1 เปลี่ยนชื่อเป็น `--legacy-radius-*` เพื่อไม่ทับ token ใหม่ · class `rounded-*` ในหน้าเดิมจึงโค้งน้อยลงเล็กน้อย (เช่น 24→20px) **เฉพาะบน `develop`** · `ErrorBanner.tsx` (v1) ยกเว้นจาก lint ของ UI ใหม่จนกว่าหน้าเดิมจะย้ายไป `Banner` | Low | — (ตามแผน ลบใน C8) |
+| S07-36 | S04-04 (ชื่อ variable ชนใน Tailwind v4) ตรวจกับ Tailwind 4.2.2 แล้ว: `@theme inline { --color-bg: var(--color-bg) }` อ้างตัวเอง จึงใช้ `@theme static` เก็บค่าจริง + `[data-theme="light"]` override ชื่อเดียวกัน | Low | RESOLVED |
 
 ## 4. รออนุมัติ (ต่อ feature)
 | # | ขอ | ผล |
