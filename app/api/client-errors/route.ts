@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { NextResponse, type NextRequest } from 'next/server'
-import { z } from 'zod'
+import { z } from '@/lib/zod'
 import { authenticateRequest } from '@/lib/serverAuth'
 import { APP_ERROR_CODES, ERROR_REF_PATTERN } from '@/lib/errors'
 import { MAX_REPORT_BYTES } from '@/lib/observability'

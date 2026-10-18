@@ -49,7 +49,12 @@
 - **แนะนำ:** PR แยก `build(deps)` (1) `npm audit fix` แบบไม่ข้าม major สำหรับ transitive ของ production (2) อัปเกรด `vitest` เป็น major ใหม่ในงานแยกพร้อมรัน test ทั้งหมด · เลือกเวอร์ชันที่ออกมาแล้วอย่างน้อย 2 สัปดาห์ (S07-42)
 - **ไม่ได้ทำใน Step 08:** การเปลี่ยน dependency กระทบ supply chain และ build production จึงต้องได้อนุมัติ
 
-### D-05 — CSP ยังอนุญาต `'unsafe-eval'` (ER-15) · Low · OPEN รออนุมัติ
+### D-05 — CSP ยังอนุญาต `'unsafe-eval'` (ER-15) · Low · FIXED (branch `fix/csp-no-unsafe-eval`)
+
+- **เจ้าของตัดสิน (2026-10-18):** ตัดใน PR แยก · แก้แล้ว: `next.config.ts` ใส่ `'unsafe-eval'` เฉพาะ `next dev` (ตาม guide CSP ของ Next 16: React ใช้ eval แค่ตอน dev) · production build ไม่มีแล้ว [V]
+- **พบเพิ่มตอนแก้:** Zod 4.4.3 ลอง `new Function('')` หนึ่งครั้งเพื่อดูว่าใช้ eval ได้ไหม เบราว์เซอร์จึงรายงาน CSP violation ทุกครั้งที่เปิดแอป (ไม่มีอะไรพัง เพราะ Zod จับ error ไว้) [V] → `lib/zod.ts` ตั้ง `z.config({ jitless: true })` และ ESLint ห้าม import `zod` ตรง
+- **ทดสอบซ้ำ:** E2E ใหม่ "nothing in the app is blocked by the content security policy" เก็บ `securitypolicyviolation` และ console error ทุกหน้า + ฟอร์มที่ validate + dialog แก้ไข + ส่งออก Excel + บิล PDF → ล้มเมื่อยังไม่ตั้ง jitless ✅ ผ่านหลังตั้ง [V] · test header ตรวจว่าไม่มี `unsafe-eval` [V] · E2E ทั้งชุด 47/47 สองรอบ [V]
+- **ยังไม่ได้ตรวจ:** Safari และ widget สภาพอากาศกับ API จริง → ตรวจบน Preview ก่อน merge [U]
 
 - **ปัจจุบัน:** production ส่ง `script-src 'self' 'unsafe-inline' 'unsafe-eval'` [V] (curl 2026-10-18)
 - **ทดลองแล้ว:** build ในเครื่องโดยตัด `'unsafe-eval'` แล้วรัน E2E ทั้งชุด 45/45 ผ่าน รวม Excel, บิล PDF, ฟอร์มทั้งหมด [V] · ใน bundle มีแค่ `Function("return this")` ของ lodash ใน exceljs (ไม่ถูกเรียกในเบราว์เซอร์ เพราะมี `self`) และการเช็ก `Function("")` ใน try/catch ของ Zod [V] · ยังไม่ได้ทดสอบหน้าสภาพอากาศกับ API จริงและ Safari [U]
