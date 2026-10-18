@@ -41,7 +41,7 @@ const eslintConfig = defineConfig([
     files: ["**/*.{ts,tsx}"],
     ignores: ["lib/zod.ts"],
     rules: {
-      "no-restricted-imports": ["error", { paths: [{ name: "zod", message: "import { z } from '@/lib/zod' (ตั้งค่าไว้ให้ผ่าน CSP แล้ว · D-05)" }] }],
+      "no-restricted-imports": ["error", { paths: ["zod", "zod/mini", "zod/v4"].map((name) => ({ name, message: "import { z } from '@/lib/zod' (zod/mini ที่ตั้งค่าให้ผ่าน CSP แล้ว · D-05, O-06)" })) }],
     },
   },
   {

@@ -5,9 +5,10 @@ import { expectAccessible, signIn, uniquePlate } from './helpers'
 
 const PAGES = ['/', '/add', '/add?type=expense', '/debts', '/history', '/history?export=1', '/more']
 
-test('no page is wider than a small phone (360 px)', async ({ page }) => {
+// WCAG 1.4.10 Reflow: 320 CSS px (Step 09 A-02 found a button running off at 320)
+test('no page is wider than the narrowest phone (320 px)', async ({ page }) => {
   test.skip(test.info().project.name !== 'phone', 'phone layout only')
-  await page.setViewportSize({ width: 360, height: 760 })
+  await page.setViewportSize({ width: 320, height: 640 })
   await signIn(page)
   for (const path of PAGES) {
     await page.goto(path)

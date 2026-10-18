@@ -30,17 +30,21 @@ export function WeatherStrip({ weather, onOpen }: { weather: WeatherData | null;
       type="button"
       onClick={onOpen}
       aria-haspopup="dialog"
-      aria-label={`สภาพอากาศ ${weather.condition} ${weather.temp} องศา โอกาสฝน ${weather.prob}% แตะเพื่อดูรายละเอียด`}
       className="press focus-ring flex min-h-11 items-center gap-2 rounded-md border border-border bg-surface px-3 text-body text-text hover:bg-surface-2"
     >
+      {/* The name is the text on screen with hidden words around it, so voice control
+          finds it by "24°" and screen readers hear what the numbers are (WCAG 2.5.3) */}
       <span aria-hidden="true" className="text-heading leading-none">
         {weather.icon}
       </span>
+      <span className="sr-only">สภาพอากาศ {weather.condition}</span>
       <span className="font-semibold tabular-nums">{weather.temp}°</span>
       <span className="flex items-center gap-1 text-caption text-text-secondary">
         <Icon name="rain" size="sm" />
+        <span className="sr-only">โอกาสฝน</span>
         {weather.prob}%
       </span>
+      <span className="sr-only">แตะเพื่อดูรายละเอียด</span>
     </button>
   )
 }

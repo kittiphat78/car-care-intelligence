@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { NEXT_PARAM, safeNextPath } from '@/lib/auth/redirect'
 import { Banner } from '@/components/ui/Banner'
 import { Button, IconButton } from '@/components/ui/Button'
@@ -26,7 +26,6 @@ export function checkLogin(email: string, password: string): { email?: string; p
 
 export function LoginForm() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const online = useOnline()
   const emailRef = useRef<HTMLInputElement>(null)
   const passwordRef = useRef<HTMLInputElement>(null)
@@ -78,8 +77,10 @@ export function LoginForm() {
     } catch {
       // Not remembered; signing in still worked
     }
-    // Back to the page that asked for a sign-in (same site only)
-    router.replace(safeNextPath(searchParams.get(NEXT_PARAM)))
+    // Back to the page that asked for a sign-in (same site only). Read from the address
+    // only now: useSearchParams() would make Next send this page with an empty form box
+    // that fills in after the JavaScript loads, shifting the layout (optimization-log O-01)
+    router.replace(safeNextPath(new URLSearchParams(window.location.search).get(NEXT_PARAM)))
     router.refresh()
   }
 

@@ -107,6 +107,8 @@ describe('IncomeEditor', () => {
     const banner = screen.getByRole('alert')
     expect(banner).toHaveTextContent('บันทึกไม่สำเร็จ ข้อมูลยังอยู่ในฟอร์ม')
     expect(banner).toHaveTextContent('เชื่อมต่ออินเทอร์เน็ตไม่ได้')
+    // Focus (and so the scroll position) moves to the message at the top (U-01)
+    expect(banner.parentElement).toHaveFocus()
     expect(screen.getByLabelText(/ป้ายทะเบียน/)).toHaveValue('กข 1234')
 
     await press('บันทึก')

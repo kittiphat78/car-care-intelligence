@@ -129,7 +129,27 @@ export function bangkokTimestampOn(day: string, now: Date = new Date()): string 
   return new Date(`${day}T${pad(p.hour)}:${pad(p.minute)}:${pad(p.second)}${SHOP_UTC_OFFSET}`).toISOString()
 }
 
-/** Format an instant in Bangkok time (adds the time zone to `toLocaleString` options). */
+const FIELDS = ['weekday', 'era', 'year', 'month', 'day', 'dayPeriod', 'hour', 'minute', 'second', 'fractionalSecondDigits', 'dateStyle', 'timeStyle']
+const formatters = new Map<string, Intl.DateTimeFormat>()
+
+/**
+ * Format an instant in Bangkok time (same output as `toLocaleString` with the time zone
+ * added). `toLocaleString` builds a new formatter on every call, about 10x slower, and
+ * long lists call this for every row, so one formatter per locale + options is reused
+ * (optimization-log O-03).
+ */
 export function formatBangkok(at: Instant, options: Intl.DateTimeFormatOptions, locale = 'th-TH'): string {
-  return new Date(at).toLocaleString(locale, { ...options, timeZone: SHOP_TIME_ZONE })
+  const date = new Date(at)
+  // Without any field toLocaleString shows date and time but a formatter only the date;
+  // an invalid date gives "Invalid Date" there but throws here. Keep both as they were.
+  if (Number.isNaN(date.getTime()) || !FIELDS.some((f) => f in options)) {
+    return date.toLocaleString(locale, { ...options, timeZone: SHOP_TIME_ZONE })
+  }
+  const key = `${locale}|${JSON.stringify(options)}`
+  let formatter = formatters.get(key)
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, { ...options, timeZone: SHOP_TIME_ZONE })
+    formatters.set(key, formatter)
+  }
+  return formatter.format(date)
 }

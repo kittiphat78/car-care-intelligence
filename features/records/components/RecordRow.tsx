@@ -7,16 +7,11 @@ import { Icon } from '@/components/ui/Icon'
 import type { Expense, Record as AppRecord } from '@/types'
 
 // component-specifications.md §3.4 — one income or expense line. The whole row is a
-// <button> that opens the edit dialog; its accessible name sums up the entry.
+// <button> that opens the edit dialog. Its accessible name is the text on screen plus a
+// hidden hint, so voice control ("แตะ กข 1234") finds it (WCAG 2.5.3 Label in Name).
 
 const baht = (n: number) => `฿${n.toLocaleString('en-US')}`
 const timeOf = (at: string) => `${formatBangkok(at, { hour: '2-digit', minute: '2-digit', hour12: false })} น.`
-
-export function incomeLabel(r: AppRecord): string {
-  const job = r.type === 'polish' ? 'ขัดสี' : 'ล้างรถ'
-  const unpaid = r.payment_status === 'unpaid' ? ' ค้างชำระ' : ''
-  return `${job} ${r.plate} ${baht(r.price)}${unpaid} ${timeOf(r.created_at)} แตะเพื่อแก้ไข`
-}
 
 /** "เพิ่มโดย x · แก้โดย y" under a row in history (component-specifications.md §3.4) */
 function auditLine(row: { created_by_email?: string; updated_by_email?: string; updated_at?: string }): string | null {
@@ -45,7 +40,6 @@ export function IncomeRow({
     <button
       type="button"
       onClick={() => onOpen(record)}
-      aria-label={incomeLabel(record)}
       data-highlight={highlight || undefined}
       className={cn(
         'focus-ring flex w-full items-center gap-3 rounded-md px-2 py-3 text-left transition-colors duration-(--duration-slow) hover:bg-surface-2',
@@ -76,6 +70,7 @@ export function IncomeRow({
         <span className={cn('text-subheading font-bold tabular-nums', unpaid ? 'text-unpaid' : 'text-text')}>{baht(record.price)}</span>
         <span className="text-caption text-text-tertiary tabular-nums">{timeOf(record.created_at)}</span>
       </span>
+      <span className="sr-only">แตะเพื่อแก้ไข</span>
     </button>
   )
 }
@@ -85,7 +80,6 @@ export function ExpenseRow({ expense, showAudit = false, onOpen }: { expense: Ex
     <button
       type="button"
       onClick={() => onOpen(expense)}
-      aria-label={`รายจ่าย ${expense.title} ${baht(expense.amount)} ${timeOf(expense.created_at)} แตะเพื่อแก้ไข`}
       className="focus-ring flex w-full items-center gap-3 rounded-md px-2 py-3 text-left hover:bg-surface-2"
     >
       <span aria-hidden="true" className="grid size-10 shrink-0 place-items-center rounded-md bg-danger-subtle text-danger-text">
@@ -100,6 +94,7 @@ export function ExpenseRow({ expense, showAudit = false, onOpen }: { expense: Ex
         <span className="text-subheading font-bold text-expense tabular-nums">−{baht(expense.amount)}</span>
         <span className="text-caption text-text-tertiary tabular-nums">{timeOf(expense.created_at)}</span>
       </span>
+      <span className="sr-only">รายจ่าย แตะเพื่อแก้ไข</span>
     </button>
   )
 }

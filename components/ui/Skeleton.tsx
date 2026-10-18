@@ -34,16 +34,29 @@ export function SkeletonMoney({ className }: { className?: string }) {
   return <Skeleton className={cn('h-12 w-48', className)} />
 }
 
-/** One RecordRow */
+/**
+ * One RecordRow, line for line (plate + badge on the left, price + time on the right;
+ * each bar one line of the same text style), so a list does not grow when rows arrive
+ * (Step 09 O-10)
+ */
 export function SkeletonRow({ className }: { className?: string }) {
   return (
     <div className={cn('flex items-center gap-3 py-3', className)}>
-      <Skeleton className="size-10 rounded-md" />
-      <div className="grid grid-cols-1 flex-1 gap-2">
-        <Skeleton className="h-4 w-2/5" />
-        <Skeleton className="h-3.5 w-1/4" />
+      <Skeleton className="size-10 shrink-0 rounded-md" />
+      <div className="grid min-w-0 flex-1 grid-cols-1 gap-0.5">
+        <div className="text-subheading">
+          <Skeleton className="h-[1lh] w-2/5" />
+        </div>
+        <Skeleton className="h-6 w-14" />
       </div>
-      <Skeleton className="h-5 w-16" />
+      <div className="grid grid-cols-1 justify-items-end gap-0.5">
+        <div className="text-subheading">
+          <Skeleton className="h-[1lh] w-16" />
+        </div>
+        <div className="text-caption">
+          <Skeleton className="h-[1lh] w-10" />
+        </div>
+      </div>
     </div>
   )
 }
