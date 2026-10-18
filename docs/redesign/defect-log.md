@@ -42,7 +42,12 @@
 - **ทางเลือก:** (ก) คงเดิม + เขียนในหน้ายืนยันว่า "ทุกเครื่องจะออกจากระบบ" (ข) เปลี่ยนเป็น `scope: 'local'` (ออกเฉพาะเครื่องนี้) และเพิ่มปุ่ม "ออกจากทุกเครื่อง" แยก
 - **ต้องให้เจ้าของตัดสิน:** เป็นการเปลี่ยนพฤติกรรม Auth บน production · ระหว่างนี้ E2E ใช้บัญชีแยก `e2e-logout@example.com`
 
-### D-04 — แพ็กเกจที่มีช่องโหว่ตาม `npm audit` · Low (runtime) · OPEN รออนุมัติ
+### D-04 — แพ็กเกจที่มีช่องโหว่ตาม `npm audit` · Low (runtime) · FIXED บางส่วน (branch `build/deps-audit`)
+
+- **เจ้าของตัดสิน (2026-10-18):** อัปเกรดใน PR แยก · ทำแล้ว: `npm install` / `npm audit fix` ด้วย `--before=2026-10-04` ทุกเวอร์ชันที่เปลี่ยนใน lockfile (81 ตัว) ออกก่อนวันนั้น ตัวใหม่สุด 2026-10-02 [V] (ตรวจวันเผยแพร่จาก npm registry ทีละตัว)
+- **ผล production deps:** High 4 → 0 · Moderate 5 → 2 [V] (`dompurify` 3.4.16, `ws`, `tmp`, `brace-expansion`, `fflate`, `source-map-js`, `baseline-browser-mapping`) · เหลือ `uuid` 8.3.2 ใน exceljs + exceljs เอง: exceljs เรียกแค่ `uuid.v4()` ส่วนช่องโหว่อยู่ใน v3/v5/v6 จึงถึงไม่ได้ [V] · ยอมรับไว้จนกว่า exceljs จะออกเวอร์ชันใหม่
+- **ผล dev deps:** Critical 2 → 0 (`vitest` 2.1.9 → 4.1.11 ออก 2026-08-18, pin `vite` 7.3.6 ออก 2026-06-25 เพราะ `@vitejs/plugin-react` 4.7 ยังไม่รองรับ vite 8) [V] · เหลือ High 5 เป็นสาย `braces` 3.0.3 ใน `eslint-config-next` 16.3.8 (ใช้ตอน lint เท่านั้น) · `braces` 3.0.3 เป็นเวอร์ชันล่าสุดที่มี ยังไม่มีตัวแก้ [V]
+- **ทดสอบซ้ำ:** `npm ci` ✅ · tsc / lint ✅ · Vitest 4: 393/393 ✅ ไม่มีคำเตือน deprecated · test เวลาไทย TZ=UTC/New York ✅ · build ✅ · bundle scan ✅ · E2E 45/45 สองรอบ (รวม Excel และบิล PDF) ✅ [V]
 
 - **production deps:** High 4 / Moderate 5 / Critical 0 (ตรงกับ HF-01 เดิม) · ประเมินทีละตัวใน `security-review.md` §5: ไม่มีตัวไหนที่ข้อมูลจากภายนอกไปถึงฟังก์ชันที่มีช่องโหว่ได้ [I]
 - **dev deps:** Critical 2 (`vitest` 2.x, `tinypool`), High อีกหลายตัวจาก `eslint-config-next`/`vite` · ใช้แค่ตอนพัฒนาและใน CI ไม่ถูกส่งไปผู้ใช้ [V] (`.next/static` ไม่มีโค้ดเหล่านี้)
