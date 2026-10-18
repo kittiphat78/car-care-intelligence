@@ -1,0 +1,13 @@
+// Primitives (components/ui): no domain knowledge, no Supabase (folder-structure.md §2)
+export { Badge, type BadgeTone } from './Badge'
+export { Banner, type BannerTone } from './Banner'
+export { Button, IconButton, buttonClassName, type ButtonVariant, type ButtonSize } from './Button'
+export { Card } from './Card'
+export { ChoiceGroup, type ChoiceOption, type ChoiceTone } from './ChoiceGroup'
+export { Dialog, type DialogVariant } from './Dialog'
+export { Icon, Spinner, ICON_NAMES, type IconName } from './Icon'
+export { Switch } from './Switch'
+export { Tabs, tabId, tabPanelId } from './Tabs'
+export { TextInput } from './TextInput'
+export { Skeleton, SkeletonGroup, SkeletonText, SkeletonMoney, SkeletonRow, SkeletonCard } from './Skeleton'
+export { ToastProvider, useToast, TOAST_DURATION_MS, type ToastTone, type ToastApi } from './Toast'

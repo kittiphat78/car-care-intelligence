@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase'
-import { fetchAllPages } from '@/lib/fetch-all-pages'
 import { ok, type Result } from '@/lib/result'
 import { listBetween, run } from '@/features/records/api'
+import { listUnpaid } from '@/features/debts/api'
 import { addDays, startOfBangkokDay } from '@/lib/time/bangkok'
 import { EMPTY_TODAY, type CustomerTimePeriod, type CustomerTotals, type DayTotal, type TodayTotals } from '@/features/dashboard/logic'
 import type { Record as AppRecord } from '@/types'
@@ -50,14 +50,7 @@ export async function loadDashboard(today: string): Promise<DashboardData> {
     run(supabase.rpc('dashboard_today', { p_day: today })),
     run(supabase.rpc('daily_series', { p_from: addDays(today, -29), p_to: today })),
     run(supabase.rpc('customer_breakdown', { p_day: today })),
-    fetchAllPages<AppRecord>((from, to) =>
-      supabase.from('records').select('*', { count: 'exact' })
-        .eq('payment_status', 'unpaid')
-        .order('created_at', { ascending: true })
-        .order('id', { ascending: true })
-        .range(from, to)
-        .overrideTypes<AppRecord[], { merge: false }>(),
-    ),
+    listUnpaid(),
   ])
 
   return {
@@ -86,24 +79,4 @@ export async function loadDashboard(today: string): Promise<DashboardData> {
       }))),
     unpaidRecords,
   }
-}
-
-export interface SettleResult {
-  /** Rows that were still unpaid and are now paid */
-  updatedCount: number
-  /** Their total in baht */
-  total: number
-}
-
-/**
- * "เคลียร์ยอด": mark exactly these records as paid (settle_records, M007).
- * Rows already paid, deleted or not visible to the user are skipped, so
- * `updatedCount` can be lower than `ids.length`.
- */
-export async function settleRecords(ids: string[]): Promise<Result<SettleResult>> {
-  const result = await run(supabase.rpc('settle_records', { p_ids: ids }))
-  return map(result, rows => {
-    const row = (rows as { updated_count: number; total: number }[] | null)?.[0]
-    return { updatedCount: num(row?.updated_count), total: num(row?.total) }
-  })
 }

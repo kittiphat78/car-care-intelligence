@@ -1,6 +1,16 @@
 export const LOGIN_PATH = '/login'
 export const NEXT_PARAM = 'next'
 
+/** Request header proxy.ts sets to the path being opened, so a server layout (which is
+ *  not told its URL) can build the same `/login?next=` link (ADR-13). */
+export const APP_PATH_HEADER = 'x-app-path'
+
+/** Pages that need a signed-in member. proxy.ts and the (app) layout both use this. */
+export const PROTECTED_ROUTES = ['/', '/debts', '/add', '/history', '/more']
+
+export const isProtectedPath = (path: string) =>
+  PROTECTED_ROUTES.some(route => (route === '/' ? path === '/' : path === route || path.startsWith(`${route}/`)))
+
 const BASE = 'http://app.invalid'
 
 /**

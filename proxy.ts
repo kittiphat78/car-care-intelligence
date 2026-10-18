@@ -1,16 +1,12 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { LOGIN_PATH, NEXT_PARAM, loginPathFor, safeNextPath } from '@/lib/auth/redirect'
-
-// Single source of truth — เฉพาะ routes ที่มี page จริง
-const PROTECTED_ROUTES = ['/', '/history', '/add']
-
-const isProtectedPath = (path: string) =>
-  PROTECTED_ROUTES.some(route =>
-    route === '/' ? path === '/' : path.startsWith(route)
-  )
+import { APP_PATH_HEADER, LOGIN_PATH, NEXT_PARAM, isProtectedPath, loginPathFor, safeNextPath } from '@/lib/auth/redirect'
 
 export async function proxy(request: NextRequest) {
+  // Tell the (app) layout which page is being opened; it cannot read the URL itself.
+  // Always overwritten here, so a value sent by the browser is never used.
+  request.headers.set(APP_PATH_HEADER, request.nextUrl.pathname + request.nextUrl.search)
+
   let response = NextResponse.next({ request })
 
   // Redirect while keeping any session cookies refreshed during this request

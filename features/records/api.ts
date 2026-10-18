@@ -2,7 +2,6 @@ import { supabase } from '@/lib/supabase'
 import { appError, toAppError } from '@/lib/errors'
 import { err, ok, type Result } from '@/lib/result'
 import { fetchAllPages } from '@/lib/fetch-all-pages'
-import { addDays, startOfBangkokDay } from '@/lib/time/bangkok'
 import type { Expense, Record as AppRecord } from '@/types'
 
 export type EntryTable = 'records' | 'expenses'
@@ -12,7 +11,6 @@ export interface IncomeInsert {
   plate: string
   services: string[]
   price: number
-  seq_number: number
   created_at: string
   created_by: string | null
   created_by_email: string
@@ -59,15 +57,6 @@ async function runCount(query: QueryResult<unknown>): Promise<Result<number>> {
 
 const done = <T>(result: Result<T>): Result<void> => (result.ok ? ok(undefined) : result)
 
-/** Number of income records on a Bangkok day (used for the daily sequence number). */
-export function countIncomeOn(day: string): Promise<Result<number>> {
-  return runCount(
-    supabase.from('records').select('*', { count: 'exact', head: true })
-      .gte('created_at', startOfBangkokDay(day).toISOString())
-      .lt('created_at', startOfBangkokDay(addDays(day, 1)).toISOString()),
-  )
-}
-
 /** How many times a plate has visited (all time). */
 export function countVisitsByPlate(plate: string): Promise<Result<number>> {
   return runCount(supabase.from('records').select('*', { count: 'exact', head: true }).eq('plate', plate))
@@ -109,6 +98,12 @@ export async function updateEntry(
   const still = await run(supabase.from(table).select('id').eq('id', id))
   if (!still.ok) return still
   return err(appError((still.data as unknown[] | null)?.length ? 'CONFLICT' : 'NOT_FOUND'))
+}
+
+/** One row by id, or null when it no longer exists (or is not visible to this account) */
+export async function getEntry<T>(table: EntryTable, id: string): Promise<Result<T | null>> {
+  const result = await run(supabase.from(table).select('*').eq('id', id))
+  return result.ok ? ok(((result.data as T[] | null) ?? [])[0] ?? null) : result
 }
 
 export async function deleteEntry(table: EntryTable, id: string): Promise<Result<void>> {

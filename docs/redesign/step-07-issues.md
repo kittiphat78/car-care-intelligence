@@ -26,7 +26,17 @@
 | B7: Excel export กันสูตร | `fix/export-complete` | `0c43ee5` | 365/365 · test สร้างไฟล์จริงแล้วอ่านกลับ ✅ | ✅ **Production** · PR #20 |
 | B6: กฎข้อมูล (M008) + เลขลำดับ (M009, ตัวเลือก ก) | `db/constraints-seq` | — | ข้อมูล production ผ่านกฎ 9/9 · SQL tests ✅ · 2 session พร้อมกันได้เลข 1, 2 ✅ | ✅ **ใช้กับ production แล้ว** 2026-10-15 · PR #21 |
 | **R1: release v1.2.0** | `release/1.2.0` | `425e9ab` | CI 8/8 บน merge commit ✅ · Vercel production deploy success 2026-10-16 18:34 (เวลาไทย) | ✅ **Production** · PR #22 merge `b5213db` (merge commit) · tag `v1.2.0` → `b5213db` ✅ · `docs/redesign/release-1.2.0.md` |
-| C1: tokens + primitives (Phase B) | `feature/ui-tokens-and-primitives` (จาก `develop`) | `7bb3aca` | 461/461 · contrast 38 คู่ × 2 theme ✅ · lint/type/build ✅ | 🔄 push แล้ว · รอ PR → `develop` (ไม่ขึ้น production จนถึง v2.0.0) |
+| C1: tokens + primitives (Phase B) | `feature/ui-tokens-and-primitives` | `7bb3aca` | contrast 38 คู่ × 2 theme ✅ | ✅ `develop` · PR #24 |
+| C2: shell, nav, `/more`, server guard (ADR-13) | `feature/ui-shell-nav` | `455178d` | redirect `/login?next=` ✅ | ✅ `develop` · PR #25 |
+| C3: RecordEditor + `/add` + draft · เลิกนับ `seq_number` ในแอป | `feature/ui-record-editor` | `6e85125` | ✅ | ✅ `develop` · PR #26 |
+| C4: ภาพรวม + dialog แก้ไข (`?edit=`) | `feature/ui-dashboard` | `257edbf` | ✅ | ✅ `develop` · PR #28 |
+| C5: `/debts` + เคลียร์ยอด (`?settle=`) + บิล + badge | `feature/ui-debts-page` | `a50b8cc` | ✅ | ✅ `develop` · PR #30 |
+| C6: `/history` + DataTable + ส่งออก Excel (`?export=1`) | `feature/ui-history` | `dfea250` | ✅ | ✅ `develop` · PR #31 (#32 ว่าง) |
+| C7: login, error, 404, เซสชันหมดอายุ | `feature/ui-login-errors` | `b5ec968` | ✅ | ✅ `develop` · PR #35 |
+| C8: ลบ v1 design system | `chore/remove-legacy-css` | `ca39a07` | CSS 92→60 KB | ✅ `develop` · PR #36 |
+| C9: E2E CUJ-1..8 + axe (Playwright, Supabase จำลองใน CI) | `test/e2e-cuj` | `60da757` | 18/18 ในเครื่อง ×3 · CI `e2e` ✅ (4 นาที) | ✅ `develop` · PR #39 |
+| แก้หลังเจ้าของทดสอบ | `fix/ui-tokens-robust`, `fix/legacy-css-scope`, `fix/mobile-sheet`, `fix/mobile-width`, `fix/ui-overlaps` | — | ภาพจาก build จริง 390/1440 px | ✅ `develop` · PR #27, #29, #33, #34, #38 |
+| RC: `v2.0.0-rc.1` | `release/2.0.0` | `28be954` | CI 9/9 รวม `e2e` ✅ · Preview deploy ✅ · **UAT เจ้าของผ่าน** 2026-10-18 | 🔄 bump `2.0.0` แล้ว · รอ PR → `main` (merge commit) · tag `v2.0.0-rc.1` → `28be954` ✅ |
 | C1–C9 | — | — | — | ยังไม่เริ่ม |
 
 ## 2. A1 — CI quality gates
@@ -89,16 +99,23 @@
 | S07-24 | Backup production (P-5) เป็น CSV ที่เจ้าของ export เอง ยังไม่ได้ทดลอง restore | Medium | RESOLVED (ดู S07-31) |
 | S07-25 | Supabase CLI บน Windows ต้องตั้ง `TMP`/`TEMP` เป็นโฟลเดอร์ที่เขียนได้ ไม่งั้น `supabase start` ล้มด้วย `makeTempDirectoryScoped NotFound` (CI บน Linux ไม่เป็น) | Low | RESOLVED (วิธีแก้บันทึกไว้) |
 | S07-26 | ทดสอบ A7 บน production ด้วยการบันทึกรายการ "7788 TEST" ฿500 ลงข้อมูลจริง ต้องลบออก | Low | RESOLVED (เจ้าของลบแล้ว · ดู S07-34) |
-| S07-27 | ตั้ง required checks (`lint`, `typecheck`, `test`, `build`, `audit`, `secrets`, `pr-title`, `db`) ใน ruleset ของ `main` | Medium | NEEDS_APPROVAL · 2026-10-16 เจ้าของกรอกฟอร์ม ruleset ครบแล้ว (8 checks, PR 0 approval, กัน delete/force push) แต่ API ยังไม่เห็น ruleset → ต้องกด **Create** แล้วตรวจซ้ำ |
+| S07-27 | ตั้ง required checks (`lint`, `typecheck`, `test`, `build`, `audit`, `secrets`, `pr-title`, `db`) ใน ruleset ของ `main` | Medium | RESOLVED 2026-10-17 · ruleset `main` ใช้งานแล้ว (target = default branch) ตรวจผ่าน API · เสนอเพิ่ม `e2e` ตอน v2.0.0 |
 | S07-28 | PR #18 ถูก merge ก่อนรัน M006/M007 บน production → ยอดบนหน้าแรกโหลดไม่ได้และเคลียร์ยอดล้มเหลว (ไม่แก้ข้อมูล) ประมาณ 22:45–22:48 2026-10-15 จนรัน SQL แล้ว | Medium | RESOLVED · ป้องกัน: บรรทัดแรกของ PR template บอกไฟล์ SQL ที่ต้องรันก่อน merge |
 | S07-29 | B3–B5 ทดสอบบน production หลัง merge แทน Preview (ทดสอบเฉพาะสิ่งที่ไม่เขียนข้อมูล) · เรื่องแก้ชนกัน 2 เครื่องและบันทึกซ้ำทดสอบด้วย unit test + SQL test เท่านั้น | Low | — (ยอมรับ) |
 | S07-30 | ลบ `isomorphic-dompurify` (ADR-10) ข้อความที่บันทึกก่อนนี้ซึ่งถูกแปลงเป็น `&lt;` ยังคงอยู่ | Low | — (ตาม ADR-10) |
 | S07-31 | ทดลองกู้ backup (G5): CSV จาก production (962 รายรับ / 91 รายจ่าย) import ลงตาราง `restore_*` บน staging แล้ว fingerprint และ hash ของ id ตรงกันทุกค่า · ลบตาราง restore แล้ว · ไฟล์เก็บที่ `backup-2026-10-15` ของเจ้าของ | High | RESOLVED 2026-10-15 |
 | S07-32 | เลขลำดับเดิมที่ซ้ำ 10 วัน / ข้าม 8 วัน: เจ้าของเลือก (ก) ไม่แก้ของเก่า M009 ใช้กับรายการใหม่เท่านั้น | Low | RESOLVED (ตัดสินแล้ว) |
-| S07-33 | แอปยังคำนวณ `seq_number` เองแล้วส่งไป (trigger แทนที่ให้) จึงยังมี request นับเกินมา 1 ครั้งต่อการบันทึก | Low | — (ลบใน Phase C เพื่อไม่ผูกลำดับ deploy) |
+| S07-33 | แอปยังคำนวณ `seq_number` เองแล้วส่งไป (trigger แทนที่ให้) จึงยังมี request นับเกินมา 1 ครั้งต่อการบันทึก | Low | RESOLVED ใน C3 (ฐานข้อมูลออกเลขเอง, M009) |
 | S07-34 | ทดสอบบน production ด้วยรายการ TEST1 (฿2,000), TEST2 (฿1,500), TEST3 (฿500) ลงข้อมูลจริง → เจ้าของลบแล้ว 2026-10-16 · การทดสอบที่เขียนข้อมูลต้องทำบน Preview (staging) | Low | RESOLVED |
-| S07-35 | C1: ตัวแปร radius ของ v1 เปลี่ยนชื่อเป็น `--legacy-radius-*` เพื่อไม่ทับ token ใหม่ · class `rounded-*` ในหน้าเดิมจึงโค้งน้อยลงเล็กน้อย (เช่น 24→20px) **เฉพาะบน `develop`** · `ErrorBanner.tsx` (v1) ยกเว้นจาก lint ของ UI ใหม่จนกว่าหน้าเดิมจะย้ายไป `Banner` | Low | — (ตามแผน ลบใน C8) |
+| S07-35 | C1: ตัวแปร radius ของ v1 เปลี่ยนชื่อเป็น `--legacy-radius-*` เพื่อไม่ทับ token ใหม่ · class `rounded-*` ในหน้าเดิมจึงโค้งน้อยลงเล็กน้อย (เช่น 24→20px) **เฉพาะบน `develop`** · `ErrorBanner.tsx` (v1) ยกเว้นจาก lint ของ UI ใหม่จนกว่าหน้าเดิมจะย้ายไป `Banner` | Low | RESOLVED ใน C8 (v1 CSS ลบแล้ว) |
 | S07-36 | S04-04 (ชื่อ variable ชนใน Tailwind v4) ตรวจกับ Tailwind 4.2.2 แล้ว: `@theme inline { --color-bg: var(--color-bg) }` อ้างตัวเอง จึงใช้ `@theme static` เก็บค่าจริง + `[data-theme="light"]` override ชื่อเดียวกัน | Low | RESOLVED |
+
+| S07-37 | หน้าจอ PC ของเจ้าของแสดง token ใหม่ไม่ได้ (สี/ระยะหาย) ทั้งที่ build บน Windows และ Linux (Docker แบบ Vercel) ได้ CSS ถูกต้อง · แก้ทาง: token ทั้งหมดอยู่ใน `@theme static` ไม่มี var() ต่อกัน (#27), แยก v1 element rules ไป layer base (#29), `darkreader-lock` · หลัง #29 เจ้าของยืนยัน "ปกติแล้ว" · ต้นเหตุที่แน่ชัด **ไม่ทราบ** | Medium | RESOLVED (สาเหตุ Unknown) · ถ้าเกิดอีกขอ share link ของ Preview |
+| S07-38 | Chrome Android: bottom sheet เปิดแล้วเลื่อนขึ้นเกินจอ เพราะ focus ระหว่าง slide-in ทำให้กล่อง `overflow:hidden` scroll → `overflow:clip` + `h-dvh` + `preventScroll` (#33) | Medium | RESOLVED |
+| S07-39 | Chrome Android: `<select>`/date input กว้างตามเนื้อหา ดันคอลัมน์ grid ให้กว้างเกินจอ → `grid-cols-1` (minmax(0,1fr)) ทุก grid คอลัมน์เดียว + `size=1` (#34) | Medium | RESOLVED |
+| S07-40 | E2E พบ: CSP บล็อก Supabase ที่ไม่ใช่ `*.supabase.co` (เพิ่ม origin ที่ตั้งตอน build), กราฟ `aria-hidden` มีจุด focus (ปิด accessibility layer ของ recharts), ของที่ scroll เข้าจออาจอยู่ใต้ bottom nav (`scroll-padding-bottom`) (#39) | Medium | RESOLVED |
+| S07-41 | ยังไม่ได้ทดสอบบนเครื่องจริง: บิล PDF บน iPhone (S03-05), dialog เซสชันหมดอายุตอนหมดจริง, การแก้สีของ autofill | Low | UNRESOLVED → รายการ UAT ใน `release-2.0.0.md` |
+| S07-42 | เครื่องมือ E2E เลือกเวอร์ชันที่ออกนานแล้ว (Playwright 1.63.0, axe 4.13.0) แทนเวอร์ชันที่เพิ่งออก 3–4 วัน (supply chain) | Low | — (ตัดสินใจในงาน) |
 
 ## 4. รออนุมัติ (ต่อ feature)
 | # | ขอ | ผล |

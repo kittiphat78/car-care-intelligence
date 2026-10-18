@@ -19,7 +19,7 @@ const fake = vi.hoisted(() => {
 
 vi.mock('@/lib/supabase', () => ({ supabase: { from: (table: string) => (fake.builder.from as (t: string) => unknown)(table) } }))
 
-import { countIncomeOn, createIncome, deleteEntry, listBetween, run, updateEntry, type IncomeInsert } from '@/features/records/api'
+import { countVisitsByPlate, createIncome, deleteEntry, listBetween, run, updateEntry, type IncomeInsert } from '@/features/records/api'
 
 const methods = () => fake.state.calls.map(c => c[0])
 const callOf = (method: string): Call | undefined => fake.state.calls.find(c => c[0] === method) as Call | undefined
@@ -39,11 +39,10 @@ describe('records api', () => {
     expect(!thrown.ok && thrown.error.code).toBe('NETWORK')
   })
 
-  it('counts income in one Bangkok day', async () => {
-    fake.state.response = { data: null, error: null, count: 4 }
-    expect(await countIncomeOn('2026-10-14')).toEqual({ ok: true, data: 4 })
-    expect(callOf('gte')).toEqual(['gte', 'created_at', '2026-10-13T17:00:00.000Z'])
-    expect(callOf('lt')).toEqual(['lt', 'created_at', '2026-10-14T17:00:00.000Z'])
+  it('counts earlier visits of a plate', async () => {
+    fake.state.response = { data: null, error: null, count: 2 }
+    expect(await countVisitsByPlate('กข 1234')).toEqual({ ok: true, data: 2 })
+    expect(callOf('eq')).toEqual(['eq', 'plate', 'กข 1234'])
   })
 
   it('lists a range in a stable order through pagination', async () => {
