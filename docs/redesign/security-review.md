@@ -74,6 +74,8 @@ SQL tests บน Postgres จริงอีกชั้น: `member_rls.test.sq
 
 CI ใช้ `npm audit --omit=dev --audit-level=critical` → ผ่าน (ไม่มี Critical ใน production deps)
 
+> อัปเดต: branch `build/deps-audit` (D-04) ลด production deps เหลือ High 0 / Moderate 2 (`uuid` ที่ถึงไม่ได้) และ dev deps เหลือ Critical 0 · ตารางด้านล่างคือสถานะของ v2.0.0
+
 production deps: High 4 / Moderate 5 · ประเมินว่าถึงได้จริงหรือไม่:
 
 | แพ็กเกจ | ระดับ | มาจาก | ถึงได้หรือไม่ |
