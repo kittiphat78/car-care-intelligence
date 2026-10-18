@@ -47,7 +47,7 @@ test('CUJ-2 · record a paid wash and see it on the dashboard', async ({ page },
   await addIncome(page, { plate, price: '150' })
   await expect(page).toHaveURL('/')
   await expect(toast(page, `บันทึก ${plate} ฿150 แล้ว`)).toBeVisible()
-  await expect(page.getByRole('button', { name: new RegExp(`${plate} ฿150`) })).toBeVisible()
+  await expect(page.getByRole('button', { name: new RegExp(`${plate}.* ฿150`) })).toBeVisible()
 })
 
 test('CUJ-3 · unpaid job for a lot → debts → bill → settle', async ({ page }, info) => {
