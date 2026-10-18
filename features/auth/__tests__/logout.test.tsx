@@ -61,6 +61,7 @@ describe('LogoutDialog', () => {
   it('asks first, with the account and the safe choice focused', () => {
     renderDialog()
     expect(screen.getByRole('alertdialog', { name: 'ออกจากระบบ?' })).toHaveTextContent('บัญชี owner@example.com')
+    expect(screen.getByRole('alertdialog')).toHaveTextContent('ออกเฉพาะเครื่องนี้')
     expect(screen.getByRole('button', { name: 'ยกเลิก' })).toHaveFocus()
   })
 
@@ -85,7 +86,7 @@ describe('LogoutDialog', () => {
   })
 
   it('signs this device out even when the server cannot be reached (UF-AUTH-04)', async () => {
-    auth.signOut.mockResolvedValueOnce({ error: new TypeError('Failed to fetch') }).mockResolvedValueOnce({ error: null })
+    auth.signOut.mockResolvedValue({ error: new TypeError('Failed to fetch') })
     renderDialog()
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'ออกจากระบบ' }))
@@ -95,7 +96,7 @@ describe('LogoutDialog', () => {
   })
 
   it('stays open with a Thai message and reference when sign-out fails', async () => {
-    auth.signOut.mockResolvedValue({ error: Object.assign(new Error('network'), { name: 'AuthRetryableFetchError', status: 0 }) })
+    auth.signOut.mockResolvedValue({ error: Object.assign(new Error('boom'), { code: 'unexpected_failure', status: 500 }) })
     renderDialog()
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'ออกจากระบบ' }))

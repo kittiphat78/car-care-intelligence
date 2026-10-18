@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const nav = vi.hoisted(() => ({ replace: vi.fn(), refresh: vi.fn(), search: '' }))
 vi.mock('next/navigation', () => ({
@@ -139,9 +139,33 @@ describe('SessionExpiredDialog (UF-AUTH-03)', () => {
 })
 
 describe('signOut (UF-AUTH-04)', () => {
+  afterEach(() => {
+    document.cookie = 'sb-test-auth-token=; Max-Age=0; path=/'
+    document.cookie = 'remembered=; Max-Age=0; path=/'
+  })
+
+  it('ends this device only, never every device of the account (D-03)', async () => {
+    auth.signOut.mockResolvedValue({ error: null })
+    expect(await signOut()).toEqual({ ok: true, data: { localOnly: false } })
+    expect(auth.signOut).toHaveBeenCalledOnce()
+    expect(auth.signOut).toHaveBeenCalledWith({ scope: 'local' })
+  })
+
   it('still signs this device out when the server cannot be reached', async () => {
-    auth.signOut.mockResolvedValueOnce({ error: new TypeError('Failed to fetch') }).mockResolvedValueOnce({ error: null })
+    document.cookie = 'sb-test-auth-token=session; path=/'
+    document.cookie = 'remembered=yes; path=/'
+    // What Supabase returns when the request fails: the session is left in place
+    auth.signOut.mockResolvedValue({ error: Object.assign(new Error('Failed to fetch'), { name: 'AuthRetryableFetchError', status: 0 }) })
     expect(await signOut()).toEqual({ ok: true, data: { localOnly: true } })
-    expect(auth.signOut).toHaveBeenLastCalledWith({ scope: 'local' })
+    expect(document.cookie).not.toContain('sb-test-auth-token')
+    expect(document.cookie).toContain('remembered=yes')
+  })
+
+  it('reports other failures and keeps the session', async () => {
+    document.cookie = 'sb-test-auth-token=session; path=/'
+    auth.signOut.mockResolvedValue({ error: Object.assign(new Error('boom'), { code: 'unexpected_failure', status: 500 }) })
+    const result = await signOut()
+    expect(result.ok).toBe(false)
+    expect(document.cookie).toContain('sb-test-auth-token')
   })
 })

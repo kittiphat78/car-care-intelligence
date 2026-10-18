@@ -10,8 +10,8 @@ export const E2E_EMAIL = 'e2e-member@example.com'
 export const E2E_PASSWORD = 'e2e-password-123'
 export const OUTSIDER_EMAIL = 'e2e-outsider@example.com'
 export const OUTSIDER_PASSWORD = 'e2e-outsider-123'
-// Signs out in CUJ-8. Supabase sign-out ends every session of that account, so it must
-// not be the account the other tests are using at the same time.
+// Signs out in CUJ-8 and logout.spec. Sign-out ends only that device's session (D-03),
+// but a separate account keeps the sign-out tests from touching anyone else's data.
 export const LOGOUT_EMAIL = 'e2e-logout@example.com'
 export const LOGOUT_PASSWORD = 'e2e-logout-123'
 

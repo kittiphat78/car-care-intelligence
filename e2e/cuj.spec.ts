@@ -141,7 +141,7 @@ test('CUJ-7 · export the month to Excel', async ({ page }) => {
 })
 
 test('CUJ-8 · sign out, with a confirmation; /more is accessible', async ({ page }, info) => {
-  // Its own account: signing out ends every session of the account (see defect-log D-03)
+  // Its own account, so the sign-out tests never share a session with the others
   await signIn(page, '/', { email: LOGOUT_EMAIL, password: LOGOUT_PASSWORD })
   await page.goto('/more')
   await expectAccessible(page, info, 'more')

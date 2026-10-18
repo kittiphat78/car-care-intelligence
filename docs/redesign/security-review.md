@@ -53,7 +53,7 @@ SQL tests บน Postgres จริงอีกชั้น: `member_rls.test.sq
 | Server guard ทุกหน้าใน `(app)` + proxy | Passed [V] | unit 12 + E2E |
 | ข้อความ error ตอน login ไม่บอกว่าอีเมลมีอยู่หรือไม่ | Passed [V] | unit "one message for a wrong email or password" |
 | Session หมดอายุ → ขอ login ใหม่และกลับหน้าเดิม | Passed (unit) · ตอนหมดจริงบนเครื่อง Not Run | S07-41 |
-| ออกจากระบบ | Passed [V] | ออกจาก **ทุกเครื่อง** ของบัญชีนั้น → D-03 รอตัดสิน |
+| ออกจากระบบ | Passed [V] | ออกเฉพาะเครื่องที่กด (D-03 ตามที่เจ้าของเลือก) · เน็ตหลุดก็ยังออกจากเครื่องนี้ (D-06) · E2E `logout.spec.ts` |
 | Cookie session (`sb-…-auth-token`) | ข้อสังเกต | ในเครื่อง: `HttpOnly=false`, `SameSite=Lax`, อายุ 400 วัน [V] · เป็นค่าตั้งต้นของ `@supabase/ssr` เพราะ browser client ต้องอ่าน cookie [I] · แปลว่าถ้ามี XSS จะขโมย session ได้ จึงพึ่ง CSP และ React escape · flag `Secure` บน HTTPS ของ production ยังไม่ได้ตรวจ [U] → ตรวจใน Step 10 บน Preview |
 | Rate limit ของ login | Not Run | ใช้ค่าของ Supabase Auth · ไม่ทดสอบยิงซ้ำบน production/staging |
 | นโยบายรหัสผ่าน / การสมัครเอง | Not Run [U] | ตั้งใน Supabase dashboard ของเจ้าของ · คนที่สมัครเองได้ก็ยังเห็นข้อมูลไม่ได้เพราะ RLS (ทดสอบด้วยบัญชี outsider ✅) |
