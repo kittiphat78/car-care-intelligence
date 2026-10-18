@@ -36,7 +36,8 @@
 | C8: ลบ v1 design system | `chore/remove-legacy-css` | `ca39a07` | CSS 92→60 KB | ✅ `develop` · PR #36 |
 | C9: E2E CUJ-1..8 + axe (Playwright, Supabase จำลองใน CI) | `test/e2e-cuj` | `60da757` | 18/18 ในเครื่อง ×3 · CI `e2e` ✅ (4 นาที) | ✅ `develop` · PR #39 |
 | แก้หลังเจ้าของทดสอบ | `fix/ui-tokens-robust`, `fix/legacy-css-scope`, `fix/mobile-sheet`, `fix/mobile-width`, `fix/ui-overlaps` | — | ภาพจาก build จริง 390/1440 px | ✅ `develop` · PR #27, #29, #33, #34, #38 |
-| RC: `v2.0.0-rc.1` | `release/2.0.0` | `28be954` | CI 9/9 รวม `e2e` ✅ · Preview deploy ✅ · **UAT เจ้าของผ่าน** 2026-10-18 | 🔄 bump `2.0.0` แล้ว · รอ PR → `main` (merge commit) · tag `v2.0.0-rc.1` → `28be954` ✅ |
+| RC: `v2.0.0-rc.1` | `release/2.0.0` | `28be954` | CI 9/9 รวม `e2e` ✅ · Preview ✅ · **UAT เจ้าของผ่าน** 2026-10-18 | ✅ tag `v2.0.0-rc.1` → `28be954` |
+| **R2: release v2.0.0** | `release/2.0.0` | `4218330` | CI 9/9 ✅ · Vercel production deploy success 2026-10-18 19:04 (เวลาไทย) · ภายนอก: `/login` แสดง v2.0.0, ไม่มีแถบทดสอบ, `/history` `/debts` → `/login?next=` ✅ · เจ้าของตรวจ production ผ่าน | ✅ **Production** · PR #40 merge `99b7311` (merge commit) · tag `v2.0.0` → `99b7311` ✅ · `develop` = `main` · `docs/redesign/release-2.0.0.md` |
 | C1–C9 | — | — | — | ยังไม่เริ่ม |
 
 ## 2. A1 — CI quality gates
@@ -99,7 +100,7 @@
 | S07-24 | Backup production (P-5) เป็น CSV ที่เจ้าของ export เอง ยังไม่ได้ทดลอง restore | Medium | RESOLVED (ดู S07-31) |
 | S07-25 | Supabase CLI บน Windows ต้องตั้ง `TMP`/`TEMP` เป็นโฟลเดอร์ที่เขียนได้ ไม่งั้น `supabase start` ล้มด้วย `makeTempDirectoryScoped NotFound` (CI บน Linux ไม่เป็น) | Low | RESOLVED (วิธีแก้บันทึกไว้) |
 | S07-26 | ทดสอบ A7 บน production ด้วยการบันทึกรายการ "7788 TEST" ฿500 ลงข้อมูลจริง ต้องลบออก | Low | RESOLVED (เจ้าของลบแล้ว · ดู S07-34) |
-| S07-27 | ตั้ง required checks (`lint`, `typecheck`, `test`, `build`, `audit`, `secrets`, `pr-title`, `db`) ใน ruleset ของ `main` | Medium | RESOLVED 2026-10-17 · ruleset `main` ใช้งานแล้ว (target = default branch) ตรวจผ่าน API · เสนอเพิ่ม `e2e` ตอน v2.0.0 |
+| S07-27 | ตั้ง required checks (`lint`, `typecheck`, `test`, `build`, `audit`, `secrets`, `pr-title`, `db`) ใน ruleset ของ `main` | Medium | RESOLVED 2026-10-17 · ruleset `main` ใช้งานแล้ว (target = default branch) ตรวจผ่าน API · `e2e` เพิ่มเป็น required check 2026-10-18 (เจ้าของ) |
 | S07-28 | PR #18 ถูก merge ก่อนรัน M006/M007 บน production → ยอดบนหน้าแรกโหลดไม่ได้และเคลียร์ยอดล้มเหลว (ไม่แก้ข้อมูล) ประมาณ 22:45–22:48 2026-10-15 จนรัน SQL แล้ว | Medium | RESOLVED · ป้องกัน: บรรทัดแรกของ PR template บอกไฟล์ SQL ที่ต้องรันก่อน merge |
 | S07-29 | B3–B5 ทดสอบบน production หลัง merge แทน Preview (ทดสอบเฉพาะสิ่งที่ไม่เขียนข้อมูล) · เรื่องแก้ชนกัน 2 เครื่องและบันทึกซ้ำทดสอบด้วย unit test + SQL test เท่านั้น | Low | — (ยอมรับ) |
 | S07-30 | ลบ `isomorphic-dompurify` (ADR-10) ข้อความที่บันทึกก่อนนี้ซึ่งถูกแปลงเป็น `&lt;` ยังคงอยู่ | Low | — (ตาม ADR-10) |
@@ -116,6 +117,24 @@
 | S07-40 | E2E พบ: CSP บล็อก Supabase ที่ไม่ใช่ `*.supabase.co` (เพิ่ม origin ที่ตั้งตอน build), กราฟ `aria-hidden` มีจุด focus (ปิด accessibility layer ของ recharts), ของที่ scroll เข้าจออาจอยู่ใต้ bottom nav (`scroll-padding-bottom`) (#39) | Medium | RESOLVED |
 | S07-41 | ยังไม่ได้ทดสอบบนเครื่องจริง: บิล PDF บน iPhone (S03-05), dialog เซสชันหมดอายุตอนหมดจริง, การแก้สีของ autofill | Low | UNRESOLVED → รายการ UAT ใน `release-2.0.0.md` |
 | S07-42 | เครื่องมือ E2E เลือกเวอร์ชันที่ออกนานแล้ว (Playwright 1.63.0, axe 4.13.0) แทนเวอร์ชันที่เพิ่งออก 3–4 วัน (supply chain) | Low | — (ตัดสินใจในงาน) |
+
+## 3.1 ปิด Step 07 (2026-10-18)
+
+ทั้ง 2 ช่วงขึ้น production แล้ว: **v1.2.0** (Phase A ความถูกต้องของข้อมูล, 2026-10-16) และ **v2.0.0** (Phase B หน้าตาใหม่, 2026-10-18) · ทุก migration M000–M009 อยู่บน production · ทุก PR ต้องผ่าน `lint` `typecheck` `test` `build` `audit` `secrets` `pr-title` `db` `e2e`
+
+ยกไป step ถัดไป (ยังเปิดอยู่):
+
+| ID | เรื่อง | สถานะ |
+|---|---|---|
+| S07-03 | `engines.node` ใน `package.json` (ต้องรู้ Node version บน Vercel) | NEEDS_APPROVAL |
+| S07-11 | log ของ Vercel Hobby สั้นและไม่มี alert | UNRESOLVED · ทบทวนหลัง 1 เดือน |
+| S07-15 | `fetchAllPages` แบบ offset อาจได้แถวซ้ำ 1 แถวถ้ามีการบันทึกระหว่างโหลด | UNRESOLVED |
+| S07-20 | Ignored Build Step ไม่ยกเว้น `supabase/` | NEEDS_APPROVAL (ตั้งใน Vercel) |
+| S07-37 | ต้นเหตุที่หน้าจอ PC ของเจ้าของเคยแสดงสีไม่ได้ | สาเหตุ Unknown · ไม่เกิดซ้ำหลัง #29 |
+| S07-41 | บิล PDF บน iPhone, dialog เซสชันหมดอายุตอนหมดจริง, สีช่องตอน autofill | UAT ผ่านโดยรวม แต่ไม่ได้ยืนยันแยกรายข้อ |
+| HF-01 | dependency production ระดับ high 4 / moderate 5 | ตาม audit gate |
+| — | Realtime ปิดบน production | ตัดสินภายหลัง |
+| — | branch ที่ merge แล้วบน GitHub | เจ้าของจะลบภายหลัง |
 
 ## 4. รออนุมัติ (ต่อ feature)
 | # | ขอ | ผล |
