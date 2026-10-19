@@ -7,7 +7,7 @@
 
 | | |
 |---|---|
-| สถานะ | **Deployed** · `v2.1.0` บน production ตั้งแต่ PR #50 (`8465548`, merge 23:21) · ตรวจจากภายนอกผ่านทุกข้อ [V] · **ยังไม่ปิด:** ตรวจที่ต้อง login และ Vercel logs (เจ้าของ) [U] |
+| สถานะ | **Released และตรวจแล้ว** · `v2.1.0` บน production ตั้งแต่ PR #50 (`8465548`, deploy 23:21:39) · ตรวจจากภายนอกผ่าน 2 รอบ [V] · เจ้าของ login ตรวจทุกหน้าผ่าน (~23:50) [V] · Vercel logs 30 นาทีแรกไม่มี error [V] · ยังทำต่อ: สังเกตวันแรกที่ร้านเปิด (`monitoring-report.md` §4) |
 | เจ้าของอนุมัติ | "อนุมัติ Step 11" 2026-10-19 ~22:06 · เปิดและ merge PR #49 และ #50 เอง |
 | สิ่งที่ขึ้น production | D-09 การ์ด "ไม่มียอดค้าง" · D-10 ไม่แสดงอากาศ 0° ปลอม · D-11 กราฟโหลดไม่ได้หน้าไม่พัง · (D-01..D-07 ขึ้นไปก่อนแล้ว) |
 | ฐานข้อมูล | ไม่มีการเปลี่ยน · ไม่ได้รัน migration [V] |
@@ -40,8 +40,8 @@
 | 5 | Database changes | ไม่มี [V] | ✅ N/A |
 | 6 | Deploy ผ่าน Vercel | deployment `7177418079` · Production · `e63d175` · success 22:07 [V] | ✅ |
 | 7 | Production URL + deployment status | `car-care-intelligence-53wd.vercel.app` เสิร์ฟ build ใหม่ (เวอร์ชันท้ายหน้าเปลี่ยนเป็น `v2.1.0-rc.4`) [V] | ✅ |
-| 8 | Smoke test CUJ | อ่านอย่างเดียวผ่านทั้ง 2 รอบ (`smoke-test-results.md` §1–2) · ส่วนที่ต้อง login รอเจ้าของ (§3) | ✅ / ⏳ |
-| 9 | Error logs + พฤติกรรมหลัง deploy | ตรวจจากภายนอกทุก 5 นาที ปกติทุกรอบ (`monitoring-report.md` §2) · Vercel logs ต้องใช้สิทธิ์เจ้าของ [U] | ✅ / ⏳ |
+| 8 | Smoke test CUJ | อ่านอย่างเดียวผ่านทั้ง 2 รอบ (`smoke-test-results.md` §1–2) · เจ้าของ login ตรวจข้อ 1–8 ผ่านหมด (§3) [V] | ✅ |
+| 9 | Error logs + พฤติกรรมหลัง deploy | ตรวจจากภายนอกทุก 5 นาที ปกติทุกรอบ · Vercel logs 23:16–23:46 ไม่มี error (มีแค่ 401 จากสคริปต์ตรวจ) (`monitoring-report.md` §2, §5) [V] | ✅ |
 | 10 | ตัดสิน: ไปต่อ / เฝ้าระวัง / rollback | **ไปต่อและเฝ้าระวัง** (§8) | ✅ |
 
 Feature flag / gradual rollout: แอปไม่มีระบบ feature flag และ Vercel Hobby ไม่มี gradual rollout จึง deploy ทั้งก้อน · การปิดของใหม่ = Instant Rollback ไป `4162c44`
@@ -79,8 +79,9 @@ Feature flag / gradual rollout: แอปไม่มีระบบ feature fla
 **ไปต่อและเฝ้าระวัง** · ไม่ rollback
 
 - ไม่พบเงื่อนไข rollback (`monitoring-report.md` §3): login, redirect, API และ Supabase ปกติทุกรอบ · ไม่มี error ใหม่ใน console · ไม่มี request ล้ม
-- สิ่งที่ยังตรวจไม่ได้จากภายนอก: หน้าที่ต้อง login (ยอดเงิน, บันทึก, ค้างชำระ, Excel) และ error ของผู้ใช้จริงใน Vercel logs → เจ้าของตรวจ (`smoke-test-results.md` §3, `monitoring-report.md` §4)
-- ถ้าเจ้าของพบปัญหาตามเกณฑ์: Vercel → Deployments → `4162c44` → Instant Rollback (ย้อนเฉพาะโค้ด ข้อมูลที่บันทึกระหว่างนี้ยังอยู่)
+- เจ้าของ login ตรวจหน้าภาพรวม อากาศ กราฟ ค้างชำระ ประวัติ Excel และเลขเวอร์ชัน ผ่านหมด · Vercel logs ไม่มี error
+- ยังทำต่อ: สังเกตวันแรกที่ร้านเปิด (Vercel Hobby ดู log ได้ทีละ 30 นาที) · D-07 เปลี่ยนรหัสผ่าน (`incident-report.md`)
+- ถ้าพบปัญหาตามเกณฑ์: Vercel → Deployments → `4162c44` → Instant Rollback (ย้อนเฉพาะโค้ด ข้อมูลที่บันทึกระหว่างนี้ยังอยู่ และไม่ย้อนฐานข้อมูล)
 
 ## 6. S11-02 — GitHub Actions ล่มระหว่าง release · ไม่กระทบ production · [V]
 

@@ -65,9 +65,9 @@ Vercel Instant Rollback ย้อนเฉพาะโค้ด ไม่ย้�
 |---|---|
 | Tag `v2.1.0` บน commit ที่ production รันจริง | ✅ `v2.1.0` → `8465548` |
 | Back-merge `main` → `develop` (นำ D-11 เข้า `develop`) | ✅ fast-forward `develop` = `main` = `8465548` |
-| Smoke test ที่ต้อง login (เจ้าของ) | ⏳ |
-| Vercel logs 1 ชม. / 24 ชม. (เจ้าของ) | ⏳ |
-| D-07: ค้น log `password=` (เจ้าของ) | ⏳ (`incident-report.md`) |
+| Smoke test ที่ต้อง login (เจ้าของ) | ✅ ผ่านหมด ~23:50 |
+| Vercel logs (เจ้าของ) | ✅ 30 นาทีแรกไม่มี error · วันแรกที่ร้านเปิดดูต่อเป็นช่วง ๆ (Hobby ดูย้อนได้ 30 นาที) ⏳ |
+| D-07: ค้น log `password=` (เจ้าของ) | ทำไม่ได้ (Hobby ดูย้อนได้ 30 นาที) · แนะนำเปลี่ยนรหัสผ่าน ⏳ (`incident-report.md`) |
 | D-08: แก้ใน PR แยกเข้า `develop` | ⏳ branch `fix/keep-typing-before-ready` รอ merge (ขึ้น production ใน release ถัดไป) |
 | ruleset ของ `develop` (แนะนำ) | ⏳ เจ้าของ |
 | GitHub Release (หน้า Releases) | ไม่ได้สร้าง: ไม่มี `gh` และไม่มีสิทธิ์ API ในเครื่องนี้ · เจ้าของสร้างจาก tag ได้ถ้าต้องการ (ไม่บังคับ) |
