@@ -146,8 +146,29 @@ export function MoneyHero({ stats, error, onRetry }: { stats: DashboardStats | n
 // ── DebtSummaryCard ──────────────────────────────────────────────────────────
 
 export function DebtSummaryCard({ debt }: { debt: DebtSummary }) {
-  // Hidden when nothing is owed (the data loaded fine, so 0 is real)
-  if (debt.total <= 0) return null
+  // Nothing owed (the data loaded fine, so 0 is real): say so in a card of the same size.
+  // Hiding it left an empty space on PC and moved the cards up on phones after the
+  // loading placeholder (Step 10, D-09)
+  if (debt.total <= 0) {
+    return (
+      <Link href="/debts" className="focus-ring block rounded-lg">
+        <Card interactive className="grid grid-cols-1 gap-1">
+          <p className="flex items-center gap-2 text-label text-text-secondary">
+            <Icon name="check-circle" className="text-success-text" />
+            ค้างชำระ
+          </p>
+          <p className="text-title-lg text-success-text">ไม่มียอดค้าง</p>
+          <p className="flex items-center justify-between text-caption text-text-secondary">
+            <span>ทุกคันชำระแล้ว</span>
+            <span className="flex items-center font-semibold text-link">
+              ดูทั้งหมด
+              <Icon name="chevron-right" size="sm" />
+            </span>
+          </p>
+        </Card>
+      </Link>
+    )
+  }
   return (
     <Link href="/debts" className="focus-ring block rounded-lg">
       <Card tone="warning" interactive className="grid grid-cols-1 gap-1">
@@ -173,12 +194,12 @@ export function DebtSummaryCard({ debt }: { debt: DebtSummary }) {
 /**
  * Holds the debt card's place while loading, line for line (each bar is one line of the
  * same text style), so the cards below do not jump down when it arrives (Step 09 O-09).
- * Most days there is something owed; when there is not, the card goes away after loading.
+ * When nothing is owed the same-size "ไม่มียอดค้าง" card takes its place.
  */
 export function DebtSummarySkeleton() {
   return (
     <SkeletonGroup label="กำลังโหลดยอดค้างชำระ…">
-      <Card tone="warning" className="grid grid-cols-1 gap-1">
+      <Card className="grid grid-cols-1 gap-1">
         <div className="text-label">
           <Skeleton className="h-[1lh] w-24" />
         </div>

@@ -294,10 +294,11 @@ export function useWeather() {
       fetchSuccess = true;
     }
 
+    // Air quality alone is not enough: without the forecast the temperature and the
+    // chance of rain would show their defaults (0°, 0%) as if they were real (IS-4, D-10)
     if (aqResult.status === 'fulfilled') {
       const aqData = aqResult.value
       aqiValue = Math.round(aqData.current?.us_aqi ?? 0);
-      fetchSuccess = true;
     }
 
     if (!fetchSuccess) {
