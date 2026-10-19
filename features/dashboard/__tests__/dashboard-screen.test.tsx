@@ -90,12 +90,14 @@ describe('DashboardScreen', () => {
     expect(screen.getByRole('region', { name: /รายการวันนี้/ })).toHaveTextContent('กข 1')
   })
 
-  it('invites the first job on an empty day and hides the debt card when nothing is owed', async () => {
+  it('invites the first job on an empty day and says nothing is owed, in the same place (D-09)', async () => {
     load.loadDashboard.mockResolvedValue(data({ todayRecords: ok([]), unpaidRecords: ok([]), today: ok({ ...today, totalIncome: 0, paidIncome: 0 }) }))
     await renderScreen()
     expect(screen.getByText('ยังไม่มีงานวันนี้')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'บันทึกรายการแรก' })).toHaveAttribute('href', '/add')
-    expect(screen.queryByRole('link', { name: /ค้างชำระ/ })).toBeNull()
+    const card = screen.getByRole('link', { name: /ค้างชำระ.*ไม่มียอดค้าง/ })
+    expect(card).toHaveAttribute('href', '/debts')
+    expect(card).not.toHaveTextContent('฿')
   })
 
   it('highlights the record just saved on /add', async () => {
