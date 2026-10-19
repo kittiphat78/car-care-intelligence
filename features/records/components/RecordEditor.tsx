@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { CAR_BRANDS, CAR_TYPES } from '@/types'
 import { bangkokToday } from '@/lib/time/bangkok'
 import { toAppError, toUserMessage, type AppError } from '@/lib/errors'
+import { useHydrated } from '@/lib/use-hydrated'
 import { reportAppError } from '@/lib/observability'
 import type { Result } from '@/lib/result'
 import { Badge } from '@/components/ui/Badge'
@@ -131,6 +132,8 @@ function SaveButtons({
   today: string
 }) {
   const kind = dayKind(day, today)
+  // Not before React has taken over the form: the browser would submit it by itself (D-07)
+  const ready = useHydrated()
   const note: ReactNode =
     !online ? (
       <p className="text-caption font-medium text-warning-text">ไม่มีอินเทอร์เน็ต · รอเชื่อมต่อแล้วกดบันทึกอีกครั้ง</p>
@@ -147,7 +150,7 @@ function SaveButtons({
         value="continue"
         variant="secondary"
         size="lg"
-        disabled={!online || busy === 'save'}
+        disabled={!ready || !online || busy === 'save'}
         isLoading={busy === 'continue'}
         loadingText="กำลังบันทึก…"
       >
@@ -159,7 +162,7 @@ function SaveButtons({
         value="save"
         variant={primaryVariant}
         size="lg"
-        disabled={!online || busy === 'continue'}
+        disabled={!ready || !online || busy === 'continue'}
         isLoading={busy === 'save'}
         loadingText="กำลังบันทึก…"
       >
@@ -250,7 +253,7 @@ export function IncomeEditor({ userId, email }: EditorProps) {
   }
 
   return (
-    <form noValidate onSubmit={onSubmit} onKeyDown={enterMovesToNextField} aria-busy={busy || undefined} className="grid grid-cols-1 gap-5">
+    <form method="post" noValidate onSubmit={onSubmit} onKeyDown={enterMovesToNextField} aria-busy={busy || undefined} className="grid grid-cols-1 gap-5">
       {draft.restored && <RestoredBanner onClear={() => draft.reset()} />}
       <FormErrorSummary errors={errors} attempt={attempt} />
       <FailureBanner error={failure} />
@@ -436,7 +439,7 @@ export function ExpenseEditor({ userId, email }: EditorProps) {
   }
 
   return (
-    <form noValidate onSubmit={onSubmit} onKeyDown={enterMovesToNextField} aria-busy={busy || undefined} className="grid grid-cols-1 gap-5">
+    <form method="post" noValidate onSubmit={onSubmit} onKeyDown={enterMovesToNextField} aria-busy={busy || undefined} className="grid grid-cols-1 gap-5">
       {draft.restored && <RestoredBanner onClear={() => draft.reset()} />}
       <FormErrorSummary errors={errors} attempt={attempt} />
       <FailureBanner error={failure} />

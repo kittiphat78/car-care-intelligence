@@ -99,6 +99,22 @@ describe('LoginForm', () => {
     expect(nav.replace).toHaveBeenCalledWith('/')
   })
 
+  it('as sent by the server: posts (never GET) and the button waits for the JavaScript (D-07)', async () => {
+    const { renderToString } = await import('react-dom/server')
+    const html = renderToString(<LoginForm />)
+    expect(html).toMatch(/<form[^>]*method="post"/)
+    expect(html).toMatch(/<button[^>]*type="submit"[^>]*disabled/)
+  })
+
+  it('does not overwrite an email typed before the page was ready', () => {
+    localStorage.setItem('remembered_email', 'saved@example.com')
+    render(<LoginForm />)
+    // Remembered email fills an empty field only; typing replaces it as usual
+    expect(screen.getByLabelText('อีเมล')).toHaveValue('saved@example.com')
+    fireEvent.change(screen.getByLabelText('อีเมล'), { target: { value: 'typed@example.com' } })
+    expect(screen.getByLabelText('อีเมล')).toHaveValue('typed@example.com')
+  })
+
   it('fills in a remembered email', () => {
     localStorage.setItem('remembered_email', 'saved@example.com')
     render(<LoginForm />)
