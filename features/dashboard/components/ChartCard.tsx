@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
+import type { ChartBarsProps } from './ChartBars'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ChoiceGroup } from '@/components/ui/ChoiceGroup'
@@ -14,10 +15,22 @@ import { CardHeader, baht } from './cards'
 // The bars come from recharts (about 110 KB gzip). Loaded after the rest of the page so
 // today's numbers are not waiting for it; the box keeps its height meanwhile, so nothing
 // moves when the bars appear (optimization-log O-07)
-const ChartBars = dynamic(() => import('./ChartBars'), {
-  ssr: false,
-  loading: () => <div className="size-full rounded-md bg-surface-2" />,
-})
+//
+// If that file cannot be downloaded (weak signal), only the chart box says so: a failed
+// import must not take the whole dashboard to the error page (Step 10, D-11). The
+// sentence above and "ดูเป็นตาราง" still give the numbers.
+const ChartBars = dynamic<ChartBarsProps>(
+  () => import('./ChartBars').catch(() => ({ default: ChartUnavailable })),
+  { ssr: false, loading: () => <div className="size-full rounded-md bg-surface-2" /> },
+)
+
+function ChartUnavailable() {
+  return (
+    <div className="grid size-full place-items-center rounded-md bg-surface-2 px-4 text-center text-caption text-text-secondary">
+      โหลดกราฟไม่สำเร็จ · ดูตัวเลขได้จาก &quot;ดูเป็นตาราง&quot;
+    </div>
+  )
+}
 
 // component-specifications.md §2.11 — bars plus a sentence and a table, so the numbers
 // never depend on reading colours. Colours come from the tokens of the current theme.

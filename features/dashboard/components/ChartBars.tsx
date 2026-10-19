@@ -4,8 +4,14 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import type { ChartMode, toChartData } from '../logic'
 import { baht } from './cards'
 
+export interface ChartBarsProps {
+  data: ReturnType<typeof toChartData>
+  mode: ChartMode
+  colours: Record<string, string>
+}
+
 // The bars of ChartCard, in their own file so recharts loads separately (O-07)
-export default function ChartBars({ data, mode, colours }: { data: ReturnType<typeof toChartData>; mode: ChartMode; colours: Record<string, string> }) {
+export default function ChartBars({ data, mode, colours }: ChartBarsProps) {
   return (
     <ResponsiveContainer width="100%" height="100%">
       <BarChart
