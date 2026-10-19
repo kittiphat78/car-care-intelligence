@@ -19,6 +19,11 @@ function readDraft<T>(key: string): T | null {
   }
 }
 
+/** The fields of `current` that are no longer empty */
+function filledFields<T extends object>(current: T, empty: T): Partial<T> {
+  return Object.fromEntries(Object.entries(current).filter(([k, v]) => v !== empty[k as keyof T])) as Partial<T>
+}
+
 export function useDraft<T extends object>(key: string, empty: T, isDirty: (value: T) => boolean) {
   const [value, setValue] = useState<T>(empty)
   const [restored, setRestored] = useState(false)
@@ -28,7 +33,8 @@ export function useDraft<T extends object>(key: string, empty: T, isDirty: (valu
   useEffect(() => {
     const saved = readDraft<T>(key)
     if (saved && isDirty({ ...empty, ...saved })) {
-      setValue({ ...empty, ...saved })
+      // Anything typed before the page was ready (D-08) is newer than the draft
+      setValue((current) => ({ ...empty, ...saved, ...filledFields(current, empty) }))
       setRestored(true)
     }
     loaded.current = true

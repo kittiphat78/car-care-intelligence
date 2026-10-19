@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { CAR_BRANDS, CAR_TYPES } from '@/types'
 import { bangkokToday } from '@/lib/time/bangkok'
 import { toAppError, toUserMessage, type AppError } from '@/lib/errors'
+import { useKeepEarlyTyping } from '@/lib/use-early-typing'
 import { useHydrated } from '@/lib/use-hydrated'
 import { reportAppError } from '@/lib/observability'
 import type { Result } from '@/lib/result'
@@ -19,7 +20,7 @@ import { ActionBar } from '@/components/patterns/ActionBar'
 import { FormErrorSummary } from '@/components/patterns/FormErrorSummary'
 import { FormField, describedBy, labelId } from '@/components/patterns/FormField'
 import { useOnline } from '@/components/patterns/StatusBar'
-import { BrandPicker, CustomerField, DateField, MoneyField, PlateField, dayKind, thaiDate } from '@/components/patterns/fields'
+import { BrandPicker, CustomerField, DateField, MoneyField, PlateField, dayKind, thaiDate, toDigits } from '@/components/patterns/fields'
 import { createExpense, createIncome } from '../api'
 import {
   EMPTY_EXPENSE,
@@ -212,6 +213,14 @@ export function IncomeEditor({ userId, email }: EditorProps) {
   const [showBrand, setShowBrand] = useState(false)
   const plateRef = useRef<HTMLInputElement>(null)
   const customerRef = useRef<HTMLInputElement>(null)
+  const formRef = useRef<HTMLFormElement>(null)
+  useKeepEarlyTyping(formRef, {
+    'income-date': (v) => v && setDay(v),
+    'income-plate': (v) => set('plate', v),
+    'income-price': (v) => set('price', toDigits(v)),
+    'income-customer': (v) => set('customerName', v),
+    'income-note': (v) => set('note', v),
+  })
 
   // Messages appear after the first save attempt and then follow the user's fixes
   const checked = checkIncome(d)
@@ -253,7 +262,7 @@ export function IncomeEditor({ userId, email }: EditorProps) {
   }
 
   return (
-    <form method="post" noValidate onSubmit={onSubmit} onKeyDown={enterMovesToNextField} aria-busy={busy || undefined} className="grid grid-cols-1 gap-5">
+    <form ref={formRef} method="post" noValidate onSubmit={onSubmit} onKeyDown={enterMovesToNextField} aria-busy={busy || undefined} className="grid grid-cols-1 gap-5">
       {draft.restored && <RestoredBanner onClear={() => draft.reset()} />}
       <FormErrorSummary errors={errors} attempt={attempt} />
       <FailureBanner error={failure} />
@@ -410,6 +419,13 @@ export function ExpenseEditor({ userId, email }: EditorProps) {
   const [intent, setIntent] = useState<'save' | 'continue' | null>(null)
   const [attempt, setAttempt] = useState(0)
   const amountRef = useRef<HTMLInputElement>(null)
+  const formRef = useRef<HTMLFormElement>(null)
+  useKeepEarlyTyping(formRef, {
+    'expense-date': (v) => v && setDay(v),
+    'expense-amount': (v) => set('amount', toDigits(v)),
+    'expense-title': (v) => set('title', v),
+    'expense-note': (v) => set('note', v),
+  })
 
   const checked = checkExpense(d)
   const errors = attempt > 0 && !checked.ok ? checked.errors : []
@@ -439,7 +455,7 @@ export function ExpenseEditor({ userId, email }: EditorProps) {
   }
 
   return (
-    <form method="post" noValidate onSubmit={onSubmit} onKeyDown={enterMovesToNextField} aria-busy={busy || undefined} className="grid grid-cols-1 gap-5">
+    <form ref={formRef} method="post" noValidate onSubmit={onSubmit} onKeyDown={enterMovesToNextField} aria-busy={busy || undefined} className="grid grid-cols-1 gap-5">
       {draft.restored && <RestoredBanner onClear={() => draft.reset()} />}
       <FormErrorSummary errors={errors} attempt={attempt} />
       <FailureBanner error={failure} />
