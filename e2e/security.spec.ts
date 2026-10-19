@@ -271,6 +271,7 @@ test.describe('sign-in rules in the app', () => {
     await page.waitForURL((u) => u.pathname === '/')
     await expect(page.getByText('ยังไม่มีงานวันนี้')).toBeVisible()
     await expect(page.getByRole('link', { name: /ค้างชำระ.*฿/ })).toHaveCount(0)
+  await expect(page.getByRole('link', { name: /ค้างชำระ.*ไม่มียอดค้าง/ })).toBeVisible()
     await page.goto('/debts')
     await expect(page.getByText('ไม่มีรายการค้างชำระ')).toBeVisible()
     await page.goto('/history?m=0')

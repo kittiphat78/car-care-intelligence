@@ -61,3 +61,20 @@ test('brand, customer and who saved a record come back; the customer is offered 
   await page.getByRole('group', { name: 'ลูกค้าล่าสุด' }).getByRole('button', { name: customer }).click()
   await expect(page.getByLabel(/^ลูกค้า \/ เต็นท์/)).toHaveValue(customer)
 })
+
+test('the dashboard still works when the chart file cannot be downloaded (D-11)', async ({ page }) => {
+  await signIn(page)
+  // File names change with every build; find the chart library by its content
+  await page.route(/\/_next\/static\/.*\.js/, async (route) => {
+    const response = await route.fetch()
+    if ((await response.text()).includes('recharts')) return route.abort('internetdisconnected')
+    return route.fulfill({ response })
+  })
+  await page.goto('/more')
+  // Go there inside the app, as a person would (the menu shows one visible link)
+  await page.getByRole('link', { name: 'ภาพรวม', exact: true }).click()
+  await expect(page).toHaveURL('/')
+  await expect(page.getByRole('region', { name: 'เงินสดสุทธิวันนี้' })).toBeVisible()
+  await expect(page.getByText('โหลดกราฟไม่สำเร็จ')).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'ภาพรวมวันนี้' })).toBeVisible()
+})
