@@ -53,6 +53,9 @@ gitGraph
 
 ### 2.1 Branches
 
+> **ปรับ 2026-10-19 (เจ้าของตัดสิน, S10-01):** `main` deploy production อัตโนมัติจริง [V] และหลัง v2.0.0 PR #41–#46 ตั้ง base เป็น `main` จึงขึ้น production โดยไม่ผ่าน RC · ตั้งแต่นี้ **`develop` เป็นที่รวมงานถาวร** (ไม่ลบหลัง v2.0.0): `feature/*`, `fix/*`, `docs/*`, `chore/*`, `ci/*` แตกจากและ merge เข้า `develop` · `main` รับเฉพาะ `release/*` (merge commit) และ `hotfix/*` ที่เจ้าของอนุมัติ · หลัง release/hotfix ให้ back-merge `main` → `develop` · ตารางข้างล่างคือแผนเดิม อ่านคู่กับหมายเหตุนี้
+
+
 | Branch | มีอยู่ไหม | สร้างเมื่อ | แตกจาก | Merge เข้า | อายุ | Deploy (Vercel) |
 |---|---|---|---|---|---|---|
 | `main` | ✅ [V] | — | — | — | ถาวร | **Production** (อัตโนมัติ [I]) |
