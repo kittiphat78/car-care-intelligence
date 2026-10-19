@@ -78,3 +78,29 @@ test('the dashboard still works when the chart file cannot be downloaded (D-11)'
   await expect(page.getByText('โหลดกราฟไม่สำเร็จ')).toBeVisible()
   await expect(page.getByRole('heading', { level: 1, name: 'ภาพรวมวันนี้' })).toBeVisible()
 })
+
+test('what is typed before the page is ready stays in the form and is saved (D-08)', async ({ page }, info) => {
+  const plate = uniquePlate(info, 'T')
+  await signIn(page)
+  // Hold the scripts: the form stays exactly as the server sent it, as on a slow phone
+  let release!: () => void
+  const held = new Promise<void>((r) => (release = r))
+  await page.route(/\/_next\/static\/chunks\/.*\.js/, async (route) => {
+    await held
+    await route.continue().catch(() => {})
+  })
+  await page.goto('/add', { waitUntil: 'domcontentloaded' })
+  await page.getByLabel(/^ป้ายทะเบียน/).fill(plate)
+  await page.getByLabel(/^ราคา \(บาท\)/).fill('250')
+  release()
+  const save = page.getByRole('button', { name: 'บันทึก', exact: true })
+  await expect(save).toBeEnabled()
+  // The first tap after the page was ready used to wipe what was typed before it
+  await page.getByRole('radio', { name: 'รถเก๋ง' }).click()
+  await expect(page.getByLabel(/^ป้ายทะเบียน/)).toHaveValue(plate)
+  await expect(page.getByLabel(/^ราคา \(บาท\)/)).toHaveValue('250')
+  await save.click()
+  await expect(page).toHaveURL('/')
+  await page.goto(`/history?q=${encodeURIComponent(plate)}`)
+  await expect(page.getByRole('button', { name: new RegExp(plate) })).toBeVisible()
+})

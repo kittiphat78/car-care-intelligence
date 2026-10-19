@@ -185,6 +185,57 @@ describe('IncomeEditor', () => {
   })
 })
 
+describe('text typed before the page is ready (D-08)', () => {
+  /** The server's HTML, typed into, then taken over by React: what a slow phone does */
+  async function typeThenHydrate(ui: React.ReactElement, typed: Array<[RegExp, string]>) {
+    const { renderToString } = await import('react-dom/server')
+    const container = document.createElement('div')
+    container.innerHTML = renderToString(ui)
+    document.body.appendChild(container)
+    for (const [label, value] of typed) (within(container).getByLabelText(label) as HTMLInputElement).value = value
+    render(ui, { container, hydrate: true })
+  }
+
+  const income = (
+    <ToastProvider>
+      <IncomeEditor userId="user-1" email="owner@example.com" />
+    </ToastProvider>
+  )
+
+  it('stays in the form after the next tap and is saved', async () => {
+    await typeThenHydrate(income, [
+      [/ป้ายทะเบียน/, 'กข 1234'],
+      [/ราคา \(บาท\)/, '1,200'],
+    ])
+    // Any tap makes React draw the fields again: this is what used to clear them
+    fireEvent.click(screen.getByRole('radio', { name: 'รถเก๋ง' }))
+    expect(screen.getByLabelText(/ป้ายทะเบียน/)).toHaveValue('กข 1234')
+    expect(screen.getByLabelText(/ราคา \(บาท\)/)).toHaveValue('1,200')
+    await press('บันทึก')
+    expect(api.createIncome.mock.calls[0][0]).toMatchObject({ plate: 'กข 1234', price: 1200 })
+  })
+
+  it('wins over an older draft, which still fills the other fields', async () => {
+    sessionStorage.setItem('car-care-draft:user-1:income', JSON.stringify({ plate: 'กข 1', note: 'จากร่างเดิม' }))
+    await typeThenHydrate(income, [[/ป้ายทะเบียน/, 'ขค 2']])
+    expect(await screen.findByText('กู้ข้อมูลที่กรอกค้างไว้แล้ว')).toBeInTheDocument()
+    expect(screen.getByLabelText(/ป้ายทะเบียน/)).toHaveValue('ขค 2')
+    expect(screen.getByLabelText(/หมายเหตุ/)).toHaveValue('จากร่างเดิม')
+  })
+
+  it('works for an expense too', async () => {
+    await typeThenHydrate(
+      <ToastProvider>
+        <ExpenseEditor userId="user-1" email="owner@example.com" />
+      </ToastProvider>,
+      [[/จำนวนเงินที่จ่าย/, '300']],
+    )
+    fireEvent.click(screen.getByRole('radio', { name: 'ค่าน้ำยา' }))
+    await press('บันทึกรายจ่าย')
+    expect(api.createExpense.mock.calls[0][0]).toMatchObject({ title: 'ค่าน้ำยา', amount: 300 })
+  })
+})
+
 describe('ExpenseEditor', () => {
   it('saves a shortcut expense (AC-10-1)', async () => {
     renderExpense()
