@@ -11,7 +11,6 @@ import { defineConfig, devices } from '@playwright/test'
 // request goes to the staging project. They create their own records and delete them.
 
 const url = process.env.PREVIEW_URL ?? ''
-const bypass = process.env.PREVIEW_BYPASS ?? ''
 
 export default defineConfig({
   testDir: '.',
@@ -25,7 +24,6 @@ export default defineConfig({
     timezoneId: 'Asia/Bangkok',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
-    extraHTTPHeaders: bypass ? { 'x-vercel-protection-bypass': bypass, 'x-vercel-set-bypass-cookie': 'samesitenone' } : {},
   },
   projects: [
     { name: 'phone', use: { ...devices['Pixel 7'] } },
