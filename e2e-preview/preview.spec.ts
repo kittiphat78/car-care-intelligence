@@ -174,6 +174,8 @@ test('CUJ: export Excel, every page loads, no console errors, accessible, fits 3
   const problems = watchConsole(page)
   await signIn(page)
   await page.goto('/history')
+  // A tap before the page is ready is lost (D-08); wait like a person waits for the list
+  await page.waitForFunction(() => !document.querySelector('[aria-busy="true"]'), null, { timeout: 30000 })
   await page.getByRole('button', { name: 'ส่งออก Excel' }).click()
   const dialog = page.getByRole('dialog', { name: 'ส่งออก Excel' })
   await expect(dialog).toContainText(/พบ [\d,]+ รายการ/)
