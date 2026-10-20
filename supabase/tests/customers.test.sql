@@ -33,8 +33,8 @@ begin
     assert (select created_by_email from public.customers where id = a) = 'customers@example.com', 'created_by_email is not from the session';
     assert (select count(*) from public.customer_phones where customer_id = a) = 2, 'phones were not saved';
     assert (select number from public.customer_phones where customer_id = a and is_primary) = '0800000002', 'the marked main number was not kept';
-    assert (select string_agg(plate || '=' || plate_key, ',' order by position) from public.customer_vehicles where customer_id = a)
-           = '1กข 1234=1กข1234,2ขค-5678=2ขค5678', 'plate or plate_key is wrong';
+    assert (select string_agg(plate || '=' || plate_key || '=' || plate_core, ',' order by position) from public.customer_vehicles where customer_id = a)
+           = '1กข 1234=1กข1234=1กข1234,2ขค-5678=2ขค5678=2ขค5678', 'plate, plate_key or plate_core is wrong';
     assert (select car_type || '/' || brand || '/' || color from public.customer_vehicles where customer_id = a and position = 0) = 'pickup/toyota/ขาว', 'vehicle details were not saved';
 
     -- 2 · Saving again with the same request id returns the same customer (no duplicate)
@@ -107,22 +107,43 @@ begin
     exception when sqlstate 'CC422' then null;
     end;
     begin
+      -- The same plate with and without the province at the end
+      perform public.save_customer(null, null, 'ทดสอบ ซ้ำ', null, '[]', '[{"plate":"4จฉ 1111"},{"plate":"4จฉ1111ชร."}]');
+      raise exception 'the same plate with a province was accepted twice';
+    exception when sqlstate 'CC422' then null;
+    end;
+    begin
       perform public.save_customer(null, null, 'ทดสอบ', null, '{"number":"0800000041"}', '[]');
       raise exception 'phones as an object was accepted';
     exception when sqlstate 'CC422' then null;
     end;
 
-    -- 6 · A plate of another customer: refused, then moved when the user agrees
+    -- 6 · A full plate of another customer (also when typed with its province):
+    --     refused, then moved when the user agrees
     begin
       perform public.save_customer(null, null, 'ทดสอบ คุณซี', null, '[]', '[{"plate":"2ขค 5678"}]');
       raise exception 'a plate of another customer was accepted';
     exception when sqlstate 'CCPLT' then null;
     end;
+    begin
+      perform public.save_customer(null, null, 'ทดสอบ คุณซี', null, '[]', '[{"plate":"2ขค5678 เชียงราย"}]');
+      raise exception 'a plate of another customer with a province was accepted';
+    exception when sqlstate 'CCPLT' then null;
+    end;
     assert not exists (select 1 from public.customers where name = 'ทดสอบ คุณซี'), 'a refused save left a customer behind';
-    select id into c from public.save_customer(null, null, 'ทดสอบ คุณซี', null, '[]', '[{"plate":"2ขค.5678"}]', array['2ขค5678']);
-    assert (select customer_id from public.customer_vehicles where plate_key = '2ขค5678') = c, 'the plate was not moved';
+    -- A move list naming a plate that is not in the save moves nothing
+    select id into c from public.save_customer(null, null, 'ทดสอบ คุณดี', null, '[]', '[{"plate":"6ฌญ 3333"}]', array['1กข1234']);
+    assert (select count(*) from public.customer_vehicles where customer_id = a) = 2, 'a plate not in the save was moved';
+    delete from public.customers where id = c;
+    select id into c from public.save_customer(null, null, 'ทดสอบ คุณซี', null, '[]', '[{"plate":"2ขค.5678ชร."}]', array['2ขค5678']);
+    assert (select customer_id from public.customer_vehicles where plate_core = '2ขค5678') = c, 'the plate was not moved';
     assert (select count(*) from public.customer_vehicles where customer_id = a) = 1, 'the plate is still with its previous customer';
     assert (select updated_at from public.customers where id = a) is not null, 'the previous customer was not marked as changed';
+
+    -- 6b · A plate typed as digits only may belong to several customers (different cars, same number)
+    perform public.save_customer(null, null, 'ทดสอบ เลขล้วน 1', null, '[]', '[{"plate":"7777"}]');
+    perform public.save_customer(null, null, 'ทดสอบ เลขล้วน 2', null, '[]', '[{"plate":"7777"}]');
+    assert (select count(*) from public.customer_vehicles where plate_core = '7777') = 2, 'a digits-only plate was limited to one customer';
 
     -- 7 · Editing checks updated_at (ADR-07)
     a_updated := (select updated_at from public.customers where id = a);
