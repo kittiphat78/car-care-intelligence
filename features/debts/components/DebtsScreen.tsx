@@ -16,6 +16,7 @@ import { useOnline } from '@/components/patterns/StatusBar'
 import { CustomerFormDialog } from '@/features/customers/components/CustomerFormDialog'
 import { DebtContact } from '@/features/customers/components/DebtContact'
 import { useCustomerDirectory } from '@/features/customers/hooks'
+import { keepScreen, keptScreen } from '@/lib/screen-memory'
 import { pushUrl, replaceUrl, useUrlDialog } from '@/lib/url-state'
 import { EditRecordDialog } from '@/features/records/components/EditRecordDialog'
 import { useEditParam } from '@/features/records/useEditParam'
@@ -35,14 +36,16 @@ export function DebtsScreen() {
   const searchParams = useSearchParams()
   const toast = useToast()
   const online = useOnline()
-  const [unpaid, setUnpaid] = useState<Result<AppRecord[]> | null>(null)
+  // Back on this tab: the last list at once, a fresh copy right after (lib/screen-memory.ts)
+  const [unpaid, setUnpaid] = useState<Result<AppRecord[]> | null>(() => keptScreen<Result<AppRecord[]>>('debts') ?? null)
   const [billing, setBilling] = useState<string | null>(null)
   const settleOpenedHere = useRef(false)
   const today = bangkokToday()
 
   const load = useCallback(async () => {
     const result = await listUnpaid()
-    if (!result.ok) reportAppError(result.error)
+    if (result.ok) keepScreen('debts', result)
+    else reportAppError(result.error)
     setUnpaid(result)
   }, [])
 

@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import { fetchAllPages } from '@/lib/fetch-all-pages'
 import { ok, type Result } from '@/lib/result'
+import { forgetScreens } from '@/lib/screen-memory'
 import { run } from '@/features/records/api'
 import type { Record as AppRecord } from '@/types'
 
@@ -35,6 +36,8 @@ export interface SettleResult {
  */
 export async function settleRecords(ids: string[]): Promise<Result<SettleResult>> {
   const result = await run(supabase.rpc('settle_records', { p_ids: ids }))
+  // The dashboard and history kept by other tabs show these as unpaid
+  forgetScreens()
   if (!result.ok) return result
   const row = (result.data as { updated_count: number; total: number }[] | null)?.[0]
   return ok({ updatedCount: num(row?.updated_count), total: num(row?.total) })

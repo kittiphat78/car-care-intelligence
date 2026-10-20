@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { appError } from '@/lib/errors'
 import { ToastProvider } from '@/components/ui/Toast'
@@ -83,6 +83,18 @@ describe('DashboardScreen', () => {
     expect(nav.push).not.toHaveBeenCalled()
     pushState.mockRestore()
   })
+
+  it('shows the figures of the last visit at once, then a fresh copy', async () => {
+    await renderScreen()
+    cleanup()
+    load.loadDashboard.mockReturnValue(new Promise(() => {}))
+    await renderScreen()
+    // No skeleton: the kept figures, while the ⟳ button says it is updating
+    expect(screen.queryByText('กำลังโหลดยอดค้างชำระ…')).toBeNull()
+    expect(screen.getByRole('region', { name: 'เงินสดสุทธิวันนี้' })).toHaveTextContent('฿250')
+    expect(screen.getByRole('button', { name: /กำลังอัปเดต/ })).toBeInTheDocument()
+  })
+
   it('shows an error in the failing card only, never ฿0', async () => {
     load.loadDashboard.mockResolvedValue(data({ today: { ok: false, error: appError('NETWORK') } }))
     await renderScreen()

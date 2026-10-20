@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
+import { keepScreen, keptScreen } from '@/lib/screen-memory'
 import { pushUrl, replaceUrl } from '@/lib/url-state'
 import { cn } from '@/lib/cn'
 import { bangkokParts, formatBangkok } from '@/lib/time/bangkok'
@@ -86,10 +87,12 @@ export function HistoryScreen() {
   }, [query, setFilters])
 
   // ── Data: one Bangkok year at a time ──
-  const [data, setData] = useState<YearData | null>(null)
+  // Back on this tab: the last year shown at once, a fresh copy right after (lib/screen-memory.ts)
+  const [data, setData] = useState<YearData | null>(() => keptScreen<YearData>('history') ?? null)
   const load = useCallback(async (year: number) => {
     const result = await loadYear(year)
     for (const part of [result.records, result.expenses]) if (!part.ok) reportAppError(part.error)
+    if (result.records.ok && result.expenses.ok) keepScreen<YearData>('history', { year, ...result })
     setData({ year, ...result })
   }, [])
   useEffect(() => {

@@ -20,6 +20,7 @@ const fake = vi.hoisted(() => {
 vi.mock('@/lib/supabase', () => ({ supabase: { from: (table: string) => (fake.builder.from as (t: string) => unknown)(table) } }))
 
 import { countVisitsByPlate, createIncome, deleteEntry, listBetween, run, updateEntry, type IncomeInsert } from '@/features/records/api'
+import { keepScreen, keptScreen } from '@/lib/screen-memory'
 
 const methods = () => fake.state.calls.map(c => c[0])
 const callOf = (method: string): Call | undefined => fake.state.calls.find(c => c[0] === method) as Call | undefined
@@ -98,5 +99,19 @@ describe('records api', () => {
     fake.state.response = { data: null, error: { code: '23514', message: 'check' }, count: null }
     const result = await deleteEntry('expenses', 'id-2')
     expect(!result.ok && result.error.code).toBe('VALIDATION')
+  })
+
+  it('forgets the screens kept in memory after a save, an edit or a delete', async () => {
+    const writes = [
+      () => createIncome({ client_request_id: 'req-2' } as IncomeInsert),
+      () => updateEntry('records', 'id-1', { price: 1 }, null),
+      () => deleteEntry('records', 'id-1'),
+    ]
+    for (const write of writes) {
+      keepScreen('dashboard', { day: 'x' })
+      fake.state.response = { data: [{ id: 'id-1' }], error: null, count: null }
+      await write()
+      expect(keptScreen('dashboard')).toBeUndefined()
+    }
   })
 })
