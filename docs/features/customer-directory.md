@@ -1,7 +1,7 @@
 # สมุดรายชื่อลูกค้า (Customer Directory) — Phase 0 Design
 
 > 2026-10-20 · สถานะ: **อนุมัติแล้ว** (เจ้าของ 2026-10-20: "ตามที่แนะนำ" ทุกข้อใน §14) · Phase 1 `db/customers` กำลังทำ · เป้าหมาย: `v2.2.0`
-> ยังรอ: **Q-8** ผลรูปแบบทะเบียนจาก production (กฎ `plate_key` ใช้ค่าตั้งต้นใน §5 ไปก่อน แก้ได้ก่อน migration ขึ้น production) · **Q-12, Q-13** เป็นงานของเจ้าของ
+> Phase 1 merge แล้ว (#56, M010–M011, staging ผ่าน Q-13) · **Q-8 ได้ผลแล้ว (§2.1)** → ปรับกฎทะเบียนเป็น `plate_core` ใน M012 (PR `db/customers-plate-core`) · Q-12 เป็นงานของเจ้าของ
 > ป้าย: **[V]** Verified จากโค้ด/การรัน · **[I]** Inferred · **[U]** Unknown
 > อ่านประกอบ: `docs/redesign/architecture.md`, `architecture-decisions.md` (ADR-01..20), `database-migrations.md`, `authorization-matrix.md`, `screen-specifications.md`, `interaction-specifications.md`, `accessibility-guidelines.md`
 > งานนี้ไม่เกี่ยวกับ `release/2.1.1` (D-08) ที่กำลังจะปล่อย และจะไม่ merge เข้า release นั้น
@@ -32,8 +32,27 @@
 | Next.js 16 | `params` ของหน้า `[id]` เป็น Promise (`PageProps<'/customers/[id]'>`) · `window.history.replaceState` ทำงานร่วมกับ `useSearchParams` โดยไม่ยิง request (`node_modules/next/dist/docs/01-app/01-getting-started/04-linking-and-navigating.md`) | [V] |
 | ฟังก์ชันใน DB | ทุกตัวใช้ `set search_path = ''` + ชื่อเต็ม · `is_app_member()` เป็น `security definer` ที่เหลือ `security invoker` · `tg_set_audit` ต้องการคอลัมน์ `created_by`, `created_by_email`, `updated_at`, `updated_by_email` | [V] |
 | `toAppError` + `savedOnce` | `23505` (unique) ถูกแปลงเป็น `DUPLICATE` และ `savedOnce` ถือว่า **บันทึกสำเร็จ** → ถ้าทะเบียนซ้ำแล้วได้ 23505 จะถูกเข้าใจผิดว่าบันทึกแล้ว ต้องแยก (ADR-24) | [V] |
-| รูปแบบทะเบียนในข้อมูลจริง | **[U]** · seed/staging เป็นข้อมูลสมมติ (`ทดสอบ 1234`, `E2E…`) ใช้ตัดสินไม่ได้ [V รันแล้ว] · เตรียม `supabase/checks/plate_formats.sql` (อ่านอย่างเดียว คืนแค่รูปแบบและตัวนับ ไม่คืนทะเบียนหรือชื่อ) ให้เจ้าของรันบน production | [U] |
+| รูปแบบทะเบียนในข้อมูลจริง | ได้ผลจาก production 2026-10-20 (อ่านอย่างเดียว ไม่มีทะเบียน/ชื่อในผล) → §2.1 | [V] |
 | `.env.local` ของเครื่องหลัก | ชี้ฐานข้อมูล **production** และไม่มี `PRODUCTION_SUPABASE_PROJECT_REF` → env guard กันไม่ได้ · งานนี้ใช้ Supabase ในเครื่อง/staging เท่านั้น | [V] |
+
+### 2.1 รูปแบบทะเบียนและชื่อใน production (Q-8, 2026-10-20) [V]
+
+`supabase/checks/plate_formats.sql` ที่เจ้าของรัน (ผลเป็นรูปแบบและตัวนับเท่านั้น):
+
+| ตรวจ | ผล |
+|---|---|
+| รายการ / ทะเบียนตามที่พิมพ์ / key ไม่สนช่องว่าง-จุด-ขีด | 985 / 770 / 769 (1 คันพิมพ์ 2 แบบ) |
+| มีช่องว่าง / ขีด / จุด / ช่องว่างหัวท้าย / ตัวพิมพ์เล็ก | 4 / 0 / 54 / 0 / 0 |
+| ไม่มีตัวเลขเลย (เช่นคำภาษาอังกฤษ) | 13 · ยาว 1–16 ตัว |
+| **รูปแบบที่พบบ่อย** | `9999` 588 รายการ (411 ทะเบียน) · `กก9999กก` 140 · `999` 80 · `กก9999กก.` 25 · `กก9999` 25 · `กก9999กกกกก` 19 · `9กก9999กกก.` 15 · `กก999กก` 12 · `9กก9999กกก` 10 · อื่น ๆ น้อยกว่า 5 |
+| ทะเบียนที่มีชื่อลูกค้า 2 ชื่อ / 1 ชื่อ / ไม่มีชื่อ | 4 / 317 / 448 |
+| ชื่อลูกค้า (ตัดหัวท้าย / ไม่สนช่องว่างและตัวพิมพ์) | 65 / 63 · ยาวสุด 21 |
+
+**ข้อสรุปต่อการออกแบบ**
+1. **ราว 60% พิมพ์แค่ตัวเลข** (`1234`) → ทะเบียนเลขล้วนอาจเป็นคนละคันที่เลขซ้ำกัน จึง**ไม่บังคับห้ามซ้ำ**กับเลขล้วน (เตือนแทน)
+2. **ต่อท้ายด้วยจังหวัดบ่อย** (ตัวย่อ `ชร`, `กทม.` หรือชื่อเต็ม) → เทียบด้วย "แกนทะเบียน" `plate_core` ที่ตัดจังหวัดท้ายออก (`กข1234ชร.` = `กข 1234`)
+3. จุดมีแค่ท้ายตัวย่อจังหวัด · ช่องว่างน้อย · ไม่มีขีด → ตัด `[ช่องว่าง . -]` เหมือนเดิม
+4. ชื่อลูกค้ามีน้อยและส่วนใหญ่รายการไม่มีชื่อ → จับคู่ค้างชำระด้วยทะเบียนก่อน (ถูกแล้ว) · ชื่อเทียบแบบตัดช่องว่างทั้งหมด
 
 ## 3. User stories และ Acceptance criteria
 
@@ -61,7 +80,7 @@
 
 **US-07 ลบ** — AC-07-1 Given กดลบ Then ConfirmDialog "ลบ ทดสอบ เต็นท์ A?" บอก "เบอร์ 2 เบอร์ · รถ 2 คัน" และ "ประวัติการล้างรถไม่ถูกลบ" · focus ที่ "ยกเลิก" · AC-07-2 When ยืนยัน Then ลบลูกค้า เบอร์ รถ จริง (cascade) และ `records` ไม่เปลี่ยน
 
-**US-08 ทะเบียนซ้ำ** — AC-08-1 Given "1กข 1234" อยู่กับลูกค้า B When บันทึกลูกค้า A ที่มีทะเบียน "1กข-1234" Then ไม่บันทึก แจ้งใต้ช่อง "ทะเบียนนี้อยู่กับ B" + ปุ่ม "ย้ายรถมาที่ลูกค้านี้" · AC-08-2 When กดย้าย แล้วบันทึก Then รถออกจาก B มาอยู่กับ A ใน transaction เดียว
+**US-08 ทะเบียนซ้ำ** (ทะเบียนเต็มเท่านั้น §2.1) — AC-08-1 Given "1กข 1234" อยู่กับลูกค้า B When บันทึกลูกค้า A ที่มีทะเบียน "1กข-1234 ชร." Then ไม่บันทึก แจ้งใต้ช่อง "ทะเบียนนี้อยู่กับ B" + ปุ่ม "ย้ายรถมาที่ลูกค้านี้" · AC-08-2 When กดย้าย แล้วบันทึก Then รถออกจาก B มาอยู่กับ A ใน transaction เดียว · AC-08-3 Given ทะเบียนเลขล้วน "1234" อยู่กับลูกค้า B When บันทึกลูกค้า A ที่มี "1234" Then บันทึกได้ และแสดงคำเตือน "ทะเบียน 1234 มีกับลูกค้า B ด้วย ตรวจว่าเป็นคันเดียวกันไหม"
 
 **US-09 เบอร์ซ้ำ** — AC-09-1 เบอร์เดียวกัน 2 แถวในลูกค้าคนเดียว → error "เบอร์นี้ใส่ไว้แล้ว" · AC-09-2 เบอร์ตรงกับลูกค้าคนอื่น → คำเตือน "เบอร์นี้เป็นของ B ด้วย" แต่บันทึกได้ (ตามคำตอบ Q-3)
 
@@ -79,7 +98,9 @@
 
 ## 4. ข้อมูล
 
-### 4.1 ตาราง (migration M010)
+### 4.1 ตาราง (migration M010 + M012)
+
+> M012 เพิ่ม `plate_core` และเปลี่ยน unique จาก `plate_key` ทั้งข้อความ เป็น `plate_core` เฉพาะทะเบียนเต็ม (§2.1) · SQL จริงอยู่ใน `supabase/migrations/`
 
 ```sql
 create table public.customers (
@@ -117,7 +138,8 @@ create table public.customer_vehicles (
   note        text check (note is null or char_length(note) <= 200),
   position    smallint not null default 0
 );
-create unique index customer_vehicles_plate_key_key on public.customer_vehicles (plate_key);
+-- M012: plate_core = plate_key ที่ตัดจังหวัดท้ายออก (ทะเบียนเต็ม) ไม่งั้นเท่ากับ plate_key
+-- unique เฉพาะ plate_core ~ '^[0-9]?[ก-ฮ]{1,3}[0-9]{1,4}$'
 create index customer_phones_customer_idx on public.customer_phones (customer_id);
 create index customer_vehicles_customer_idx on public.customer_vehicles (customer_id);
 ```
@@ -157,9 +179,9 @@ create trigger customers_audit before insert or update on public.customers
 `lib/errors.ts` เพิ่มการแปลง `CC409` → `CONFLICT`, `CC404` → `NOT_FOUND`, `CCPLT` → `VALIDATION` (field `plate`), `CC422` (เบอร์/ทะเบียนซ้ำในฟอร์มเดียวกัน หรือข้อมูลผิดรูป) → `VALIDATION` · SQL จริงอยู่ใน `supabase/migrations/20261020120000_customers.sql` และ `20261020120100_save_customer.sql` (โค้ดในเอกสารนี้เป็นร่าง) · **ไม่ให้ทะเบียนซ้ำกลายเป็น `23505`/`DUPLICATE`** เพราะ `savedOnce` จะเข้าใจว่าบันทึกสำเร็จ
 ลบ: `delete from customers where id = …` ผ่าน PostgREST (cascade) · ไม่ต้องมี RPC
 
-### 4.4 Phase 3 (M012)
+### 4.4 Phase 3 (M013)
 
-- index `records_plate_key_idx on public.records ((upper(regexp_replace(plate, '[[:space:].-]', '', 'g'))))`
+- expression index บน `records` ด้วยสูตรเดียวกับ `plate_core` (จับคู่ทะเบียนเต็มตรงตัว · ทะเบียนเลขล้วนในรายการเทียบกับเลขท้ายของรถในสมุด แล้วให้ผู้ใช้เลือกถ้าได้หลายคน)
 - RPC `customer_history(p_customer_id uuid, p_limit int default 10)` คืนจำนวนครั้ง, ครั้งล่าสุด, ยอดรวม, ยอดค้าง และ `id` ของรายการล่าสุด · `security invoker` · อ่านอย่างเดียว
 
 ## 5. กฎข้อมูล (`features/customers/logic.ts`, `schema.ts`)
@@ -171,11 +193,12 @@ create trigger customers_audit before insert or update on public.customers
 | `formatPhone` | มือถือ `081-234-5678` · กรุงเทพ `02-123-4567` · ต่างจังหวัด `053-123-456` |
 | ป้ายเบอร์ | ≤ 30 ไม่บังคับ · เบอร์หลักได้ 1 เบอร์ (ถ้ามีเบอร์แต่ไม่ได้เลือก ใช้เบอร์แรก) |
 | `normalizePlate` | ตัดหัวท้าย + ตัวพิมพ์ใหญ่ (เหมือน `records`) |
-| `plateKey` | `normalizePlate` แล้วตัดช่องว่าง `-` `.` (ต้องให้ผลเท่ากับ generated column) · รอผล Q-8 เรื่องชื่อจังหวัด |
+| `plateKey` | `normalizePlate` แล้วตัดช่องว่าง `-` `.` (= generated column `plate_key`) · ใช้ค้นหา |
+| `plateCore` / `isFullPlate` | `plateKey` ที่ตัดจังหวัดท้าย: ขึ้นต้นด้วย `[0-9]?[ก-ฮ]{1,3}[0-9]{1,4}` (ตามด้วยไม่ใช่ตัวเลข) → ส่วนนั้น ไม่งั้น = `plateKey` (= generated column `plate_core`) · ทะเบียนเต็ม = มีอักษรไทยนำหน้าเลข · ห้ามซ้ำเฉพาะทะเบียนเต็ม |
 | ชื่อ | ตัดหัวท้าย · 1–50 · หมายเหตุ ≤ 200 |
 | `classifyQuery` | มีแต่ตัวเลข/`+-() ` และ ≥ 3 หลัก → เบอร์ · มีตัวเลขและอักษรไทยปนกันสั้น ๆ (เช่น `1กข`, `กข1234`) → ทะเบียน · อื่น ๆ → ชื่อ |
 | `searchCustomers` | ชื่อมีคำค้น (ไม่สนช่องว่าง) · เบอร์มีตัวเลขของคำค้น (≥ 3 หลัก) · `plate_key` มี `plateKey(คำค้น)` (≥ 2 ตัว) · บอกช่องที่ตรง · เรียง: ตรงทั้งคำ > ขึ้นต้น > มีอยู่ แล้วตามชื่อ (`localeCompare 'th'`) |
-| `matchDebtGroup` | ทะเบียนในกลุ่มค้างชำระ (`plateKey`) ตรงรถในสมุด → ลูกค้าเหล่านั้น · ถ้าไม่มี ใช้ชื่อหลัง trim (ไม่สนช่องว่างซ้อน) · กลุ่ม "ลูกค้าทั่วไป" ใช้แค่ทะเบียน · คืน 0/1/หลายคน |
+| `matchDebtGroup` | ทะเบียนเต็มในกลุ่มค้างชำระ: `plateCore` ตรงกับรถในสมุด → ลูกค้าคนนั้น · ทะเบียนเลขล้วน: ตรงกับรถที่ `plateCore` ลงท้ายด้วยเลขเดียวกัน → อาจหลายคน · ถ้าไม่เจอด้วยทะเบียน ใช้ชื่อ (ตัดช่องว่างทั้งหมด ไม่สนตัวพิมพ์) · กลุ่ม "ลูกค้าทั่วไป" ใช้แค่ทะเบียน · คืน 0/1/หลายคน |
 
 ## 6. หน้าจอ
 
@@ -309,8 +332,8 @@ PC SideNav: ภาพรวม · ค้างชำระ · ประวัต
 
 > สเปกเขียนว่า "ต่อจาก ADR-14" แต่ Step 12 เพิ่ม ADR-15..20 แล้ว จึงเริ่มที่ ADR-21
 
-- **ADR-21 ยังไม่ผูก `records.customer_id`:** จับคู่ด้วย `plate_key` แล้วชื่อ (อ่านอย่างเดียว) · เหตุผล: ไม่ต้องแก้ข้อมูลเดิม 1,000+ แถว ไม่กระทบ v2.1.x และรถของเต็นท์เปลี่ยนเจ้าของบ่อย (ผูกถาวรจะผิดกับรายการเก่า) · ภายหลังทำได้ด้วย expand (`customer_id` nullable) + backfill แบบเจ้าของยืนยัน (Q-7)
-- **ADR-22 `plate_key` เป็น generated column + unique ทั้งระบบ:** 1 ทะเบียนอยู่กับลูกค้า 1 คน · ปลอมจาก client ไม่ได้ · กติกาเดียวกับ `plateKey()` (test เทียบ)
+- **ADR-21 ยังไม่ผูก `records.customer_id`:** จับคู่ด้วย `plate_core` แล้วชื่อ (อ่านอย่างเดียว) · เหตุผล: ไม่ต้องแก้ข้อมูลเดิม 1,000+ แถว ไม่กระทบ v2.1.x และรถของเต็นท์เปลี่ยนเจ้าของบ่อย (ผูกถาวรจะผิดกับรายการเก่า) · ภายหลังทำได้ด้วย expand (`customer_id` nullable) + backfill แบบเจ้าของยืนยัน (Q-7)
+- **ADR-22 ทะเบียน: `plate_key` (ค้นหา) + `plate_core` (จับคู่/ห้ามซ้ำ) เป็น generated column:** ปลอมจาก client ไม่ได้ · กติกาเดียวกับ `plateKey()`/`plateCore()` (test เทียบ) · **ห้ามซ้ำเฉพาะทะเบียนเต็ม** เพราะ 60% ของรายการพิมพ์แค่เลข (§2.1) · ทะเบียนเลขล้วนซ้ำข้ามลูกค้าได้พร้อมคำเตือน (M012 แทน unique `plate_key` ของ M010)
 - **ADR-23 ค้นในเบราว์เซอร์ + `?q=` ด้วย `history.replaceState`:** ลูกค้าหลักร้อย → โหลดครั้งเดียวด้วย `fetchAllPages` (ลูกค้า + เบอร์ + รถ แบบ embed) แล้วกรองเอง ตอบทันทีขณะพิมพ์และค้นเบอร์/ทะเบียนบางส่วนได้ง่ายกว่า SQL · `replaceState` ไม่ยิง request จึงไม่มีเบอร์/ชื่อใน request log ของ Vercel · ทบทวนเมื่อเกิน ~5,000 คน (เปลี่ยนเป็น RPC ค้นฝั่ง server)
 - **ADR-24 บันทึกผ่าน RPC transaction เดียว:** idempotency ด้วย `client_request_id` ภายใน RPC · ตรวจ `updated_at` (ADR-07) · รหัส error ของตัวเอง (`CC409`, `CC404`, `CCPLT`) ไม่ปน `23505`
 - **ADR-25 เบอร์เก็บเป็นตัวเลขล้วนรูปแบบไทย:** normalize ฝั่งแอป + check ใน DB · ไม่รองรับเบอร์ต่างประเทศในรอบนี้
@@ -346,9 +369,10 @@ PC SideNav: ภาพรวม · ค้างชำระ · ประวัต
 |---|---|---|---|
 | M010 `…_customers.sql` | 3 ตาราง + index + RLS + trigger audit | 1 | ✅ (ตารางใหม่ แอปเดิมไม่รู้จัก) |
 | M011 `…_save_customer.sql` | RPC `save_customer` | 1 | ✅ |
-| M012 `…_customer_history.sql` | expression index บน `records` + RPC `customer_history` | 3 | ✅ (index อย่างเดียว ไม่เปลี่ยนข้อมูล) |
+| M012 `20261020130000_customer_plate_core.sql` | `plate_core` + unique เฉพาะทะเบียนเต็ม + `save_customer` เทียบด้วย `plate_core` (ผล Q-8) | 1b | ✅ |
+| M013 `…_customer_history.sql` | expression index บน `records` + RPC `customer_history` | 3 | ✅ (index อย่างเดียว ไม่เปลี่ยนข้อมูล) |
 
-- ลำดับ production (เจ้าของ): M010–M012 รันก่อน merge release 2.2.0 (`database-migrations.md` §3.2) · ถ้ารันก่อนแล้วยังไม่ปล่อยแอป ไม่มีผล
+- ลำดับ production (เจ้าของ): M010–M013 รันก่อน merge release 2.2.0 ตามลำดับ (`database-migrations.md` §3.2) · ถ้ารันก่อนแล้วยังไม่ปล่อยแอป ไม่มีผล
 - Rollback แอป (Vercel) → ตารางอยู่ต่อแต่ไม่มีใครใช้ (D1) · **down ของ M010 ลบข้อมูลสมุดรายชื่อ** จึงใช้ได้เฉพาะก่อนมีข้อมูลจริง หรือหลัง export · down ของ M011/M012 ปลอดภัย (drop function/index)
 
 ## 12. การแบ่ง PR
@@ -357,8 +381,9 @@ PC SideNav: ภาพรวม · ค้างชำระ · ประวัต
 |---|---|---|---|
 | 0 | `docs/customer-directory-design` | เอกสารนี้ + `supabase/checks/plate_formats.sql` | ✅ (ตอนนี้) |
 | 1 | `db/customers` | M010 `20261020120000_customers.sql`, M011 `20261020120100_save_customer.sql` + rollback (M010 ไม่ยอม drop ถ้ายังมีลูกค้า) + `supabase/tests/customers.test.sql` + `supabase/seed_customers.sql` (โหลดเองในเครื่อง ไม่อยู่ใน CI) | ✅ |
+| 1b | `db/customers-plate-core` | M012 + rollback (ไม่ยอมย้อนถ้ามีทะเบียน `plate_key` ซ้ำ) + test ทะเบียนแบบมีจังหวัด/เลขล้วน | ✅ |
 | 2 | `feature/customers` | `/customers`, `/customers/[id]`, ฟอร์ม, ลบ, โทร/คัดลอก, เมนู, `PROTECTED_ROUTES`, ไอคอน, `lib/errors.ts` | ✅ |
-| 3 | `feature/customers-integration` | M012 + ค้างชำระ + หน้าบันทึก + สรุปประวัติ + "บันทึกเป็นลูกค้า" | ✅ |
+| 3 | `feature/customers-integration` | M013 + ค้างชำระ + หน้าบันทึก + สรุปประวัติ + "บันทึกเป็นลูกค้า" | ✅ |
 | 4 | `feature/customers-import` | นำเข้าจากประวัติ (ถ้าอนุมัติ) | ✅ |
 
 ทุก PR: base `develop` · **Squash and merge** · ทดสอบบน Preview + staging ก่อนบอกว่าเสร็จ · release v2.2.0 ตาม `git-workflow.md` §4 หลัง PR 3 (หรือ 4)
@@ -367,7 +392,7 @@ PC SideNav: ภาพรวม · ค้างชำระ · ประวัต
 
 | ความเสี่ยง | ผล | ลด |
 |---|---|---|
-| รูปแบบทะเบียนจริงต่างจากที่คิด (มีจังหวัด, ขีด, จุด) | จับคู่/ค้นพลาด | รอผล `plate_formats.sql` ก่อน PR 1 (Q-8) |
+| รูปแบบทะเบียนจริงต่างจากที่คิด (มีจังหวัด, ขีด, จุด) | จับคู่/ค้นพลาด | ✅ ได้ผล Q-8 แล้ว → `plate_core` (M012) · ทะเบียนเลขล้วนจับคู่ได้หลายคน → ให้ผู้ใช้เลือก |
 | จับคู่ด้วยชื่อผิดคน (ชื่อซ้ำ เช่น "พี่เอ") | โทรผิดคน | ทะเบียนมาก่อนชื่อ · หลายคนให้เลือก · แสดงชื่อเต็มบนปุ่ม |
 | ฟอร์มหลายแถวยากสำหรับผู้สูงอายุ | ใช้ไม่เป็น | เริ่มด้วย 1 เบอร์ 1 คันว่าง · ปุ่ม "+ เพิ่มเบอร์" ใหญ่ · ทดลองกับคนในร้านบน Preview |
 | ลืมรัน migration ก่อน merge (เคยเกิด S07-28) | หน้าลูกค้า error | บรรทัดแรก PR template + release checklist + หน้าแอปแสดง error ที่อ่านได้ |

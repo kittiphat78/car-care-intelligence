@@ -13,9 +13,10 @@
 
 | ไฟล์ | เนื้อหา | สถานะ |
 |---|---|---|
-| `supabase/migrations/20261020120000_customers.sql` (M010) | ตาราง `customers`, `customer_phones`, `customer_vehicles` + RLS + audit | ใน PR `db/customers` |
-| `supabase/migrations/20261020120100_save_customer.sql` (M011) | RPC `save_customer` | ใน PR `db/customers` |
-| M012 (Phase 3) | index ทะเบียนบน `records` + RPC สรุปประวัติ | ยังไม่ทำ |
+| `supabase/migrations/20261020120000_customers.sql` (M010) | ตาราง `customers`, `customer_phones`, `customer_vehicles` + RLS + audit | merge แล้ว (#56) · staging ✅ |
+| `supabase/migrations/20261020120100_save_customer.sql` (M011) | RPC `save_customer` | merge แล้ว (#56) · staging ✅ |
+| `supabase/migrations/20261020130000_customer_plate_core.sql` (M012) | `plate_core`: ทะเบียนเทียบโดยไม่สนจังหวัดท้าย · ห้ามซ้ำเฉพาะทะเบียนเต็ม (ผลข้อมูลจริง Q-8) | ใน PR `db/customers-plate-core` |
+| M013 (Phase 3) | index ทะเบียนบน `records` + RPC สรุปประวัติ | ยังไม่ทำ |
 
 ทั้งหมดเป็นของใหม่ แอป v2.1.x ใช้ต่อได้แม้รัน migration ไปก่อน
 
