@@ -63,12 +63,27 @@
 
 | เวลา (2026-10-20) | เหตุการณ์ |
 |---|---|
-| ก่อน 19:51 | เจ้าของ backup CSV แล้วรัน M010–M014 บน production ตามลำดับ (ทุกไฟล์ "Success. No rows returned") · `customers_ready.sql` ครบ 21 ข้อ + `ALL READY = true` |
-| — | ระหว่างนั้น production ยังเป็น v2.1.1 · `/login` 200 ปกติ |
+| ก่อน 19:51 | เจ้าของรัน M010–M014 + `customers_ready.sql` (`ALL READY = true`) — **ภายหลังพบว่ารันใน project staging ไม่ใช่ production** (ดู "เหตุการณ์หลัง deploy") |
+| — | production ยังเป็น v2.1.1 · `/login` 200 ปกติ |
 | 19:51:33 | เจ้าของ merge PR #64 แบบ merge commit → `18b52bc` (tree เท่ากับ `release/2.2.0` @ `dbbc60a`) |
 | 19:52:24 | Vercel production deployment `7200172620` success |
 | หลัง deploy | Smoke test อ่านอย่างเดียว (มือถือ, PC, iPhone WebKit, 320 px): ขึ้น `v2.2.0` · ไม่มีแถบ Preview · ไม่มี request ล้ม · console มีแค่ `interactive-widget` บน iPhone · ฟอร์ม login `method="post"` · ไม่ล้นจอ 320 px · `/customers`, `/customers/<id>`, `/debts` ไม่ login → 307 ไป `/login?next=` · header ความปลอดภัยครบ · JavaScript ชี้ production เท่านั้น ไม่มี staging ไม่มี key ฝั่ง server |
 | หลัง smoke | tag `v2.2.0` (annotated) บน `18b52bc` · back-merge fast-forward `develop` = `main` = `18b52bc` |
+
+### เหตุการณ์หลัง deploy: migration ไม่ได้อยู่บน production [V]
+
+| เวลา (2026-10-20) | เหตุการณ์ |
+|---|---|
+| หลัง 19:52 | เจ้าของแจ้ง "กดเพิ่มลูกค้าไม่ได้" · หน้า `/customers` บน production ขึ้น "โหลดรายชื่อลูกค้าไม่สำเร็จ · ระบบขัดข้องชั่วคราว" · ปุ่ม "เพิ่มลูกค้า" เปลี่ยน URL เป็น `?new=1` แต่ฟอร์มไม่เปิด (ฟอร์มรอรายชื่อโหลดก่อน) |
+| — | ทดสอบโค้ดชุดเดียวกันบน Preview + staging: ปุ่มเพิ่มลูกค้า/เพิ่มเบอร์ทุกจุดใช้ได้ |
+| — | เรียก PostgREST ของ production แบบอ่านอย่างเดียวด้วย public key: `PGRST205` ไม่มีตาราง `customers` · `PGRST202` ไม่มี `customer_history` · `notify pgrst, 'reload schema'` ไม่ช่วย |
+| — | เจ้าของรันใน SQL Editor ที่ขึ้น **carwash · main · PRODUCTION**: `to_regclass('public.customers')` = NULL, `records` = 985 → ยืนยันว่ารอบแรกรันใน project อื่น (staging: มีตารางอยู่แล้ว ไฟล์รันซ้ำได้ จึงได้ Success และ `ALL READY` โดยไม่เปลี่ยนอะไร) |
+| — | เจ้าของรัน M010–M014 บน production · `customers_ready.sql` ครั้งแรกได้ `false` 2 ข้อ (M013: คอลัมน์ `model`, `save_customer` รุ่นใหม่) → รันไฟล์ M013 เพิ่ม → `ALL READY = true` → `notify pgrst, 'reload schema'` |
+| — | ตรวจซ้ำแบบอ่านอย่างเดียว: คำสั่ง select เดียวกับแอป (รวม `model`) และทั้งสองฟังก์ชันตอบ `42501` (anon ไม่มีสิทธิ์ = ถูกตามแบบ) ไม่มี `PGRST2xx` แล้ว |
+
+ผลกระทบ: ช่วง 19:52 จนรัน migration เสร็จ หน้าลูกค้าใช้ไม่ได้ · ปุ่มโทรในการ์ดค้างชำระและ "ลูกค้า: …" ในหน้าบันทึกไม่แสดง (ซ่อนเมื่อโหลดสมุดไม่ได้) · บันทึก/ค้างชำระ/ประวัติใช้ได้ปกติ · ไม่มีข้อมูลเสีย
+
+บทเรียน (เพิ่มใน `database-migrations.md` §3.2): (1) ดูชื่อ project บนแถบบนของ Supabase (**PRODUCTION**, ref `fgzeaxntmvirrrsqpmeu`) ก่อนกด Run ทุกไฟล์ · (2) `customers_ready.sql` บอกได้แค่ว่าฐานข้อมูลที่รัน "พร้อม" ไม่ได้บอกว่าเป็น project ไหน → ให้รันคู่กับ query ที่แยก project ได้ (จำนวน `records`) และหลัง deploy ตรวจจากแอปจริงด้วย · (3) จบด้วย `notify pgrst, 'reload schema';`
 
 ยังไม่ได้ทำ (เจ้าของ): ลองใช้หน้าลูกค้าบน production ด้วยบัญชีร้าน (เพิ่ม/ค้น/โทร ข้อมูลจริง) · ดู Vercel logs ช่วงแรก
 
