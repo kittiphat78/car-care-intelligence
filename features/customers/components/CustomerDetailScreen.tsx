@@ -19,6 +19,7 @@ import { deleteCustomer } from '../api'
 import { useCustomerDirectory, useUrlDialog } from '../hooks'
 import { dropCustomer, setOpenedFromList, wasOpenedFromList } from '../memory'
 import { formatPhone, primaryPhone, sortedPhones, sortedVehicles, vehicleDetails } from '../logic'
+import { fieldId } from '../schema'
 import type { Customer } from '../types'
 import { CallActions } from './CallButton'
 import { CustomerHistoryCard } from './CustomerHistoryCard'
@@ -33,6 +34,7 @@ export function CustomerDetailScreen({ id }: { id: string }) {
   const router = useRouter()
   const { result, customers, fresh, reload } = useCustomerDirectory()
   const edit = useUrlDialog('edit')
+  const [focusField, setFocusField] = useState<string | null>(null)
   // Read once: whether "‹ ลูกค้า" can simply go back to the list with its search
   const [fromList] = useState(wasOpenedFromList)
   useEffect(() => () => setOpenedFromList(false), [])
@@ -92,7 +94,21 @@ export function CustomerDetailScreen({ id }: { id: string }) {
       </Card>
     )
   } else {
-    body = <CustomerDetails customer={customer} onEdit={() => edit.open(editKey)} onDeleted={backToList} />
+    body = (
+      <CustomerDetails
+        customer={customer}
+        onEdit={() => {
+          setFocusField(null)
+          edit.open(editKey)
+        }}
+        onAddPhone={() => {
+          // The edit form, with the cursor already in the (empty) phone field
+          setFocusField(fieldId.phone(0))
+          edit.open(editKey)
+        }}
+        onDeleted={backToList}
+      />
+    )
   }
 
   return (
@@ -106,6 +122,7 @@ export function CustomerDetailScreen({ id }: { id: string }) {
         userId={null}
         onClose={edit.close}
         onReload={() => void reload()}
+        focusField={focusField}
         onSaved={() => {
           edit.close()
           void reload()
@@ -115,7 +132,17 @@ export function CustomerDetailScreen({ id }: { id: string }) {
   )
 }
 
-function CustomerDetails({ customer, onEdit, onDeleted }: { customer: Customer; onEdit: () => void; onDeleted: () => void }) {
+function CustomerDetails({
+  customer,
+  onEdit,
+  onAddPhone,
+  onDeleted,
+}: {
+  customer: Customer
+  onEdit: () => void
+  onAddPhone: () => void
+  onDeleted: () => void
+}) {
   const toast = useToast()
   const online = useOnline()
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -155,7 +182,12 @@ function CustomerDetails({ customer, onEdit, onDeleted }: { customer: Customer; 
               เบอร์โทร
             </h2>
             {phones.length === 0 ? (
-              <p className="text-body text-text-tertiary">ยังไม่มีเบอร์</p>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <p className="text-body text-text-tertiary">ยังไม่มีเบอร์</p>
+                <Button variant="secondary" size="sm" leadingIcon="plus" onClick={onAddPhone}>
+                  เพิ่มเบอร์
+                </Button>
+              </div>
             ) : (
               <ul className="-mx-1 grid grid-cols-1 divide-y divide-border">
                 {phones.map((p) => (

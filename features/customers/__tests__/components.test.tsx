@@ -435,6 +435,31 @@ async function renderDetail(id = 'a') {
 }
 
 describe('CustomerDetailScreen', () => {
+  it('"เพิ่มเบอร์" on a customer with no number opens the edit form with the cursor in the phone field', async () => {
+    const noPhone = customer('n', 'ทดสอบ ไม่มีเบอร์', [], [vehicle('v9', '9ฮฮ 9999')])
+    api.listCustomers.mockResolvedValue({ ok: true, data: [noPhone] })
+    const pushState = vi.spyOn(window.history, 'pushState')
+    nav.pathname = '/customers/n'
+    const view = render(
+      <ToastProvider>
+        <CustomerDetailScreen id="n" />
+      </ToastProvider>,
+    )
+    expect(await screen.findByText('ยังไม่มีเบอร์')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'เพิ่มเบอร์' }))
+    expect(pushState).toHaveBeenCalledWith(null, '', '/customers/n?edit=customer%3An')
+    // The URL now has ?edit= (the mocked router sees it on the next render)
+    nav.search = 'edit=customer:n'
+    view.rerender(
+      <ToastProvider>
+        <CustomerDetailScreen id="n" />
+      </ToastProvider>,
+    )
+    expect(await screen.findByRole('heading', { name: 'แก้ไขลูกค้า' })).toBeInTheDocument()
+    expect(textbox('เบอร์')).toHaveFocus()
+    pushState.mockRestore()
+  })
+
   it('shows every number with call and copy, the main one marked, and every vehicle (AC-05-1)', async () => {
     await renderDetail()
     expect(await screen.findByRole('heading', { level: 1, name: 'ทดสอบ เต็นท์ A' })).toBeInTheDocument()
