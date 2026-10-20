@@ -48,6 +48,8 @@ describe('proxy', () => {
     ['/add', '/login?next=%2Fadd'],
     ['/debts', '/login?next=%2Fdebts'],
     ['/more', '/login?next=%2Fmore'],
+    ['/customers', '/login?next=%2Fcustomers'],
+    ['/customers/0b0c7c1e-0000-4000-8000-000000000001', '/login?next=%2Fcustomers%2F0b0c7c1e-0000-4000-8000-000000000001'],
     ['/history/anything?tab=expense', '/login?next=%2Fhistory%2Fanything%3Ftab%3Dexpense'],
   ])('redirects a signed-out visitor from %s to %s', async (path, target) => {
     const res = await proxy(request(path))

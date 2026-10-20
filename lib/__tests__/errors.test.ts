@@ -28,6 +28,14 @@ describe('toAppError', () => {
     expect(result.cause).toBe(input)
   })
 
+  it('maps the codes of save_customer, never as DUPLICATE ("already saved")', () => {
+    expect(toAppError({ code: 'CC409', message: 'customer changed since it was loaded' }).code).toBe('CONFLICT')
+    expect(toAppError({ code: 'CC404', message: 'customer not found' }).code).toBe('NOT_FOUND')
+    expect(toAppError({ code: 'CC422', message: 'a plate appears twice' }).code).toBe('VALIDATION')
+    const plate = toAppError({ code: 'CCPLT', message: 'a plate belongs to another customer' })
+    expect([plate.code, plate.field]).toEqual(['VALIDATION', 'plate'])
+  })
+
   it('treats an offline device as NETWORK', () => {
     vi.stubGlobal('navigator', { onLine: false })
     expect(toAppError(new Error('x')).code).toBe('NETWORK')

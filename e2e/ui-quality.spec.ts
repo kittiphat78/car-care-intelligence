@@ -3,7 +3,7 @@ import { expectAccessible, signIn, uniquePlate } from './helpers'
 
 // Step 08 · Responsive layout, accessibility in both themes, keyboard-only use.
 
-const PAGES = ['/', '/add', '/add?type=expense', '/debts', '/history', '/history?export=1', '/more']
+const PAGES = ['/', '/add', '/add?type=expense', '/debts', '/history', '/history?export=1', '/customers', '/customers?new=1', '/more']
 
 // WCAG 1.4.10 Reflow: 320 CSS px (Step 09 A-02 found a button running off at 320)
 test('no page is wider than the narrowest phone (320 px)', async ({ page }) => {
@@ -30,7 +30,7 @@ test('no page is wider than the narrowest phone (320 px)', async ({ page }) => {
 test('pages are accessible in the light theme too', async ({ page }, info) => {
   await page.addInitScript(() => localStorage.setItem('car-care-theme', 'light'))
   await signIn(page)
-  for (const path of ['/', '/add', '/debts', '/history']) {
+  for (const path of ['/', '/add', '/debts', '/history', '/customers']) {
     await page.goto(path)
     // Wait for the page itself, not for the network to go quiet: the dashboard asks an
     // outside weather service that can be slow, which made networkidle flaky

@@ -6,7 +6,7 @@ export const NEXT_PARAM = 'next'
 export const APP_PATH_HEADER = 'x-app-path'
 
 /** Pages that need a signed-in member. proxy.ts and the (app) layout both use this. */
-export const PROTECTED_ROUTES = ['/', '/debts', '/add', '/history', '/more']
+export const PROTECTED_ROUTES = ['/', '/debts', '/add', '/history', '/customers', '/more']
 
 export const isProtectedPath = (path: string) =>
   PROTECTED_ROUTES.some(route => (route === '/' ? path === '/' : path === route || path.startsWith(`${route}/`)))
