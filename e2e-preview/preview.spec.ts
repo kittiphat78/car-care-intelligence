@@ -42,7 +42,8 @@ const KNOWN = [
   /due to access control checks/,
 ]
 
-const tag = (info: TestInfo) => `RC${info.project.name[0].toUpperCase()}${Date.now() % 100000}`
+// Always 5 digits: a shorter number made a plate like "ฮข D801", which is not a plate shape
+const tag = (info: TestInfo) => `RC${info.project.name[0].toUpperCase()}${String(Date.now() % 100000).padStart(5, '0')}`
 
 /** Every Supabase request of the page must go to staging, never production */
 function watchDatabase(page: Page) {
@@ -308,8 +309,8 @@ test('clean up test data left by earlier runs', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop', 'once')
   await signIn(page)
   for (const [tab, q, mine] of [
-    ['income', 'RC', /^RC[PDI]\d{5}$/],
-    ['expense', 'ทดสอบ RC', /^ทดสอบ RC[PDI]\d{5}$/],
+    ['income', 'RC', /^RC[PDI]\d{1,5}$/],
+    ['expense', 'ทดสอบ RC', /^ทดสอบ RC[PDI]\d{1,5}$/],
   ] as const) {
     for (let i = 0; i < 20; i++) {
       await page.goto(`/history?m=0&tab=${tab}&q=${encodeURIComponent(q)}`)
@@ -328,8 +329,10 @@ test('clean up test data left by earlier runs', async ({ page }, info) => {
   // Customers of the directory CUJ (v2.2.0)
   for (let i = 0; i < 20; i++) {
     await page.goto('/customers')
+    // The list loads after the page: counting before that would find nothing to remove
+    await page.getByText(/ทั้งหมด \d+ ราย/).waitFor()
     await page.getByRole('searchbox').fill('ทดสอบ RC')
-    const link = page.getByRole('main').getByRole('link', { name: /^ทดสอบ RC[PDI]\d{5}/ }).first()
+    const link = page.getByRole('main').getByRole('link', { name: /^ทดสอบ RC[PDI]\d{1,5}(?!\d)/ }).first()
     if (!(await link.count())) break
     const leftover = ((await link.textContent()) ?? '').trim()
     await link.click()
