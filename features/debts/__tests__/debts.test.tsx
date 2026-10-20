@@ -126,7 +126,26 @@ describe('DebtsScreen', () => {
     })
     expect(api.settleRecords).toHaveBeenCalledWith(['2', '1'])
     expect(screen.getByRole('status')).toHaveTextContent('เคลียร์ยอด เต็นท์ A ฿1,300 แล้ว')
-    expect(nav.refresh).toHaveBeenCalled()
+  })
+
+  it('refreshes the nav badge only once ?settle= has left the URL (D-12)', async () => {
+    nav.search = 'settle=เต็นท์ A'
+    api.settleRecords.mockResolvedValue({ ok: true, data: { updatedCount: 2, total: 1300 } })
+    await renderScreen()
+    await act(async () => {
+      fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'เคลียร์ยอด' }))
+    })
+    // Closing: the URL still has ?settle= — a refresh now would be for that old URL
+    expect(nav.replace).toHaveBeenCalledWith('/debts', { scroll: false })
+    expect(nav.refresh).not.toHaveBeenCalled()
+    expect(document.querySelector('[aria-busy="true"]')).not.toBeNull()
+
+    // The URL has changed (seen on the next render): now the refresh is for /debts
+    nav.search = ''
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'เพิ่มเบอร์ เต็นท์ B' }))
+    })
+    expect(nav.refresh).toHaveBeenCalledOnce()
   })
 
   it('says so when only some jobs could be settled', async () => {

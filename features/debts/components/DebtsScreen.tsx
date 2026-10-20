@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { bangkokToday } from '@/lib/time/bangkok'
 import { toUserMessage } from '@/lib/errors'
@@ -50,10 +50,20 @@ export function DebtsScreen() {
     void load()
   }, [load])
 
-  /** Reload this page and the nav badge (rendered by the server layout) */
+  // The nav badge comes from the server layout, so it needs router.refresh(). Not while
+  // the settle dialog is closing: a refresh sent then is for the old /debts?settle= URL,
+  // and when Safari (WebKit) cancels it because the page is left, Next.js replays it as a
+  // full page load of that URL, taking the user back to /debts?settle= (D-12). So the
+  // refresh waits until ?settle= has left the URL. aria-busy says the page is updating.
+  const [refreshing, startRefresh] = useTransition()
+  const [refreshAfterClose, setRefreshAfterClose] = useState(false)
+  const settleOpen = useRef(false)
+
+  /** Reload this page and the nav badge */
   const reload = useCallback(() => {
     void load()
-    router.refresh()
+    if (settleOpen.current) setRefreshAfterClose(true)
+    else startRefresh(() => router.refresh())
   }, [load, router])
 
   const sort: DebtSort = searchParams.get('sort') === 'age' ? 'age' : 'amount'
@@ -78,6 +88,14 @@ export function DebtsScreen() {
 
   const settleKey = searchParams.get('settle')
   const settling = settleKey ? (groups.find((g) => g.key === settleKey) ?? null) : null
+
+  useEffect(() => {
+    settleOpen.current = settleKey !== null
+    if (settleKey !== null || !refreshAfterClose) return
+    // The dialog has closed: now refresh for /debts
+    setRefreshAfterClose(false)
+    startRefresh(() => router.refresh())
+  }, [settleKey, refreshAfterClose, router])
 
   function openSettle(g: DebtGroup) {
     settleOpenedHere.current = true
@@ -108,7 +126,7 @@ export function DebtsScreen() {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 pb-4">
+    <div aria-busy={refreshing || refreshAfterClose || undefined} className="grid grid-cols-1 gap-4 pb-4">
       <header className="flex flex-wrap items-end justify-between gap-3 pt-6">
         <div className="min-w-0">
           <h1 className="text-title text-text">ค้างชำระ</h1>
