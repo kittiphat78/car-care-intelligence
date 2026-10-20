@@ -38,7 +38,7 @@
 | 23:21:39 | Vercel production deployment `7178871333` success (`8465548`) | GitHub deployments [V] |
 | 23:33–23:37 | Smoke test อ่านอย่างเดียว รอบ 2 ผ่าน · `v2.1.0` | `smoke-test-results.md` §2 [V] |
 | 23:34 | fast-forward `develop` → `8465548` (back-merge เสร็จ) | git [V] |
-| 23:34– | เฝ้าระวังรอบ 2 ทุก 5 นาที | `monitoring-report.md` §2 |
+| 23:34–00:16 · 10-20 11:33–11:48 | เฝ้าระวังรอบ 2 ทุก 5 นาที 13 รอบ ปกติทุกรอบ | `monitoring-report.md` §2 [V] |
 | 23:41 | tag `v2.1.0` (annotated) บน `8465548` · push | git [V] |
 
 ## 3. Production ก่อน / หลัง

@@ -118,7 +118,7 @@
 | CSP | `script-src 'self' 'unsafe-inline'` (ไม่มี `unsafe-eval` บน production, D-05) · `connect-src` เฉพาะ Supabase และ Open-Meteo · `frame-ancestors 'none'` | `next.config.ts` |
 | Env guard | build **ล้ม**ถ้า Preview/Development ชี้ฐานข้อมูล production หรือ production ไม่ได้ชี้ production (ADR-12) · แถบ "ระบบทดสอบ (Preview)" บนทุกที่ที่ไม่ใช่ production | `lib/env-guard.ts`, `next.config.ts` |
 | Key ในเบราว์เซอร์ | เฉพาะ publishable/anon key · CI ตรวจว่า `.next/static` ไม่มี service role / `sb_secret_` | `.github/workflows/ci.yml` (`e2e` job) |
-| ฟอร์มก่อนหน้าพร้อม | ฟอร์มที่มาพร้อม HTML ต้อง `method="post"` และปุ่มส่งปิดจนหน้าพร้อม (D-07) · ข้อความที่พิมพ์ก่อนพร้อมถูกเก็บเข้า state (D-08, ใน `develop`) | `lib/use-hydrated.ts`, `lib/use-early-typing.ts` |
+| ฟอร์มก่อนหน้าพร้อม | ฟอร์มที่มาพร้อม HTML ต้อง `method="post"` และปุ่มส่งปิดจนหน้าพร้อม (D-07) · ข้อความที่พิมพ์ก่อนพร้อมถูกเก็บเข้า state (D-08, PR #51 ใน `develop` · ยังไม่ขึ้น production) | `lib/use-hydrated.ts`, `lib/use-early-typing.ts` |
 
 ## 9. Runtime และ Dependency
 

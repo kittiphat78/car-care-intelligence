@@ -21,7 +21,7 @@
 | ADR-14 | Dependency policy | Implemented (เพิ่ม dev tools ใน Step 08) |
 | ADR-15 | `develop` เป็นที่รวมงาน · `main` รับเฉพาะ release/hotfix | Implemented (2026-10-19) |
 | ADR-16 | ออกจากระบบเฉพาะเครื่องที่กด | Implemented (D-03) |
-| ADR-17 | ฟอร์มที่ server render ต้องปลอดภัยก่อนหน้าพร้อม | Implemented (D-07) · D-08 รอ merge |
+| ADR-17 | ฟอร์มที่ server render ต้องปลอดภัยก่อนหน้าพร้อม | Implemented (D-07 production · D-08 ใน `develop` #51) |
 | ADR-18 | ไลบรารีหนักโหลดเมื่อใช้ และล้มได้โดยหน้าไม่พัง | Implemented (O-07, D-11) |
 | ADR-19 | Test อัตโนมัติไม่แตะ production | Implemented |
 | ADR-20 | CSP production ไม่มี `unsafe-eval` | Implemented (D-05) |

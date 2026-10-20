@@ -17,7 +17,7 @@
 | Smoke production | สคริปต์อ่านอย่างเดียว + เจ้าของ login ตรวจ | `smoke-test-results.md` | production (อ่านอย่างเดียว) | ❌ | ทำทุก release |
 | Performance | Lighthouse 13 (lab, จำกัด CPU/เน็ต) | `performance-audit.md` | — | ❌ | ตอน audit |
 
-ตัวเลขหลังรวม D-08 (branch `fix/keep-typing-before-ready`): unit 407 · E2E 57 · WebKit 54 ผ่าน / 3 ล้ม [V ในเครื่อง]
+ตัวเลขบน `develop` ปัจจุบัน (รวม D-08, PR #51): unit 407 · E2E 57 ผ่าน (ข้าม 9) · WebKit 54 ผ่าน / 3 ล้ม [V ในเครื่อง · unit และ E2E รันซ้ำบน clone ใหม่ 2026-10-20 ผ่าน]
 
 ## 2. Unit / component
 
@@ -29,7 +29,7 @@ npx vitest run -t "D-08"                    # เฉพาะชื่อที�
 
 - เขตเวลาของ test ถูกตั้งเป็น `Asia/Bangkok` ใน `vitest.config.mts` · test ที่ต้องการเขตอื่นตั้ง `TZ` เอง
 - mock Supabase และ `next/navigation` ด้วย `vi.mock` (ดู `features/records/__tests__/record-editor.test.tsx`)
-- ทดสอบพฤติกรรมก่อนหน้าพร้อม (hydration): สร้าง HTML ด้วย `renderToString` แล้ว `render(ui, { container, hydrate: true })` (ดู test D-08 ในไฟล์เดียวกันบน branch แก้ D-08)
+- ทดสอบพฤติกรรมก่อนหน้าพร้อม (hydration): สร้าง HTML ด้วย `renderToString` แล้ว `render(ui, { container, hydrate: true })` (ดู describe "text typed before the page is ready (D-08)" ในไฟล์เดียวกัน)
 
 ## 3. SQL tests และ rollback
 
@@ -100,7 +100,7 @@ npx playwright install webkit
 npx playwright test -c playwright.webkit.config.ts
 ```
 
-ล้มที่รู้อยู่แล้ว (ไม่ใช่ defect): skip link 2 ข้อ (WebKit ไม่ Tab ไปที่ลิงก์ เหมือน Safari) และ contrast ของปุ่มบันทึกตอนยังกดไม่ได้ 1 ข้อ (WCAG ยกเว้นปุ่มที่ใช้ไม่ได้) · D-08 อีก 8 ข้อหายเมื่อ merge branch แก้ D-08
+ล้มที่รู้อยู่แล้ว (ไม่ใช่ defect): skip link 2 ข้อ (WebKit ไม่ Tab ไปที่ลิงก์ เหมือน Safari) และ contrast ของปุ่มบันทึกตอนยังกดไม่ได้ 1 ข้อ (WCAG ยกเว้นปุ่มที่ใช้ไม่ได้) · ล้มจาก D-08 อีก 8 ข้อหายไปตั้งแต่ PR #51
 
 ### 4.4 เขียน E2E ใหม่
 

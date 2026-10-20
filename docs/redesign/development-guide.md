@@ -103,7 +103,7 @@ public/                      manifest, icons, fonts
 docs/redesign/               เอกสารทั้งหมด · docs/incidents/ บันทึกเหตุการณ์
 ```
 
-\* `lib/use-early-typing.ts` อยู่ใน branch แก้ D-08 (รอ merge เข้า `develop`)
+\* `lib/use-early-typing.ts` อยู่ใน `develop` (PR #51) และจะขึ้น production ใน release ถัดไป · `v2.1.0` ยังไม่มีไฟล์นี้
 
 ### 4.1 กฎการ import
 
@@ -152,7 +152,31 @@ docs/redesign/               เอกสารทั้งหมด · docs/inc
 | E2E ล้มเพราะ port 3100 ถูกใช้ | มี `next start` ค้างจากรอบก่อน: หา PID (`netstat -ano \| findstr :3100` บน Windows) แล้วปิด |
 | Build ล้มด้วย `[env-guard]` | ตั้ง URL ชี้ฐานข้อมูลผิด environment (`environment-setup.md` §3) |
 | Hydration mismatch ใน console | อย่าใช้ค่าที่ต่างกันระหว่าง server กับ client ตอน render (`Date.now()`, `window`) · อ่านค่าในเบราว์เซอร์ใน effect หรือใช้ `useSyncExternalStore` |
+| หลัง `supabase db reset` login ไม่ได้ | reset ล้างทั้งฐานข้อมูลรวมบัญชี (`auth.users`) · สร้างบัญชีใหม่ (`environment-setup.md` §4.1) หรือรัน E2E ซึ่งสร้างให้ |
+| มีไฟล์ `AGENTS.md`, `CLAUDE.md` โผล่หลัง `npm run dev` | `next dev` สร้างให้ (คำแนะนำสำหรับ AI agent) · ไม่อยู่ใน repo ปล่อยไว้ได้ |
 
-## 8. ผลการทดลองทำตามเอกสารนี้
+## 8. ผลการทดลองทำตามเอกสาร (Step 12, 2026-10-20)
 
-(เติมหลังทดลอง: Step 12 task 12)
+ทำตาม §1–§3, `environment-setup.md` §4.1 และ `testing-guide.md` §3–§4 บน **clone ใหม่ในโฟลเดอร์ว่าง** ของ `develop` @ `0ff51e8` (Windows 11, Git Bash, Node 24.13, npm 11.6, Docker 29.7, Supabase CLI 2.118.0) [V]
+
+| ขั้น | ผล |
+|---|---|
+| `git clone` + `git switch develop` + `npm ci` | ✅ 58 วินาที |
+| `supabase start …` + `supabase db reset` | ✅ migrations M000–M009 + seed ใส่ครบ |
+| สร้าง `.env.local` (Supabase ในเครื่อง) | ✅ `git status` ไม่เห็นไฟล์ (`.gitignore` ครอบ) |
+| สร้างบัญชีด้วย Admin API + เพิ่มใน `app_members` | ✅ ก่อนเป็นสมาชิก REST คืน `[]` · หลังเป็นสมาชิกเห็นข้อมูล |
+| `npm run validate` | ✅ unit 407/407 · build ผ่าน · 1 นาที 43 วินาที |
+| SQL tests ด้วย `docker exec … psql` (5 ไฟล์ + fixtures) | ✅ |
+| down scripts ทุกไฟล์ (ใหม่→เก่า) แล้ว `db reset` | ✅ 9/9 · พบว่า reset ลบบัญชีด้วย (เพิ่มใน §7 แล้ว) |
+| คำสั่ง `eval` ตั้งตัวแปร E2E + `npm run build` + `npm run test:e2e` | ✅ 57 ผ่าน · ข้าม 9 · 3 นาที |
+| `npm run dev` | ✅ หน้า login 200 พร้อมแถบ "เครื่องนักพัฒนา (Development)" · `/` ไม่ login → 307 ไป `/login` |
+| `supabase migration new <ชื่อ>` | ✅ สร้างไฟล์ได้ (เลขเวลาเป็น UTC) · ลบไฟล์ทดลองแล้ว |
+
+**ยังไม่ได้ทดลองตามเอกสารนี้:**
+- ติดตั้งบน macOS/Linux
+- Node 22 บนเครื่อง dev (CI ใช้ 22)
+- แบบ B ชี้ staging
+- `e2e-preview/` จาก clone ใหม่ (เคยใช้จริงใน Step 10–11 จาก checkout หลัก)
+- ทั้ง flow รัน migration ไป staging/production
+- Vercel Instant Rollback
+
