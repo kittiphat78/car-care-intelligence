@@ -241,6 +241,10 @@ test('CUJ: export Excel, every page loads, no console errors, accessible, fits 3
     await page.goto(path)
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
     await page.waitForFunction(() => !document.querySelector('[aria-busy="true"]'), null, { timeout: 30000 }).catch(() => {})
+    // A dialog opened by the URL (?new=1) slides in; its colours are a blend until it stops
+    await page
+      .waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running' || a.effect?.getTiming().iterations === Infinity), null, { timeout: 5000 })
+      .catch(() => {})
     const wide = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)
     if (wide > 0) issues.push(`${path}: ${wide}px too wide`)
     const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22a', 'wcag22aa']).options({ rules: { 'label-content-name-mismatch': { enabled: true } } }).analyze()
