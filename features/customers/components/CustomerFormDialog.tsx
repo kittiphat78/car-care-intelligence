@@ -501,8 +501,10 @@ function VehicleRow({
   const plateId = fieldId.plate(index)
   const typeId = `customer-car-type-${index}`
   const brandId = `customer-brand-${index}`
+  const modelId = fieldId.model(index)
   const colorId = fieldId.color(index)
   const plateError = errorFor(errors, plateId)
+  const modelError = errorFor(errors, modelId)
   const colorError = errorFor(errors, colorId)
   const title = single ? 'รถ' : `คันที่ ${index + 1}`
 
@@ -572,6 +574,19 @@ function VehicleRow({
             </select>
             <Icon name="chevron-down" className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-text-secondary" />
           </span>
+        </FormField>
+        <FormField id={modelId} label="รุ่น" error={modelError}>
+          <TextInput
+            id={modelId}
+            value={vehicle.model}
+            onChange={(e) => onChange({ model: e.target.value })}
+            maxLength={LIMITS.model}
+            autoComplete="off"
+            enterKeyHint="next"
+            placeholder="เช่น Vios, Hilux Revo"
+            invalid={!!modelError}
+            aria-describedby={describedBy(modelId, { error: modelError })}
+          />
         </FormField>
         <FormField id={colorId} label="สี" error={colorError}>
           <TextInput

@@ -7,7 +7,7 @@ import { ok, type Result } from '@/lib/result'
 import { LOCAL_DRAFT_PREFIX } from '@/features/auth/drafts'
 import { listCustomers } from './api'
 import { keepList, keptList } from './memory'
-import { draftSignature } from './logic'
+import { draftSignature, emptyVehicle } from './logic'
 import type { Customer, CustomerDraft } from './types'
 
 // ── The directory (ADR-23) ───────────────────────────────────────────────────
@@ -106,7 +106,9 @@ function readDraft(key: string): CustomerDraft | null {
   try {
     const raw = sessionStorage.getItem(key)
     const value = raw ? (JSON.parse(raw) as CustomerDraft) : null
-    return value && typeof value.name === 'string' && Array.isArray(value.phones) && Array.isArray(value.vehicles) ? value : null
+    if (!value || typeof value.name !== 'string' || !Array.isArray(value.phones) || !Array.isArray(value.vehicles)) return null
+    // A draft kept by an earlier version may lack newer fields (model, M013)
+    return { ...value, vehicles: value.vehicles.map((v) => ({ ...emptyVehicle(), ...v })) }
   } catch {
     return null
   }

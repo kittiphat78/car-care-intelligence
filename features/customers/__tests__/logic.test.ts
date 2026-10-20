@@ -15,6 +15,8 @@ import {
   plateKey,
   plateOwners,
   primaryPhone,
+  vehicleDetails,
+  vehicleMake,
   searchCustomers,
   telHref,
   vehicleSummary,
@@ -40,6 +42,7 @@ function customer(name: string, phones: Array<[string, string?, boolean?]> = [],
       plate_core: plateCore(plate),
       car_type: null,
       brand: null,
+      model: null,
       color: null,
       note: null,
       position: i,
@@ -182,9 +185,20 @@ describe('reading a customer', () => {
     expect(primaryPhone(customer('x'))).toBeNull()
   })
 
-  it('summarises vehicles as the first plate and how many more', () => {
-    expect(vehicleSummary(customer('x', [], ['1กข 1234', '2', '3']))).toEqual({ first: '1กข 1234', more: 2 })
-    expect(vehicleSummary(customer('x'))).toEqual({ first: null, more: 0 })
+  it('summarises vehicles as the first plate, its brand and model, and how many more', () => {
+    const c = customer('x', [], ['1กข 1234', '2', '3'])
+    c.customer_vehicles[0] = { ...c.customer_vehicles[0], brand: 'toyota', model: 'Hilux Revo' }
+    expect(vehicleSummary(c)).toEqual({ first: '1กข 1234', make: 'TOYOTA Hilux Revo', more: 2 })
+    expect(vehicleSummary(customer('x'))).toEqual({ first: null, make: '', more: 0 })
+  })
+
+  it('names a vehicle by type, brand, model and colour, leaving out what is missing', () => {
+    expect(vehicleMake({ brand: 'toyota', model: 'Vios' })).toBe('TOYOTA Vios')
+    expect(vehicleMake({ brand: 'honda', model: null })).toBe('HONDA')
+    expect(vehicleMake({ brand: null, model: 'Vios' })).toBe('Vios')
+    expect(vehicleMake({ brand: null, model: null })).toBe('')
+    expect(vehicleDetails({ car_type: 'pickup', brand: 'toyota', model: 'Hilux Revo', color: 'ขาว' })).toBe('รถกระบะ · TOYOTA Hilux Revo · ขาว')
+    expect(vehicleDetails({ car_type: null, brand: null, model: null, color: 'แดง' })).toBe('แดง')
   })
 })
 

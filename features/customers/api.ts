@@ -6,13 +6,13 @@ import { run } from '@/features/records/api'
 import type { CustomerPayload } from './schema'
 import type { Customer } from './types'
 
-// Data access for the customer directory (M010-M012). Every function returns a Result
+// Data access for the customer directory (M010-M013). Every function returns a Result
 // and never throws. Shop members only: row level security decides, not this code.
 
 const COLUMNS =
   'id,name,note,created_at,created_by_email,updated_at,updated_by_email,' +
   'customer_phones(id,number,label,is_primary,position),' +
-  'customer_vehicles(id,plate,plate_key,plate_core,car_type,brand,color,note,position)'
+  'customer_vehicles(id,plate,plate_key,plate_core,car_type,brand,model,color,note,position)'
 
 /** The whole directory with phones and vehicles (hundreds of rows: loaded once, searched in the browser, ADR-23) */
 export function listCustomers(): Promise<Result<Customer[]>> {

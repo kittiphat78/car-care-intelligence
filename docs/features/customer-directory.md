@@ -1,7 +1,7 @@
 # สมุดรายชื่อลูกค้า (Customer Directory) — Phase 0 Design
 
 > 2026-10-20 · สถานะ: **อนุมัติแล้ว** (เจ้าของ 2026-10-20: "ตามที่แนะนำ" ทุกข้อใน §14) · Phase 1 `db/customers` กำลังทำ · เป้าหมาย: `v2.2.0`
-> Phase 1 merge แล้ว (#56, M010–M011, staging ผ่าน Q-13) · Phase 1b merge แล้ว (#57, M012 `plate_core`, staging ผ่าน) · **Phase 2 `feature/customers` (หน้าจอ) รอ review** — สิ่งที่เปลี่ยนจากแบบตอนทำจริงอยู่ใน §6.7 · Q-12 เป็นงานของเจ้าของ
+> Phase 1 merge แล้ว (#56, M010–M011, staging ผ่าน Q-13) · Phase 1b merge แล้ว (#57, M012 `plate_core`, staging ผ่าน) · Phase 2 `feature/customers` (หน้าจอ) merge แล้ว (#59) — สิ่งที่เปลี่ยนจากแบบตอนทำจริงอยู่ใน §6.7 · **Phase 2b รุ่นรถ (M013) รอ review** · Q-12 เป็นงานของเจ้าของ
 > ป้าย: **[V]** Verified จากโค้ด/การรัน · **[I]** Inferred · **[U]** Unknown
 > อ่านประกอบ: `docs/redesign/architecture.md`, `architecture-decisions.md` (ADR-01..20), `database-migrations.md`, `authorization-matrix.md`, `screen-specifications.md`, `interaction-specifications.md`, `accessibility-guidelines.md`
 > งานนี้ไม่เกี่ยวกับ `release/2.1.1` (D-08) ที่กำลังจะปล่อย และจะไม่ merge เข้า release นั้น
@@ -134,6 +134,7 @@ create table public.customer_vehicles (
   plate_key   text generated always as (upper(regexp_replace(plate, '[[:space:].-]', '', 'g'))) stored,
   car_type    text check (car_type is null or char_length(car_type) <= 20),   -- id จาก CAR_TYPES เช่น 'sedan'
   brand       text check (brand is null or char_length(brand) <= 20),         -- id จาก CAR_BRANDS
+  model       text check (model is null or char_length(model) <= 30),         -- M013: รุ่น พิมพ์เอง เช่น 'Vios'
   color       text check (color is null or char_length(color) <= 30),
   note        text check (note is null or char_length(note) <= 200),
   position    smallint not null default 0
@@ -179,7 +180,7 @@ create trigger customers_audit before insert or update on public.customers
 `lib/errors.ts` เพิ่มการแปลง `CC409` → `CONFLICT`, `CC404` → `NOT_FOUND`, `CCPLT` → `VALIDATION` (field `plate`), `CC422` (เบอร์/ทะเบียนซ้ำในฟอร์มเดียวกัน หรือข้อมูลผิดรูป) → `VALIDATION` · SQL จริงอยู่ใน `supabase/migrations/20261020120000_customers.sql` และ `20261020120100_save_customer.sql` (โค้ดในเอกสารนี้เป็นร่าง) · **ไม่ให้ทะเบียนซ้ำกลายเป็น `23505`/`DUPLICATE`** เพราะ `savedOnce` จะเข้าใจว่าบันทึกสำเร็จ
 ลบ: `delete from customers where id = …` ผ่าน PostgREST (cascade) · ไม่ต้องมี RPC
 
-### 4.4 Phase 3 (M013)
+### 4.4 Phase 3 (M014 — เดิมวางเป็น M013)
 
 - expression index บน `records` ด้วยสูตรเดียวกับ `plate_core` (จับคู่ทะเบียนเต็มตรงตัว · ทะเบียนเลขล้วนในรายการเทียบกับเลขท้ายของรถในสมุด แล้วให้ผู้ใช้เลือกถ้าได้หลายคน)
 - RPC `customer_history(p_customer_id uuid, p_limit int default 10)` คืนจำนวนครั้ง, ครั้งล่าสุด, ยอดรวม, ยอดค้าง และ `id` ของรายการล่าสุด · `security invoker` · อ่านอย่างเดียว
@@ -314,6 +315,7 @@ PC: 2 คอลัมน์ (ซ้าย ข้อมูลติดต่อ+�
 | Draft | เฉพาะลูกค้าใหม่ (sessionStorage) · แก้ไขไม่มี draft | draft ของการแก้จะเริ่มจาก `updated_at` ใหม่หลังรีเฟรชแล้วทับการแก้ของเครื่องอื่นได้ |
 | หลังเพิ่มลูกค้า | ไปหน้าลูกค้าคนนั้น (แทนที่ entry ของ dialog) | ยืนยันสิ่งที่บันทึกและกดโทรต่อได้ (AC-01-1) · back กลับรายชื่อพร้อมคำค้น |
 | ฟอร์ม: ยี่ห้อ | `<select>` แทน `BrandPicker` | รถหลายคันในฟอร์มเดียว BrandPicker (ค้นหา + ชิป) ยาวเกินไปบนมือถือ |
+| รุ่นรถ (Phase 2b, M013) | ช่อง "รุ่น" พิมพ์เองต่อคัน (≤ 30) ข้างยี่ห้อ · รายชื่อแสดง "ทะเบียน · TOYOTA Vios · +N คัน" (มือถือ) และคอลัมน์ "ยี่ห้อ / รุ่น" (PC) ของคันแรก · หน้าลูกค้า "รถกระบะ · TOYOTA Vios · ขาว" · ยังไม่ค้นด้วยยี่ห้อ/รุ่น | เจ้าของขอหลังลอง Preview |
 | ฟอร์ม: หมายเหตุของรถ | ไม่มีช่องในฟอร์มรอบนี้ (ค่าเดิมเก็บไว้ไม่หาย และแสดงในหน้าลูกค้า) | ฟอร์มสั้นลงสำหรับผู้ใช้สูงอายุ · เพิ่มภายหลังได้โดยไม่แก้ DB |
 | ช่องทะเบียน | ไม่มีเครื่องหมาย * | ลูกค้าไม่ต้องมีรถก็ได้ แถวรถที่ว่างทั้งแถวถูกข้าม |
 | ปุ่มลบรถ | ข้อความที่เห็น "ลบคันที่ N" | axe (Label in Name) |
@@ -386,9 +388,10 @@ PC SideNav: ภาพรวม · ค้างชำระ · ประวัต
 | M010 `…_customers.sql` | 3 ตาราง + index + RLS + trigger audit | 1 | ✅ (ตารางใหม่ แอปเดิมไม่รู้จัก) |
 | M011 `…_save_customer.sql` | RPC `save_customer` | 1 | ✅ |
 | M012 `20261020130000_customer_plate_core.sql` | `plate_core` + unique เฉพาะทะเบียนเต็ม + `save_customer` เทียบด้วย `plate_core` (ผล Q-8) | 1b | ✅ |
-| M013 `…_customer_history.sql` | expression index บน `records` + RPC `customer_history` | 3 | ✅ (index อย่างเดียว ไม่เปลี่ยนข้อมูล) |
+| M013 `20261020140000_customer_vehicle_model.sql` | `customer_vehicles.model` (รุ่น ≤ 30, ว่างได้) + `save_customer` บันทึกรุ่น (เจ้าของขอ 2026-10-20 หลังลอง Preview ของ Phase 2) · down ไม่ยอมลบคอลัมน์ถ้ามีรถที่ใส่รุ่นแล้ว | 2b | ✅ |
+| M014 `…_customer_history.sql` | expression index บน `records` + RPC `customer_history` | 3 | ✅ (index อย่างเดียว ไม่เปลี่ยนข้อมูล) |
 
-- ลำดับ production (เจ้าของ): M010–M013 รันก่อน merge release 2.2.0 ตามลำดับ (`database-migrations.md` §3.2) · ถ้ารันก่อนแล้วยังไม่ปล่อยแอป ไม่มีผล
+- ลำดับ production (เจ้าของ): M010–M014 รันก่อน merge release 2.2.0 ตามลำดับ (`database-migrations.md` §3.2) · ถ้ารันก่อนแล้วยังไม่ปล่อยแอป ไม่มีผล
 - Rollback แอป (Vercel) → ตารางอยู่ต่อแต่ไม่มีใครใช้ (D1) · **down ของ M010 ลบข้อมูลสมุดรายชื่อ** จึงใช้ได้เฉพาะก่อนมีข้อมูลจริง หรือหลัง export · down ของ M011/M012 ปลอดภัย (drop function/index)
 
 ## 12. การแบ่ง PR
@@ -398,8 +401,9 @@ PC SideNav: ภาพรวม · ค้างชำระ · ประวัต
 | 0 | `docs/customer-directory-design` | เอกสารนี้ + `supabase/checks/plate_formats.sql` | ✅ (ตอนนี้) |
 | 1 | `db/customers` | M010 `20261020120000_customers.sql`, M011 `20261020120100_save_customer.sql` + rollback (M010 ไม่ยอม drop ถ้ายังมีลูกค้า) + `supabase/tests/customers.test.sql` + `supabase/seed_customers.sql` (โหลดเองในเครื่อง ไม่อยู่ใน CI) | ✅ |
 | 1b | `db/customers-plate-core` | M012 + rollback (ไม่ยอมย้อนถ้ามีทะเบียน `plate_key` ซ้ำ) + test ทะเบียนแบบมีจังหวัด/เลขล้วน | ✅ |
-| 2 | `feature/customers` | `/customers`, `/customers/[id]`, ฟอร์ม, ลบ, โทร/คัดลอก, เมนู, `PROTECTED_ROUTES`, ไอคอน, `lib/errors.ts` · ไม่มี migration | ✅ (รอ review) |
-| 3 | `feature/customers-integration` | M013 + ค้างชำระ + หน้าบันทึก + สรุปประวัติ + "บันทึกเป็นลูกค้า" | ✅ |
+| 2 | `feature/customers` | `/customers`, `/customers/[id]`, ฟอร์ม, ลบ, โทร/คัดลอก, เมนู, `PROTECTED_ROUTES`, ไอคอน, `lib/errors.ts` · ไม่มี migration | ✅ merge แล้ว (#59) |
+| 2b | `feature/customers-vehicle-model` | M013 รุ่นรถ + แสดงยี่ห้อ/รุ่นในรายชื่อ (มือถือ: บรรทัดรถ · PC: คอลัมน์ "ยี่ห้อ / รุ่น") หน้าลูกค้า และช่อง "รุ่น" ในฟอร์ม | ✅ (รอ review) |
+| 3 | `feature/customers-integration` | M014 + ค้างชำระ + หน้าบันทึก + สรุปประวัติ + "บันทึกเป็นลูกค้า" | ✅ |
 | 4 | `feature/customers-import` | นำเข้าจากประวัติ (ถ้าอนุมัติ) | ✅ |
 
 ทุก PR: base `develop` · **Squash and merge** · ทดสอบบน Preview + staging ก่อนบอกว่าเสร็จ · release v2.2.0 ตาม `git-workflow.md` §4 หลัง PR 3 (หรือ 4)

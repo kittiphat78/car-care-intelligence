@@ -1,4 +1,4 @@
--- Tests for M010 (customer tables, RLS) and M011 (save_customer).
+-- Tests for M010 (customer tables, RLS), M011/M012 (save_customer, plate_core) and M013 (vehicle model).
 -- Runs in CI, locally or in the SQL Editor of STAGING; every change is rolled back.
 -- Result must be "ALL CUSTOMER TESTS PASSED". Needs at least one member (ci_fixtures.sql).
 -- Test data: names start with "ทดสอบ", phone numbers 080-000-00xx.
@@ -23,7 +23,7 @@ begin
     select * into res from public.save_customer(
       null, null, '  ทดสอบ เต็นท์ A  ', '  ส่งรถวันจันทร์ ',
       '[{"number":"0800000001","label":"เจ้าของ"},{"number":"0800000002","label":"เซลส์ พี่เอ","is_primary":true}]',
-      '[{"plate":" 1กข 1234 ","car_type":"pickup","brand":"toyota","color":"ขาว"},{"plate":"2ขค-5678"}]',
+      '[{"plate":" 1กข 1234 ","car_type":"pickup","brand":"toyota","model":" Hilux Revo ","color":"ขาว"},{"plate":"2ขค-5678"}]',
       '{}', '00000000-0000-4000-8000-00000000c001');
     a := res.id;
     assert a is not null, 'save_customer returned no id';
@@ -35,7 +35,8 @@ begin
     assert (select number from public.customer_phones where customer_id = a and is_primary) = '0800000002', 'the marked main number was not kept';
     assert (select string_agg(plate || '=' || plate_key || '=' || plate_core, ',' order by position) from public.customer_vehicles where customer_id = a)
            = '1กข 1234=1กข1234=1กข1234,2ขค-5678=2ขค5678=2ขค5678', 'plate, plate_key or plate_core is wrong';
-    assert (select car_type || '/' || brand || '/' || color from public.customer_vehicles where customer_id = a and position = 0) = 'pickup/toyota/ขาว', 'vehicle details were not saved';
+    assert (select car_type || '/' || brand || '/' || model || '/' || color from public.customer_vehicles where customer_id = a and position = 0) = 'pickup/toyota/Hilux Revo/ขาว', 'vehicle details (model trimmed) were not saved';
+    assert (select model from public.customer_vehicles where customer_id = a and position = 1) is null, 'an empty model is not null';
 
     -- 2 · Saving again with the same request id returns the same customer (no duplicate)
     select id into again from public.save_customer(null, null, 'ทดสอบ เต็นท์ A', null, '[]', '[]', '{}', '00000000-0000-4000-8000-00000000c001');
@@ -87,6 +88,11 @@ begin
     begin
       perform public.save_customer(null, null, 'ทดสอบ', null, '[]', jsonb_build_array(jsonb_build_object('plate', repeat('ก', 21))));
       raise exception 'a 21-character plate was accepted';
+    exception when check_violation then null;
+    end;
+    begin
+      perform public.save_customer(null, null, 'ทดสอบ', null, '[]', jsonb_build_array(jsonb_build_object('plate', '9ฮฮ 9999', 'model', repeat('ก', 31))));
+      raise exception 'a 31-character model was accepted';
     exception when check_violation then null;
     end;
     begin
