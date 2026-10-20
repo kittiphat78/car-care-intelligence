@@ -30,6 +30,18 @@
 
 ไม่มี: soft delete, audit log ของการลบ, Storage, Edge Functions, cron [V] · Realtime publication ของ 2 ตารางปิดอยู่บน production (known-issues K-07)
 
+### 1.2.1 สมุดรายชื่อลูกค้า (M010–M011) · อยู่ใน `develop` · **ยังไม่ขึ้น production** (ไปกับ v2.2.0)
+
+| Object | ทำอะไร | Migration |
+|---|---|---|
+| `customers` | ชื่อ (1–50, ตัดหัวท้าย) · หมายเหตุ (≤ 200) · audit 4 คอลัมน์ (`tg_set_audit`) · `client_request_id` (unique, ไม่นับ NULL) | M010 |
+| `customer_phones` | เบอร์ตัวเลขล้วนแบบไทย (`^0([689][0-9]{8}|[2-57][0-9]{7})$`) · ป้าย ≤ 30 · เบอร์หลักได้ 1 เบอร์ต่อลูกค้า · เบอร์ไม่ซ้ำในลูกค้าคนเดียว · ลบลูกค้าแล้วลบตาม | M010 |
+| `customer_vehicles` | ทะเบียน (ตัดหัวท้าย + ตัวพิมพ์ใหญ่, ≤ 20) · `plate_key` generated (ตัดช่องว่าง `.` `-`) **unique ทั้งระบบ** · ประเภทรถ/ยี่ห้อเป็น id ของ `CAR_TYPES`/`CAR_BRANDS` · สี ≤ 30 · หมายเหตุ ≤ 200 · ลบลูกค้าแล้วลบตาม | M010 |
+| RLS ทั้ง 3 ตาราง | สมาชิกเท่านั้น (`is_app_member()`) · revoke จาก `anon` | M010 |
+| `save_customer(...)` | บันทึกลูกค้า + เบอร์ + รถใน transaction เดียว · กันบันทึกซ้ำ · ตรวจ `updated_at` · ย้ายทะเบียนจากลูกค้าอื่นเมื่อผู้ใช้ยืนยัน · error `CC409`/`CC404`/`CCPLT`/`CC422` · `security invoker` | M011 |
+
+ทดสอบ: `supabase/tests/customers.test.sql` · ข้อมูลทดสอบในเครื่อง: `supabase/seed_customers.sql` (โหลดเอง ไม่อยู่ใน `config.toml`) · down ของ M010 **ไม่ยอม drop ถ้ายังมีลูกค้า** · ออกแบบ: `docs/features/customer-directory.md`
+
 ### 1.3 ไฟล์ใน `supabase/`
 
 | โฟลเดอร์ | เนื้อหา |

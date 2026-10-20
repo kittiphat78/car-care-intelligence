@@ -39,7 +39,7 @@
 |---|---|---|---|
 | 1 | Static analysis | `tsc --noEmit` (strict), ESLint `--max-warnings=0`, CI `secrets` (git grep หา key) | 0 error, 0 warning |
 | 2 | Unit | Vitest 31 ไฟล์ (`**/__tests__/*`) รวม test เวลาไทยที่บังคับ TZ เอง (Bangkok/UTC/New York) | ผ่านทั้งหมด |
-| 3 | Integration | Vitest ที่ประกอบหลายส่วน (screen + data layer mock), SQL tests 5 ไฟล์บน Postgres จริง (`supabase/tests/*.test.sql`) | ผ่านทั้งหมด |
+| 3 | Integration | Vitest ที่ประกอบหลายส่วน (screen + data layer mock), SQL tests บน Postgres จริง (`supabase/tests/*.test.sql`: 5 ไฟล์เดิม + `customers.test.sql` ตั้งแต่ v2.2.0 ซึ่งตรวจ RLS 3 บัญชี, กฎข้อมูล, ทะเบียนซ้ำ/ย้ายรถ, cascade และ `save_customer` ที่ล้มกลางทางต้องไม่เหลือข้อมูล) | ผ่านทั้งหมด |
 | 4 | E2E | Playwright `e2e/cuj.spec.ts` (CUJ-1…8) บน production build (`next start`) + Supabase ในเครื่อง | ผ่านทั้งหมด ทั้ง phone/desktop และนิ่ง (รันซ้ำหลายรอบ) |
 | 5 | Regression | `regression-report.md` จับคู่ F-01…F-40 กับ test · test ใหม่ `e2e/regression.spec.ts` สำหรับฟีเจอร์ที่ยังไม่มี test | ทุกฟีเจอร์ที่ยังอยู่มี test ที่ผ่าน หรือบันทึกเหตุผลที่รันไม่ได้ |
 | 6 | Authentication / Authorization | unit (`proxy`, layout guard, login, logout, redirect) + `e2e/security.spec.ts` (redirect ทุกหน้า, open redirect) | หน้าที่ต้อง login ส่งไป `/login?next=` ทุกหน้า, `next` ไปเว็บอื่นไม่ได้ |

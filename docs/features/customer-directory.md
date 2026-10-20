@@ -1,6 +1,7 @@
 # สมุดรายชื่อลูกค้า (Customer Directory) — Phase 0 Design
 
-> 2026-10-20 · สถานะ: **ร่างออกแบบ รออนุมัติ** (ยังไม่มีโค้ดหรือ migration) · เป้าหมาย: `v2.2.0`
+> 2026-10-20 · สถานะ: **อนุมัติแล้ว** (เจ้าของ 2026-10-20: "ตามที่แนะนำ" ทุกข้อใน §14) · Phase 1 `db/customers` กำลังทำ · เป้าหมาย: `v2.2.0`
+> ยังรอ: **Q-8** ผลรูปแบบทะเบียนจาก production (กฎ `plate_key` ใช้ค่าตั้งต้นใน §5 ไปก่อน แก้ได้ก่อน migration ขึ้น production) · **Q-12, Q-13** เป็นงานของเจ้าของ
 > ป้าย: **[V]** Verified จากโค้ด/การรัน · **[I]** Inferred · **[U]** Unknown
 > อ่านประกอบ: `docs/redesign/architecture.md`, `architecture-decisions.md` (ADR-01..20), `database-migrations.md`, `authorization-matrix.md`, `screen-specifications.md`, `interaction-specifications.md`, `accessibility-guidelines.md`
 > งานนี้ไม่เกี่ยวกับ `release/2.1.1` (D-08) ที่กำลังจะปล่อย และจะไม่ merge เข้า release นั้น
@@ -153,7 +154,7 @@ create trigger customers_audit before insert or update on public.customers
 | เบอร์/รถ | แทนที่ชุดเดิมของลูกค้าด้วยชุดที่ส่งมา (delete + insert ใน transaction เดียว) |
 | ผล | ล้มที่ขั้นใด ทั้งหมดถูกยกเลิก (function = 1 transaction) |
 
-`lib/errors.ts` เพิ่มการแปลง `CC409` → `CONFLICT`, `CC404` → `NOT_FOUND`, `CCPLT` → `VALIDATION` (field `plate`) · **ไม่ให้ทะเบียนซ้ำกลายเป็น `23505`/`DUPLICATE`** เพราะ `savedOnce` จะเข้าใจว่าบันทึกสำเร็จ
+`lib/errors.ts` เพิ่มการแปลง `CC409` → `CONFLICT`, `CC404` → `NOT_FOUND`, `CCPLT` → `VALIDATION` (field `plate`), `CC422` (เบอร์/ทะเบียนซ้ำในฟอร์มเดียวกัน หรือข้อมูลผิดรูป) → `VALIDATION` · SQL จริงอยู่ใน `supabase/migrations/20261020120000_customers.sql` และ `20261020120100_save_customer.sql` (โค้ดในเอกสารนี้เป็นร่าง) · **ไม่ให้ทะเบียนซ้ำกลายเป็น `23505`/`DUPLICATE`** เพราะ `savedOnce` จะเข้าใจว่าบันทึกสำเร็จ
 ลบ: `delete from customers where id = …` ผ่าน PostgREST (cascade) · ไม่ต้องมี RPC
 
 ### 4.4 Phase 3 (M012)
@@ -314,7 +315,7 @@ PC SideNav: ภาพรวม · ค้างชำระ · ประวัต
 - **ADR-24 บันทึกผ่าน RPC transaction เดียว:** idempotency ด้วย `client_request_id` ภายใน RPC · ตรวจ `updated_at` (ADR-07) · รหัส error ของตัวเอง (`CC409`, `CC404`, `CCPLT`) ไม่ปน `23505`
 - **ADR-25 เบอร์เก็บเป็นตัวเลขล้วนรูปแบบไทย:** normalize ฝั่งแอป + check ใน DB · ไม่รองรับเบอร์ต่างประเทศในรอบนี้
 - **ADR-26 PDPA:** เห็นเฉพาะสมาชิก (RLS) · ลบจริงแบบ cascade · ไม่เก็บสมุด/เบอร์ใน localStorage (ชื่อแนะนำจากสมุดอยู่ในหน่วยความจำ) · draft ฟอร์มใน sessionStorage ที่ล้างตอนออกจากระบบ · error ที่ RPC raise ไม่มีชื่อ/เบอร์/ทะเบียน · ไม่ใส่เบอร์ใน Excel
-- **ADR-27 สิทธิ์ลบ:** ตามคำตอบ Q-2 (ค่าเริ่มต้นแนะนำ: สมาชิกทุกคน เหมือน `records`)
+- **ADR-27 สิทธิ์ลบ:** สมาชิกทุกคน เหมือน `records` (Q-2 ตัดสิน 2026-10-20)
 
 ## 9. ความปลอดภัยและความเป็นส่วนตัว
 
@@ -355,7 +356,7 @@ PC SideNav: ภาพรวม · ค้างชำระ · ประวัต
 | PR | Branch | เนื้อหา | หยุดรอ review |
 |---|---|---|---|
 | 0 | `docs/customer-directory-design` | เอกสารนี้ + `supabase/checks/plate_formats.sql` | ✅ (ตอนนี้) |
-| 1 | `db/customers` | M010, M011 + rollback + SQL test + seed ทดสอบในเครื่อง | ✅ |
+| 1 | `db/customers` | M010 `20261020120000_customers.sql`, M011 `20261020120100_save_customer.sql` + rollback (M010 ไม่ยอม drop ถ้ายังมีลูกค้า) + `supabase/tests/customers.test.sql` + `supabase/seed_customers.sql` (โหลดเองในเครื่อง ไม่อยู่ใน CI) | ✅ |
 | 2 | `feature/customers` | `/customers`, `/customers/[id]`, ฟอร์ม, ลบ, โทร/คัดลอก, เมนู, `PROTECTED_ROUTES`, ไอคอน, `lib/errors.ts` | ✅ |
 | 3 | `feature/customers-integration` | M012 + ค้างชำระ + หน้าบันทึก + สรุปประวัติ + "บันทึกเป็นลูกค้า" | ✅ |
 | 4 | `feature/customers-import` | นำเข้าจากประวัติ (ถ้าอนุมัติ) | ✅ |
@@ -375,6 +376,8 @@ PC SideNav: ภาพรวม · ค้างชำระ · ประวัต
 | เครื่องหลักมี `.env.local` ชี้ production | dev เขียนข้อมูลจริง | ใช้ Supabase ในเครื่อง · แนะนำเพิ่ม `PRODUCTION_SUPABASE_PROJECT_REF` ให้ guard ทำงาน (Q-12) |
 
 ## 14. คำถามถึงเจ้าของ (พร้อมคำแนะนำ)
+
+**คำตอบ 2026-10-20: "ตามที่แนะนำ"** ทุกข้อ → ใช้ค่าในคอลัมน์ "คำแนะนำ" เป็นข้อตัดสิน (ADR-27 = สมาชิกทุกคนลบได้)
 
 | # | คำถาม | คำแนะนำ |
 |---|---|---|

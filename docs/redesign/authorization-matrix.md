@@ -32,6 +32,8 @@
 | `POST /api/client-errors` | ❌ 401 | ✅ (log ได้) | ✅ | Route Handler ตรวจ session |
 | Storage | — ไม่มี bucket | — | — | — |
 | Export Excel / บิล PDF | ❌ | ไฟล์ว่าง | ✅ | ทำบน client จากข้อมูลที่ RLS อนุญาต |
+| `customers`, `customer_phones`, `customer_vehicles` select/insert/update/delete (v2.2.0, M010) | ❌ (revoke) | ❌ (0 แถว, เขียนไม่ได้) | ✅ (ลบได้ทุกสมาชิก ADR-27) | RLS `is_app_member()` |
+| RPC `save_customer` (M011) | ❌ (revoke) | ❌ (42501 จาก RLS) | ✅ | grant + RLS (invoker) |
 
 ## 3. Matrix — ถ้า Q-01 = b (owner / staff) [ยังไม่ทำ]
 
