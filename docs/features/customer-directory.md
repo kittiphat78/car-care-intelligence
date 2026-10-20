@@ -1,0 +1,393 @@
+# สมุดรายชื่อลูกค้า (Customer Directory) — Phase 0 Design
+
+> 2026-10-20 · สถานะ: **ร่างออกแบบ รออนุมัติ** (ยังไม่มีโค้ดหรือ migration) · เป้าหมาย: `v2.2.0`
+> ป้าย: **[V]** Verified จากโค้ด/การรัน · **[I]** Inferred · **[U]** Unknown
+> อ่านประกอบ: `docs/redesign/architecture.md`, `architecture-decisions.md` (ADR-01..20), `database-migrations.md`, `authorization-matrix.md`, `screen-specifications.md`, `interaction-specifications.md`, `accessibility-guidelines.md`
+> งานนี้ไม่เกี่ยวกับ `release/2.1.1` (D-08) ที่กำลังจะปล่อย และจะไม่ merge เข้า release นั้น
+
+## 1. สรุป
+
+สมุดรายชื่อลูกค้าที่เพิ่ม/แก้/ลบได้ · ลูกค้า 1 คนมีหลายเบอร์และหลายคัน · ค้นช่องเดียวด้วยชื่อ เบอร์ หรือทะเบียน (บางส่วน) · กดโทรได้ทันที · โทรจากหน้าค้างชำระ · หน้าบันทึกบอกชื่อลูกค้าจากทะเบียน · หน้าลูกค้ามีสรุปประวัติการมา
+
+**การออกแบบหลัก**
+- ตารางใหม่ 3 ตาราง (`customers`, `customer_phones`, `customer_vehicles`) แบบ expand-only
+- **ยังไม่ผูก** `records` กับลูกค้า (ไม่เพิ่ม `customer_id`): จับคู่ด้วยทะเบียนแบบ normalize แล้วค่อยใช้ชื่อ (ADR-21)
+- บันทึกลูกค้า + เบอร์ + รถ ผ่าน RPC เดียว (transaction เดียว) พร้อมกันบันทึกซ้ำและตรวจการแก้ชนกัน (ADR-24)
+- โหลดสมุดทั้งหมดครั้งเดียวแล้วค้นในเบราว์เซอร์ · คำค้นอยู่ใน `?q=` แต่ไม่ส่งไป server (ADR-23)
+
+## 2. สิ่งที่ตรวจแล้ว (Phase 0 research)
+
+| เรื่อง | ผล | ป้าย |
+|---|---|---|
+| ลูกค้าในข้อมูลเดิม | มีแค่ `records.customer_name` (พิมพ์อิสระ, ≤ 50, default `''`) และ `records.plate` (≤ 20, ตัดหัวท้าย + ตัวพิมพ์ใหญ่จากแอป) · ไม่มีเบอร์โทรที่ไหนเลย | [V] |
+| หน้าค้างชำระจัดกลุ่ม | ตามชื่อหลัง `trim` (`features/debts/logic.ts` `groupDebts`) · ชื่อว่างรวมเป็น "ลูกค้าทั่วไป (ไม่ระบุชื่อ)" | [V] |
+| ลูกค้าประจำบนหน้าบันทึก | `usePlateVisits` นับ `records.plate = <ค่าที่พิมพ์>` แบบตรงตัว หน่วง 600 ms | [V] |
+| ชื่อลูกค้าล่าสุด | `localStorage['recentCustomers']` (30 ชื่อ) มีมาตั้งแต่ v1 · **มีชื่อลูกค้าอยู่ในเครื่องแล้ว** | [V] |
+| รายงาน error | `scrubMessage` ลบอีเมลและตัวเลขติดกัน ≥ 3 หลัก (เบอร์โทรจึงถูกลบ) · ส่งแค่ pathname ไม่ส่ง query · **ชื่อคนไม่ถูกลบ** | [V] |
+| คำค้นใน URL | หน้าประวัติใช้ `router.replace` ทุกครั้งที่ค้น → มี request ไป server พร้อม `?q=` จึงน่าจะอยู่ใน request log ของ Vercel | [I] |
+| เมนู | `NAV_ITEMS` 5 ช่อง (ภาพรวม, ค้างชำระ, บันทึก, ประวัติ, เพิ่มเติม) ใช้ทั้ง BottomNav และ SideNav | [V] |
+| Route ที่ต้อง login | `PROTECTED_ROUTES` ใน `lib/auth/redirect.ts` (prefix match: `/customers` ครอบ `/customers/[id]`) | [V] |
+| ไอคอน | ยังไม่มี `phone` และ `copy` ใน `components/ui/Icon.tsx` (ต้องเพิ่ม SVG, ไม่เพิ่ม dependency) | [V] |
+| Next.js 16 | `params` ของหน้า `[id]` เป็น Promise (`PageProps<'/customers/[id]'>`) · `window.history.replaceState` ทำงานร่วมกับ `useSearchParams` โดยไม่ยิง request (`node_modules/next/dist/docs/01-app/01-getting-started/04-linking-and-navigating.md`) | [V] |
+| ฟังก์ชันใน DB | ทุกตัวใช้ `set search_path = ''` + ชื่อเต็ม · `is_app_member()` เป็น `security definer` ที่เหลือ `security invoker` · `tg_set_audit` ต้องการคอลัมน์ `created_by`, `created_by_email`, `updated_at`, `updated_by_email` | [V] |
+| `toAppError` + `savedOnce` | `23505` (unique) ถูกแปลงเป็น `DUPLICATE` และ `savedOnce` ถือว่า **บันทึกสำเร็จ** → ถ้าทะเบียนซ้ำแล้วได้ 23505 จะถูกเข้าใจผิดว่าบันทึกแล้ว ต้องแยก (ADR-24) | [V] |
+| รูปแบบทะเบียนในข้อมูลจริง | **[U]** · seed/staging เป็นข้อมูลสมมติ (`ทดสอบ 1234`, `E2E…`) ใช้ตัดสินไม่ได้ [V รันแล้ว] · เตรียม `supabase/checks/plate_formats.sql` (อ่านอย่างเดียว คืนแค่รูปแบบและตัวนับ ไม่คืนทะเบียนหรือชื่อ) ให้เจ้าของรันบน production | [U] |
+| `.env.local` ของเครื่องหลัก | ชี้ฐานข้อมูล **production** และไม่มี `PRODUCTION_SUPABASE_PROJECT_REF` → env guard กันไม่ได้ · งานนี้ใช้ Supabase ในเครื่อง/staging เท่านั้น | [V] |
+
+## 3. User stories และ Acceptance criteria
+
+**US-01 เพิ่มลูกค้า** — ในฐานะคนในร้าน ฉันอยากเก็บชื่อ เบอร์ และรถของลูกค้า เพื่อโทรหาได้ภายหลัง
+- AC-01-1 Given ฟอร์มเพิ่มลูกค้า When กรอกชื่อ "ทดสอบ เต็นท์ A" เบอร์ 2 เบอร์ (เลือก 1 เป็นเบอร์หลัก) รถ 2 คัน แล้วกดบันทึก Then บันทึกครั้งเดียวทั้งหมด เห็นในรายการ และเปิดหน้าลูกค้าได้
+- AC-01-2 Given ชื่อว่าง หรือเบอร์ผิดรูปแบบ หรือทะเบียนว่าง When กดบันทึก Then ไม่บันทึก แสดงสรุป "กรุณาแก้ไข N ช่อง" และข้อความไทยใต้ช่อง (focus ช่องแรกที่ผิด)
+- AC-01-3 Given เน็ตหลุดหลังกดบันทึก When กดบันทึกซ้ำ Then ได้ลูกค้าคนเดียว ไม่ซ้ำ (`client_request_id`)
+- AC-01-4 Given ไม่มีเน็ต Then ปุ่มบันทึกกดไม่ได้และบอกเหตุผล · Given หน้ายังไม่พร้อม Then ปุ่มกดไม่ได้ · Enter ในช่องกรอกไปช่องถัดไป ไม่บันทึก · ข้อความที่พิมพ์ก่อนหน้าพร้อมไม่หาย
+- AC-01-5 Given ข้อมูลกรอกค้าง When รีเฟรช Then ข้อมูลกลับมา (draft sessionStorage) และล้างเมื่อออกจากระบบ
+
+**US-02 ค้นหา** — ฉันอยากพิมพ์อะไรก็ได้ที่จำได้ (ชื่อ เบอร์ ทะเบียน) แล้วเจอลูกค้า
+- AC-02-1 Given ลูกค้า "ทดสอบ เต็นท์ A" When พิมพ์ "เต็นท์" Then เจอ และแถวบอก "ตรงกับ: ชื่อ"
+- AC-02-2 Given เบอร์ 080-000-0001 When พิมพ์ "0001" หรือ "000-0001" Then เจอ และบอก "ตรงกับ: เบอร์ 080-000-0001"
+- AC-02-3 Given ทะเบียน "1กข 1234" When พิมพ์ "1กข" หรือ "1234" หรือ "1 กข" Then เจอ และบอก "ตรงกับ: ทะเบียน 1กข 1234"
+- AC-02-4 Given คำค้น When กดเปิดลูกค้าแล้วกดย้อนกลับ Then คำค้นและผลยังอยู่ (`?q=`) และคำค้นไม่ถูกส่งไป server
+- AC-02-5 Given ค้นไม่เจอ When กด "เพิ่มลูกค้าใหม่" Then ฟอร์มเปิดพร้อมเติมคำค้นในช่องที่ตรงชนิด (ตัวเลข→เบอร์, รูปแบบทะเบียน→ทะเบียน, อื่น ๆ→ชื่อ)
+
+**US-03 โทร** — AC-03-1 Given ลูกค้ามีเบอร์หลัก When แตะ "โทร 080-000-0001" Then เปิดแอปโทรด้วย `tel:0800000001` · ปุ่มสูง ≥ 44 px · ชื่อปุ่มสำหรับ screen reader ขึ้นต้นด้วยข้อความที่เห็น (WCAG 2.5.3)
+
+**US-04 คัดลอกเบอร์** — AC-04-1 Given PC When กด "คัดลอกเบอร์" Then เบอร์อยู่ใน clipboard และมี toast "คัดลอก 080-000-0001 แล้ว" · ถ้าเบราว์เซอร์ไม่อนุญาต แสดงข้อความให้เลือกเบอร์เอง
+
+**US-05 ดูลูกค้า** — AC-05-1 Given `/customers/<id>` Then เห็นชื่อ ทุกเบอร์ (ป้าย, เบอร์หลักมีป้าย "เบอร์หลัก") ทุกคัน หมายเหตุ ปุ่มแก้ไข/ลบ · AC-05-2 Given id ไม่มี/ถูกลบ Then หน้า "ไม่พบลูกค้านี้" + ลิงก์กลับรายการ
+
+**US-06 แก้ไข** — AC-06-1 Given แก้ชื่อ/เพิ่มเบอร์/ลบรถ When บันทึก Then เปลี่ยนครั้งเดียวทั้งหมด · AC-06-2 Given อีกเครื่องแก้ลูกค้าคนเดียวกันก่อน When บันทึก Then ไม่ทับ แสดง "ลูกค้านี้ถูกแก้จากเครื่องอื่น" + "โหลดข้อมูลล่าสุด" (CONFLICT) · ลูกค้าถูกลบไปแล้ว → "ไม่พบลูกค้านี้" (NOT_FOUND) · AC-06-3 dialog ผูก URL (`?edit=customer:<id>` / `?new=1`) ปุ่มย้อนกลับปิดได้ · ปิดเมื่อมีการแก้ค้าง → ยืนยัน "ยกเลิกการแก้ไข?"
+
+**US-07 ลบ** — AC-07-1 Given กดลบ Then ConfirmDialog "ลบ ทดสอบ เต็นท์ A?" บอก "เบอร์ 2 เบอร์ · รถ 2 คัน" และ "ประวัติการล้างรถไม่ถูกลบ" · focus ที่ "ยกเลิก" · AC-07-2 When ยืนยัน Then ลบลูกค้า เบอร์ รถ จริง (cascade) และ `records` ไม่เปลี่ยน
+
+**US-08 ทะเบียนซ้ำ** — AC-08-1 Given "1กข 1234" อยู่กับลูกค้า B When บันทึกลูกค้า A ที่มีทะเบียน "1กข-1234" Then ไม่บันทึก แจ้งใต้ช่อง "ทะเบียนนี้อยู่กับ B" + ปุ่ม "ย้ายรถมาที่ลูกค้านี้" · AC-08-2 When กดย้าย แล้วบันทึก Then รถออกจาก B มาอยู่กับ A ใน transaction เดียว
+
+**US-09 เบอร์ซ้ำ** — AC-09-1 เบอร์เดียวกัน 2 แถวในลูกค้าคนเดียว → error "เบอร์นี้ใส่ไว้แล้ว" · AC-09-2 เบอร์ตรงกับลูกค้าคนอื่น → คำเตือน "เบอร์นี้เป็นของ B ด้วย" แต่บันทึกได้ (ตามคำตอบ Q-3)
+
+**US-10 โทรจากหน้าค้างชำระ** — AC-10-1 Given การ์ดค้างชำระที่ทะเบียนตรงกับรถในสมุด Then มีปุ่ม "โทร <ชื่อ>" (เบอร์หลัก) · AC-10-2 ถ้าตรงหลายคน Then "โทร…" เปิดให้เลือกลูกค้า · AC-10-3 ถ้าไม่ตรง Then ปุ่ม "เพิ่มเบอร์" เปิดฟอร์มพร้อมชื่อและทะเบียนจากการ์ด · การ์ด "ลูกค้าทั่วไป" ใช้แค่ทะเบียน
+
+**US-11 หน้าบันทึกรู้จักลูกค้า** — AC-11-1 Given พิมพ์ทะเบียนที่อยู่ในสมุด (หยุดพิมพ์ 600 ms) Then แสดง "ลูกค้า: B" + ปุ่ม "ใช้ชื่อนี้" · **ไม่เติมทับเอง** · AC-11-2 รายชื่อแนะนำในช่องลูกค้ารวมชื่อจากสมุด (ในหน่วยความจำ ไม่บันทึกลง localStorage)
+
+**US-12 สรุปประวัติ** — AC-12-1 Given ลูกค้ามีรถ 2 คัน Then หน้าลูกค้าแสดงจำนวนครั้งที่มา ครั้งล่าสุด ยอดรวม ยอดค้าง และ 10 รายการล่าสุด (จากทะเบียนแบบ normalize) · แตะรายการเปิด dialog แก้ไขรายการเดิม
+
+**US-13 บันทึกเป็นลูกค้า** — AC-13-1 Given บันทึกรายรับที่มีชื่อและทะเบียนที่ไม่อยู่ในสมุด (ด้วย "บันทึกแล้วทำต่อ") Then toast มีปุ่ม "บันทึกเป็นลูกค้า" ที่เปิดฟอร์มพร้อมข้อมูล (ไม่บังคับ)
+
+**US-14 นำเข้าจากประวัติ (Phase 4)** — AC-14-1 รายการชื่อ+ทะเบียนจาก `records` ที่ยังไม่อยู่ในสมุด ให้ติ๊กเลือกแล้วสร้างทีละหลายคน · ไม่สร้างอัตโนมัติ
+
+**US-15 ความเป็นส่วนตัว** — AC-15-1 คนที่ไม่ใช่สมาชิกหรือไม่ได้ login ไม่เห็นและแก้ไม่ได้ (RLS) · AC-15-2 รายงาน error ไม่มีเบอร์ (ตัวเลข ≥ 3 หลักถูกลบ) และไม่มีชื่อ · AC-15-3 ไม่มีรายชื่อหรือเบอร์ใน localStorage · AC-15-4 ลบแล้วหายจริง
+
+## 4. ข้อมูล
+
+### 4.1 ตาราง (migration M010)
+
+```sql
+create table public.customers (
+  id                uuid primary key default gen_random_uuid(),
+  name              text not null check (char_length(btrim(name)) between 1 and 50),
+  note              text check (note is null or char_length(note) <= 200),
+  created_at        timestamptz not null default now(),
+  created_by        uuid,
+  created_by_email  text,
+  updated_at        timestamptz,
+  updated_by_email  text,
+  client_request_id uuid
+);
+create unique index customers_client_request_id_key on public.customers (client_request_id) where client_request_id is not null;
+
+create table public.customer_phones (
+  id          uuid primary key default gen_random_uuid(),
+  customer_id uuid not null references public.customers (id) on delete cascade,
+  number      text not null check (number ~ '^0([689][0-9]{8}|[2-57][0-9]{7})$'),  -- ตัวเลขล้วน
+  label       text check (label is null or char_length(label) <= 30),
+  is_primary  boolean not null default false,
+  position    smallint not null default 0,
+  unique (customer_id, number)
+);
+create unique index customer_phones_one_primary on public.customer_phones (customer_id) where is_primary;
+
+create table public.customer_vehicles (
+  id          uuid primary key default gen_random_uuid(),
+  customer_id uuid not null references public.customers (id) on delete cascade,
+  plate       text not null check (char_length(btrim(plate)) between 1 and 20 and plate = upper(btrim(plate))),
+  plate_key   text generated always as (upper(regexp_replace(plate, '[[:space:].-]', '', 'g'))) stored,
+  car_type    text check (car_type is null or char_length(car_type) <= 20),   -- id จาก CAR_TYPES เช่น 'sedan'
+  brand       text check (brand is null or char_length(brand) <= 20),         -- id จาก CAR_BRANDS
+  color       text check (color is null or char_length(color) <= 30),
+  note        text check (note is null or char_length(note) <= 200),
+  position    smallint not null default 0
+);
+create unique index customer_vehicles_plate_key_key on public.customer_vehicles (plate_key);
+create index customer_phones_customer_idx on public.customer_phones (customer_id);
+create index customer_vehicles_customer_idx on public.customer_vehicles (customer_id);
+```
+
+- `plate_key` เป็น generated column: ฝั่งแอปปลอมไม่ได้ และกติกาเดียวกับ `plateKey()` ใน `features/customers/logic.ts` (มี test เทียบผลทั้งสองฝั่ง) · **กฎสุดท้ายรอผล `plate_formats.sql`** (Q-8)
+- เก็บ `car_type`/`brand` เป็น **id** (ไม่ใช่ชื่อแสดงผลแบบ `records.services`) เพื่อไม่ซ้ำ TD-06 · ไม่ใส่ check รายการ id ใน SQL (เพิ่มยี่ห้อแล้วไม่ต้อง migrate) · id ที่ไม่รู้จักแสดงตามค่าที่เก็บ (Q-9)
+- เบอร์และรถไม่มี audit แยก: ทุกการแก้ผ่าน RPC ที่แตะแถว `customers` ด้วย จึงได้ `updated_at`/`updated_by_email` ของลูกค้า
+
+### 4.2 RLS และสิทธิ์ (M010)
+
+```sql
+alter table public.customers         enable row level security;
+alter table public.customer_phones   enable row level security;
+alter table public.customer_vehicles enable row level security;
+revoke all on public.customers, public.customer_phones, public.customer_vehicles from anon;
+create policy customers_member_all on public.customers for all to authenticated
+  using (public.is_app_member()) with check (public.is_app_member());
+-- เหมือนกันสำหรับ customer_phones, customer_vehicles
+create trigger customers_audit before insert or update on public.customers
+  for each row execute function public.tg_set_audit();
+```
+
+ถ้า Q-2 = ลบได้เฉพาะ owner: แยก policy `for delete using (public.is_app_member() and public.is_shop_owner())` + function `is_shop_owner()` แบบเดียวกับ `is_app_member()` และตั้ง `app_members.role = 'owner'` ให้บัญชีเจ้าของ (ผู้ดูแลทำใน SQL Editor)
+
+### 4.3 RPC (M011)
+
+`save_customer(p_id uuid, p_expected_updated_at timestamptz, p_name text, p_note text, p_phones jsonb, p_vehicles jsonb, p_move_plates text[], p_client_request_id uuid) returns table (id uuid, updated_at timestamptz)` · `security invoker` · `set search_path = ''`
+
+| ขั้น | ทำอะไร |
+|---|---|
+| สร้าง (`p_id` null) | ถ้า `client_request_id` นี้มีแล้ว → คืนลูกค้าคนนั้น (กดซ้ำ = สำเร็จ ไม่สร้างซ้ำ) · ไม่งั้น insert |
+| แก้ (`p_id` มีค่า) | `update … where id = p_id and updated_at is not distinct from p_expected_updated_at` · 0 แถว → `raise` รหัส `CC409` (มีแถว = แก้ชนกัน) หรือ `CC404` (ไม่มีแถว) |
+| ทะเบียน | ทะเบียนที่อยู่กับลูกค้าอื่น: ถ้าอยู่ใน `p_move_plates` ลบออกจากคนเดิม (และแตะ `updated_at` ของคนเดิม) ไม่งั้น `raise` รหัส `CCPLT` (ไม่ใส่ทะเบียน/ชื่อในข้อความ) |
+| เบอร์/รถ | แทนที่ชุดเดิมของลูกค้าด้วยชุดที่ส่งมา (delete + insert ใน transaction เดียว) |
+| ผล | ล้มที่ขั้นใด ทั้งหมดถูกยกเลิก (function = 1 transaction) |
+
+`lib/errors.ts` เพิ่มการแปลง `CC409` → `CONFLICT`, `CC404` → `NOT_FOUND`, `CCPLT` → `VALIDATION` (field `plate`) · **ไม่ให้ทะเบียนซ้ำกลายเป็น `23505`/`DUPLICATE`** เพราะ `savedOnce` จะเข้าใจว่าบันทึกสำเร็จ
+ลบ: `delete from customers where id = …` ผ่าน PostgREST (cascade) · ไม่ต้องมี RPC
+
+### 4.4 Phase 3 (M012)
+
+- index `records_plate_key_idx on public.records ((upper(regexp_replace(plate, '[[:space:].-]', '', 'g'))))`
+- RPC `customer_history(p_customer_id uuid, p_limit int default 10)` คืนจำนวนครั้ง, ครั้งล่าสุด, ยอดรวม, ยอดค้าง และ `id` ของรายการล่าสุด · `security invoker` · อ่านอย่างเดียว
+
+## 5. กฎข้อมูล (`features/customers/logic.ts`, `schema.ts`)
+
+| กฎ | รายละเอียด |
+|---|---|
+| `normalizePhone` | ตัดช่องว่าง `-` `(` `)` `.` · `+66`/`66` นำหน้า → `0` · คืนตัวเลขล้วน |
+| ตรวจเบอร์ | มือถือ `0[689]` + 8 หลัก (10 หลัก) · บ้าน/ร้าน `0[2-57]` + 7 หลัก (9 หลัก) · ข้อความ: "เบอร์โทรไม่ถูกต้อง: ต้องขึ้นต้นด้วย 0 มี 9 หรือ 10 หลัก เช่น 081-234-5678" |
+| `formatPhone` | มือถือ `081-234-5678` · กรุงเทพ `02-123-4567` · ต่างจังหวัด `053-123-456` |
+| ป้ายเบอร์ | ≤ 30 ไม่บังคับ · เบอร์หลักได้ 1 เบอร์ (ถ้ามีเบอร์แต่ไม่ได้เลือก ใช้เบอร์แรก) |
+| `normalizePlate` | ตัดหัวท้าย + ตัวพิมพ์ใหญ่ (เหมือน `records`) |
+| `plateKey` | `normalizePlate` แล้วตัดช่องว่าง `-` `.` (ต้องให้ผลเท่ากับ generated column) · รอผล Q-8 เรื่องชื่อจังหวัด |
+| ชื่อ | ตัดหัวท้าย · 1–50 · หมายเหตุ ≤ 200 |
+| `classifyQuery` | มีแต่ตัวเลข/`+-() ` และ ≥ 3 หลัก → เบอร์ · มีตัวเลขและอักษรไทยปนกันสั้น ๆ (เช่น `1กข`, `กข1234`) → ทะเบียน · อื่น ๆ → ชื่อ |
+| `searchCustomers` | ชื่อมีคำค้น (ไม่สนช่องว่าง) · เบอร์มีตัวเลขของคำค้น (≥ 3 หลัก) · `plate_key` มี `plateKey(คำค้น)` (≥ 2 ตัว) · บอกช่องที่ตรง · เรียง: ตรงทั้งคำ > ขึ้นต้น > มีอยู่ แล้วตามชื่อ (`localeCompare 'th'`) |
+| `matchDebtGroup` | ทะเบียนในกลุ่มค้างชำระ (`plateKey`) ตรงรถในสมุด → ลูกค้าเหล่านั้น · ถ้าไม่มี ใช้ชื่อหลัง trim (ไม่สนช่องว่างซ้อน) · กลุ่ม "ลูกค้าทั่วไป" ใช้แค่ทะเบียน · คืน 0/1/หลายคน |
+
+## 6. หน้าจอ
+
+### 6.1 `/customers` (มือถือ 360)
+
+```
+┌────────────────────────────────────┐
+│ ลูกค้า                       [+ เพิ่ม]│  h1 + ปุ่มเพิ่ม
+│ ┌────────────────────────────────┐ │
+│ │ 🔍 ค้นชื่อ เบอร์ หรือทะเบียน     ✕│ │  SearchField ?q=
+│ └────────────────────────────────┘ │
+│ 128 ราย                            │
+│ ┌────────────────────────────────┐ │
+│ │ ทดสอบ เต็นท์ A             [📞โทร]│ │  ปุ่มโทร 44px
+│ │ 080-000-0001 · เจ้าของ          │ │
+│ │ 1กข 1234 · +2 คัน               │ │
+│ │ ตรงกับ: ทะเบียน 1กข 1234          │ │  (เฉพาะตอนค้นหา)
+│ └────────────────────────────────┘ │
+│ ┌────────────────────────────────┐ │
+│ │ ทดสอบ คุณบี               (ไม่มีเบอร์)│
+│ │ 2ขค 5678                       │ │
+│ └────────────────────────────────┘ │
+├────────────────────────────────────┤
+│ ภาพรวม ค้างชำระ (บันทึก) ประวัติ เพิ่มเติม│  BottomNav เดิม
+└────────────────────────────────────┘
+ค้นไม่เจอ:  ไม่พบ "0812" · [+ เพิ่มลูกค้าใหม่ด้วยเบอร์ 0812]
+```
+
+### 6.2 `/customers` (PC ≥ 1024)
+
+```
+┌──────────┬────────────────────────────────────────────────────────────┐
+│ SideNav  │ ลูกค้า                                         [+ เพิ่มลูกค้า] │
+│ ภาพรวม    │ [🔍 ค้นชื่อ เบอร์ หรือทะเบียน                              ✕] │
+│ ค้างชำระ   │ ┌──────────────┬───────────────┬──────────────┬──────────────┐ │
+│ ประวัติ    │ │ ชื่อ          │ เบอร์หลัก       │ รถ            │              │ │
+│ ลูกค้า ◀  │ ├──────────────┼───────────────┼──────────────┼──────────────┤ │
+│ เพิ่มเติม  │ │ ทดสอบ เต็นท์ A │ 080-000-0001  │ 1กข 1234 +2  │[โทร][คัดลอก]│ │
+│          │ └──────────────┴───────────────┴──────────────┴──────────────┘ │
+└──────────┴────────────────────────────────────────────────────────────┘
+```
+
+### 6.3 `/customers/[id]` (มือถือ)
+
+```
+┌────────────────────────────────────┐
+│ ‹ ลูกค้า                            │  ลิงก์กลับ (คง ?q= เดิม)
+│ ทดสอบ เต็นท์ A                       │  h1
+│ ── เบอร์โทร ─────────────────────── │
+│ เจ้าของ · เบอร์หลัก                   │
+│ 080-000-0001     [📞 โทร 080-000-0001]│
+│ เซลส์ พี่เอ                          │
+│ 080-000-0002     [📞 โทร 080-000-0002]│
+│ ── รถ ───────────────────────────── │
+│ 1กข 1234 · รถกระบะ · TOYOTA · ขาว     │
+│ 2ขค 5678 · รถเก๋ง                    │
+│ ── หมายเหตุ ──────────────────────── │
+│ ส่งรถทุกวันจันทร์                     │
+│ ── ประวัติ (Phase 3) ─────────────── │
+│ มา 23 ครั้ง · ล่าสุด 18 ต.ค. 2569      │
+│ ยอดรวม ฿5,200 · ค้าง ฿600             │
+│ RecordRow × 10 (แตะ = แก้ไขรายการ)    │
+│ [แก้ไข]                  [ลบลูกค้า]   │  ลบอยู่ห่างจากปุ่มหลัก
+└────────────────────────────────────┘
+```
+PC: 2 คอลัมน์ (ซ้าย ข้อมูลติดต่อ+รถ · ขวา ประวัติ) และปุ่ม "คัดลอกเบอร์" ข้างปุ่มโทรทุกเบอร์
+
+### 6.4 ฟอร์มเพิ่ม/แก้ไข (sheet บนมือถือ · modal 560 บน PC)
+
+```
+┌────────────────────────────────────┐
+│ เพิ่มลูกค้า                       ✕ │
+│ ชื่อลูกค้า / เต็นท์ *  [_____________]│
+│ ── เบอร์โทร ─────────────────────── │
+│ [080-000-0001] ป้าย [เจ้าของ ] (●) หลัก [ลบ]│
+│ [            ] ป้าย [        ] ( ) หลัก [ลบ]│
+│ [+ เพิ่มเบอร์]                       │
+│ ── รถ ───────────────────────────── │
+│ ทะเบียน * [1กข 1234 ]          [ลบคันนี้]│
+│ ⚠ ทะเบียนนี้อยู่กับ ทดสอบ คุณบี         │
+│   [ย้ายรถมาที่ลูกค้านี้]               │
+│ ประเภทรถ ChoiceGroup (ไม่บังคับ)       │
+│ ยี่ห้อ [เลือกยี่ห้อ ▾] สี [_____]      │
+│ [+ เพิ่มรถ]                          │
+│ หมายเหตุ [_____________________]     │
+├────────────────────────────────────┤
+│ [ยกเลิก]                  [บันทึก]  │  disabled จนหน้าพร้อม/ออนไลน์
+└────────────────────────────────────┘
+```
+ใช้ `FormField`, `TextInput`, `PlateField`, `ChoiceGroup`, `BrandPicker`, `FormErrorSummary`, `Dialog`, `ConfirmDialog` เดิม · Enter ไปช่องถัดไป (`enterMovesToNextField`) · `useHydrated` + `useKeepEarlyTyping` · draft ด้วย `useDraft` (sessionStorage)
+
+### 6.5 การ์ดค้างชำระ (Phase 3)
+
+```
+│ ทดสอบ เต็นท์ A            ฿1,200 │
+│ 3 คัน · ค้างนานสุด 9 วัน            │
+│ …รายการ…                          │
+│ [📞 โทร ทดสอบ เต็นท์ A]             │  ← ใหม่ (หรือ [เพิ่มเบอร์] ถ้าไม่มีในสมุด)
+│ [สร้างบิล]        [เคลียร์ยอด]       │
+```
+
+### 6.6 หน้าบันทึก (Phase 3)
+ใต้ PlateField: `Badge info "ลูกค้า: ทดสอบ เต็นท์ A"` + `Button ghost "ใช้ชื่อนี้"` (เติมช่องลูกค้าเมื่อกดเท่านั้น)
+
+## 7. เมนู (Q-1)
+
+**(ก) แนะนำ — "ลูกค้า" ใน SideNav บน PC + การ์ดใหญ่บนสุดของ `/more` บนมือถือ**
+```
+มือถือ: BottomNav เดิม 5 ช่อง           /more
+ ภาพรวม ค้างชำระ (บันทึก) ประวัติ เพิ่มเติม   ┌──────────────────────────┐
+                                        │ 👥 ลูกค้า                 ›│ ← การ์ดใหญ่ 72px
+                                        │ ชื่อ เบอร์ และทะเบียนรถ      │
+                                        └──────────────────────────┘
+                                        บัญชี · การแสดงผล · เกี่ยวกับ · ออกจากระบบ
+PC SideNav: ภาพรวม · ค้างชำระ · ประวัติ · ลูกค้า · (เพิ่มเติม)
+```
+ข้อดี: เมนูล่างที่คนในร้านคุ้นไม่เปลี่ยน · 320 px ไม่แน่น · ทางเข้าหลักอื่นมาจากการ์ดค้างชำระและหน้าบันทึกอยู่แล้ว · ข้อเสีย: บนมือถือต้องแตะ 2 ครั้ง (เพิ่มเติม → ลูกค้า)
+
+**(ข) แทน "เพิ่มเติม" ด้วย "ลูกค้า" และย้ายเพิ่มเติมไปปุ่มมุมขวาบน**
+```
+ ภาพรวม ค้างชำระ (บันทึก) ประวัติ ลูกค้า        [⋯] มุมขวาบนของทุกหน้า
+```
+ข้อดี: ลูกค้าแตะครั้งเดียว · ข้อเสีย: ตำแหน่ง "ออกจากระบบ/ธีม" ที่คุ้นเคยย้าย (ผู้ใช้สูงอายุต้องเรียนรู้ใหม่) · ปุ่มมุมบนเอื้อมยากด้วยนิ้วโป้ง
+
+**(ค) ปุ่มลัด "ลูกค้า" บนหน้าภาพรวม + ทางลัดไอคอนแอป (manifest shortcut)**
+ข้อดี: ไม่แตะเมนู · ข้อเสีย: manifest shortcut ได้สูงสุด 4 (มีครบแล้ว) และต้องติดตั้ง PWA ใหม่ · ภาพรวมแน่นขึ้น
+
+**คำแนะนำ: (ก)** แล้วดูการใช้จริง 2–4 สัปดาห์ ถ้าใช้บ่อยค่อยพิจารณา (ข)
+
+## 8. Architecture Decisions (ต่อจาก ADR-20)
+
+> สเปกเขียนว่า "ต่อจาก ADR-14" แต่ Step 12 เพิ่ม ADR-15..20 แล้ว จึงเริ่มที่ ADR-21
+
+- **ADR-21 ยังไม่ผูก `records.customer_id`:** จับคู่ด้วย `plate_key` แล้วชื่อ (อ่านอย่างเดียว) · เหตุผล: ไม่ต้องแก้ข้อมูลเดิม 1,000+ แถว ไม่กระทบ v2.1.x และรถของเต็นท์เปลี่ยนเจ้าของบ่อย (ผูกถาวรจะผิดกับรายการเก่า) · ภายหลังทำได้ด้วย expand (`customer_id` nullable) + backfill แบบเจ้าของยืนยัน (Q-7)
+- **ADR-22 `plate_key` เป็น generated column + unique ทั้งระบบ:** 1 ทะเบียนอยู่กับลูกค้า 1 คน · ปลอมจาก client ไม่ได้ · กติกาเดียวกับ `plateKey()` (test เทียบ)
+- **ADR-23 ค้นในเบราว์เซอร์ + `?q=` ด้วย `history.replaceState`:** ลูกค้าหลักร้อย → โหลดครั้งเดียวด้วย `fetchAllPages` (ลูกค้า + เบอร์ + รถ แบบ embed) แล้วกรองเอง ตอบทันทีขณะพิมพ์และค้นเบอร์/ทะเบียนบางส่วนได้ง่ายกว่า SQL · `replaceState` ไม่ยิง request จึงไม่มีเบอร์/ชื่อใน request log ของ Vercel · ทบทวนเมื่อเกิน ~5,000 คน (เปลี่ยนเป็น RPC ค้นฝั่ง server)
+- **ADR-24 บันทึกผ่าน RPC transaction เดียว:** idempotency ด้วย `client_request_id` ภายใน RPC · ตรวจ `updated_at` (ADR-07) · รหัส error ของตัวเอง (`CC409`, `CC404`, `CCPLT`) ไม่ปน `23505`
+- **ADR-25 เบอร์เก็บเป็นตัวเลขล้วนรูปแบบไทย:** normalize ฝั่งแอป + check ใน DB · ไม่รองรับเบอร์ต่างประเทศในรอบนี้
+- **ADR-26 PDPA:** เห็นเฉพาะสมาชิก (RLS) · ลบจริงแบบ cascade · ไม่เก็บสมุด/เบอร์ใน localStorage (ชื่อแนะนำจากสมุดอยู่ในหน่วยความจำ) · draft ฟอร์มใน sessionStorage ที่ล้างตอนออกจากระบบ · error ที่ RPC raise ไม่มีชื่อ/เบอร์/ทะเบียน · ไม่ใส่เบอร์ใน Excel
+- **ADR-27 สิทธิ์ลบ:** ตามคำตอบ Q-2 (ค่าเริ่มต้นแนะนำ: สมาชิกทุกคน เหมือน `records`)
+
+## 9. ความปลอดภัยและความเป็นส่วนตัว
+
+| ภัย | การป้องกัน | ทดสอบ |
+|---|---|---|
+| คนนอก/ไม่ใช่สมาชิกเห็นเบอร์ | RLS 3 ตาราง + revoke anon + RPC invoker | SQL test 3 บัญชี + E2E เรียก PostgREST ตรง |
+| แก้ `plate_key` หรือ audit เอง | generated column + trigger | SQL test |
+| ข้อมูลค้างครึ่ง ๆ | RPC transaction เดียว | SQL test ทำให้ล้มกลาง (เบอร์ผิดแถวสุดท้าย) แล้วตรวจว่าไม่มีอะไรถูกบันทึก |
+| เบอร์/ชื่อใน log | `replaceState` สำหรับ `?q=` · `scrubMessage` ตัดตัวเลข ≥ 3 · RPC ไม่ใส่ค่าใน error · URL หน้าลูกค้าใช้ uuid ไม่ใช่ชื่อ | unit test `scrubMessage` กับเบอร์หลายรูปแบบ (`081 234 5678`, `+66812345678`) |
+| XSS ผ่านชื่อ/หมายเหตุ | React escaping (ไม่มี `dangerouslySetInnerHTML`) | test เดิม + ค่า `<script>` ใน E2E |
+| `tel:` ปลอม | `href` สร้างจากเบอร์ที่ผ่าน `normalizePhone` เท่านั้น | unit |
+| ข้อมูลในเครื่องที่ใช้ร่วม | ไม่เก็บสมุดใน localStorage · draft ล้างตอน logout | unit (`clearLocalDrafts`) |
+
+หมายเหตุ: `recentCustomers` (ชื่อลูกค้า 30 ชื่อใน localStorage) มีมาตั้งแต่ v1 ไม่ได้มาจากงานนี้ · ถ้าต้องการเข้ม PDPA ให้ย้ายไป sessionStorage ภายหลัง (Q-11)
+
+## 10. แผนทดสอบ
+
+| ชั้น | เนื้อหา |
+|---|---|
+| Unit (`features/customers/__tests__`) | `normalizePhone` (ขีด/เว้นวรรค/วงเล็บ/+66/66), ตรวจเบอร์มือถือ/บ้าน/ผิด, `formatPhone`, `normalizePlate`, `plateKey`, `classifyQuery`, `searchCustomers` (ชื่อ/เบอร์บางส่วน/ทะเบียนบางส่วน + บอกช่อง + ลำดับ), `matchDebtGroup` (ทะเบียน/ชื่อ/หลายคน/ไม่เจอ/ลูกค้าทั่วไป), schema zod = constraint, `scrubMessage` กับเบอร์ · component: ฟอร์ม (Enter, hydrate, offline, draft, ทะเบียนซ้ำ + ย้าย), ปุ่มโทร (`href`, ชื่อ a11y) |
+| SQL (`supabase/tests/customers.test.sql`) | RLS anon/ไม่ใช่สมาชิก/สมาชิก ทั้ง 3 ตาราง · constraint ทุกตัว · ทะเบียนซ้ำ (key ต่างรูปแบบ) · เบอร์หลัก 1 เบอร์ · cascade · RPC: สร้าง, กดซ้ำ, แก้, ชนกัน `CC409`, ไม่พบ `CC404`, ทะเบียนของคนอื่น `CCPLT`, ย้ายรถ, ล้มกลางแล้วไม่มีข้อมูลค้าง · `plate_key` = ผลของ `plateKey()` ตัวอย่างชุดเดียวกับ unit test · rollback file |
+| E2E (`e2e/customers.spec.ts`, มือถือ + PC, Supabase ในเครื่อง) | เพิ่ม 2 เบอร์ 2 คัน → ค้นชื่อ/เบอร์บางส่วน/ทะเบียนบางส่วน → `tel:` ถูก → แก้ → ลบ (ประวัติไม่หาย) · โทรจากหน้าค้างชำระ · หน้าบันทึกบอกชื่อจากทะเบียน · axe WCAG 2.2 ทั้ง 2 ธีม · 320 px · ไม่มี CSP violation/console error · ข้อมูลชื่อ "ทดสอบ …" เบอร์ `080-000-000x` |
+| Preview + staging | เจ้าของรัน migration ลง staging ก่อน (Q-13) · `e2e-preview` เพิ่ม CUJ ลูกค้า + เก็บกวาด |
+
+## 11. Migration และ rollback
+
+| Migration | เนื้อหา | Phase | ใช้กับแอป v2.1.x ได้ |
+|---|---|---|---|
+| M010 `…_customers.sql` | 3 ตาราง + index + RLS + trigger audit | 1 | ✅ (ตารางใหม่ แอปเดิมไม่รู้จัก) |
+| M011 `…_save_customer.sql` | RPC `save_customer` | 1 | ✅ |
+| M012 `…_customer_history.sql` | expression index บน `records` + RPC `customer_history` | 3 | ✅ (index อย่างเดียว ไม่เปลี่ยนข้อมูล) |
+
+- ลำดับ production (เจ้าของ): M010–M012 รันก่อน merge release 2.2.0 (`database-migrations.md` §3.2) · ถ้ารันก่อนแล้วยังไม่ปล่อยแอป ไม่มีผล
+- Rollback แอป (Vercel) → ตารางอยู่ต่อแต่ไม่มีใครใช้ (D1) · **down ของ M010 ลบข้อมูลสมุดรายชื่อ** จึงใช้ได้เฉพาะก่อนมีข้อมูลจริง หรือหลัง export · down ของ M011/M012 ปลอดภัย (drop function/index)
+
+## 12. การแบ่ง PR
+
+| PR | Branch | เนื้อหา | หยุดรอ review |
+|---|---|---|---|
+| 0 | `docs/customer-directory-design` | เอกสารนี้ + `supabase/checks/plate_formats.sql` | ✅ (ตอนนี้) |
+| 1 | `db/customers` | M010, M011 + rollback + SQL test + seed ทดสอบในเครื่อง | ✅ |
+| 2 | `feature/customers` | `/customers`, `/customers/[id]`, ฟอร์ม, ลบ, โทร/คัดลอก, เมนู, `PROTECTED_ROUTES`, ไอคอน, `lib/errors.ts` | ✅ |
+| 3 | `feature/customers-integration` | M012 + ค้างชำระ + หน้าบันทึก + สรุปประวัติ + "บันทึกเป็นลูกค้า" | ✅ |
+| 4 | `feature/customers-import` | นำเข้าจากประวัติ (ถ้าอนุมัติ) | ✅ |
+
+ทุก PR: base `develop` · **Squash and merge** · ทดสอบบน Preview + staging ก่อนบอกว่าเสร็จ · release v2.2.0 ตาม `git-workflow.md` §4 หลัง PR 3 (หรือ 4)
+
+## 13. ความเสี่ยง
+
+| ความเสี่ยง | ผล | ลด |
+|---|---|---|
+| รูปแบบทะเบียนจริงต่างจากที่คิด (มีจังหวัด, ขีด, จุด) | จับคู่/ค้นพลาด | รอผล `plate_formats.sql` ก่อน PR 1 (Q-8) |
+| จับคู่ด้วยชื่อผิดคน (ชื่อซ้ำ เช่น "พี่เอ") | โทรผิดคน | ทะเบียนมาก่อนชื่อ · หลายคนให้เลือก · แสดงชื่อเต็มบนปุ่ม |
+| ฟอร์มหลายแถวยากสำหรับผู้สูงอายุ | ใช้ไม่เป็น | เริ่มด้วย 1 เบอร์ 1 คันว่าง · ปุ่ม "+ เพิ่มเบอร์" ใหญ่ · ทดลองกับคนในร้านบน Preview |
+| ลืมรัน migration ก่อน merge (เคยเกิด S07-28) | หน้าลูกค้า error | บรรทัดแรก PR template + release checklist + หน้าแอปแสดง error ที่อ่านได้ |
+| staging ยังไม่มีตาราง | ทดสอบ Preview ไม่ได้ | เจ้าของรัน migration ลง staging ก่อนทดสอบ PR 2 (Q-13) |
+| ข้อมูลส่วนบุคคลรั่ว | PDPA | §9 + RLS test |
+| เครื่องหลักมี `.env.local` ชี้ production | dev เขียนข้อมูลจริง | ใช้ Supabase ในเครื่อง · แนะนำเพิ่ม `PRODUCTION_SUPABASE_PROJECT_REF` ให้ guard ทำงาน (Q-12) |
+
+## 14. คำถามถึงเจ้าของ (พร้อมคำแนะนำ)
+
+| # | คำถาม | คำแนะนำ |
+|---|---|---|
+| Q-1 | วางเมนู "ลูกค้า" ตรงไหน | **(ก)** SideNav บน PC + การ์ดบนสุดของ `/more` บนมือถือ (§7) |
+| Q-2 | ใครลบลูกค้าได้ | **สมาชิกทุกคน** (เหมือนรายการ) · ถ้าเลือก owner ต้องตั้ง `role` ให้บัญชีเจ้าของก่อน |
+| Q-3 | เบอร์ซ้ำข้ามลูกค้า | **เตือนแล้วบันทึกได้** (เซลส์คนเดียวดูแลหลายเต็นท์) |
+| Q-4 | ประเภทลูกค้า (บุคคล/เต็นท์) | **ยังไม่ทำ** · เพิ่มภายหลังได้แบบไม่กระทบ (column nullable) |
+| Q-5 | LINE ID / ช่องทางอื่น | **ยังไม่ทำ** (เก็บเท่าที่จำเป็นตาม PDPA) · ใช้หมายเหตุแทนชั่วคราว |
+| Q-6 | นำเข้าจากประวัติรอบนี้ไหม | **ทำเป็น PR 4 หลังใช้จริง 1–2 สัปดาห์** |
+| Q-7 | อนาคตผูก `records.customer_id` | **บันทึกเป็นทางเลือก (ADR-21)** ยังไม่ทำ |
+| Q-8 | รัน `supabase/checks/plate_formats.sql` บน production แล้วส่งผล (ไม่มีทะเบียน/ชื่อในผล) | จำเป็นก่อน PR 1 เพื่อกำหนด `plate_key` (เช่น ชื่อจังหวัดท้ายทะเบียน) |
+| Q-9 | เก็บประเภทรถ/ยี่ห้อเป็น id (`sedan`, `toyota`) | **ใช่** (แสดงชื่อไทยจาก `CAR_TYPES`) |
+| Q-10 | ปุ่ม "คัดลอกเบอร์" บนมือถือด้วยไหม | **มีด้วย** (ไว้วางใน LINE) แต่เล็กกว่าปุ่มโทร |
+| Q-11 | ย้าย `recentCustomers` จาก localStorage ไป sessionStorage | **ภายหลัง** (เป็นพฤติกรรมเดิม ผู้ใช้คุ้น) |
+| Q-12 | ใส่ `PRODUCTION_SUPABASE_PROJECT_REF=<ref>` ใน `.env.local` ของเครื่องหลัก | **ใส่** แล้ว `npm run dev` ที่ชี้ production จะหยุดเองตั้งแต่ต้น |
+| Q-13 | วิธีใส่ migration ลง staging สำหรับทดสอบ Preview | **เจ้าของรันไฟล์ใน SQL Editor ของ staging** (ผมมีแค่ key สาธารณะของ staging จึงสร้างตารางเองไม่ได้ [V]) · ไม่แตะ production |
