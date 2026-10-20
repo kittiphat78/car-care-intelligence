@@ -1,6 +1,6 @@
 'use client'
 
-import { useId, useState } from 'react'
+import { useId, useState, type ReactNode } from 'react'
 import { cn } from '@/lib/cn'
 import { formatBangkok } from '@/lib/time/bangkok'
 import { Badge } from '@/components/ui/Badge'
@@ -44,9 +44,11 @@ export interface DebtCustomerCardProps {
   onBill: (g: DebtGroup) => void
   onSettle: (g: DebtGroup) => void
   onOpenRow: (r: AppRecord) => void
+  /** How to reach the customer (call button from the customer directory), above the actions */
+  contact?: ReactNode
 }
 
-export function DebtCustomerCard({ group, today, online, billing, onBill, onSettle, onOpenRow }: DebtCustomerCardProps) {
+export function DebtCustomerCard({ group, today, online, billing, onBill, onSettle, onOpenRow, contact }: DebtCustomerCardProps) {
   const id = useId()
   const [expanded, setExpanded] = useState(false)
   const rows = expanded ? group.items : group.items.slice(0, FIRST_ROWS)
@@ -81,6 +83,8 @@ export function DebtCustomerCard({ group, today, online, billing, onBill, onSett
           {expanded ? 'แสดงน้อยลง' : `ดูอีก ${hidden} คัน`}
         </Button>
       )}
+
+      {contact}
 
       <div className={cn('grid grid-cols-2 gap-3')}>
         <Button

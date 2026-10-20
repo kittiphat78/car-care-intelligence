@@ -77,7 +77,7 @@ Landmarks: `<nav aria-label="เมนูหลัก">`, `<main id="main">` แ
 |---|---|---|---|
 | 1 | PageHeader | `h1` + สรุป "฿12,800 · 3 ราย · 9 คัน" (ยอด `--text-title-lg` `unpaid`) | เต็มกว้าง |
 | 2 | ตัวเรียง | SegmentedControl (radiogroup) "ยอดมากสุด" / "ค้างนานสุด" → `?sort` | ขวาของ header |
-| 3 | DebtCustomerCard × N | ตาม `groupedUnpaid` | grid 2 คอลัมน์ |
+| 3 | DebtCustomerCard × N | ตาม `groupedUnpaid` · v2.2.0: แถวติดต่อ `DebtContact` เหนือปุ่ม (โทรเบอร์หลักของลูกค้าที่ตรงทะเบียน/ชื่อ · "โทร… (N ราย)" · "เพิ่มเบอร์" → `?customer=new`) ดู `docs/features/customer-directory.md` §6.7 | grid 2 คอลัมน์ |
 
 **States:** Skeleton.Card × 3 · Empty: EmptyState ไอคอน check-circle "ไม่มีรายการค้างชำระ" + "ทุกรายการได้รับชำระแล้ว" + Button secondary "กลับภาพรวม" · Error: ErrorState (ห้ามแสดง ฿0) · offline: ปุ่ม "เคลียร์ยอด" disabled + hint "ต้องเชื่อมต่ออินเทอร์เน็ต"
 **Interactions:** "สร้างบิล" → UF-BILL-01 · "เคลียร์ยอด" → `?settle=` (dialog §9) · แตะแถวรถ → `?edit=` (dialog §8) · "ดูอีก N คัน" ขยายในที่

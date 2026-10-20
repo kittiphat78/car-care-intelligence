@@ -16,6 +16,8 @@ export interface DebtGroup {
   name: string
   /** Oldest first */
   items: AppRecord[]
+  /** Plates of the items, as typed */
+  plates: string[]
   total: number
   /** Days since the oldest unpaid job (Bangkok days) */
   oldestDays: number
@@ -42,6 +44,7 @@ export function groupDebts(unpaid: readonly AppRecord[], today: string = bangkok
       key,
       name: key === UNNAMED_KEY ? DEFAULT_CUSTOMER_NAME_UNPAID : key,
       items,
+      plates: items.map((r) => r.plate),
       total: items.reduce((sum, r) => sum + r.price, 0),
       oldestDays,
       urgent: oldestDays >= URGENT_DAYS,

@@ -13,10 +13,30 @@ vi.mock('next/navigation', () => ({
 const api = vi.hoisted(() => ({ listUnpaid: vi.fn(), settleRecords: vi.fn() }))
 vi.mock('../api', () => api)
 vi.mock('@/features/records/api', () => ({ getEntry: vi.fn(), updateEntry: vi.fn(), deleteEntry: vi.fn(), countVisitsByPlate: vi.fn() }))
+const customersApi = vi.hoisted(() => ({ listCustomers: vi.fn(), saveCustomer: vi.fn(), deleteCustomer: vi.fn(), getCustomer: vi.fn() }))
+vi.mock('@/features/customers/api', () => customersApi)
 vi.mock('@/lib/observability', () => ({ reportAppError: vi.fn() }))
 
 import { DebtsScreen } from '../components/DebtsScreen'
 import { groupDebts, platePreview, settleOutcome, sortDebts, debtTotals, URGENT_DAYS, UNNAMED_KEY } from '../logic'
+import { forgetCustomers } from '@/features/customers/memory'
+import { plateCore, plateKey } from '@/features/customers/logic'
+import type { Customer } from '@/features/customers/types'
+
+/** A directory customer (customer directory, US-10) */
+const dirCustomer = (id: string, name: string, phone: string | null, plates: string[] = []): Customer => ({
+  id,
+  name,
+  note: null,
+  created_at: '2026-10-20T03:00:00Z',
+  created_by_email: null,
+  updated_at: null,
+  updated_by_email: null,
+  customer_phones: phone ? [{ id: `${id}-p`, number: phone, label: null, is_primary: true, position: 0 }] : [],
+  customer_vehicles: plates.map((plate, i) => ({
+    id: `${id}-v${i}`, plate, plate_key: plateKey(plate), plate_core: plateCore(plate), car_type: null, brand: null, model: null, color: null, note: null, position: i,
+  })),
+})
 
 const rec = (id: string, day: string, price: number, customer = ''): AppRecord =>
   ({ id, created_at: `${day}T03:00:00.000Z`, type: 'wash', plate: `กข ${id}`, services: ['', '', ''], price, seq_number: 1, payment_status: 'unpaid', job_status: 'done', customer_name: customer }) as AppRecord
@@ -74,6 +94,8 @@ beforeEach(() => {
   nav.search = ''
   api.listUnpaid.mockReset().mockResolvedValue({ ok: true, data: unpaid })
   api.settleRecords.mockReset()
+  customersApi.listCustomers.mockReset().mockResolvedValue({ ok: true, data: [] })
+  forgetCustomers()
 })
 
 describe('DebtsScreen', () => {
@@ -126,6 +148,55 @@ describe('DebtsScreen', () => {
     })
     expect(within(screen.getByRole('alertdialog')).getByRole('alert')).toHaveTextContent('เคลียร์ยอดไม่สำเร็จ ยอดยังไม่เปลี่ยน')
     expect(nav.refresh).not.toHaveBeenCalled()
+  })
+
+  it('calls the customer from the directory, by name or by plate (US-10)', async () => {
+    customersApi.listCustomers.mockResolvedValue({
+      ok: true,
+      data: [dirCustomer('a', 'เต็นท์ A', '0800000001'), dirCustomer('d', 'ทดสอบ คุณดี', '0800000004', ['กข-4 ชร.'])],
+    })
+    await renderScreen()
+    const [b, a, unnamed] = screen.getAllByRole('article')
+    // Same name
+    expect(within(a).getByRole('link', { name: 'โทร 080-000-0001 เต็นท์ A' })).toHaveAttribute('href', 'tel:0800000001')
+    // The unnamed group, by the plate of its job; says who is called
+    expect(within(unnamed).getByRole('link', { name: 'โทร 080-000-0004 ทดสอบ คุณดี' })).toBeInTheDocument()
+    expect(within(unnamed).getByText(/ในสมุดลูกค้า:/)).toHaveTextContent('ทดสอบ คุณดี')
+    // Not in the directory: add the number from the card (AC-10-3)
+    const pushState = vi.spyOn(window.history, 'pushState')
+    fireEvent.click(within(b).getByRole('button', { name: 'เพิ่มเบอร์ เต็นท์ B' }))
+    expect(pushState).toHaveBeenCalledWith(null, '', '/debts?customer=new')
+    pushState.mockRestore()
+  })
+
+  it('opens the new-customer form with the name and plates of the card', async () => {
+    await renderScreen()
+    // The click adds ?customer=new (the mocked router only sees it on the next render)
+    nav.search = 'customer=new'
+    fireEvent.click(within(screen.getAllByRole('article')[0]).getByRole('button', { name: 'เพิ่มเบอร์ เต็นท์ B' }))
+    const form = await screen.findByRole('dialog', { name: 'เพิ่มลูกค้า' })
+    expect(within(form).getByRole('textbox', { name: /ชื่อลูกค้า/ })).toHaveValue('เต็นท์ B')
+    expect(within(form).getByRole('textbox', { name: 'ทะเบียน' })).toHaveValue('กข 3')
+  })
+
+  it('lets the user pick when several customers match (AC-10-2)', async () => {
+    customersApi.listCustomers.mockResolvedValue({
+      ok: true,
+      data: [dirCustomer('x', 'ทดสอบ คนที่ 1', '0800000005', ['กข 1']), dirCustomer('y', 'เต็นท์ A', null)],
+    })
+    await renderScreen()
+    const a = screen.getAllByRole('article')[1]
+    fireEvent.click(within(a).getByRole('button', { name: 'โทร… (2 ราย) เต็นท์ A' }))
+    const picker = screen.getByRole('dialog', { name: 'โทรหา เต็นท์ A' })
+    expect(within(picker).getByRole('link', { name: 'โทร 080-000-0005 ทดสอบ คนที่ 1' })).toBeInTheDocument()
+    expect(within(picker).getByText('ยังไม่มีเบอร์')).toBeInTheDocument()
+  })
+
+  it('shows the cards without contact buttons when the directory cannot load', async () => {
+    customersApi.listCustomers.mockResolvedValue({ ok: false, error: appError('SERVER') })
+    await renderScreen()
+    expect(screen.getAllByRole('article')).toHaveLength(3)
+    expect(screen.queryByRole('button', { name: /เพิ่มเบอร์/ })).toBeNull()
   })
 
   it('shows an error, not ฿0, when the list cannot load', async () => {
