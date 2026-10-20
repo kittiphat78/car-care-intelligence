@@ -1,4 +1,6 @@
-// Customer directory rows as PostgREST returns them (M010, M012, M013) and the form's draft.
+import type { Record as AppRecord } from '@/types'
+
+// Customer directory rows as PostgREST returns them (M010, M012-M014) and the form's draft.
 // docs/features/customer-directory.md §4
 
 export interface CustomerPhone {
@@ -39,6 +41,19 @@ export interface Customer {
   updated_by_email: string | null
   customer_phones: CustomerPhone[]
   customer_vehicles: CustomerVehicle[]
+}
+
+/** What customer_history (M014) returns, in the app's words */
+export interface CustomerHistory {
+  visits: number
+  lastVisit: string | null
+  total: number
+  unpaidTotal: number
+  unpaidCount: number
+  /** Records counted because only the plate's numbers agree (may be another car) */
+  digitsOnly: number
+  /** Newest first; `sure` is false when only the plate's numbers agree */
+  recent: Array<{ record: AppRecord; sure: boolean }>
 }
 
 /** One phone row in the form; `key` is only for React */

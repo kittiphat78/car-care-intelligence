@@ -1,4 +1,5 @@
--- Tests for M010 (customer tables, RLS), M011/M012 (save_customer, plate_core) and M013 (vehicle model).
+-- Tests for M010 (customer tables, RLS), M011/M012 (save_customer, plate_core), M013 (vehicle model)
+-- and M014 (customer_history).
 -- Runs in CI, locally or in the SQL Editor of STAGING; every change is rolled back.
 -- Result must be "ALL CUSTOMER TESTS PASSED". Needs at least one member (ci_fixtures.sql).
 -- Test data: names start with "ทดสอบ", phone numbers 080-000-00xx.
@@ -11,6 +12,7 @@ declare
   records_before bigint := (select count(*) from public.records);
   res record;
   n bigint;
+  h uuid; h0 record; h1 record;
 begin
   assert member_id is not null, 'setup: app_members is empty';
 
@@ -185,11 +187,35 @@ begin
     assert not exists (select 1 from public.customer_phones where customer_id = b), 'phones of a deleted customer remain';
     assert not exists (select 1 from public.customer_vehicles where customer_id = b), 'vehicles of a deleted customer remain';
     assert (select count(*) from public.records) = records_before, 'deleting a customer changed records';
+
+    -- 9b · customer_history (M014): the records of the customer's cars and name. Compared
+    -- with the result before adding records, so records already in the database (seed,
+    -- staging) do not matter; the new ones are dated far ahead so they are the latest.
+    select id into h from public.save_customer(null, null, 'ทดสอบ ประวัติ M014', null, '[]', '[{"plate":"ฮฮ 4321"},{"plate":"8765"}]');
+    select * into h0 from public.customer_history(h, 10);
+    insert into public.records (type, plate, price, payment_status, job_status, customer_name, created_at) values
+      ('wash', 'ฮฮ-4321 ชร.', 100, 'paid',   'done', '',                      now() + interval '100 years'),          -- same full plate, with a province
+      ('wash', '4321',        200, 'unpaid', 'done', '',                      now() + interval '100 years 1 day'),    -- digits only: the numbers of ฮฮ 4321
+      ('wash', 'กข 8765',     300, 'paid',   'done', '',                      now() + interval '100 years 2 days'),   -- a full plate; the car 8765 is digits only
+      ('wash', 'ZZ1',          50, 'unpaid', 'done', ' ทดสอบ  ประวัติ m014 ', now() + interval '100 years 3 days'),  -- the same name
+      ('wash', '1ฮฮ 4321',    999, 'paid',   'done', '',                      now() + interval '100 years 4 days'),   -- another full plate with the same numbers
+      ('wash', '21',          999, 'paid',   'done', '',                      now() + interval '100 years 5 days');   -- too few digits to match
+    select * into h1 from public.customer_history(h, 2);
+    assert h1.visits - h0.visits = 4, format('customer_history counted %s new records, not 4', h1.visits - h0.visits);
+    assert h1.total - h0.total = 650, 'customer_history total is wrong';
+    assert h1.unpaid_total - h0.unpaid_total = 250 and h1.unpaid_count - h0.unpaid_count = 2, 'customer_history unpaid is wrong';
+    assert h1.digits_only - h0.digits_only = 2, 'matches by digits only are not reported';
+    assert jsonb_array_length(h1.recent) = 2, 'p_limit is not applied';
+    assert h1.recent -> 0 ->> 'plate' = 'ZZ1' and h1.recent -> 1 ->> 'plate' = 'กข 8765', 'recent records are not newest first';
+    assert (h1.recent -> 0 ->> 'sure')::boolean and not (h1.recent -> 1 ->> 'sure')::boolean, 'the sure flag is wrong';
+    assert not (h1.recent -> 0 ? 'core') and not (h1.recent -> 0 ? 'name_key'), 'helper columns are returned';
+    assert h1.last_visit = (h1.recent -> 0 ->> 'created_at')::timestamptz, 'last_visit is not the newest record';
     reset role;
 
     -- 10 · A signed-in non-member sees and changes nothing
     perform set_config('request.jwt.claims', json_build_object('sub', gen_random_uuid(), 'role', 'authenticated')::text, true);
     set local role authenticated;
+    assert (select visits from public.customer_history(h)) = 0, 'a non-member sees the history of a customer';
     assert (select count(*) from public.customers) = 0, 'a non-member can see customers';
     assert (select count(*) from public.customer_phones) = 0, 'a non-member can see phone numbers';
     assert (select count(*) from public.customer_vehicles) = 0, 'a non-member can see vehicles';
@@ -223,6 +249,11 @@ begin
     begin
       perform public.save_customer(null, null, 'ทดสอบ anon', null, '[]', '[]');
       raise exception 'anon can call save_customer';
+    exception when insufficient_privilege then null;
+    end;
+    begin
+      perform public.customer_history(h);
+      raise exception 'anon can call customer_history';
     exception when insufficient_privilege then null;
     end;
     reset role;

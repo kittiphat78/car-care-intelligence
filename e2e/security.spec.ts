@@ -54,6 +54,7 @@ test.describe('database access by account type', () => {
       ['customer_breakdown', { p_day: today }],
       ['settle_records', { p_ids: [] }],
       ['save_customer', { p_id: null, p_expected_updated_at: null, p_name: 'ANON', p_note: null, p_phones: [], p_vehicles: [] }],
+      ['customer_history', { p_customer_id: '00000000-0000-4000-8000-000000000000' }],
     ] as const) {
       const r = await anon.rpc(fn, args)
       expect(r.status, fn).toBeGreaterThanOrEqual(400)

@@ -34,6 +34,7 @@
 | Export Excel / บิล PDF | ❌ | ไฟล์ว่าง | ✅ | ทำบน client จากข้อมูลที่ RLS อนุญาต |
 | `customers`, `customer_phones`, `customer_vehicles` select/insert/update/delete (v2.2.0, M010) | ❌ (revoke) | ❌ (0 แถว, เขียนไม่ได้) | ✅ (ลบได้ทุกสมาชิก ADR-27) | RLS `is_app_member()` |
 | RPC `save_customer` (M011/M012) | ❌ (revoke) | ❌ (42501 จาก RLS) | ✅ | grant + RLS (invoker) |
+| RPC `customer_history` (M014, อ่านอย่างเดียว) | ❌ (revoke) | ✅ เรียกได้แต่ได้ 0 เพราะ RLS | ✅ | grant + RLS (invoker) |
 | หน้า `/customers`, `/customers/<id>` (v2.2.0) | ❌ → `/login?next=` (`PROTECTED_ROUTES`) | ⚠ เปิดได้แต่รายชื่อว่าง ("ยังไม่มีลูกค้า") | ✅ ค้น โทร คัดลอก เพิ่ม แก้ ลบ | proxy + `(app)/layout` (UX) · RLS (ข้อมูล) |
 
 ทดสอบ (v2.2.0): SQL `supabase/tests/customers.test.sql` (3 บัญชี × 3 ตาราง + RPC) · `e2e/security.spec.ts` เรียก PostgREST ตรง: anon ได้ 42501 ทั้ง 3 ตารางและ `save_customer`, outsider ได้ `[]` และเขียน/เรียก `save_customer` ไม่ได้, outsider เปิด `/customers` เห็น "ยังไม่มีลูกค้า", ทุกหน้าลูกค้าส่งคนที่ไม่ได้ login ไป `/login?next=`

@@ -30,7 +30,7 @@
 
 ไม่มี: soft delete, audit log ของการลบ, Storage, Edge Functions, cron [V] · Realtime publication ของ 2 ตารางปิดอยู่บน production (known-issues K-07)
 
-### 1.2.1 สมุดรายชื่อลูกค้า (M010–M013) · อยู่ใน `develop` · **ยังไม่ขึ้น production** (ไปกับ v2.2.0)
+### 1.2.1 สมุดรายชื่อลูกค้า (M010–M014) · อยู่ใน `develop` · **ยังไม่ขึ้น production** (ไปกับ v2.2.0)
 
 | Object | ทำอะไร | Migration |
 |---|---|---|
@@ -39,6 +39,7 @@
 | `customer_vehicles` | ทะเบียน (ตัดหัวท้าย + ตัวพิมพ์ใหญ่, ≤ 20) · `plate_key` generated (ตัดช่องว่าง `.` `-`, ใช้ค้นหา) · `plate_core` generated (M012: ตัดจังหวัดท้าย เช่น `กข1234ชร.` → `กข1234`) **unique เฉพาะทะเบียนเต็ม** (อักษรไทย + เลข) · ทะเบียนเลขล้วนซ้ำข้ามลูกค้าได้ · ประเภทรถ/ยี่ห้อเป็น id ของ `CAR_TYPES`/`CAR_BRANDS` · รุ่น ≤ 30 พิมพ์เอง (M013) · สี ≤ 30 · หมายเหตุ ≤ 200 · ลบลูกค้าแล้วลบตาม | M010, M012, M013 |
 | RLS ทั้ง 3 ตาราง | สมาชิกเท่านั้น (`is_app_member()`) · revoke จาก `anon` | M010 |
 | `save_customer(...)` | บันทึกลูกค้า + เบอร์ + รถใน transaction เดียว · กันบันทึกซ้ำ · ตรวจ `updated_at` · เทียบทะเบียนด้วย `plate_core` (M012) · ย้ายทะเบียนเต็มจากลูกค้าอื่นเมื่อผู้ใช้ยืนยัน (เฉพาะทะเบียนที่อยู่ในการบันทึกนั้น) · บันทึกรุ่นรถ (M013) · error `CC409`/`CC404`/`CCPLT`/`CC422` · `security invoker` | M011, M012, M013 |
+| `customer_history(id, limit)` | สรุปประวัติลูกค้าจาก `records` (ทะเบียนเต็มหรือชื่อตรง = แน่ · ตรงแค่ตัวเลข = นับแยกใน `digits_only`) · คืน 10 รายการล่าสุดเป็น jsonb · อ่านอย่างเดียว · ไม่มี index (scan หลักพันแถว ~10 ms) · down = drop function | M014 |
 
 ทดสอบ: `supabase/tests/customers.test.sql` · ข้อมูลทดสอบในเครื่อง: `supabase/seed_customers.sql` (โหลดเอง ไม่อยู่ใน `config.toml`) · down ของ M010 **ไม่ยอม drop ถ้ายังมีลูกค้า** · down ของ M012 ไม่ยอมย้อนถ้ามีรถ 2 คันใช้ `plate_key` เดียวกัน · down ของ M013 ไม่ยอมลบคอลัมน์ `model` ถ้ามีรถที่ใส่รุ่นแล้ว · รูปแบบทะเบียนจริงที่ใช้ตัดสินกฎ: `docs/features/customer-directory.md` §2.1 · ออกแบบ: `docs/features/customer-directory.md`
 

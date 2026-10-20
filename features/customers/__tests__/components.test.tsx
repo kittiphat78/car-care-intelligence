@@ -9,7 +9,7 @@ vi.mock('next/navigation', () => ({
   usePathname: () => nav.pathname,
   useSearchParams: () => new URLSearchParams(nav.search),
 }))
-const api = vi.hoisted(() => ({ listCustomers: vi.fn(), getCustomer: vi.fn(), saveCustomer: vi.fn(), deleteCustomer: vi.fn() }))
+const api = vi.hoisted(() => ({ listCustomers: vi.fn(), getCustomer: vi.fn(), saveCustomer: vi.fn(), deleteCustomer: vi.fn(), getCustomerHistory: vi.fn() }))
 vi.mock('../api', () => api)
 vi.mock('@/features/records/api', () => ({ countVisitsByPlate: vi.fn() }))
 vi.mock('@/lib/observability', () => ({ reportAppError: vi.fn() }))
@@ -59,6 +59,10 @@ const A = customer(
 )
 const B = customer('b', 'ทดสอบ คุณบี', [phone('p3', '0800000003', { is_primary: true })], [vehicle('v4', '4จฉ 1111'), vehicle('v5', '7777', 1)])
 
+const noHistory = { visits: 0, lastVisit: null, total: 0, unpaidTotal: 0, unpaidCount: 0, digitsOnly: 0, recent: [] }
+const job = (id: string, plate: string, price: number, payment_status: 'paid' | 'unpaid', created_at: string) =>
+  ({ id, plate, price, payment_status, created_at, type: 'wash', services: ['', '', ''], customer_name: 'ทดสอบ เต็นท์ A', job_status: 'done', seq_number: null }) as never
+
 const textbox = (name: string | RegExp) => screen.getByRole('textbox', { name })
 const type = (name: string | RegExp, value: string) => fireEvent.change(textbox(name), { target: { value } })
 const press = async (name: string | RegExp) => {
@@ -74,6 +78,7 @@ beforeEach(() => {
   api.listCustomers.mockReset().mockResolvedValue({ ok: true, data: [A, B] })
   api.saveCustomer.mockReset().mockResolvedValue({ ok: true, data: { id: 'new-id', updated_at: null } })
   api.deleteCustomer.mockReset().mockResolvedValue({ ok: true, data: undefined })
+  api.getCustomerHistory.mockReset().mockResolvedValue({ ok: true, data: noHistory })
   sessionStorage.clear()
   localStorage.clear()
   forgetCustomers()
@@ -469,5 +474,50 @@ describe('CustomerDetailScreen', () => {
     await renderDetail()
     expect(await screen.findByRole('heading', { name: 'แก้ไขลูกค้า' })).toBeInTheDocument()
     expect(textbox(/ชื่อลูกค้า/)).toHaveValue('ทดสอบ เต็นท์ A')
+  })
+})
+
+describe('CustomerHistoryCard on the customer page (US-12)', () => {
+  it('shows visits, last visit, totals and the latest jobs; a job opens the edit dialog', async () => {
+    api.getCustomerHistory.mockResolvedValue({
+      ok: true,
+      data: {
+        visits: 23,
+        lastVisit: '2026-10-18T05:00:00Z',
+        total: 5200,
+        unpaidTotal: 600,
+        unpaidCount: 2,
+        digitsOnly: 1,
+        recent: [
+          { record: job('r1', '1กข 1234', 300, 'unpaid', '2026-10-18T05:00:00Z'), sure: true },
+          { record: job('r2', '1234', 300, 'unpaid', '2026-10-10T05:00:00Z'), sure: false },
+        ],
+      },
+    })
+    await renderDetail()
+    const card = await screen.findByRole('region', { name: 'ประวัติการมาใช้บริการ' })
+    await waitFor(() => expect(card).toHaveTextContent('23 ครั้ง'))
+    expect(api.getCustomerHistory).toHaveBeenCalledWith('a', 10)
+    expect(card).toHaveTextContent('18 ต.ค. 2569')
+    expect(card).toHaveTextContent('฿5,200')
+    expect(card).toHaveTextContent('฿600 (2 รายการ)')
+    expect(card).toHaveTextContent('รวม 1 รายการที่ทะเบียนตรงแค่ตัวเลข')
+    expect(card).toHaveTextContent('รายการล่าสุด (2 จาก 23)')
+    expect(within(card).getByRole('button', { name: /^1234.*ทะเบียนตรงแค่ตัวเลข/ })).toBeInTheDocument()
+    fireEvent.click(within(card).getByRole('button', { name: /^1กข 1234/ }))
+    expect(nav.push).toHaveBeenCalledWith('/customers/a?edit=income%3Ar1', { scroll: false })
+  })
+
+  it('says when no job matches, and shows a load failure with a retry', async () => {
+    await renderDetail()
+    expect(await screen.findByText('ยังไม่มีรายการที่ตรงกับทะเบียนหรือชื่อของลูกค้านี้')).toBeInTheDocument()
+  })
+
+  it('a failed load can be retried without leaving the page', async () => {
+    api.getCustomerHistory.mockResolvedValueOnce({ ok: false, error: appError('SERVER') })
+    await renderDetail()
+    expect(await screen.findByText('โหลดประวัติไม่สำเร็จ')).toBeInTheDocument()
+    await press('ลองอีกครั้ง')
+    expect(await screen.findByText('ยังไม่มีรายการที่ตรงกับทะเบียนหรือชื่อของลูกค้านี้')).toBeInTheDocument()
   })
 })

@@ -21,6 +21,7 @@ import { dropCustomer, setOpenedFromList, wasOpenedFromList } from '../memory'
 import { formatPhone, primaryPhone, sortedPhones, sortedVehicles, vehicleDetails } from '../logic'
 import type { Customer } from '../types'
 import { CallActions } from './CallButton'
+import { CustomerHistoryCard } from './CustomerHistoryCard'
 import { CustomerFormDialog } from './CustomerFormDialog'
 
 // docs/features/customer-directory.md §6.3 — /customers/<id>?edit=customer:<id>
@@ -147,59 +148,63 @@ function CustomerDetails({ customer, onEdit, onDeleted }: { customer: Customer; 
       <h1 className="text-title break-words text-text">{customer.name}</h1>
 
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
-        <Card as="section" aria-labelledby="customer-phones" className="grid grid-cols-1 gap-3">
-          <h2 id="customer-phones" className="text-subheading text-text">
-            เบอร์โทร
-          </h2>
-          {phones.length === 0 ? (
-            <p className="text-body text-text-tertiary">ยังไม่มีเบอร์</p>
-          ) : (
-            <ul className="-mx-1 grid grid-cols-1 divide-y divide-border">
-              {phones.map((p) => (
-                <li key={p.id} className="grid grid-cols-1 gap-2 px-1 py-3 first:pt-0 last:pb-0">
-                  <p className="flex flex-wrap items-center gap-2">
-                    <span className="text-body-lg font-semibold text-text tabular-nums select-all">{formatPhone(p.number)}</span>
-                    {p.label && <span className="text-body text-text-secondary">{p.label}</span>}
-                    {p.id === mainId && phones.length > 1 && <Badge tone="info">เบอร์หลัก</Badge>}
-                  </p>
-                  <CallActions number={p.number} who={customer.name} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
+        {/* Contact and cars on the left, history on the right (wide screens) */}
+        <div className="grid grid-cols-1 gap-4">
+          <Card as="section" aria-labelledby="customer-phones" className="grid grid-cols-1 gap-3">
+            <h2 id="customer-phones" className="text-subheading text-text">
+              เบอร์โทร
+            </h2>
+            {phones.length === 0 ? (
+              <p className="text-body text-text-tertiary">ยังไม่มีเบอร์</p>
+            ) : (
+              <ul className="-mx-1 grid grid-cols-1 divide-y divide-border">
+                {phones.map((p) => (
+                  <li key={p.id} className="grid grid-cols-1 gap-2 px-1 py-3 first:pt-0 last:pb-0">
+                    <p className="flex flex-wrap items-center gap-2">
+                      <span className="text-body-lg font-semibold text-text tabular-nums select-all">{formatPhone(p.number)}</span>
+                      {p.label && <span className="text-body text-text-secondary">{p.label}</span>}
+                      {p.id === mainId && phones.length > 1 && <Badge tone="info">เบอร์หลัก</Badge>}
+                    </p>
+                    <CallActions number={p.number} who={customer.name} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
 
-        <Card as="section" aria-labelledby="customer-vehicles" className="grid grid-cols-1 gap-3">
-          <h2 id="customer-vehicles" className="text-subheading text-text">
-            รถ
-          </h2>
-          {vehicles.length === 0 ? (
-            <p className="text-body text-text-tertiary">ยังไม่มีรถ</p>
-          ) : (
-            <ul className="-mx-1 grid grid-cols-1 divide-y divide-border">
-              {vehicles.map((v) => (
-                <li key={v.id} className="grid grid-cols-1 gap-0.5 px-1 py-3 first:pt-0 last:pb-0">
-                  <span className="flex items-center gap-2 text-body-lg font-semibold text-text">
-                    <Icon name="car" className="text-text-tertiary" />
-                    {v.plate}
-                  </span>
-                  {vehicleDetails(v) && <span className="text-body text-text-secondary">{vehicleDetails(v)}</span>}
-                  {v.note && <span className="text-caption text-text-tertiary">{v.note}</span>}
-                </li>
-              ))}
-            </ul>
+          <Card as="section" aria-labelledby="customer-vehicles" className="grid grid-cols-1 gap-3">
+            <h2 id="customer-vehicles" className="text-subheading text-text">
+              รถ
+            </h2>
+            {vehicles.length === 0 ? (
+              <p className="text-body text-text-tertiary">ยังไม่มีรถ</p>
+            ) : (
+              <ul className="-mx-1 grid grid-cols-1 divide-y divide-border">
+                {vehicles.map((v) => (
+                  <li key={v.id} className="grid grid-cols-1 gap-0.5 px-1 py-3 first:pt-0 last:pb-0">
+                    <span className="flex items-center gap-2 text-body-lg font-semibold text-text">
+                      <Icon name="car" className="text-text-tertiary" />
+                      {v.plate}
+                    </span>
+                    {vehicleDetails(v) && <span className="text-body text-text-secondary">{vehicleDetails(v)}</span>}
+                    {v.note && <span className="text-caption text-text-tertiary">{v.note}</span>}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+
+          {customer.note && (
+            <Card as="section" aria-labelledby="customer-note" className="grid grid-cols-1 gap-1">
+              <h2 id="customer-note" className="text-subheading text-text">
+                หมายเหตุ
+              </h2>
+              <p className="text-body break-words whitespace-pre-line text-text">{customer.note}</p>
+            </Card>
           )}
-        </Card>
+        </div>
+        <CustomerHistoryCard customerId={customer.id} refreshKey={customer.updated_at ?? ''} />
       </div>
-
-      {customer.note && (
-        <Card as="section" aria-labelledby="customer-note" className="grid grid-cols-1 gap-1">
-          <h2 id="customer-note" className="text-subheading text-text">
-            หมายเหตุ
-          </h2>
-          <p className="text-body break-words whitespace-pre-line text-text">{customer.note}</p>
-        </Card>
-      )}
 
       <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-md bg-surface-2 px-3 py-2 text-caption">
         <dt className="text-text-tertiary">เพิ่มโดย</dt>

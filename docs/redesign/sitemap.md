@@ -27,7 +27,8 @@ Car Care Intelligence
 │   ├── ?q=<คำค้น>                 ↳ ไม่ส่งไป server (history.replaceState, ADR-23)
 │   └── ?new=1|search              ↳ dialog เพิ่มลูกค้า (search = เติมคำค้นในช่องที่ตรงชนิด)
 ├── /customers/<id>                ข้อมูลลูกค้า                      [auth]  ใหม่ v2.2.0
-│   └── ?edit=customer:<id>        ↳ dialog แก้ไขลูกค้า
+│   ├── ?edit=customer:<id>        ↳ dialog แก้ไขลูกค้า
+│   └── ?edit=income:<id>          ↳ dialog แก้ไขรายการจากการ์ดประวัติ (Phase 3b)
 ├── /more                          เพิ่มเติม                        [auth]  ใหม่
 │   └── ?logout=1                  ↳ dialog ยืนยันออกจากระบบ
 ├── (not-found)                    ไม่พบหน้า                        [any]
