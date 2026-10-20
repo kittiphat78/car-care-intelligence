@@ -139,8 +139,8 @@ export function HistoryScreen() {
   // ── The list ──
   // A month of rows (a year with "ทั้งปี") is the slow part of a tap: the tab, the filters
   // and the summary change first and the rows follow (useDeferredValue), dimmed until
-  // they do. The first render shows the skeleton, so a year kept from the last visit does
-  // not hold up the page.
+  // they do (and cannot be tapped: the rows may still be those of the other tab). The first
+  // render shows the skeleton, so a year kept from the last visit does not hold up the page.
   const listFilters = useDeferredValue(filters)
   const listData = useDeferredValue(current, null)
   const listStale = !loading && (listFilters !== filters || listData !== current)
@@ -212,7 +212,8 @@ export function HistoryScreen() {
             </SkeletonGroup>
           </Card>
         ) : failed ? null : (
-          <div aria-busy={listStale || undefined} className={cn('transition-opacity duration-150', listStale && 'opacity-60')}>
+          // inert while it catches up: a tap on a row of the other tab must not open it
+          <div aria-busy={listStale || undefined} inert={listStale || undefined} className={cn('transition-opacity duration-150', listStale && 'opacity-60')}>
             {listFilters.tab === 'income' ? (
               <RecordList
                 groups={incomeGroups}

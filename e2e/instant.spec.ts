@@ -55,11 +55,18 @@ test('เคลียร์ยอด, the history tabs and the edit dialog open 
 })
 
 test('a tab of the main menu opens from what was prefetched', async ({ page }) => {
+  // The prefetch is an ordinary render request of /debts, sent when the link appears
+  let prefetched = 0
+  page.on('requestfinished', (r) => {
+    const url = new URL(r.url())
+    if (url.pathname === '/debts' && (r.headers()['rsc'] === '1' || url.searchParams.has('_rsc'))) prefetched++
+  })
   await signIn(page)
   const menu = page.getByRole('navigation', { name: 'เมนูหลัก' }).filter({ visible: true })
   const debts = menu.getByRole('link', { name: /ค้างชำระ/ })
   await expect(debts).toBeVisible()
-  // Prefetching runs when the links appear; give it a moment to finish
+  // WebKit schedules prefetching later than Chromium: wait until it has been done
+  await expect.poll(() => prefetched, { timeout: 15_000 }).toBeGreaterThan(0)
   await page.waitForLoadState('networkidle')
   expect(
     await serverRenders(page, '/debts', async () => {
