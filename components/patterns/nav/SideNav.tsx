@@ -48,6 +48,7 @@ export function SideNav({ email, badges = {} }: SideNavProps) {
               <li key={item.href}>
                 <Link
                   href={item.href}
+                  prefetch
                   aria-current={active ? 'page' : undefined}
                   className={cn(
                     'focus-ring flex min-h-12 items-center gap-3 rounded-md px-3 text-body',

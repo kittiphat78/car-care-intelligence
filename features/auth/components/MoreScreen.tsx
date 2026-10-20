@@ -37,7 +37,7 @@ export function MoreScreen({ email }: { email: string }) {
       <PageHeader title="เพิ่มเติม" />
 
       {/* The way to the customer directory on phones (Q-1); SideNav has it on wide screens */}
-      <Link href="/customers" className="focus-ring block rounded-lg">
+      <Link href="/customers" prefetch className="focus-ring block rounded-lg">
         <Card interactive className="flex min-h-18 items-center gap-4">
           <span aria-hidden="true" className="grid size-11 shrink-0 place-items-center rounded-md bg-primary-subtle text-link">
             <Icon name="users" size="lg" />

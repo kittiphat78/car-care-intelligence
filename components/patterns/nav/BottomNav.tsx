@@ -29,6 +29,8 @@ export function BottomNav({ badges = {} }: BottomNavProps) {
             <li key={item.href} className="min-w-0">
               <Link
                 href={item.href}
+                // Whole page ahead of the tap (kept 5 minutes): the tab opens with no wait
+                prefetch
                 aria-current={active ? 'page' : undefined}
                 className={cn(
                   'focus-ring relative flex h-full min-h-11 flex-col items-center justify-center gap-0.5 rounded-md text-caption font-medium',
