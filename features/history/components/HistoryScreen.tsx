@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useDeferredValue, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { keepScreen, keptScreen } from '@/lib/screen-memory'
 import { pushUrl, replaceUrl } from '@/lib/url-state'
@@ -129,14 +129,36 @@ export function HistoryScreen() {
     }
   }
 
-  const shownIncome = useMemo(() => filterIncome(records, filters), [records, filters])
-  const shownExpenses = useMemo(() => filterExpenses(expenses, filters), [expenses, filters])
   const filterCount = activeFilterCount(filters)
   const clearFilters = () => {
     setQuery('')
     lastPushed.current = ''
     setFilters({ q: '', from: '', to: '', job: 'all' })
   }
+
+  // ── The list ──
+  // A month of rows (a year with "ทั้งปี") is the slow part of a tap: the tab, the filters
+  // and the summary change first and the rows follow (useDeferredValue), dimmed until
+  // they do. The first render shows the skeleton, so a year kept from the last visit does
+  // not hold up the page.
+  const listFilters = useDeferredValue(filters)
+  const listData = useDeferredValue(current, null)
+  const listStale = !loading && (listFilters !== filters || listData !== current)
+  const listRecords = useMemo(() => (listData?.records.ok ? listData.records.data : []), [listData])
+  const incomeGroups = useMemo(() => groupByDay(filterIncome(listRecords, listFilters)), [listRecords, listFilters])
+  const expenseGroups = useMemo(
+    () => groupByDay(filterExpenses(listData?.expenses.ok ? listData.expenses.data : [], listFilters)),
+    [listData, listFilters],
+  )
+  const listFiltered = activeFilterCount(listFilters) > 0
+  // Handlers that keep their identity, so the memoised list skips the urgent render
+  const latest = useRef({ clear: clearFilters, open: edit.open })
+  useEffect(() => {
+    latest.current = { clear: clearFilters, open: edit.open }
+  })
+  const clearFromList = useCallback(() => latest.current.clear(), [])
+  const openIncome = useCallback((id: string) => latest.current.open('income', id), [])
+  const openExpense = useCallback((id: string) => latest.current.open('expense', id), [])
   const now = bangkokParts()
   const exportDefault = { year: filters.year, month: filters.month === 0 ? (filters.year === now.year ? now.month : 12) : filters.month }
 
@@ -181,7 +203,7 @@ export function HistoryScreen() {
           </Banner>
         )}
 
-        {loading ? (
+        {loading || listData === null ? (
           <Card>
             <SkeletonGroup>
               {Array.from({ length: 6 }, (_, i) => (
@@ -189,26 +211,30 @@ export function HistoryScreen() {
               ))}
             </SkeletonGroup>
           </Card>
-        ) : failed ? null : filters.tab === 'income' ? (
-          <RecordList
-            groups={groupByDay(shownIncome)}
-            kind="income"
-            empty={records.length === 0 || shownIncome.length === 0}
-            filtered={filterCount > 0}
-            filters={filters}
-            onClear={clearFilters}
-            onOpen={(id) => edit.open('income', id)}
-          />
-        ) : (
-          <RecordList
-            groups={groupByDay(shownExpenses)}
-            kind="expense"
-            empty={shownExpenses.length === 0}
-            filtered={filterCount > 0}
-            filters={filters}
-            onClear={clearFilters}
-            onOpen={(id) => edit.open('expense', id)}
-          />
+        ) : failed ? null : (
+          <div aria-busy={listStale || undefined} className={cn('transition-opacity duration-150', listStale && 'opacity-60')}>
+            {listFilters.tab === 'income' ? (
+              <RecordList
+                groups={incomeGroups}
+                kind="income"
+                empty={listRecords.length === 0 || incomeGroups.length === 0}
+                filtered={listFiltered}
+                filters={listFilters}
+                onClear={clearFromList}
+                onOpen={openIncome}
+              />
+            ) : (
+              <RecordList
+                groups={expenseGroups}
+                kind="expense"
+                empty={expenseGroups.length === 0}
+                filtered={listFiltered}
+                filters={listFilters}
+                onClear={clearFromList}
+                onOpen={openExpense}
+              />
+            )}
+          </div>
         )}
       </section>
 
@@ -362,7 +388,7 @@ function FilterPanel({
 
 // ── List: day groups (phones/tablets) or a table (wide screens) ─────────────
 
-function RecordList({
+const RecordList = memo(function RecordList({
   groups,
   kind,
   empty,
@@ -426,7 +452,7 @@ function RecordList({
       ))}
     </div>
   )
-}
+})
 
 function DayGroupHeader({ group, kind }: { group: DayGroup<AppRecord> | DayGroup<Expense>; kind: 'income' | 'expense' }) {
   return (
