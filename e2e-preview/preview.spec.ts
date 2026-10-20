@@ -171,6 +171,53 @@ test('CUJ: unpaid job → debts → bill PDF → settle', async ({ page }, info)
   db()
 })
 
+test('CUJ: customer directory: add 2 numbers, find by part of a number, call, edit, delete (v2.2.0)', async ({ page }, info) => {
+  const id = tag(info)
+  const name = `ทดสอบ ${id}`
+  // A full plate is unique in the directory: letters per project, digits per run
+  const plate = `${{ phone: 'ฮก', desktop: 'ฮข', iphone: 'ฮค' }[info.project.name] ?? 'ฮฆ'} ${id.slice(-4)}`
+  const db = watchDatabase(page)
+  const problems = watchConsole(page)
+  await signIn(page)
+  await page.goto('/customers')
+  await page.waitForFunction(() => !document.querySelector('[aria-busy="true"]'), null, { timeout: 30000 }).catch(() => {})
+  await page.getByRole('button', { name: 'เพิ่มลูกค้า' }).first().click()
+  const form = page.getByRole('dialog', { name: 'เพิ่มลูกค้า' })
+  await form.getByRole('textbox', { name: /ชื่อลูกค้า/ }).fill(name)
+  await form.getByRole('textbox', { name: 'เบอร์', exact: true }).fill('080-000-0001')
+  await form.getByRole('button', { name: 'เพิ่มเบอร์' }).click()
+  await form.getByRole('textbox', { name: 'เบอร์ 2' }).fill('080-000-0002')
+  await form.getByRole('textbox', { name: 'ทะเบียน' }).fill(plate)
+  await form.getByRole('button', { name: 'บันทึก', exact: true }).click()
+  await expect(toast(page, `เพิ่มลูกค้า ${name} แล้ว`)).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name })).toBeVisible()
+  await expect(page.getByRole('link', { name: `โทร 080-000-0001 ${name}` })).toHaveAttribute('href', 'tel:0800000001')
+
+  // Find by part of the plate (the number is shared by every test customer)
+  await page.goto('/customers')
+  await page.getByRole('searchbox', { name: 'ค้นหาชื่อ เบอร์ หรือทะเบียน' }).fill(plate.replace(' ', ''))
+  const row = page.locator('li, tr').filter({ has: page.getByRole('link', { name: new RegExp(`^${name}`) }) })
+  await expect(row.getByText(`ตรงกับ: ทะเบียน ${plate}`)).toBeVisible()
+  await row.getByRole('link', { name: new RegExp(`^${name}`) }).click()
+
+  await page.getByRole('button', { name: 'แก้ไข', exact: true }).click()
+  const edit = page.getByRole('dialog', { name: 'แก้ไขลูกค้า' })
+  await edit.getByRole('textbox', { name: 'เบอร์ 2' }).fill('080-000-0003')
+  await edit.getByRole('button', { name: 'บันทึก', exact: true }).click()
+  await expect(toast(page, 'บันทึกการแก้ไขแล้ว')).toBeVisible()
+  await expect(page.getByRole('link', { name: `โทร 080-000-0003 ${name}` })).toBeVisible()
+
+  await page.getByRole('button', { name: 'ลบลูกค้า' }).click()
+  const confirm = page.getByRole('alertdialog', { name: `ลบ ${name}?` })
+  await expect(confirm).toContainText('ประวัติการล้างรถไม่ถูกลบ')
+  await confirm.getByRole('button', { name: 'ลบลูกค้า' }).click()
+  await expect(toast(page, `ลบ ${name} แล้ว`)).toBeVisible()
+  await page.getByRole('searchbox').fill(name)
+  await expect(page.getByText(`ไม่พบ “${name}”`)).toBeVisible()
+  db()
+  expect(problems, 'console errors').toEqual([])
+})
+
 test('CUJ: export Excel, every page loads, no console errors, accessible, fits 320 px', async ({ page }, info) => {
   const db = watchDatabase(page)
   const problems = watchConsole(page)
@@ -186,7 +233,7 @@ test('CUJ: export Excel, every page loads, no console errors, accessible, fits 3
   expect((await download).suggestedFilename()).toMatch(/\.xlsx$/)
   if (info.project.name !== 'desktop') await page.setViewportSize({ width: 320, height: 640 })
   const issues: string[] = []
-  for (const path of ['/', '/add', '/add?type=expense', '/debts', '/history', '/more']) {
+  for (const path of ['/', '/add', '/add?type=expense', '/debts', '/history', '/customers', '/customers?new=1', '/more']) {
     await page.goto(path)
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
     await page.waitForFunction(() => !document.querySelector('[aria-busy="true"]'), null, { timeout: 30000 }).catch(() => {})
@@ -237,5 +284,18 @@ test('clean up test data left by earlier runs', async ({ page }, info) => {
       await expect(page.getByRole('status').filter({ hasText: /^ลบ / })).toBeVisible()
       info.annotations.push({ type: 'removed', description: `${tab}: ${names[index]}` })
     }
+  }
+  // Customers of the directory CUJ (v2.2.0)
+  for (let i = 0; i < 20; i++) {
+    await page.goto('/customers')
+    await page.getByRole('searchbox').fill('ทดสอบ RC')
+    const link = page.getByRole('main').getByRole('link', { name: /^ทดสอบ RC[PDI]\d{5}/ }).first()
+    if (!(await link.count())) break
+    const leftover = ((await link.textContent()) ?? '').trim()
+    await link.click()
+    await page.getByRole('button', { name: 'ลบลูกค้า' }).click()
+    await page.getByRole('alertdialog').getByRole('button', { name: 'ลบลูกค้า' }).click()
+    await expect(page.getByRole('status').filter({ hasText: /^ลบ / })).toBeVisible()
+    info.annotations.push({ type: 'removed', description: `customer: ${leftover}` })
   }
 })
