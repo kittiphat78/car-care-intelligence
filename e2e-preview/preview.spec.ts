@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page, type TestInfo } from '@playwright/test'
+import { version } from '../package.json'
 
 // Release-candidate checks on a Vercel Preview + staging (see playwright.config.ts).
 
@@ -84,7 +85,8 @@ test('environment: Preview label, staging database, version, security headers', 
   const db = watchDatabase(page)
   await signIn(page)
   await page.goto('/more')
-  await expect(page.getByRole('main')).toContainText('2.1.0')
+  // The version this release candidate is built from, not a fixed number
+  await expect(page.getByRole('main')).toContainText(version)
   const hosts = db()
   expect(hosts.some((h) => h.startsWith(STAGING_REF)), `talks to staging (${hosts.join(', ')})`).toBe(true)
   const r = await request.get('/login', { headers: { 'x-vercel-protection-bypass': process.env.PREVIEW_BYPASS ?? '' }, maxRedirects: 0 })
