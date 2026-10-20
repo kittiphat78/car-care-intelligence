@@ -41,7 +41,7 @@
 | `save_customer(...)` | บันทึกลูกค้า + เบอร์ + รถใน transaction เดียว · กันบันทึกซ้ำ · ตรวจ `updated_at` · เทียบทะเบียนด้วย `plate_core` (M012) · ย้ายทะเบียนเต็มจากลูกค้าอื่นเมื่อผู้ใช้ยืนยัน (เฉพาะทะเบียนที่อยู่ในการบันทึกนั้น) · บันทึกรุ่นรถ (M013) · error `CC409`/`CC404`/`CCPLT`/`CC422` · `security invoker` | M011, M012, M013 |
 | `customer_history(id, limit)` | สรุปประวัติลูกค้าจาก `records` (ทะเบียนเต็มหรือชื่อตรง = แน่ · ตรงแค่ตัวเลข = นับแยกใน `digits_only`) · คืน 10 รายการล่าสุดเป็น jsonb · อ่านอย่างเดียว · ไม่มี index (scan หลักพันแถว ~10 ms) · down = drop function | M014 |
 
-ทดสอบ: `supabase/tests/customers.test.sql` · ข้อมูลทดสอบในเครื่อง: `supabase/seed_customers.sql` (โหลดเอง ไม่อยู่ใน `config.toml`) · down ของ M010 **ไม่ยอม drop ถ้ายังมีลูกค้า** · down ของ M012 ไม่ยอมย้อนถ้ามีรถ 2 คันใช้ `plate_key` เดียวกัน · down ของ M013 ไม่ยอมลบคอลัมน์ `model` ถ้ามีรถที่ใส่รุ่นแล้ว · รูปแบบทะเบียนจริงที่ใช้ตัดสินกฎ: `docs/features/customer-directory.md` §2.1 · ออกแบบ: `docs/features/customer-directory.md`
+ทดสอบ: `supabase/tests/customers.test.sql` (ในเครื่อง, CI, staging) · ตรวจบน production แบบอ่านอย่างเดียว: `supabase/checks/customers_ready.sql` (ต้องได้ `ALL READY = true`) · ข้อมูลทดสอบในเครื่อง: `supabase/seed_customers.sql` (โหลดเอง ไม่อยู่ใน `config.toml`) · down ของ M010 **ไม่ยอม drop ถ้ายังมีลูกค้า** · down ของ M012 ไม่ยอมย้อนถ้ามีรถ 2 คันใช้ `plate_key` เดียวกัน · down ของ M013 ไม่ยอมลบคอลัมน์ `model` ถ้ามีรถที่ใส่รุ่นแล้ว · รูปแบบทะเบียนจริงที่ใช้ตัดสินกฎ: `docs/features/customer-directory.md` §2.1 · ออกแบบ: `docs/features/customer-directory.md`
 
 ### 1.3 ไฟล์ใน `supabase/`
 

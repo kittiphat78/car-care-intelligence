@@ -1,7 +1,7 @@
 # สมุดรายชื่อลูกค้า (Customer Directory) — Phase 0 Design
 
 > 2026-10-20 · สถานะ: **อนุมัติแล้ว** (เจ้าของ 2026-10-20: "ตามที่แนะนำ" ทุกข้อใน §14) · Phase 1 `db/customers` กำลังทำ · เป้าหมาย: `v2.2.0`
-> Phase 1 merge แล้ว (#56, M010–M011, staging ผ่าน Q-13) · Phase 1b merge แล้ว (#57, M012 `plate_core`, staging ผ่าน) · Phase 2 `feature/customers` (หน้าจอ) merge แล้ว (#59) — สิ่งที่เปลี่ยนจากแบบตอนทำจริงอยู่ใน §6.7 · Phase 2b รุ่นรถ (M013) merge แล้ว (#60, staging ✅) · Phase 3a merge แล้ว (#61) · **Phase 3b `feature/customers-history` (M014 สรุปประวัติ) รอ review** · Q-12 เป็นงานของเจ้าของ
+> Phase 1 merge แล้ว (#56, M010–M011, staging ผ่าน Q-13) · Phase 1b merge แล้ว (#57, M012 `plate_core`, staging ผ่าน) · Phase 2 `feature/customers` (หน้าจอ) merge แล้ว (#59) — สิ่งที่เปลี่ยนจากแบบตอนทำจริงอยู่ใน §6.7 · Phase 2b รุ่นรถ (M013) merge แล้ว (#60, staging ✅) · Phase 3a merge แล้ว (#61) · Phase 3b merge แล้ว (#62) · D-12 (#63) · **release `v2.2.0`: RC ผ่าน รอ production** (`docs/redesign/release-2.2.0.md`) · Q-12 เป็นงานของเจ้าของ
 > ป้าย: **[V]** Verified จากโค้ด/การรัน · **[I]** Inferred · **[U]** Unknown
 > อ่านประกอบ: `docs/redesign/architecture.md`, `architecture-decisions.md` (ADR-01..20), `database-migrations.md`, `authorization-matrix.md`, `screen-specifications.md`, `interaction-specifications.md`, `accessibility-guidelines.md`
 > งานนี้ไม่เกี่ยวกับ `release/2.1.1` (D-08) ที่กำลังจะปล่อย และจะไม่ merge เข้า release นั้น
@@ -408,7 +408,7 @@ PC SideNav: ภาพรวม · ค้างชำระ · ประวัต
 | 2 | `feature/customers` | `/customers`, `/customers/[id]`, ฟอร์ม, ลบ, โทร/คัดลอก, เมนู, `PROTECTED_ROUTES`, ไอคอน, `lib/errors.ts` · ไม่มี migration | ✅ merge แล้ว (#59) |
 | 2b | `feature/customers-vehicle-model` | M013 รุ่นรถ + แสดงยี่ห้อ/รุ่นในรายชื่อ (มือถือ: บรรทัดรถ · PC: คอลัมน์ "ยี่ห้อ / รุ่น") หน้าลูกค้า และช่อง "รุ่น" ในฟอร์ม | ✅ merge แล้ว (#60) |
 | 3a | `feature/customers-integration` | ค้างชำระ: ปุ่มโทร / เลือกเมื่อตรงหลายคน / "เพิ่มเบอร์" · หน้าบันทึก: "ลูกค้า: …" + "ใช้ชื่อนี้" และชื่อจากสมุดในรายชื่อแนะนำ · toast "บันทึกเป็นลูกค้า" · ไม่มี migration | ✅ merge แล้ว (#61) |
-| 3b | `feature/customers-history` | M014 `customer_history` + การ์ด "ประวัติการมาใช้บริการ" ในหน้าลูกค้า (มากี่ครั้ง, ล่าสุด, ยอดรวม, ค้าง, 10 รายการล่าสุด แตะเพื่อแก้) | ✅ (รอ review) |
+| 3b | `feature/customers-history` | M014 `customer_history` + การ์ด "ประวัติการมาใช้บริการ" ในหน้าลูกค้า (มากี่ครั้ง, ล่าสุด, ยอดรวม, ค้าง, 10 รายการล่าสุด แตะเพื่อแก้) | ✅ merge แล้ว (#62) |
 | 4 | `feature/customers-import` | นำเข้าจากประวัติ (ถ้าอนุมัติ) | ✅ |
 
 ทุก PR: base `develop` · **Squash and merge** · ทดสอบบน Preview + staging ก่อนบอกว่าเสร็จ · release v2.2.0 ตาม `git-workflow.md` §4 หลัง PR 3 (หรือ 4)
