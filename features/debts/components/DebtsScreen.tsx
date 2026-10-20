@@ -15,7 +15,9 @@ import { EmptyState, ErrorState } from '@/components/patterns/EmptyState'
 import { useOnline } from '@/components/patterns/StatusBar'
 import { CustomerFormDialog } from '@/features/customers/components/CustomerFormDialog'
 import { DebtContact } from '@/features/customers/components/DebtContact'
-import { useCustomerDirectory, useUrlDialog } from '@/features/customers/hooks'
+import { useCustomerDirectory } from '@/features/customers/hooks'
+import { keepScreen, keptScreen } from '@/lib/screen-memory'
+import { pushUrl, replaceUrl, useUrlDialog } from '@/lib/url-state'
 import { EditRecordDialog } from '@/features/records/components/EditRecordDialog'
 import { useEditParam } from '@/features/records/useEditParam'
 import type { Record as AppRecord } from '@/types'
@@ -34,14 +36,16 @@ export function DebtsScreen() {
   const searchParams = useSearchParams()
   const toast = useToast()
   const online = useOnline()
-  const [unpaid, setUnpaid] = useState<Result<AppRecord[]> | null>(null)
+  // Back on this tab: the last list at once, a fresh copy right after (lib/screen-memory.ts)
+  const [unpaid, setUnpaid] = useState<Result<AppRecord[]> | null>(() => keptScreen<Result<AppRecord[]>>('debts') ?? null)
   const [billing, setBilling] = useState<string | null>(null)
   const settleOpenedHere = useRef(false)
   const today = bangkokToday()
 
   const load = useCallback(async () => {
     const result = await listUnpaid()
-    if (!result.ok) reportAppError(result.error)
+    if (result.ok) keepScreen('debts', result)
+    else reportAppError(result.error)
     setUnpaid(result)
   }, [])
 
@@ -99,7 +103,7 @@ export function DebtsScreen() {
 
   function openSettle(g: DebtGroup) {
     settleOpenedHere.current = true
-    router.push(withParam('settle', g.key), { scroll: false })
+    pushUrl(withParam('settle', g.key))
   }
 
   function closeSettle() {
@@ -107,7 +111,7 @@ export function DebtsScreen() {
       settleOpenedHere.current = false
       router.back()
     } else {
-      router.replace(withParam('settle', null), { scroll: false })
+      replaceUrl(withParam('settle', null))
     }
   }
 
@@ -143,7 +147,7 @@ export function DebtsScreen() {
           <ChoiceGroup
             label="เรียงตาม"
             value={sort}
-            onChange={(v) => v && router.replace(withParam('sort', v === 'amount' ? null : v), { scroll: false })}
+            onChange={(v) => v && replaceUrl(withParam('sort', v === 'amount' ? null : v))}
             options={[
               { value: 'amount', label: 'ยอดมากสุด' },
               { value: 'age', label: 'ค้างนานสุด' },

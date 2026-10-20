@@ -529,8 +529,10 @@ describe('CustomerHistoryCard on the customer page (US-12)', () => {
     expect(card).toHaveTextContent('รวม 1 รายการที่ทะเบียนตรงแค่ตัวเลข')
     expect(card).toHaveTextContent('รายการล่าสุด (2 จาก 23)')
     expect(within(card).getByRole('button', { name: /^1234.*ทะเบียนตรงแค่ตัวเลข/ })).toBeInTheDocument()
+    const pushState = vi.spyOn(window.history, 'pushState')
     fireEvent.click(within(card).getByRole('button', { name: /^1กข 1234/ }))
-    expect(nav.push).toHaveBeenCalledWith('/customers/a?edit=income%3Ar1', { scroll: false })
+    expect(pushState).toHaveBeenCalledWith(null, '', '/customers/a?edit=income%3Ar1')
+    pushState.mockRestore()
   })
 
   it('says when no job matches, and shows a load failure with a retry', async () => {

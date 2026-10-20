@@ -10,6 +10,7 @@ import { PageHeader } from '@/components/patterns/PageHeader'
 import { useTheme } from '@/components/patterns/theme'
 import { envLabel } from '@/components/patterns/StatusBar'
 import { withLogoutParam } from '@/components/patterns/nav/items'
+import { pushOnPlainClick } from '@/lib/url-state'
 
 // screen-specifications.md §6 — /more
 
@@ -37,7 +38,7 @@ export function MoreScreen({ email }: { email: string }) {
       <PageHeader title="เพิ่มเติม" />
 
       {/* The way to the customer directory on phones (Q-1); SideNav has it on wide screens */}
-      <Link href="/customers" className="focus-ring block rounded-lg">
+      <Link href="/customers" prefetch className="focus-ring block rounded-lg">
         <Card interactive className="flex min-h-18 items-center gap-4">
           <span aria-hidden="true" className="grid size-11 shrink-0 place-items-center rounded-md bg-primary-subtle text-link">
             <Icon name="users" size="lg" />
@@ -77,6 +78,8 @@ export function MoreScreen({ email }: { email: string }) {
 
       <Link
         href={withLogoutParam(pathname, searchParams.toString())}
+        onClick={pushOnPlainClick}
+        prefetch={false}
         scroll={false}
         className={buttonClassName({ variant: 'danger-ghost', fullWidth: true })}
       >

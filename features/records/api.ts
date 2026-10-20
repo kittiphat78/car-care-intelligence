@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase'
 import { appError, toAppError } from '@/lib/errors'
 import { err, ok, type Result } from '@/lib/result'
 import { fetchAllPages } from '@/lib/fetch-all-pages'
+import { forgetScreens } from '@/lib/screen-memory'
 import type { Expense, Record as AppRecord } from '@/types'
 
 export type EntryTable = 'records' | 'expenses'
@@ -57,6 +58,15 @@ async function runCount(query: QueryResult<unknown>): Promise<Result<number>> {
 
 const done = <T>(result: Result<T>): Result<void> => (result.ok ? ok(undefined) : result)
 
+/**
+ * After a save, edit or delete (whatever the outcome) the copies other tabs kept are out
+ * of date: the dashboard after "บันทึก" must not show the list without the new job.
+ */
+function changed<T>(result: Result<T>): Result<T> {
+  forgetScreens()
+  return result
+}
+
 /** How many times a plate has visited (all time). */
 export function countVisitsByPlate(plate: string): Promise<Result<number>> {
   return runCount(supabase.from('records').select('*', { count: 'exact', head: true }).eq('plate', plate))
@@ -70,11 +80,11 @@ const savedOnce = (result: Result<unknown>): Result<void> =>
   result.ok || result.error.code === 'DUPLICATE' ? ok(undefined) : result
 
 export async function createIncome(row: IncomeInsert): Promise<Result<void>> {
-  return savedOnce(await run(supabase.from('records').insert(row)))
+  return changed(savedOnce(await run(supabase.from('records').insert(row))))
 }
 
 export async function createExpense(row: ExpenseInsert): Promise<Result<void>> {
-  return savedOnce(await run(supabase.from('expenses').insert(row)))
+  return changed(savedOnce(await run(supabase.from('expenses').insert(row))))
 }
 
 /**
@@ -91,7 +101,7 @@ export async function updateEntry(
 ): Promise<Result<void>> {
   let query = supabase.from(table).update(patch).eq('id', id)
   query = expectedUpdatedAt ? query.eq('updated_at', expectedUpdatedAt) : query.is('updated_at', null)
-  const updated = await run(query.select('id'))
+  const updated = changed(await run(query.select('id')))
   if (!updated.ok) return updated
   if ((updated.data as unknown[] | null)?.length) return ok(undefined)
 
@@ -107,7 +117,7 @@ export async function getEntry<T>(table: EntryTable, id: string): Promise<Result
 }
 
 export async function deleteEntry(table: EntryTable, id: string): Promise<Result<void>> {
-  return done(await run(supabase.from(table).delete().eq('id', id)))
+  return changed(done(await run(supabase.from(table).delete().eq('id', id))))
 }
 
 /** Every row of `table` created in [start, end) (no upper bound when `end` is null), in a stable order (all pages, ER-02). */

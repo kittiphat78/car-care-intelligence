@@ -1,7 +1,9 @@
 'use client'
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { memo, useCallback, useDeferredValue, useEffect, useId, useMemo, useRef, useState } from 'react'
+import { usePathname, useSearchParams } from 'next/navigation'
+import { keepScreen, keptScreen } from '@/lib/screen-memory'
+import { pushUrl, replaceUrl } from '@/lib/url-state'
 import { cn } from '@/lib/cn'
 import { bangkokParts, formatBangkok } from '@/lib/time/bangkok'
 import { toUserMessage } from '@/lib/errors'
@@ -39,7 +41,8 @@ import {
 } from '../logic'
 import { ExportDialog } from './ExportDialog'
 
-// screen-specifications.md §5 — /history. Everything that changes the view is in the URL.
+// screen-specifications.md §5 — /history. Everything that changes the view is in the URL,
+// changed in the browser only (lib/url-state.ts) so a filter or tab shows at once.
 
 const baht = (n: number) => `฿${n.toLocaleString('en-US')}`
 const SEARCH_DELAY_MS = 250
@@ -52,7 +55,6 @@ interface YearData {
 }
 
 export function HistoryScreen() {
-  const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const filters = useMemo(() => parseFilters(new URLSearchParams(searchParams.toString())), [searchParams])
@@ -67,9 +69,9 @@ export function HistoryScreen() {
       // Keep dialogs that are open (edit/export)
       for (const key of ['edit', 'export']) if (searchParams.has(key)) params.set(key, searchParams.get(key)!)
       const query = params.toString()
-      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
+      replaceUrl(query ? `${pathname}?${query}` : pathname)
     },
-    [filters, searchParams, router, pathname],
+    [filters, searchParams, pathname],
   )
 
   // Search: type freely, update the URL after a short pause (UF-HIST-01)
@@ -85,10 +87,12 @@ export function HistoryScreen() {
   }, [query, setFilters])
 
   // ── Data: one Bangkok year at a time ──
-  const [data, setData] = useState<YearData | null>(null)
+  // Back on this tab: the last year shown at once, a fresh copy right after (lib/screen-memory.ts)
+  const [data, setData] = useState<YearData | null>(() => keptScreen<YearData>('history') ?? null)
   const load = useCallback(async (year: number) => {
     const result = await loadYear(year)
     for (const part of [result.records, result.expenses]) if (!part.ok) reportAppError(part.error)
+    if (result.records.ok && result.expenses.ok) keepScreen<YearData>('history', { year, ...result })
     setData({ year, ...result })
   }, [])
   useEffect(() => {
@@ -114,25 +118,47 @@ export function HistoryScreen() {
     if (open) {
       exportOpenedHere.current = true
       params.set('export', '1')
-      router.push(`${pathname}?${params.toString()}`, { scroll: false })
+      pushUrl(`${pathname}?${params.toString()}`)
     } else if (exportOpenedHere.current) {
       exportOpenedHere.current = false
-      router.back()
+      window.history.back()
     } else {
       params.delete('export')
       const q = params.toString()
-      router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false })
+      replaceUrl(q ? `${pathname}?${q}` : pathname)
     }
   }
 
-  const shownIncome = useMemo(() => filterIncome(records, filters), [records, filters])
-  const shownExpenses = useMemo(() => filterExpenses(expenses, filters), [expenses, filters])
   const filterCount = activeFilterCount(filters)
   const clearFilters = () => {
     setQuery('')
     lastPushed.current = ''
     setFilters({ q: '', from: '', to: '', job: 'all' })
   }
+
+  // ── The list ──
+  // A month of rows (a year with "ทั้งปี") is the slow part of a tap: the tab, the filters
+  // and the summary change first and the rows follow (useDeferredValue), dimmed until
+  // they do. The first render shows the skeleton, so a year kept from the last visit does
+  // not hold up the page.
+  const listFilters = useDeferredValue(filters)
+  const listData = useDeferredValue(current, null)
+  const listStale = !loading && (listFilters !== filters || listData !== current)
+  const listRecords = useMemo(() => (listData?.records.ok ? listData.records.data : []), [listData])
+  const incomeGroups = useMemo(() => groupByDay(filterIncome(listRecords, listFilters)), [listRecords, listFilters])
+  const expenseGroups = useMemo(
+    () => groupByDay(filterExpenses(listData?.expenses.ok ? listData.expenses.data : [], listFilters)),
+    [listData, listFilters],
+  )
+  const listFiltered = activeFilterCount(listFilters) > 0
+  // Handlers that keep their identity, so the memoised list skips the urgent render
+  const latest = useRef({ clear: clearFilters, open: edit.open })
+  useEffect(() => {
+    latest.current = { clear: clearFilters, open: edit.open }
+  })
+  const clearFromList = useCallback(() => latest.current.clear(), [])
+  const openIncome = useCallback((id: string) => latest.current.open('income', id), [])
+  const openExpense = useCallback((id: string) => latest.current.open('expense', id), [])
   const now = bangkokParts()
   const exportDefault = { year: filters.year, month: filters.month === 0 ? (filters.year === now.year ? now.month : 12) : filters.month }
 
@@ -177,7 +203,7 @@ export function HistoryScreen() {
           </Banner>
         )}
 
-        {loading ? (
+        {loading || listData === null ? (
           <Card>
             <SkeletonGroup>
               {Array.from({ length: 6 }, (_, i) => (
@@ -185,26 +211,30 @@ export function HistoryScreen() {
               ))}
             </SkeletonGroup>
           </Card>
-        ) : failed ? null : filters.tab === 'income' ? (
-          <RecordList
-            groups={groupByDay(shownIncome)}
-            kind="income"
-            empty={records.length === 0 || shownIncome.length === 0}
-            filtered={filterCount > 0}
-            filters={filters}
-            onClear={clearFilters}
-            onOpen={(id) => edit.open('income', id)}
-          />
-        ) : (
-          <RecordList
-            groups={groupByDay(shownExpenses)}
-            kind="expense"
-            empty={shownExpenses.length === 0}
-            filtered={filterCount > 0}
-            filters={filters}
-            onClear={clearFilters}
-            onOpen={(id) => edit.open('expense', id)}
-          />
+        ) : failed ? null : (
+          <div aria-busy={listStale || undefined} className={cn('transition-opacity duration-150', listStale && 'opacity-60')}>
+            {listFilters.tab === 'income' ? (
+              <RecordList
+                groups={incomeGroups}
+                kind="income"
+                empty={listRecords.length === 0 || incomeGroups.length === 0}
+                filtered={listFiltered}
+                filters={listFilters}
+                onClear={clearFromList}
+                onOpen={openIncome}
+              />
+            ) : (
+              <RecordList
+                groups={expenseGroups}
+                kind="expense"
+                empty={expenseGroups.length === 0}
+                filtered={listFiltered}
+                filters={listFilters}
+                onClear={clearFromList}
+                onOpen={openExpense}
+              />
+            )}
+          </div>
         )}
       </section>
 
@@ -358,7 +388,7 @@ function FilterPanel({
 
 // ── List: day groups (phones/tablets) or a table (wide screens) ─────────────
 
-function RecordList({
+const RecordList = memo(function RecordList({
   groups,
   kind,
   empty,
@@ -422,7 +452,7 @@ function RecordList({
       ))}
     </div>
   )
-}
+})
 
 function DayGroupHeader({ group, kind }: { group: DayGroup<AppRecord> | DayGroup<Expense>; kind: 'income' | 'expense' }) {
   return (
