@@ -256,3 +256,47 @@ test('"บันทึกเป็นลูกค้า" after saving a job keep
   await removeRecords(plate)
   await removeLeftovers(prefix)
 })
+
+test('the customer page sums up the jobs of their cars; a job opens for editing (US-12)', async ({ page }, info) => {
+  const { prefix, name, n } = testData(info)
+  const plate = `${info.project.name === 'phone' ? 'ฮฒ' : 'ฮณ'} ${n}`
+  await removeLeftovers(prefix)
+  await removeRecords(plate)
+  await removeRecords(n)
+
+  // Two jobs: the full plate typed another way (sure), and the numbers only (may be another car)
+  const { url, serviceKey } = localSupabase()
+  const insert = await fetch(`${url}/rest/v1/records`, {
+    method: 'POST',
+    headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify([
+      { type: 'wash', plate: plate.replace(' ', '-'), price: 100, payment_status: 'paid', job_status: 'done', customer_name: '' },
+      { type: 'polish', plate: n, price: 200, payment_status: 'unpaid', job_status: 'done', customer_name: '' },
+    ]),
+  })
+  expect(insert.ok, 'add test jobs').toBe(true)
+
+  await signIn(page, '/customers')
+  await page.getByRole('button', { name: 'เพิ่มลูกค้า' }).first().click()
+  const form = page.getByRole('dialog', { name: 'เพิ่มลูกค้า' })
+  await form.getByRole('textbox', { name: /ชื่อลูกค้า/ }).fill(name)
+  await form.getByRole('textbox', { name: 'ทะเบียน' }).fill(plate)
+  await form.getByRole('button', { name: 'บันทึก', exact: true }).click()
+
+  const history = page.getByRole('region', { name: 'ประวัติการมาใช้บริการ' })
+  await expect(history).toContainText('2 ครั้ง')
+  await expect(history).toContainText('฿300')
+  await expect(history).toContainText('฿200 (1 รายการ)')
+  await expect(history).toContainText('รวม 1 รายการที่ทะเบียนตรงแค่ตัวเลข')
+  await expectAccessible(page, info, 'customer page with history')
+
+  await history.getByRole('button', { name: new RegExp(`^${n}`) }).click()
+  const edit = page.getByRole('dialog', { name: 'แก้ไขรายรับ' })
+  await expect(edit).toBeVisible()
+  await edit.getByRole('button', { name: 'ปิด' }).click()
+  await expect(edit).toHaveCount(0)
+
+  await removeRecords(plate.replace(' ', '-'))
+  await removeRecords(n)
+  await removeLeftovers(prefix)
+})

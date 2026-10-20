@@ -12,6 +12,7 @@ import type { Expense, Record as AppRecord } from '@/types'
 
 const baht = (n: number) => `฿${n.toLocaleString('en-US')}`
 const timeOf = (at: string) => `${formatBangkok(at, { hour: '2-digit', minute: '2-digit', hour12: false })} น.`
+const dateOf = (at: string) => formatBangkok(at, { day: 'numeric', month: 'short', year: '2-digit' })
 
 /** "เพิ่มโดย x · แก้โดย y" under a row in history (component-specifications.md §3.4) */
 function auditLine(row: { created_by_email?: string; updated_by_email?: string; updated_at?: string }): string | null {
@@ -24,11 +25,17 @@ export function IncomeRow({
   record,
   highlight = false,
   showAudit = false,
+  showDate = false,
+  below,
   onOpen,
 }: {
   record: AppRecord
   highlight?: boolean
   showAudit?: boolean
+  /** The date as well as the time (rows from several days, e.g. a customer's history) */
+  showDate?: boolean
+  /** One more line under the row, e.g. why it is in a customer's history */
+  below?: string
   onOpen: (r: AppRecord) => void
 }) {
   const [, brand, note] = record.services ?? []
@@ -65,10 +72,11 @@ export function IncomeRow({
         </span>
         {extra && <span className="truncate text-caption text-text-tertiary">{extra}</span>}
         {showAudit && auditLine(record) && <span className="truncate text-caption text-text-tertiary">{auditLine(record)}</span>}
+        {below && <span className="truncate text-caption text-text-tertiary">{below}</span>}
       </span>
       <span className="grid grid-cols-1 shrink-0 justify-items-end gap-0.5">
         <span className={cn('text-subheading font-bold tabular-nums', unpaid ? 'text-unpaid' : 'text-text')}>{baht(record.price)}</span>
-        <span className="text-caption text-text-tertiary tabular-nums">{timeOf(record.created_at)}</span>
+        <span className="text-caption text-text-tertiary tabular-nums">{showDate ? `${dateOf(record.created_at)} · ${timeOf(record.created_at)}` : timeOf(record.created_at)}</span>
       </span>
       <span className="sr-only">แตะเพื่อแก้ไข</span>
     </button>

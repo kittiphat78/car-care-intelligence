@@ -4,9 +4,10 @@ import { appError } from '@/lib/errors'
 import { err, ok, type Result } from '@/lib/result'
 import { run } from '@/features/records/api'
 import type { CustomerPayload } from './schema'
-import type { Customer } from './types'
+import type { Record as AppRecord } from '@/types'
+import type { Customer, CustomerHistory } from './types'
 
-// Data access for the customer directory (M010-M013). Every function returns a Result
+// Data access for the customer directory (M010-M014). Every function returns a Result
 // and never throws. Shop members only: row level security decides, not this code.
 
 const COLUMNS =
@@ -79,4 +80,31 @@ export async function deleteCustomer(id: string): Promise<Result<void>> {
   const result = await run(supabase.from('customers').delete().eq('id', id).select('id'))
   if (!result.ok) return result
   return (result.data as unknown[] | null)?.length ? ok(undefined) : err(appError('NOT_FOUND'))
+}
+
+interface HistoryRow {
+  visits: number | string
+  last_visit: string | null
+  total: number | string
+  unpaid_total: number | string
+  unpaid_count: number | string
+  digits_only: number | string
+  recent: Array<AppRecord & { sure: boolean }> | null
+}
+
+/** Visits, totals and the latest records of a customer, matched by plate and name (M014, US-12) */
+export async function getCustomerHistory(id: string, limit = 10): Promise<Result<CustomerHistory>> {
+  const result = await run(supabase.rpc('customer_history', { p_customer_id: id, p_limit: limit }))
+  if (!result.ok) return result
+  const row = ((result.data as HistoryRow[] | null) ?? [])[0]
+  if (!row) return err(appError('SERVER', new Error('customer_history returned no row')))
+  return ok({
+    visits: Number(row.visits),
+    lastVisit: row.last_visit,
+    total: Number(row.total),
+    unpaidTotal: Number(row.unpaid_total),
+    unpaidCount: Number(row.unpaid_count),
+    digitsOnly: Number(row.digits_only),
+    recent: (row.recent ?? []).map(({ sure, ...record }) => ({ record: record as AppRecord, sure })),
+  })
 }

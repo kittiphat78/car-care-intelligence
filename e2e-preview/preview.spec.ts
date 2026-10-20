@@ -171,7 +171,7 @@ test('CUJ: unpaid job → debts → bill PDF → settle', async ({ page }, info)
   db()
 })
 
-test('CUJ: customer directory: add, find, call, edit; plate hint on /add; call from debts; delete (v2.2.0)', async ({ page }, info) => {
+test('CUJ: customer directory: add, find, call, edit; plate hint on /add; call from debts; history; delete (v2.2.0)', async ({ page }, info) => {
   const id = tag(info)
   const name = `ทดสอบ ${id}`
   // A full plate is unique in the directory: letters per project, digits per run
@@ -224,6 +224,13 @@ test('CUJ: customer directory: add, find, call, edit; plate hint on /add; call f
   await expect(page).toHaveURL('/')
   await page.goto('/debts')
   await expect(page.getByRole('article', { name }).getByRole('link', { name: `โทร 080-000-0001 ${name}` })).toHaveAttribute('href', 'tel:0800000001')
+  // Phase 3b: the customer page counts the job (matched by the name)
+  await page.goto('/customers')
+  await page.getByRole('searchbox').fill(name)
+  await row.getByRole('link', { name: new RegExp(`^${name}`) }).click()
+  const history = page.getByRole('region', { name: 'ประวัติการมาใช้บริการ' })
+  await expect(history).toContainText('1 ครั้ง')
+  await expect(history).toContainText('฿1 (1 รายการ)')
   await page.goto(`/history?q=${encodeURIComponent(id)}`)
   await page.getByRole('button', { name: new RegExp(id) }).click()
   await page.getByRole('dialog', { name: 'แก้ไขรายรับ' }).getByRole('button', { name: 'ลบ', exact: true }).click()
