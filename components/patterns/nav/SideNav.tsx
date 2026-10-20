@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/cn'
+import { pushOnPlainClick } from '@/lib/url-state'
 import { Icon } from '@/components/ui/Icon'
 import { Switch } from '@/components/ui/Switch'
 import { buttonClassName } from '@/components/ui/Button'
@@ -75,6 +76,8 @@ export function SideNav({ email, badges = {} }: SideNavProps) {
         {email && <p className="truncate text-caption text-text-secondary">{email}</p>}
         <Link
           href={withLogoutParam(pathname, searchParams.toString())}
+          onClick={pushOnPlainClick}
+          prefetch={false}
           scroll={false}
           className={buttonClassName({ variant: 'danger-ghost', fullWidth: true })}
         >

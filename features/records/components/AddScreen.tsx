@@ -1,6 +1,7 @@
 'use client'
 
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
+import { replaceUrl } from '@/lib/url-state'
 import { Tabs, tabId, tabPanelId } from '@/components/ui/Tabs'
 import { PageHeader } from '@/components/patterns/PageHeader'
 import { ExpenseEditor, IncomeEditor, type EditorProps } from './RecordEditor'
@@ -11,7 +12,6 @@ import { ExpenseEditor, IncomeEditor, type EditorProps } from './RecordEditor'
 type Kind = 'income' | 'expense'
 
 export function AddScreen({ userId, email }: EditorProps) {
-  const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const kind: Kind = searchParams.get('type') === 'expense' ? 'expense' : 'income'
@@ -19,7 +19,8 @@ export function AddScreen({ userId, email }: EditorProps) {
   function switchTo(next: Kind) {
     const params = new URLSearchParams(searchParams.toString())
     params.set('type', next)
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+    // In the browser only: the other tab shows at once (lib/url-state.ts)
+    replaceUrl(`${pathname}?${params.toString()}`)
   }
 
   return (

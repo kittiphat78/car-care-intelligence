@@ -67,9 +67,12 @@ describe('LogoutDialog', () => {
 
   it('cancel removes only the logout parameter', () => {
     nav.search = 'tab=expense&logout=1'
+    const replaceState = vi.spyOn(window.history, 'replaceState')
     renderDialog()
     fireEvent.click(screen.getByRole('button', { name: 'ยกเลิก' }))
-    expect(nav.replace).toHaveBeenCalledWith('/history?tab=expense', { scroll: false })
+    expect(replaceState).toHaveBeenCalledWith(null, '', '/history?tab=expense')
+    expect(nav.replace).not.toHaveBeenCalled()
+    replaceState.mockRestore()
     expect(auth.signOut).not.toHaveBeenCalled()
   })
 

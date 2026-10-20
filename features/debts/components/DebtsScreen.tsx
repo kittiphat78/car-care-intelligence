@@ -15,7 +15,8 @@ import { EmptyState, ErrorState } from '@/components/patterns/EmptyState'
 import { useOnline } from '@/components/patterns/StatusBar'
 import { CustomerFormDialog } from '@/features/customers/components/CustomerFormDialog'
 import { DebtContact } from '@/features/customers/components/DebtContact'
-import { useCustomerDirectory, useUrlDialog } from '@/features/customers/hooks'
+import { useCustomerDirectory } from '@/features/customers/hooks'
+import { pushUrl, replaceUrl, useUrlDialog } from '@/lib/url-state'
 import { EditRecordDialog } from '@/features/records/components/EditRecordDialog'
 import { useEditParam } from '@/features/records/useEditParam'
 import type { Record as AppRecord } from '@/types'
@@ -99,7 +100,7 @@ export function DebtsScreen() {
 
   function openSettle(g: DebtGroup) {
     settleOpenedHere.current = true
-    router.push(withParam('settle', g.key), { scroll: false })
+    pushUrl(withParam('settle', g.key))
   }
 
   function closeSettle() {
@@ -107,7 +108,7 @@ export function DebtsScreen() {
       settleOpenedHere.current = false
       router.back()
     } else {
-      router.replace(withParam('settle', null), { scroll: false })
+      replaceUrl(withParam('settle', null))
     }
   }
 
@@ -143,7 +144,7 @@ export function DebtsScreen() {
           <ChoiceGroup
             label="เรียงตาม"
             value={sort}
-            onChange={(v) => v && router.replace(withParam('sort', v === 'amount' ? null : v), { scroll: false })}
+            onChange={(v) => v && replaceUrl(withParam('sort', v === 'amount' ? null : v))}
             options={[
               { value: 'amount', label: 'ยอดมากสุด' },
               { value: 'age', label: 'ค้างนานสุด' },

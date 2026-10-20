@@ -75,12 +75,14 @@ describe('DashboardScreen', () => {
     expect(screen.getByText('กำลังโหลดยอดค้างชำระ…')).toBeInTheDocument()
   })
 
-  it('opens the edit dialog through the URL so the back button closes it', async () => {
+  it('opens the edit dialog through the URL so the back button closes it, with no server request', async () => {
+    const pushState = vi.spyOn(window.history, 'pushState')
     await renderScreen()
     fireEvent.click(screen.getAllByRole('button', { name: /แตะเพื่อแก้ไข/ })[0])
-    expect(nav.push).toHaveBeenCalledWith('/?edit=income%3A2', { scroll: false })
+    expect(pushState).toHaveBeenCalledWith(null, '', '/?edit=income%3A2')
+    expect(nav.push).not.toHaveBeenCalled()
+    pushState.mockRestore()
   })
-
   it('shows an error in the failing card only, never ฿0', async () => {
     load.loadDashboard.mockResolvedValue(data({ today: { ok: false, error: appError('NETWORK') } }))
     await renderScreen()

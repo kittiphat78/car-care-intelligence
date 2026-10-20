@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import { useToast } from '@/components/ui/Toast'
 import { toUserMessage } from '@/lib/errors'
+import { replaceUrl } from '@/lib/url-state'
 import { forgetCustomers } from '@/features/customers/memory'
 import { signOut } from '../api'
 import { clearLocalDrafts } from '../drafts'
@@ -30,7 +31,8 @@ export function LogoutDialog({ email }: { email: string }) {
     params.delete('logout')
     const query = params.toString()
     setError(null)
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
+    // In the browser only, so the dialog closes at once (lib/url-state.ts)
+    replaceUrl(query ? `${pathname}?${query}` : pathname)
   }
 
   async function confirm() {

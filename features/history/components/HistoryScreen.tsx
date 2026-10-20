@@ -1,7 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
+import { pushUrl, replaceUrl } from '@/lib/url-state'
 import { cn } from '@/lib/cn'
 import { bangkokParts, formatBangkok } from '@/lib/time/bangkok'
 import { toUserMessage } from '@/lib/errors'
@@ -39,7 +40,8 @@ import {
 } from '../logic'
 import { ExportDialog } from './ExportDialog'
 
-// screen-specifications.md §5 — /history. Everything that changes the view is in the URL.
+// screen-specifications.md §5 — /history. Everything that changes the view is in the URL,
+// changed in the browser only (lib/url-state.ts) so a filter or tab shows at once.
 
 const baht = (n: number) => `฿${n.toLocaleString('en-US')}`
 const SEARCH_DELAY_MS = 250
@@ -52,7 +54,6 @@ interface YearData {
 }
 
 export function HistoryScreen() {
-  const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const filters = useMemo(() => parseFilters(new URLSearchParams(searchParams.toString())), [searchParams])
@@ -67,9 +68,9 @@ export function HistoryScreen() {
       // Keep dialogs that are open (edit/export)
       for (const key of ['edit', 'export']) if (searchParams.has(key)) params.set(key, searchParams.get(key)!)
       const query = params.toString()
-      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
+      replaceUrl(query ? `${pathname}?${query}` : pathname)
     },
-    [filters, searchParams, router, pathname],
+    [filters, searchParams, pathname],
   )
 
   // Search: type freely, update the URL after a short pause (UF-HIST-01)
@@ -114,14 +115,14 @@ export function HistoryScreen() {
     if (open) {
       exportOpenedHere.current = true
       params.set('export', '1')
-      router.push(`${pathname}?${params.toString()}`, { scroll: false })
+      pushUrl(`${pathname}?${params.toString()}`)
     } else if (exportOpenedHere.current) {
       exportOpenedHere.current = false
-      router.back()
+      window.history.back()
     } else {
       params.delete('export')
       const q = params.toString()
-      router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false })
+      replaceUrl(q ? `${pathname}?${q}` : pathname)
     }
   }
 

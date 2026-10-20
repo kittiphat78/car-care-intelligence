@@ -10,6 +10,7 @@ import { PageHeader } from '@/components/patterns/PageHeader'
 import { useTheme } from '@/components/patterns/theme'
 import { envLabel } from '@/components/patterns/StatusBar'
 import { withLogoutParam } from '@/components/patterns/nav/items'
+import { pushOnPlainClick } from '@/lib/url-state'
 
 // screen-specifications.md §6 — /more
 
@@ -77,6 +78,8 @@ export function MoreScreen({ email }: { email: string }) {
 
       <Link
         href={withLogoutParam(pathname, searchParams.toString())}
+        onClick={pushOnPlainClick}
+        prefetch={false}
         scroll={false}
         className={buttonClassName({ variant: 'danger-ghost', fullWidth: true })}
       >
