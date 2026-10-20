@@ -3,7 +3,6 @@
 import Link from 'next/link'
 import { useEffect, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import { CAR_BRANDS, CAR_TYPES } from '@/types'
 import { formatBangkok } from '@/lib/time/bangkok'
 import { toUserMessage } from '@/lib/errors'
 import { reportAppError } from '@/lib/observability'
@@ -19,8 +18,8 @@ import { useOnline } from '@/components/patterns/StatusBar'
 import { deleteCustomer } from '../api'
 import { useCustomerDirectory, useUrlDialog } from '../hooks'
 import { dropCustomer, setOpenedFromList, wasOpenedFromList } from '../memory'
-import { formatPhone, primaryPhone, sortedPhones, sortedVehicles } from '../logic'
-import type { Customer, CustomerVehicle } from '../types'
+import { formatPhone, primaryPhone, sortedPhones, sortedVehicles, vehicleDetails } from '../logic'
+import type { Customer } from '../types'
 import { CallActions } from './CallButton'
 import { CustomerFormDialog } from './CustomerFormDialog'
 
@@ -28,13 +27,6 @@ import { CustomerFormDialog } from './CustomerFormDialog'
 // The id is a uuid, so no name or phone number appears in the URL or in server logs.
 
 const stamp = (at: string) => formatBangkok(at, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })
-const carTypeName = (id: string | null) => CAR_TYPES.find((t) => t.id === id)?.name ?? null
-const brandName = (id: string | null) => CAR_BRANDS.find((b) => b.id === id)?.name ?? null
-
-/** "รถกระบะ · TOYOTA · ขาว" */
-export function vehicleDetails(v: Pick<CustomerVehicle, 'car_type' | 'brand' | 'color'>): string {
-  return [carTypeName(v.car_type), brandName(v.brand), v.color].filter(Boolean).join(' · ')
-}
 
 export function CustomerDetailScreen({ id }: { id: string }) {
   const router = useRouter()

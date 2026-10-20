@@ -13,11 +13,11 @@ import {
 } from './logic'
 import type { Customer, CustomerDraft } from './types'
 
-// What save_customer (M011/M012) accepts, with the same limits as the CHECK rules of
+// What save_customer (M011-M013) accepts, with the same limits as the CHECK rules of
 // M010. checkCustomer() turns a form draft into this payload, or into one Thai message
 // per field (docs/features/customer-directory.md §5).
 
-export const LIMITS = { name: 50, note: 200, label: 30, plate: 20, code: 20, color: 30, vehicleNote: 200, phones: 20, vehicles: 50 } as const
+export const LIMITS = { name: 50, note: 200, label: 30, plate: 20, code: 20, model: 30, color: 30, vehicleNote: 200, phones: 20, vehicles: 50 } as const
 
 const optionalText = (max: number) => z.nullable(z.string().check(z.maxLength(max)))
 const trimmed = (s: string) => s === s.trim()
@@ -32,6 +32,7 @@ export const vehiclePayload = z.object({
   plate: z.string().check(z.minLength(1), z.maxLength(LIMITS.plate), z.refine((p) => p === normalizePlate(p) && plateKey(p).length > 0)),
   car_type: optionalText(LIMITS.code),
   brand: optionalText(LIMITS.code),
+  model: optionalText(LIMITS.model),
   color: optionalText(LIMITS.color),
   note: optionalText(LIMITS.vehicleNote),
 })
@@ -52,6 +53,7 @@ export const fieldId = {
   phone: (i: number) => `customer-phone-${i}`,
   phoneLabel: (i: number) => `customer-phone-label-${i}`,
   plate: (i: number) => `customer-plate-${i}`,
+  model: (i: number) => `customer-model-${i}`,
   color: (i: number) => `customer-color-${i}`,
   vehicleNote: (i: number) => `customer-vehicle-note-${i}`,
 }
@@ -117,9 +119,10 @@ export function checkCustomer(draft: CustomerDraft, { customers = [], selfId = n
       else if (owner && isFullPlate(core) && !moves.has(core)) add(fieldId.plate(i), label, `ทะเบียนนี้อยู่กับ ${owner.customer.name}`)
       seenCores.add(core)
     }
+    if (v.model.trim().length > LIMITS.model) add(fieldId.model(i), `รุ่น คันที่ ${i + 1}`, `ยาวเกิน ${LIMITS.model} ตัวอักษร`)
     if (v.color.trim().length > LIMITS.color) add(fieldId.color(i), `สี คันที่ ${i + 1}`, `ยาวเกิน ${LIMITS.color} ตัวอักษร`)
     if (v.note.trim().length > LIMITS.vehicleNote) add(fieldId.vehicleNote(i), `หมายเหตุ คันที่ ${i + 1}`, `ยาวเกิน ${LIMITS.vehicleNote} ตัวอักษร`)
-    vehicles.push({ plate, car_type: v.carType, brand: v.brand, color: emptyToNull(v.color), note: emptyToNull(v.note) })
+    vehicles.push({ plate, car_type: v.carType, brand: v.brand, model: emptyToNull(v.model), color: emptyToNull(v.color), note: emptyToNull(v.note) })
   })
   if (vehicles.length > LIMITS.vehicles) add(fieldId.plate(0), 'รถ', `ใส่ได้ไม่เกิน ${LIMITS.vehicles} คัน`)
 

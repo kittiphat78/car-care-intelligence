@@ -184,6 +184,7 @@ function CustomerCard({ result: { customer, match }, onOpen }: { result: SearchR
         {cars.first && (
           <span className="truncate text-body text-text-secondary">
             {cars.first}
+            {cars.make && ` · ${cars.make}`}
             {cars.more > 0 && ` · +${cars.more} คัน`}
           </span>
         )}
@@ -213,6 +214,9 @@ function CustomerTable({ results, onOpen }: { results: readonly SearchResult[]; 
               รถ
             </th>
             <th scope="col" className={th}>
+              ยี่ห้อ / รุ่น
+            </th>
+            <th scope="col" className={th}>
               เบอร์หลัก
             </th>
           </tr>
@@ -235,8 +239,9 @@ function CustomerTable({ results, onOpen }: { results: readonly SearchResult[]; 
                 </td>
                 <td className={cn(td, 'text-text-secondary')}>
                   {cars.first ?? '—'}
-                  {cars.more > 0 && ` +${cars.more} คัน`}
+                  {cars.more > 0 && <span className="text-caption text-text-tertiary"> +{cars.more} คัน</span>}
                 </td>
+                <td className={cn(td, 'text-text-secondary')}>{cars.make || '—'}</td>
                 <td className={td}>
                   {phone ? (
                     <>

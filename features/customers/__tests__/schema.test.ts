@@ -26,6 +26,7 @@ const other: Customer = {
     plate_core: plateCore(plate),
     car_type: null,
     brand: null,
+    model: null,
     color: null,
     note: null,
     position: i,
@@ -39,7 +40,7 @@ describe('checkCustomer', () => {
         name: '  ทดสอบ เต็นท์ A ',
         note: ' ',
         phones: [phone('080-000-0001', ' เจ้าของ '), phone(''), phone('053 123 456', '', false)],
-        vehicles: [vehicle(' 1กข 1234 ', { carType: 'pickup', brand: 'toyota', color: ' ขาว ' }), vehicle('')],
+        vehicles: [vehicle(' 1กข 1234 ', { carType: 'pickup', brand: 'toyota', model: ' Hilux Revo ', color: ' ขาว ' }), vehicle('')],
       }),
     )
     expect(result).toEqual({
@@ -51,7 +52,7 @@ describe('checkCustomer', () => {
           { number: '0800000001', label: 'เจ้าของ', is_primary: true },
           { number: '053123456', label: null, is_primary: false },
         ],
-        vehicles: [{ plate: '1กข 1234', car_type: 'pickup', brand: 'toyota', color: 'ขาว', note: null }],
+        vehicles: [{ plate: '1กข 1234', car_type: 'pickup', brand: 'toyota', model: 'Hilux Revo', color: 'ขาว', note: null }],
       },
     })
     if (result.ok) expect(customerPayload.safeParse(result.data).success).toBe(true)
@@ -72,7 +73,7 @@ describe('checkCustomer', () => {
         name: ' ',
         note: 'ก'.repeat(201),
         phones: [phone('0812'), phone('', 'มีป้ายแต่ไม่มีเบอร์'), phone('0800000001', 'ก'.repeat(31))],
-        vehicles: [vehicle('', { color: 'แดง' }), vehicle('ก'.repeat(21))],
+        vehicles: [vehicle('', { color: 'แดง' }), vehicle('ก'.repeat(21), { model: 'ก'.repeat(31) })],
       }),
     )
     expect(result.ok).toBe(false)
@@ -84,6 +85,7 @@ describe('checkCustomer', () => {
       ['customer-phone-label-2', 'ยาวเกิน 30 ตัวอักษร'],
       ['customer-plate-0', 'กรุณากรอกทะเบียน'],
       ['customer-plate-1', 'ทะเบียนยาวเกิน 20 ตัวอักษร'],
+      ['customer-model-1', 'ยาวเกิน 30 ตัวอักษร'],
       ['customer-note', 'หมายเหตุยาวเกิน 200 ตัวอักษร'],
     ])
   })

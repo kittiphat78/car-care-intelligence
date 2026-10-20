@@ -188,8 +188,11 @@ test('CUJ: customer directory: add 2 numbers, find by part of a number, call, ed
   await form.getByRole('button', { name: 'เพิ่มเบอร์' }).click()
   await form.getByRole('textbox', { name: 'เบอร์ 2' }).fill('080-000-0002')
   await form.getByRole('textbox', { name: 'ทะเบียน' }).fill(plate)
+  await form.getByLabel('ยี่ห้อ').selectOption('toyota')
+  await form.getByRole('textbox', { name: 'รุ่น' }).fill('Vios')
   await form.getByRole('button', { name: 'บันทึก', exact: true }).click()
   await expect(toast(page, `เพิ่มลูกค้า ${name} แล้ว`)).toBeVisible()
+  await expect(page.getByText('TOYOTA Vios', { exact: true })).toBeVisible()
   await expect(page.getByRole('heading', { level: 1, name })).toBeVisible()
   await expect(page.getByRole('link', { name: `โทร 080-000-0001 ${name}` })).toHaveAttribute('href', 'tel:0800000001')
 
@@ -198,6 +201,7 @@ test('CUJ: customer directory: add 2 numbers, find by part of a number, call, ed
   await page.getByRole('searchbox', { name: 'ค้นหาชื่อ เบอร์ หรือทะเบียน' }).fill(plate.replace(' ', ''))
   const row = page.locator('li, tr').filter({ has: page.getByRole('link', { name: new RegExp(`^${name}`) }) })
   await expect(row.getByText(`ตรงกับ: ทะเบียน ${plate}`)).toBeVisible()
+  await expect(row.getByText(/TOYOTA Vios/)).toBeVisible()
   await row.getByRole('link', { name: new RegExp(`^${name}`) }).click()
 
   await page.getByRole('button', { name: 'แก้ไข', exact: true }).click()
@@ -237,6 +241,10 @@ test('CUJ: export Excel, every page loads, no console errors, accessible, fits 3
     await page.goto(path)
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
     await page.waitForFunction(() => !document.querySelector('[aria-busy="true"]'), null, { timeout: 30000 }).catch(() => {})
+    // A dialog opened by the URL (?new=1) slides in; its colours are a blend until it stops
+    await page
+      .waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running' || a.effect?.getTiming().iterations === Infinity), null, { timeout: 5000 })
+      .catch(() => {})
     const wide = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)
     if (wide > 0) issues.push(`${path}: ${wide}px too wide`)
     const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22a', 'wcag22aa']).options({ rules: { 'label-content-name-mismatch': { enabled: true } } }).analyze()

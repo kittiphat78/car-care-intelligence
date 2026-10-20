@@ -1,3 +1,4 @@
+import { CAR_BRANDS, CAR_TYPES } from '@/types'
 import type { Customer, CustomerDraft, CustomerPhone, CustomerVehicle, PhoneDraft, VehicleDraft } from './types'
 
 // Pure rules of the customer directory (docs/features/customer-directory.md §5).
@@ -92,10 +93,23 @@ export function primaryPhone(customer: Pick<Customer, 'customer_phones'>): Custo
   return phones.find((p) => p.is_primary) ?? phones[0] ?? null
 }
 
-/** "1กข 1234" and how many more ("+2 คัน") */
-export function vehicleSummary(customer: Pick<Customer, 'customer_vehicles'>): { first: string | null; more: number } {
+export const carTypeName = (id: string | null) => CAR_TYPES.find((t) => t.id === id)?.name ?? null
+export const brandName = (id: string | null) => CAR_BRANDS.find((b) => b.id === id)?.name ?? null
+
+/** "TOYOTA Vios" · "TOYOTA" · "Vios" · "" (brand and model, either may be missing) */
+export function vehicleMake(v: Pick<CustomerVehicle, 'brand' | 'model'>): string {
+  return [brandName(v.brand), v.model].filter(Boolean).join(' ')
+}
+
+/** "รถกระบะ · TOYOTA Vios · ขาว" */
+export function vehicleDetails(v: Pick<CustomerVehicle, 'car_type' | 'brand' | 'model' | 'color'>): string {
+  return [carTypeName(v.car_type), vehicleMake(v), v.color].filter(Boolean).join(' · ')
+}
+
+/** The first vehicle ("1กข 1234", "TOYOTA Vios") and how many more ("+2 คัน") */
+export function vehicleSummary(customer: Pick<Customer, 'customer_vehicles'>): { first: string | null; make: string; more: number } {
   const vehicles = sortedVehicles(customer)
-  return { first: vehicles[0]?.plate ?? null, more: Math.max(0, vehicles.length - 1) }
+  return { first: vehicles[0]?.plate ?? null, make: vehicles[0] ? vehicleMake(vehicles[0]) : '', more: Math.max(0, vehicles.length - 1) }
 }
 
 // ── Search ───────────────────────────────────────────────────────────────────
@@ -211,7 +225,7 @@ let keySeq = 0
 export const rowKey = () => `row-${Date.now().toString(36)}-${(keySeq++).toString(36)}`
 
 export const emptyPhone = (isPrimary = false): PhoneDraft => ({ key: rowKey(), number: '', label: '', isPrimary })
-export const emptyVehicle = (): VehicleDraft => ({ key: rowKey(), plate: '', carType: null, brand: null, color: '', note: '' })
+export const emptyVehicle = (): VehicleDraft => ({ key: rowKey(), plate: '', carType: null, brand: null, model: '', color: '', note: '' })
 
 /** A new customer: one empty phone and one empty vehicle, ready to type */
 export function emptyDraft(): CustomerDraft {
@@ -245,6 +259,7 @@ export function draftFromCustomer(customer: Customer): CustomerDraft {
       plate: v.plate,
       carType: v.car_type,
       brand: v.brand,
+      model: v.model ?? '',
       color: v.color ?? '',
       note: v.note ?? '',
     })),
@@ -255,7 +270,7 @@ export function draftFromCustomer(customer: Customer): CustomerDraft {
 export const isBlankPhone = (p: PhoneDraft) => p.number.trim() === '' && p.label.trim() === ''
 /** A vehicle row with nothing typed is ignored when saving */
 export const isBlankVehicle = (v: VehicleDraft) =>
-  v.plate.trim() === '' && !v.carType && !v.brand && v.color.trim() === '' && v.note.trim() === ''
+  v.plate.trim() === '' && !v.carType && !v.brand && v.model.trim() === '' && v.color.trim() === '' && v.note.trim() === ''
 
 /** Comparable form of a draft (changes to the order of keys or blank rows do not count) */
 export function draftSignature(draft: CustomerDraft): string {
@@ -265,6 +280,6 @@ export function draftSignature(draft: CustomerDraft): string {
     phones: draft.phones.filter((p) => !isBlankPhone(p)).map((p) => [normalizePhone(p.number), p.label.trim(), p.isPrimary]),
     vehicles: draft.vehicles
       .filter((v) => !isBlankVehicle(v))
-      .map((v) => [normalizePlate(v.plate), v.carType, v.brand, v.color.trim(), v.note.trim()]),
+      .map((v) => [normalizePlate(v.plate), v.carType, v.brand, v.model.trim(), v.color.trim(), v.note.trim()]),
   })
 }

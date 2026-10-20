@@ -82,6 +82,7 @@ test('customer directory: add 2 numbers and 2 vehicles, find, call, edit, delete
   await form.getByRole('textbox', { name: 'ทะเบียน' }).fill(plate1)
   await form.getByRole('radio', { name: 'รถกระบะ' }).click()
   await form.getByLabel('ยี่ห้อ').selectOption('toyota')
+  await form.getByRole('textbox', { name: 'รุ่น' }).fill('Hilux Revo')
   await form.getByRole('textbox', { name: 'สี' }).fill('ขาว')
   await form.getByRole('button', { name: 'เพิ่มรถ' }).click()
   await form.getByRole('textbox', { name: 'ทะเบียน' }).nth(1).fill(plate2)
@@ -95,7 +96,7 @@ test('customer directory: add 2 numbers and 2 vehicles, find, call, edit, delete
   await expect(page.getByRole('link', { name: `โทร 080-000-0001 ${name}` })).toHaveAttribute('href', 'tel:0800000001')
   await expect(page.getByRole('link', { name: `โทร 080-000-0002 ${name}` })).toHaveAttribute('href', 'tel:0800000002')
   await expect(page.getByText(plate1, { exact: true })).toBeVisible()
-  await expect(page.getByText('รถกระบะ · TOYOTA · ขาว')).toBeVisible()
+  await expect(page.getByText('รถกระบะ · TOYOTA Hilux Revo · ขาว')).toBeVisible()
   await expectAccessible(page, info, 'customer page')
 
   // Back to the list: the search is still there (AC-02-4)
@@ -112,6 +113,8 @@ test('customer directory: add 2 numbers and 2 vehicles, find, call, edit, delete
     await search.fill(query)
     await expect(rowOf(page, name).getByText(match)).toBeVisible()
   }
+  // Brand and model of the first vehicle are on the list (M013)
+  await expect(rowOf(page, name).getByText(/TOYOTA Hilux Revo/)).toBeVisible()
   // The call button dials the main number (AC-03-1)
   await expect(rowOf(page, name).getByRole('link', { name: `โทร 080-000-0001 ${name}` })).toHaveAttribute('href', 'tel:0800000001')
 

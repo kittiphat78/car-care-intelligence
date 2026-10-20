@@ -1,4 +1,4 @@
-// Customer directory rows as PostgREST returns them (M010, M012) and the form's draft.
+// Customer directory rows as PostgREST returns them (M010, M012, M013) and the form's draft.
 // docs/features/customer-directory.md §4
 
 export interface CustomerPhone {
@@ -22,6 +22,8 @@ export interface CustomerVehicle {
   car_type: string | null
   /** Id from CAR_BRANDS */
   brand: string | null
+  /** Free text, e.g. "Vios" (M013) */
+  model: string | null
   color: string | null
   note: string | null
   position: number
@@ -52,6 +54,7 @@ export interface VehicleDraft {
   plate: string
   carType: string | null
   brand: string | null
+  model: string
   color: string
   note: string
 }

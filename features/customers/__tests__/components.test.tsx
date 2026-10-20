@@ -33,6 +33,7 @@ const vehicle = (id: string, plate: string, position = 0): CustomerVehicle => ({
   plate_core: plateCore(plate),
   car_type: null,
   brand: null,
+  model: null,
   color: null,
   note: null,
   position,
@@ -54,7 +55,7 @@ const A = customer(
   'a',
   'ทดสอบ เต็นท์ A',
   [phone('p1', '0800000001', { is_primary: true, label: 'เจ้าของ' }), phone('p2', '0800000002', { position: 1, label: 'เซลส์' })],
-  [vehicle('v1', '1กข 1234'), vehicle('v2', '2ขค 5678', 1), vehicle('v3', '3คง 9', 2)],
+  [{ ...vehicle('v1', '1กข 1234'), car_type: 'pickup', brand: 'toyota', model: 'Hilux Revo' }, vehicle('v2', '2ขค 5678', 1), vehicle('v3', '3คง 9', 2)],
 )
 const B = customer('b', 'ทดสอบ คุณบี', [phone('p3', '0800000003', { is_primary: true })], [vehicle('v4', '4จฉ 1111'), vehicle('v5', '7777', 1)])
 
@@ -163,6 +164,7 @@ describe('CustomerFormDialog', () => {
     type('ทะเบียน', '5ชซ 2222')
     fireEvent.click(screen.getByRole('radio', { name: 'รถกระบะ' }))
     fireEvent.change(screen.getByLabelText('ยี่ห้อ'), { target: { value: 'toyota' } })
+    type('รุ่น', ' Hilux Revo ')
     await press('เพิ่มรถ')
     fireEvent.change(screen.getAllByRole('textbox', { name: 'ทะเบียน' })[1], { target: { value: '6ญฎ 3333' } })
 
@@ -179,8 +181,8 @@ describe('CustomerFormDialog', () => {
         { number: '0800000006', label: null, is_primary: true },
       ],
       vehicles: [
-        { plate: '5ชซ 2222', car_type: 'pickup', brand: 'toyota', color: null, note: null },
-        { plate: '6ญฎ 3333', car_type: null, brand: null, color: null, note: null },
+        { plate: '5ชซ 2222', car_type: 'pickup', brand: 'toyota', model: 'Hilux Revo', color: null, note: null },
+        { plate: '6ญฎ 3333', car_type: null, brand: null, model: null, color: null, note: null },
       ],
     })
     expect(options).toEqual({ id: null, expectedUpdatedAt: null, requestId: expect.any(String), moves: [] })
@@ -325,7 +327,8 @@ describe('CustomersScreen', () => {
     await renderList()
     expect(screen.getByRole('link', { name: /^ทดสอบ เต็นท์ A/ })).toHaveAttribute('href', '/customers/a')
     expect(screen.getByRole('link', { name: 'โทร 080-000-0001 ทดสอบ เต็นท์ A' })).toHaveAttribute('href', 'tel:0800000001')
-    expect(screen.getByText('1กข 1234 · +2 คัน')).toBeInTheDocument()
+    // The first vehicle with its brand and model (owner request, M013)
+    expect(screen.getByText('1กข 1234 · TOYOTA Hilux Revo · +2 คัน')).toBeInTheDocument()
   })
 
   it.each([
@@ -435,6 +438,7 @@ describe('CustomerDetailScreen', () => {
     expect(screen.getAllByRole('button', { name: /คัดลอกเบอร์/ })).toHaveLength(2)
     expect(screen.getByText('เบอร์หลัก')).toBeInTheDocument()
     for (const plate of ['1กข 1234', '2ขค 5678', '3คง 9']) expect(screen.getByText(plate)).toBeInTheDocument()
+    expect(screen.getByText('รถกระบะ · TOYOTA Hilux Revo')).toBeInTheDocument()
   })
 
   it('says when the customer does not exist (AC-05-2)', async () => {
