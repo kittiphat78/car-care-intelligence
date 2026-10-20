@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { bangkokToday } from '@/lib/time/bangkok'
 import { toUserMessage } from '@/lib/errors'
@@ -13,11 +13,14 @@ import { SkeletonCard, SkeletonGroup } from '@/components/ui/Skeleton'
 import { useToast } from '@/components/ui/Toast'
 import { EmptyState, ErrorState } from '@/components/patterns/EmptyState'
 import { useOnline } from '@/components/patterns/StatusBar'
+import { CustomerFormDialog } from '@/features/customers/components/CustomerFormDialog'
+import { DebtContact } from '@/features/customers/components/DebtContact'
+import { useCustomerDirectory, useUrlDialog } from '@/features/customers/hooks'
 import { EditRecordDialog } from '@/features/records/components/EditRecordDialog'
 import { useEditParam } from '@/features/records/useEditParam'
 import type { Record as AppRecord } from '@/types'
 import { listUnpaid } from '../api'
-import { debtTotals, groupDebts, sortDebts, type DebtGroup, type DebtSort } from '../logic'
+import { UNNAMED_KEY, debtTotals, groupDebts, sortDebts, type DebtGroup, type DebtSort } from '../logic'
 import { DebtCustomerCard } from './DebtCustomerCard'
 import { SettleDialog } from './SettleDialog'
 
@@ -47,10 +50,20 @@ export function DebtsScreen() {
     void load()
   }, [load])
 
-  /** Reload this page and the nav badge (rendered by the server layout) */
+  // The nav badge comes from the server layout, so it needs router.refresh(). Not while
+  // the settle dialog is closing: a refresh sent then is for the old /debts?settle= URL,
+  // and when Safari (WebKit) cancels it because the page is left, Next.js replays it as a
+  // full page load of that URL, taking the user back to /debts?settle= (D-12). So the
+  // refresh waits until ?settle= has left the URL. aria-busy says the page is updating.
+  const [refreshing, startRefresh] = useTransition()
+  const [refreshAfterClose, setRefreshAfterClose] = useState(false)
+  const settleOpen = useRef(false)
+
+  /** Reload this page and the nav badge */
   const reload = useCallback(() => {
     void load()
-    router.refresh()
+    if (settleOpen.current) setRefreshAfterClose(true)
+    else startRefresh(() => router.refresh())
   }, [load, router])
 
   const sort: DebtSort = searchParams.get('sort') === 'age' ? 'age' : 'amount'
@@ -58,6 +71,11 @@ export function DebtsScreen() {
   const totals = debtTotals(groups)
   const records = unpaid?.ok ? unpaid.data : []
   const edit = useEditParam({ income: records, ready: unpaid !== null })
+
+  // Customer directory: a call button on each card (US-10), "เพิ่มเบอร์" when not in it yet
+  const directory = useCustomerDirectory()
+  const addCustomer = useUrlDialog('customer')
+  const [addFor, setAddFor] = useState<DebtGroup | null>(null)
 
   // ── URL helpers ──
   const withParam = (key: string, value: string | null) => {
@@ -70,6 +88,14 @@ export function DebtsScreen() {
 
   const settleKey = searchParams.get('settle')
   const settling = settleKey ? (groups.find((g) => g.key === settleKey) ?? null) : null
+
+  useEffect(() => {
+    settleOpen.current = settleKey !== null
+    if (settleKey !== null || !refreshAfterClose) return
+    // The dialog has closed: now refresh for /debts
+    setRefreshAfterClose(false)
+    startRefresh(() => router.refresh())
+  }, [settleKey, refreshAfterClose, router])
 
   function openSettle(g: DebtGroup) {
     settleOpenedHere.current = true
@@ -100,7 +126,7 @@ export function DebtsScreen() {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 pb-4">
+    <div aria-busy={refreshing || refreshAfterClose || undefined} className="grid grid-cols-1 gap-4 pb-4">
       <header className="flex flex-wrap items-end justify-between gap-3 pt-6">
         <div className="min-w-0">
           <h1 className="text-title text-text">ค้างชำระ</h1>
@@ -158,6 +184,17 @@ export function DebtsScreen() {
               onBill={(group) => void bill(group)}
               onSettle={openSettle}
               onOpenRow={(r) => edit.open('income', r.id)}
+              contact={
+                <DebtContact
+                  name={g.key === UNNAMED_KEY ? null : g.name}
+                  plates={g.plates}
+                  customers={directory.customers}
+                  onAdd={() => {
+                    setAddFor(g)
+                    addCustomer.open('new')
+                  }}
+                />
+              }
             />
           ))}
         </div>
@@ -165,6 +202,19 @@ export function DebtsScreen() {
 
       <SettleDialog group={settling} onClose={closeSettle} onSettled={reload} />
       <EditRecordDialog target={edit.target} onClose={edit.close} onChanged={reload} />
+      <CustomerFormDialog
+        open={addCustomer.value === 'new' && directory.customers !== null}
+        customer={null}
+        start={addFor ? { name: addFor.name, plates: addFor.plates } : undefined}
+        customers={directory.customers ?? []}
+        userId={null}
+        onClose={addCustomer.close}
+        onReload={() => void directory.reload()}
+        onSaved={() => {
+          addCustomer.close()
+          void directory.reload()
+        }}
+      />
     </div>
   )
 }

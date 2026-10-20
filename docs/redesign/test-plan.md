@@ -39,7 +39,7 @@
 |---|---|---|---|
 | 1 | Static analysis | `tsc --noEmit` (strict), ESLint `--max-warnings=0`, CI `secrets` (git grep หา key) | 0 error, 0 warning |
 | 2 | Unit | Vitest 31 ไฟล์ (`**/__tests__/*`) รวม test เวลาไทยที่บังคับ TZ เอง (Bangkok/UTC/New York) | ผ่านทั้งหมด |
-| 3 | Integration | Vitest ที่ประกอบหลายส่วน (screen + data layer mock), SQL tests 5 ไฟล์บน Postgres จริง (`supabase/tests/*.test.sql`) | ผ่านทั้งหมด |
+| 3 | Integration | Vitest ที่ประกอบหลายส่วน (screen + data layer mock), SQL tests บน Postgres จริง (`supabase/tests/*.test.sql`: 5 ไฟล์เดิม + `customers.test.sql` ตั้งแต่ v2.2.0 ซึ่งตรวจ RLS 3 บัญชี, กฎข้อมูล, ทะเบียนซ้ำ/ย้ายรถ, cascade และ `save_customer` ที่ล้มกลางทางต้องไม่เหลือข้อมูล) | ผ่านทั้งหมด |
 | 4 | E2E | Playwright `e2e/cuj.spec.ts` (CUJ-1…8) บน production build (`next start`) + Supabase ในเครื่อง | ผ่านทั้งหมด ทั้ง phone/desktop และนิ่ง (รันซ้ำหลายรอบ) |
 | 5 | Regression | `regression-report.md` จับคู่ F-01…F-40 กับ test · test ใหม่ `e2e/regression.spec.ts` สำหรับฟีเจอร์ที่ยังไม่มี test | ทุกฟีเจอร์ที่ยังอยู่มี test ที่ผ่าน หรือบันทึกเหตุผลที่รันไม่ได้ |
 | 6 | Authentication / Authorization | unit (`proxy`, layout guard, login, logout, redirect) + `e2e/security.spec.ts` (redirect ทุกหน้า, open redirect) | หน้าที่ต้อง login ส่งไป `/login?next=` ทุกหน้า, `next` ไปเว็บอื่นไม่ได้ |
@@ -61,6 +61,13 @@
 | CUJ-6 | ค้นหาในประวัติ → แก้ราคา → ลบ | `cuj.spec.ts` |
 | CUJ-7 | ส่งออก Excel ของเดือน | `cuj.spec.ts` |
 | CUJ-8 | ออกจากระบบแบบมีการยืนยัน | `cuj.spec.ts` |
+| CUJ-9 (v2.2.0) | ค้นไม่เจอ → เพิ่มลูกค้า (เติมชื่อจากคำค้น) 2 เบอร์ 2 คัน → หน้าลูกค้า (`tel:` ถูก) → กลับรายชื่อ (คำค้นยังอยู่) → ค้นชื่อ/เบอร์บางส่วน/ทะเบียนบางส่วน → แก้ (ชื่อ, ลบรถ 1 คัน) → ลบ (ยืนยันบอกจำนวน + "ประวัติการล้างรถไม่ถูกลบ") · axe รายชื่อ/ฟอร์ม/หน้าลูกค้า · ไม่มี console error · **ไม่มี request ไป server ที่มีคำค้น** | `customers.spec.ts` |
+| CUJ-11 (v2.2.0) | ลูกค้ามีเบอร์ + ทะเบียน → หน้าบันทึกพิมพ์ทะเบียน (แบบมีขีด) → "ลูกค้า: …" ไม่เติมเอง → "ใช้ชื่อนี้" → บันทึกค้างชำระ → การ์ดค้างชำระมี "โทร 080-…" (`tel:` ถูก) · axe หน้าค้างชำระ | `customers.spec.ts` |
+| CUJ-12 (v2.2.0) | บันทึกแล้วทำต่อด้วยชื่อ + ทะเบียนใหม่ → toast "บันทึกเป็นลูกค้า" → ฟอร์มเติมชื่อ/ทะเบียน → ใส่เบอร์ → บันทึก (อยู่หน้าเดิม) | `customers.spec.ts` |
+| CUJ-13 (v2.2.0) | รายการ 2 รายการ (ทะเบียนเต็มแบบมีขีด, เลขล้วนค้างชำระ) → เพิ่มลูกค้าที่มีทะเบียนนั้น → การ์ดประวัติ "2 ครั้ง" "฿300" "฿200 (1 รายการ)" "ตรงแค่ตัวเลข" → แตะรายการ → dialog แก้ไขรายรับ · axe | `customers.spec.ts` + SQL `customers.test.sql` §9b |
+| CUJ-10 (v2.2.0) | ทะเบียนเต็มของลูกค้า B (พิมพ์ต่างรูปแบบ + จังหวัด) → "ทะเบียนนี้อยู่กับ B" → ย้ายรถ → B ไม่มีรถแล้ว | `customers.spec.ts` |
+
+สมุดรายชื่อลูกค้ายังเพิ่มใน spec เดิม: `ui-quality.spec.ts` (320 px ของ `/customers` และฟอร์มเพิ่ม, axe ธีมสว่าง), `security.spec.ts` (RLS 3 ตาราง + `save_customer`, redirect, CSP ของหน้าลูกค้าและฟอร์ม) · unit/component: `features/customers/__tests__/` (logic, schema, components: ฟอร์ม Enter/ออฟไลน์/draft/ทะเบียนซ้ำ+ย้าย/ชนกัน, รายชื่อค้นหา+URL, หน้าลูกค้า+ลบ, ปุ่มโทร/คัดลอก), `lib/__tests__/observability.test.ts` (ตัดเบอร์ทุกรูปแบบออกจากรายงาน error)
 
 ## 5. ไม่อยู่ในขอบเขต Step 08
 

@@ -18,11 +18,25 @@ export function uniquePlate(info: TestInfo, tag: string): string {
 }
 
 /**
+ * Wait until entrance animations (a dialog sliding in) have finished: measured halfway,
+ * a button's colours are a blend and fail the contrast check although they pass once
+ * shown. Endless animations (spinner, skeleton) are ignored.
+ */
+export async function animationsDone(page: Page) {
+  await page
+    .waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running' || a.effect?.getTiming().iterations === Infinity), null, {
+      timeout: 5000,
+    })
+    .catch(() => {})
+}
+
+/**
  * WCAG 2.2 A/AA checks (accessibility-guidelines.md §7), plus Label in Name (2.5.3),
  * which axe keeps off by default as experimental (Step 09 A-01). Serious and critical
  * problems fail the test; the rest are attached to the report.
  */
 export async function expectAccessible(page: Page, info: TestInfo, name: string) {
+  await animationsDone(page)
   const result = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22a', 'wcag22aa'])
     .options({ rules: { 'label-content-name-mismatch': { enabled: true } } })

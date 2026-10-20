@@ -42,7 +42,8 @@ const KNOWN = [
   /due to access control checks/,
 ]
 
-const tag = (info: TestInfo) => `RC${info.project.name[0].toUpperCase()}${Date.now() % 100000}`
+// Always 5 digits: a shorter number made a plate like "ฮข D801", which is not a plate shape
+const tag = (info: TestInfo) => `RC${info.project.name[0].toUpperCase()}${String(Date.now() % 100000).padStart(5, '0')}`
 
 /** Every Supabase request of the page must go to staging, never production */
 function watchDatabase(page: Page) {
@@ -162,6 +163,9 @@ test('CUJ: unpaid job → debts → bill PDF → settle', async ({ page }, info)
   await page.getByRole('alertdialog', { name: `เคลียร์ยอด ${customer}?` }).getByRole('button', { name: 'เคลียร์ยอด', exact: true }).click()
   await expect(toast(page, `เคลียร์ยอด ${customer} ฿444 แล้ว`)).toBeVisible()
   await expect(page).not.toHaveURL(/settle=/)
+  // The page refreshes the nav badge after the dialog closed (D-12); leave once that is done
+  await expect(page.locator('[aria-busy="true"]')).toHaveCount(0)
+  await expect(page).not.toHaveURL(/settle=/)
   // Clean up: delete the settled record
   await page.goto(`/history?q=${encodeURIComponent(plate)}`)
   await page.getByRole('button', { name: new RegExp(plate) }).click()
@@ -169,6 +173,86 @@ test('CUJ: unpaid job → debts → bill PDF → settle', async ({ page }, info)
   await page.getByRole('button', { name: 'ลบรายการ' }).click()
   await expect(page.getByText(`ไม่พบรายการที่ตรงกับ “${plate}”`)).toBeVisible()
   db()
+})
+
+test('CUJ: customer directory: add, find, call, edit; plate hint on /add; call from debts; history; delete (v2.2.0)', async ({ page }, info) => {
+  const id = tag(info)
+  const name = `ทดสอบ ${id}`
+  // A full plate is unique in the directory: letters per project, digits per run
+  const plate = `${{ phone: 'ฮก', desktop: 'ฮข', iphone: 'ฮค' }[info.project.name] ?? 'ฮฆ'} ${id.slice(-4)}`
+  const db = watchDatabase(page)
+  const problems = watchConsole(page)
+  await signIn(page)
+  await page.goto('/customers')
+  await page.waitForFunction(() => !document.querySelector('[aria-busy="true"]'), null, { timeout: 30000 }).catch(() => {})
+  await page.getByRole('button', { name: 'เพิ่มลูกค้า' }).first().click()
+  const form = page.getByRole('dialog', { name: 'เพิ่มลูกค้า' })
+  await form.getByRole('textbox', { name: /ชื่อลูกค้า/ }).fill(name)
+  await form.getByRole('textbox', { name: 'เบอร์', exact: true }).fill('080-000-0001')
+  await form.getByRole('button', { name: 'เพิ่มเบอร์' }).click()
+  await form.getByRole('textbox', { name: 'เบอร์ 2' }).fill('080-000-0002')
+  await form.getByRole('textbox', { name: 'ทะเบียน' }).fill(plate)
+  await form.getByLabel('ยี่ห้อ').selectOption('toyota')
+  await form.getByRole('textbox', { name: 'รุ่น' }).fill('Vios')
+  await form.getByRole('button', { name: 'บันทึก', exact: true }).click()
+  await expect(toast(page, `เพิ่มลูกค้า ${name} แล้ว`)).toBeVisible()
+  await expect(page.getByText('TOYOTA Vios', { exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name })).toBeVisible()
+  await expect(page.getByRole('link', { name: `โทร 080-000-0001 ${name}` })).toHaveAttribute('href', 'tel:0800000001')
+
+  // Find by part of the plate (the number is shared by every test customer)
+  await page.goto('/customers')
+  await page.getByRole('searchbox', { name: 'ค้นหาชื่อ เบอร์ หรือทะเบียน' }).fill(plate.replace(' ', ''))
+  const row = page.locator('li, tr').filter({ has: page.getByRole('link', { name: new RegExp(`^${name}`) }) })
+  await expect(row.getByText(`ตรงกับ: ทะเบียน ${plate}`)).toBeVisible()
+  await expect(row.getByText(/TOYOTA Vios/)).toBeVisible()
+  await row.getByRole('link', { name: new RegExp(`^${name}`) }).click()
+
+  await page.getByRole('button', { name: 'แก้ไข', exact: true }).click()
+  const edit = page.getByRole('dialog', { name: 'แก้ไขลูกค้า' })
+  await edit.getByRole('textbox', { name: 'เบอร์ 2' }).fill('080-000-0003')
+  await edit.getByRole('button', { name: 'บันทึก', exact: true }).click()
+  await expect(toast(page, 'บันทึกการแก้ไขแล้ว')).toBeVisible()
+  await expect(page.getByRole('link', { name: `โทร 080-000-0003 ${name}` })).toBeVisible()
+
+  // Phase 3: /add names the customer of a plate; the debts card calls them
+  await page.goto('/add')
+  await page.getByLabel(/^ป้ายทะเบียน/).fill(plate)
+  await expect(page.getByText(`ลูกค้า: ${name}`)).toBeVisible()
+  await page.getByRole('button', { name: `ใช้ชื่อนี้ ${name}` }).click()
+  await page.getByLabel(/^ป้ายทะเบียน/).fill(id) // a plate the clean-up step knows
+  await page.getByRole('radio', { name: 'รถเก๋ง' }).click()
+  await page.getByLabel(/^ราคา \(บาท\)/).fill('1')
+  await page.getByRole('radio', { name: 'ค้างชำระ' }).click()
+  await page.getByRole('button', { name: 'บันทึก', exact: true }).click()
+  await expect(page).toHaveURL('/')
+  await page.goto('/debts')
+  await expect(page.getByRole('article', { name }).getByRole('link', { name: `โทร 080-000-0001 ${name}` })).toHaveAttribute('href', 'tel:0800000001')
+  // Phase 3b: the customer page counts the job (matched by the name)
+  await page.goto('/customers')
+  await page.getByRole('searchbox').fill(name)
+  await row.getByRole('link', { name: new RegExp(`^${name}`) }).click()
+  const history = page.getByRole('region', { name: 'ประวัติการมาใช้บริการ' })
+  await expect(history).toContainText('1 ครั้ง')
+  await expect(history).toContainText('฿1 (1 รายการ)')
+  await page.goto(`/history?q=${encodeURIComponent(id)}`)
+  await page.getByRole('button', { name: new RegExp(id) }).click()
+  await page.getByRole('dialog', { name: 'แก้ไขรายรับ' }).getByRole('button', { name: 'ลบ', exact: true }).click()
+  await page.getByRole('button', { name: 'ลบรายการ' }).click()
+  await expect(page.getByText(`ไม่พบรายการที่ตรงกับ “${id}”`)).toBeVisible()
+  await page.goto('/customers')
+  await page.getByRole('searchbox').fill(name)
+  await row.getByRole('link', { name: new RegExp(`^${name}`) }).click()
+
+  await page.getByRole('button', { name: 'ลบลูกค้า' }).click()
+  const confirm = page.getByRole('alertdialog', { name: `ลบ ${name}?` })
+  await expect(confirm).toContainText('ประวัติการล้างรถไม่ถูกลบ')
+  await confirm.getByRole('button', { name: 'ลบลูกค้า' }).click()
+  await expect(toast(page, `ลบ ${name} แล้ว`)).toBeVisible()
+  await page.getByRole('searchbox').fill(name)
+  await expect(page.getByText(`ไม่พบ “${name}”`)).toBeVisible()
+  db()
+  expect(problems, 'console errors').toEqual([])
 })
 
 test('CUJ: export Excel, every page loads, no console errors, accessible, fits 320 px', async ({ page }, info) => {
@@ -186,10 +270,14 @@ test('CUJ: export Excel, every page loads, no console errors, accessible, fits 3
   expect((await download).suggestedFilename()).toMatch(/\.xlsx$/)
   if (info.project.name !== 'desktop') await page.setViewportSize({ width: 320, height: 640 })
   const issues: string[] = []
-  for (const path of ['/', '/add', '/add?type=expense', '/debts', '/history', '/more']) {
+  for (const path of ['/', '/add', '/add?type=expense', '/debts', '/history', '/customers', '/customers?new=1', '/more']) {
     await page.goto(path)
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
     await page.waitForFunction(() => !document.querySelector('[aria-busy="true"]'), null, { timeout: 30000 }).catch(() => {})
+    // A dialog opened by the URL (?new=1) slides in; its colours are a blend until it stops
+    await page
+      .waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running' || a.effect?.getTiming().iterations === Infinity), null, { timeout: 5000 })
+      .catch(() => {})
     const wide = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)
     if (wide > 0) issues.push(`${path}: ${wide}px too wide`)
     const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22a', 'wcag22aa']).options({ rules: { 'label-content-name-mismatch': { enabled: true } } }).analyze()
@@ -221,8 +309,8 @@ test('clean up test data left by earlier runs', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop', 'once')
   await signIn(page)
   for (const [tab, q, mine] of [
-    ['income', 'RC', /^RC[PDI]\d{5}$/],
-    ['expense', 'ทดสอบ RC', /^ทดสอบ RC[PDI]\d{5}$/],
+    ['income', 'RC', /^RC[PDI]\d{1,5}$/],
+    ['expense', 'ทดสอบ RC', /^ทดสอบ RC[PDI]\d{1,5}$/],
   ] as const) {
     for (let i = 0; i < 20; i++) {
       await page.goto(`/history?m=0&tab=${tab}&q=${encodeURIComponent(q)}`)
@@ -237,5 +325,20 @@ test('clean up test data left by earlier runs', async ({ page }, info) => {
       await expect(page.getByRole('status').filter({ hasText: /^ลบ / })).toBeVisible()
       info.annotations.push({ type: 'removed', description: `${tab}: ${names[index]}` })
     }
+  }
+  // Customers of the directory CUJ (v2.2.0)
+  for (let i = 0; i < 20; i++) {
+    await page.goto('/customers')
+    // The list loads after the page: counting before that would find nothing to remove
+    await page.getByText(/ทั้งหมด \d+ ราย/).waitFor()
+    await page.getByRole('searchbox').fill('ทดสอบ RC')
+    const link = page.getByRole('main').getByRole('link', { name: /^ทดสอบ RC[PDI]\d{1,5}(?!\d)/ }).first()
+    if (!(await link.count())) break
+    const leftover = ((await link.textContent()) ?? '').trim()
+    await link.click()
+    await page.getByRole('button', { name: 'ลบลูกค้า' }).click()
+    await page.getByRole('alertdialog').getByRole('button', { name: 'ลบลูกค้า' }).click()
+    await expect(page.getByRole('status').filter({ hasText: /^ลบ / })).toBeVisible()
+    info.annotations.push({ type: 'removed', description: `customer: ${leftover}` })
   }
 })

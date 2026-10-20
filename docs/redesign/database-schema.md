@@ -243,6 +243,17 @@ grant execute on function public.settle_records(uuid[]) to authenticated;
 | Q-01 = b (2 roles) | ใช้ `app_members.role` + policy แยก (`authorization-matrix.md` §3) | ไม่ต้องเพิ่มตาราง |
 | ADR-09 (post-MVP) | `records.car_type text`, `records.car_brand text`, `records.note_text text` + backfill จาก `services` | contract `services` เฉพาะหลังทุก client ใช้ column ใหม่ |
 
+### 2.4 สมุดรายชื่อลูกค้า (v2.2.0, เพิ่ม 2026-10-20)
+
+ตารางใหม่ `customers`, `customer_phones`, `customer_vehicles` และ RPC `save_customer` (M010–M011) · `plate_core` (M012) · `customer_vehicles.model` รุ่นรถ ≤ 30 (M013) · RPC `customer_history` อ่าน `records` ตามทะเบียน/ชื่อของลูกค้า (M014) · ไม่แตะ `records`/`expenses` และยังไม่มี FK จาก `records` (ADR-21) · สรุปที่ `database-migrations.md` §1.2.1 · ออกแบบเต็มที่ `docs/features/customer-directory.md` §4
+
+```mermaid
+erDiagram
+  CUSTOMERS ||--o{ CUSTOMER_PHONES : "on delete cascade"
+  CUSTOMERS ||--o{ CUSTOMER_VEHICLES : "on delete cascade"
+  CUSTOMER_VEHICLES }o..o{ RECORDS : "plate_key = normalised records.plate (no FK)"
+```
+
 ## 3. TypeScript Types & Validation Schemas (Task 5)
 
 ### 3.1 Generated DB types

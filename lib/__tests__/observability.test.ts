@@ -21,6 +21,14 @@ describe('scrubMessage', () => {
       .toBe('[email] saved กข # for # baht')
   })
 
+  it('removes phone numbers in every way they are typed (customer directory, AC-15-2)', () => {
+    for (const number of ['0812345678', '081-234-5678', '081 234 5678', '+66812345678', '+66 81 234 5678', '053-123-456']) {
+      expect(scrubMessage(`call ${number} now`)).not.toMatch(/\d{3,}/)
+    }
+    // The code save_customer raises stays readable in the report
+    expect(buildErrorReport({ code: 'CC409', message: 'customer changed since it was loaded' }).message).toBe('CC409: customer changed since it was loaded')
+  })
+
   it('keeps short numbers and caps the length at 300', () => {
     expect(scrubMessage('line 12')).toBe('line 12')
     expect(scrubMessage('x'.repeat(500))).toHaveLength(300)

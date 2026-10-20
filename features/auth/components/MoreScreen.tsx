@@ -36,6 +36,20 @@ export function MoreScreen({ email }: { email: string }) {
     <div className="mx-auto grid max-w-140 grid-cols-1 gap-4 pb-6">
       <PageHeader title="เพิ่มเติม" />
 
+      {/* The way to the customer directory on phones (Q-1); SideNav has it on wide screens */}
+      <Link href="/customers" className="focus-ring block rounded-lg">
+        <Card interactive className="flex min-h-18 items-center gap-4">
+          <span aria-hidden="true" className="grid size-11 shrink-0 place-items-center rounded-md bg-primary-subtle text-link">
+            <Icon name="users" size="lg" />
+          </span>
+          <span className="grid min-w-0 flex-1 grid-cols-1">
+            <span className="text-heading text-text">ลูกค้า</span>
+            <span className="text-body text-text-secondary">ชื่อ เบอร์โทร และทะเบียนรถ</span>
+          </span>
+          <Icon name="chevron-right" className="text-text-tertiary" />
+        </Card>
+      </Link>
+
       <Section title="บัญชี">
         <p className="flex items-center gap-2 text-body text-text-secondary">
           <Icon name="user" />

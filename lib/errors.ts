@@ -56,6 +56,17 @@ const CODE_MAP: Record<string, AppErrorCode> = {
   '23505': 'DUPLICATE',
   PGRST116: 'NOT_FOUND',
   '57014': 'TIMEOUT',
+  // save_customer (M011/M012): its own codes, so a plate clash is never a DUPLICATE
+  // ("already saved") and the edit check gives CONFLICT / NOT_FOUND like updateEntry
+  CC409: 'CONFLICT',
+  CC404: 'NOT_FOUND',
+  CCPLT: 'VALIDATION',
+  CC422: 'VALIDATION',
+}
+
+/** Which form field a database error is about */
+const CODE_FIELD: Record<string, string> = {
+  CCPLT: 'plate',
 }
 
 const NETWORK_MESSAGE = /failed to fetch|networkerror|network request failed|load failed/i
@@ -72,7 +83,10 @@ export function toAppError(error: unknown): AppError {
 
   const code = (error as { code?: unknown })?.code
   if (typeof code === 'string' && code) {
-    if (CODE_MAP[code]) return appError(CODE_MAP[code], error)
+    if (CODE_MAP[code]) {
+      const mapped = appError(CODE_MAP[code], error)
+      return CODE_FIELD[code] ? { ...mapped, field: CODE_FIELD[code] } : mapped
+    }
     return appError('SERVER', error)
   }
 

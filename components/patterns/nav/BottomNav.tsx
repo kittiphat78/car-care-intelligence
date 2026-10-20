@@ -22,8 +22,8 @@ export function BottomNav({ badges = {} }: BottomNavProps) {
       className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] shadow-elevation-2 lg:hidden"
     >
       <ul className="mx-auto grid h-16 max-w-(--size-content-max) grid-cols-5">
-        {NAV_ITEMS.map((item) => {
-          const active = isActivePath(pathname, item.href)
+        {NAV_ITEMS.filter((item) => !item.sideOnly).map((item) => {
+          const active = isActivePath(pathname, item.href) || !!item.alsoActiveFor?.some((href) => isActivePath(pathname, href))
           const count = badges[item.href] ?? 0
           return (
             <li key={item.href} className="min-w-0">

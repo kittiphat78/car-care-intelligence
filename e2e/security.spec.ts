@@ -41,7 +41,7 @@ test.describe('database access by account type', () => {
 
   test('anonymous (public key only): every table and function is refused', async () => {
     const anon = rest(null)
-    for (const table of ['records', 'expenses', 'app_members']) {
+    for (const table of ['records', 'expenses', 'app_members', 'customers', 'customer_phones', 'customer_vehicles']) {
       const r = await anon.get(`${table}?select=*&limit=1`)
       expect(r.status, `${table} read`).toBeGreaterThanOrEqual(400)
       expect((await r.json()).code, `${table} read`).toBe('42501')
@@ -53,6 +53,8 @@ test.describe('database access by account type', () => {
       ['daily_series', { p_from: today, p_to: today }],
       ['customer_breakdown', { p_day: today }],
       ['settle_records', { p_ids: [] }],
+      ['save_customer', { p_id: null, p_expected_updated_at: null, p_name: 'ANON', p_note: null, p_phones: [], p_vehicles: [] }],
+      ['customer_history', { p_customer_id: '00000000-0000-4000-8000-000000000000' }],
     ] as const) {
       const r = await anon.rpc(fn, args)
       expect(r.status, fn).toBeGreaterThanOrEqual(400)
@@ -70,7 +72,7 @@ test.describe('database access by account type', () => {
     const target = memberRows[0]
 
     // …the outsider gets empty results, not an error that would reveal anything
-    for (const table of ['records', 'expenses', 'app_members']) {
+    for (const table of ['records', 'expenses', 'app_members', 'customers', 'customer_phones', 'customer_vehicles']) {
       const r = await outsider.get(`${table}?select=*&limit=5`)
       expect(r.status, table).toBe(200)
       expect(await r.json(), table).toEqual([])
@@ -94,6 +96,11 @@ test.describe('database access by account type', () => {
     expect(await (await outsider.rpc('customer_breakdown', { p_day: today })).json()).toEqual([])
     const settled = (await (await outsider.rpc('settle_records', { p_ids: [target.id] })).json()) as Array<{ updated_count: number }>
     expect(Number(settled[0].updated_count)).toBe(0)
+
+    // …and cannot add a customer, phone or vehicle (customer directory, AC-15-1)
+    const customer = await outsider.rpc('save_customer', { p_id: null, p_expected_updated_at: null, p_name: 'OUTSIDER', p_note: null, p_phones: [], p_vehicles: [] })
+    expect(customer.status, 'save_customer').toBeGreaterThanOrEqual(400)
+    expect((await outsider.post('customers', { name: 'OUTSIDER' })).status).toBe(403)
 
     // The outsider cannot make itself a member
     const join = await outsider.post('app_members', { user_id: '00000000-0000-0000-0000-000000000000' })
@@ -176,7 +183,7 @@ test('nothing in the app is blocked by the content security policy (D-05)', asyn
   const all: string[] = [...(await violations())]
   // Every screen, plus the parts that load heavier code: validation, the edit dialog,
   // Excel export (exceljs) and the PDF bill (jspdf)
-  for (const path of ['/', '/add', '/add?type=expense', '/debts', '/more']) {
+  for (const path of ['/', '/add', '/add?type=expense', '/debts', '/customers', '/customers?new=1', '/more']) {
     await page.goto(path)
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
     all.push(...(await violations()))
@@ -249,7 +256,7 @@ test('the record form cannot be submitted by the browser before the JavaScript h
 
 test.describe('sign-in rules in the app', () => {
   test('every protected page sends a signed-out visitor to login and remembers where', async ({ page }) => {
-    for (const path of ['/', '/add', '/history', '/debts', '/more']) {
+    for (const path of ['/', '/add', '/history', '/debts', '/customers', '/more']) {
       await page.goto(path)
       await expect(page, path).toHaveURL(path === '/' ? /\/login$/ : new RegExp(`/login\\?next=${encodeURIComponent(path)}$`))
     }
@@ -276,6 +283,8 @@ test.describe('sign-in rules in the app', () => {
     await expect(page.getByText('ไม่มีรายการค้างชำระ')).toBeVisible()
     await page.goto('/history?m=0')
     await expect(page.getByText(/ไม่มีรายรับใน/)).toBeVisible()
+    await page.goto('/customers')
+    await expect(page.getByText('ยังไม่มีลูกค้า')).toBeVisible()
   })
 
   test('a member who signs in again lands on the dashboard', async ({ page }) => {

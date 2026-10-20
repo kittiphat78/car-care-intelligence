@@ -37,6 +37,8 @@ describe('nav helpers', () => {
   it('adds ?logout=1 and keeps other parameters', () => {
     expect(withLogoutParam('/history', 'tab=expense')).toBe('/history?tab=expense&logout=1')
     expect(withLogoutParam('/', '')).toBe('/?logout=1')
+    // Except a customer search, which never goes to the server (ADR-23)
+    expect(withLogoutParam('/customers', 'q=0812345678&new=1')).toBe('/customers?new=1&logout=1')
   })
 })
 
@@ -49,6 +51,14 @@ describe('BottomNav', () => {
     expect(links.map((l) => l.textContent)).toEqual(['ภาพรวม', 'ค้างชำระ', 'บันทึก', 'ประวัติ', 'เพิ่มเติม'])
     expect(within(menu).getByRole('link', { name: 'ประวัติ' })).toHaveAttribute('aria-current', 'page')
     expect(within(menu).getByRole('link', { name: 'ภาพรวม' })).not.toHaveAttribute('aria-current')
+  })
+
+  it('keeps five places on phones: ลูกค้า is reached from เพิ่มเติม, which stays marked (Q-1)', () => {
+    nav.pathname = '/customers/abc'
+    render(<BottomNav />)
+    const links = within(screen.getByRole('navigation', { name: 'เมนูหลัก' })).getAllByRole('link')
+    expect(links.map((l) => l.textContent)).toEqual(['ภาพรวม', 'ค้างชำระ', 'บันทึก', 'ประวัติ', 'เพิ่มเติม'])
+    expect(screen.getByRole('link', { name: 'เพิ่มเติม' })).toHaveAttribute('aria-current', 'page')
   })
 
   it('shows a debts badge with the full number for screen readers', () => {
@@ -69,6 +79,15 @@ describe('SideNav', () => {
     expect(screen.getByRole('link', { name: 'ออกจากระบบ' })).toHaveAttribute('href', '/history?tab=expense&logout=1')
     // /add is the button above, not repeated in the list
     expect(within(screen.getByRole('navigation')).queryByRole('link', { name: 'บันทึก' })).toBeNull()
+  })
+
+  it('lists ลูกค้า between ประวัติ and เพิ่มเติม and marks it on a customer page (Q-1)', () => {
+    nav.pathname = '/customers/abc'
+    render(<SideNav email="owner@example.com" />)
+    const links = within(screen.getByRole('navigation', { name: 'เมนูหลัก' })).getAllByRole('link')
+    expect(links.map((l) => l.textContent)).toEqual(['ภาพรวม', 'ค้างชำระ', 'ประวัติ', 'ลูกค้า', 'เพิ่มเติม'])
+    expect(screen.getByRole('link', { name: 'ลูกค้า' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('link', { name: 'เพิ่มเติม' })).not.toHaveAttribute('aria-current')
   })
 })
 

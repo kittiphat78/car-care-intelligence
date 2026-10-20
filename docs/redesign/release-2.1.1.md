@@ -1,7 +1,6 @@
 # v2.1.1 — ข้อความที่พิมพ์ก่อนหน้าพร้อมไม่หายแล้ว
 
-> สถานะ: **พร้อม release** (RC `v2.1.1-rc.1` ผ่าน) · `release/2.1.1` · ฐาน: `v2.1.0` (`8465548`, production ตั้งแต่ 2026-10-19 23:21)
-> **Merge นอกเวลาทำการเท่านั้น** (Q-19): merge แล้ว production deploy ทันที
+> สถานะ: **Released** · production 2026-10-20 12:58 · PR #54 merge commit `02f7038` · tag `v2.1.1` · ฐาน: `v2.1.0` (`8465548`)
 > SemVer: PATCH (แก้บั๊กอย่างเดียว ไม่มีฟีเจอร์ใหม่ ไม่เปลี่ยนฐานข้อมูล)
 > ป้าย: **[V]** Verified · **[I]** Inferred · **[U]** Unknown
 
@@ -32,6 +31,19 @@
 | E2E WebKit ในเครื่อง | 53 ผ่าน / 4 ล้ม: skip link ×2 (WebKit ไม่ Tab ไปลิงก์) + axe contrast ของปุ่มที่ยังกดไม่ได้ระหว่างรอหน้าพร้อม ×2 (หน้า login, หน้าบันทึก · WCAG ยกเว้นปุ่มที่ใช้ไม่ได้ · เกิดหรือไม่ขึ้นกับจังหวะ) · ไม่มีหมวดใหม่ · ไม่มีล้มจาก D-08 [V] |
 | Preview + staging (`e2e-preview`) | มือถือ 3/3 · PC 6/6 · iPhone 3/3 · ทุก request ไป staging ไม่มีไป production · เก็บกวาดแล้วไม่เหลือข้อมูลทดสอบ [V] |
 | แก้ test ระหว่าง RC | test สภาพแวดล้อมบน Preview ฝังเลข `2.1.0` ไว้ → อ่านจาก `package.json` แทน (ไม่ใช่โค้ดแอป) |
+
+## Deploy และตรวจหลังขึ้น production [V]
+
+| เวลา (2026-10-20) | เหตุการณ์ |
+|---|---|
+| 12:58:14 | เจ้าของ merge PR #54 แบบ merge commit → `02f7038` (tree เท่ากับ `release/2.1.1` @ `dcbb2a7`) |
+| 12:58:50 | Vercel production deployment `7192728398` success |
+| 13:01–13:04 | Smoke test อ่านอย่างเดียว: ขึ้น `v2.1.1` บนมือถือ, PC, iPhone (WebKit), 320 px · ไม่มี error ใหม่ใน console (มีแค่ `interactive-widget` บน iPhone) · ไม่มี request ล้ม · redirect `?next=` ถูก · security header 6 ตัวครบ ไม่มี `unsafe-eval` · ฟอร์ม login `method="post"` · `/api/client-errors` ไม่ login = 401 · JavaScript ชี้ production ไม่มีของ staging ไม่มี `service_role`/`sb_secret_` |
+| 13:04 | tag `v2.1.1` (annotated) บน `02f7038` |
+| 13:02– | ตรวจจากภายนอกทุก 5 นาที (login, `/`, API, Supabase Auth) ปกติทุกรอบ |
+
+หมายเหตุ: merge เวลา 12:58 อยู่ในเวลาร้านเปิด (Q-19 ให้ deploy นอกเวลาทำการ) · ตรวจทันทีหลัง deploy ไม่พบปัญหา · ไม่มีการเปลี่ยนฐานข้อมูล
+หลัง release: back-merge `main` → `develop` ด้วย merge commit (`develop` มี PR #55 ที่ `main` ไม่มี จึง fast-forward ไม่ได้)
 
 ## Rollback
 

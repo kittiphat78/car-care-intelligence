@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { CAR_BRANDS, CAR_TYPES } from '@/types'
 import { bangkokToday } from '@/lib/time/bangkok'
@@ -18,9 +18,14 @@ import { TextInput } from '@/components/ui/TextInput'
 import { useToast } from '@/components/ui/Toast'
 import { ActionBar } from '@/components/patterns/ActionBar'
 import { FormErrorSummary } from '@/components/patterns/FormErrorSummary'
+import { enterMovesToNextField } from '@/components/patterns/form-keys'
 import { FormField, describedBy, labelId } from '@/components/patterns/FormField'
 import { useOnline } from '@/components/patterns/StatusBar'
 import { BrandPicker, CustomerField, DateField, MoneyField, PlateField, dayKind, thaiDate, toDigits } from '@/components/patterns/fields'
+import { CustomerFormDialog } from '@/features/customers/components/CustomerFormDialog'
+import { useCustomerDirectory, usePlateCustomers, useUrlDialog } from '@/features/customers/hooks'
+import { matchDebtGroup, nameKey, plateKey } from '@/features/customers/logic'
+import type { Customer } from '@/features/customers/types'
 import { createExpense, createIncome } from '../api'
 import {
   EMPTY_EXPENSE,
@@ -173,21 +178,6 @@ function SaveButtons({
   )
 }
 
-/**
- * Enter in a field moves to the next field instead of saving (interaction-specifications
- * §2: "Enter ในช่องสุดท้ายไม่ submit อัตโนมัติ"). Without this the browser presses the
- * form's first submit button, "บันทึกแล้วทำต่อ", and saves by accident.
- */
-export function enterMovesToNextField(e: KeyboardEvent<HTMLFormElement>) {
-  const field = e.target as HTMLElement
-  if (e.key !== 'Enter' || !(field instanceof HTMLInputElement) || e.nativeEvent.isComposing) return
-  e.preventDefault()
-  const focusable = [...e.currentTarget.querySelectorAll<HTMLElement>('input, button, select, textarea, [tabindex="0"]')].filter(
-    (el) => !el.hasAttribute('disabled') && el.tabIndex >= 0 && !el.closest('[hidden], [aria-hidden="true"]'),
-  )
-  focusable[focusable.indexOf(field) + 1]?.focus()
-}
-
 const submitIntent = (e: FormEvent<HTMLFormElement>) =>
   ((e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null)?.value === 'continue' ? 'continue' : 'save'
 
@@ -227,6 +217,19 @@ export function IncomeEditor({ userId, email }: EditorProps) {
   const errors = attempt > 0 && !checked.ok ? checked.errors : []
   const customerVisible = showCustomer || d.paymentStatus === 'unpaid' || d.customerName !== ''
 
+  // Customer directory (US-11, US-13): loaded only once a plate is typed or the name field
+  // shows. It suggests, it never fills a field by itself.
+  const directory = useCustomerDirectory({ enabled: plateKey(d.plate).length >= 2 || customerVisible })
+  const plateCustomers = usePlateCustomers(directory.customers, d.plate)
+  const directoryNames = useMemo(() => directory.customers?.map((c) => c.name) ?? [], [directory.customers])
+  const newCustomer = useUrlDialog('customer')
+  const [newCustomerFrom, setNewCustomerFrom] = useState<{ name: string; plates: string[] } | null>(null)
+
+  function applyName(customer: Customer) {
+    set('customerName', customer.name)
+    setShowCustomer(true)
+  }
+
   async function write(mode: 'save' | 'continue') {
     const result = checkIncome(d)
     if (!result.ok) return
@@ -238,7 +241,23 @@ export function IncomeEditor({ userId, email }: EditorProps) {
     if (!saved) return
 
     recent.remember(row.customer_name)
-    toast.success(incomeSavedMessage(row))
+    // A name and plate the directory does not know yet: offer to keep them (US-13)
+    const unknown = mode === 'continue' && row.customer_name.trim() !== '' && directory.customers !== null && matchDebtGroup(directory.customers, { name: row.customer_name, plates: [row.plate] }).length === 0
+    const from = { name: row.customer_name.trim(), plates: [row.plate] }
+    toast.success(
+      incomeSavedMessage(row),
+      unknown
+        ? {
+            action: {
+              label: 'บันทึกเป็นลูกค้า',
+              onClick: () => {
+                setNewCustomerFrom(from)
+                newCustomer.open('new')
+              },
+            },
+          }
+        : undefined,
+    )
     if (mode === 'continue') {
       draft.reset(nextIncome(d))
       setAttempt(0)
@@ -262,144 +281,177 @@ export function IncomeEditor({ userId, email }: EditorProps) {
   }
 
   return (
-    <form ref={formRef} method="post" noValidate onSubmit={onSubmit} onKeyDown={enterMovesToNextField} aria-busy={busy || undefined} className="grid grid-cols-1 gap-5">
-      {draft.restored && <RestoredBanner onClear={() => draft.reset()} />}
-      <FormErrorSummary errors={errors} attempt={attempt} />
-      <FailureBanner error={failure} />
+    <>
+      <form ref={formRef} method="post" noValidate onSubmit={onSubmit} onKeyDown={enterMovesToNextField} aria-busy={busy || undefined} className="grid grid-cols-1 gap-5">
+        {draft.restored && <RestoredBanner onClear={() => draft.reset()} />}
+        <FormErrorSummary errors={errors} attempt={attempt} />
+        <FailureBanner error={failure} />
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 lg:gap-x-8">
-        <div className="grid grid-cols-1 content-start gap-5">
-          <DateField id="income-date" label="วันที่ทำรายการ" value={day} onChange={setDay} today={today} />
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 lg:gap-x-8">
+          <div className="grid grid-cols-1 content-start gap-5">
+            <DateField id="income-date" label="วันที่ทำรายการ" value={day} onChange={setDay} today={today} />
 
-          <FormField id="income-type" label="ประเภทงาน" required asGroup error={errorFor(errors, 'income-type')}>
-            <ChoiceGroup
-              labelledBy={labelId('income-type')}
-              variant="tile"
-              columns={2}
-              value={d.type}
-              onChange={(v) => v && set('type', v)}
-              options={[
-                { value: 'wash', label: 'ล้างรถ', description: 'บริการทั่วไป', icon: 'wash', tone: 'wash' },
-                { value: 'polish', label: 'ขัดสี', description: 'เต็นท์รถ', icon: 'polish', tone: 'polish' },
-              ]}
+            <FormField id="income-type" label="ประเภทงาน" required asGroup error={errorFor(errors, 'income-type')}>
+              <ChoiceGroup
+                labelledBy={labelId('income-type')}
+                variant="tile"
+                columns={2}
+                value={d.type}
+                onChange={(v) => v && set('type', v)}
+                options={[
+                  { value: 'wash', label: 'ล้างรถ', description: 'บริการทั่วไป', icon: 'wash', tone: 'wash' },
+                  { value: 'polish', label: 'ขัดสี', description: 'เต็นท์รถ', icon: 'polish', tone: 'polish' },
+                ]}
+              />
+            </FormField>
+
+            <PlateField
+              ref={plateRef}
+              id="income-plate"
+              label="ป้ายทะเบียน"
+              required
+              value={d.plate}
+              onChange={(v) => set('plate', v)}
+              error={errorFor(errors, 'income-plate')}
+              below={
+                // Always there (hidden while empty), so a screen reader announces what appears in it
+                <div aria-live="polite" className="flex flex-wrap items-center gap-2 empty:hidden">
+                  {visits > 0 && <Badge tone="info" icon="user">ลูกค้าประจำ · ครั้งที่ {visits + 1}</Badge>}
+                  {plateCustomers.map((c) => (
+                    <span key={c.id} className="inline-flex flex-wrap items-center gap-1">
+                      <Badge tone="info" icon="users">ลูกค้า: {c.name}</Badge>
+                      {nameKey(d.customerName) !== nameKey(c.name) && (
+                        <Button variant="ghost" size="sm" onClick={() => applyName(c)} aria-label={`ใช้ชื่อนี้ ${c.name}`}>
+                          ใช้ชื่อนี้
+                        </Button>
+                      )}
+                    </span>
+                  ))}
+                </div>
+              }
             />
-          </FormField>
 
-          <PlateField
-            ref={plateRef}
-            id="income-plate"
-            label="ป้ายทะเบียน"
-            required
-            value={d.plate}
-            onChange={(v) => set('plate', v)}
-            error={errorFor(errors, 'income-plate')}
-            below={visits > 0 ? <Badge tone="info" icon="user">ลูกค้าประจำ · ครั้งที่ {visits + 1}</Badge> : undefined}
-          />
+            <FormField id="income-car-type" label="ประเภทรถ" required asGroup error={errorFor(errors, 'income-car-type')}>
+              <ChoiceGroup
+                labelledBy={labelId('income-car-type')}
+                describedBy={describedBy('income-car-type', { error: errorFor(errors, 'income-car-type') })}
+                variant="tile"
+                columns={3}
+                clearable
+                invalid={!!errorFor(errors, 'income-car-type')}
+                value={d.carType}
+                onChange={(v) => set('carType', v)}
+                options={CAR_TYPES.map((t) => ({ value: t.id, label: t.name }))}
+              />
+            </FormField>
 
-          <FormField id="income-car-type" label="ประเภทรถ" required asGroup error={errorFor(errors, 'income-car-type')}>
-            <ChoiceGroup
-              labelledBy={labelId('income-car-type')}
-              describedBy={describedBy('income-car-type', { error: errorFor(errors, 'income-car-type') })}
-              variant="tile"
-              columns={3}
-              clearable
-              invalid={!!errorFor(errors, 'income-car-type')}
-              value={d.carType}
-              onChange={(v) => set('carType', v)}
-              options={CAR_TYPES.map((t) => ({ value: t.id, label: t.name }))}
-            />
-          </FormField>
+            <MoneyField id="income-price" label="ราคา (บาท)" required value={d.price} onChange={(v) => set('price', v)} error={errorFor(errors, 'income-price')} />
+          </div>
 
-          <MoneyField id="income-price" label="ราคา (บาท)" required value={d.price} onChange={(v) => set('price', v)} error={errorFor(errors, 'income-price')} />
+          <div className="grid grid-cols-1 content-start gap-5">
+            <FormField id="income-payment" label="สถานะการชำระ" asGroup>
+              <ChoiceGroup
+                labelledBy={labelId('income-payment')}
+                value={d.paymentStatus}
+                onChange={(v) => v && set('paymentStatus', v)}
+                options={[
+                  { value: 'paid', label: 'ชำระแล้ว', tone: 'success' },
+                  { value: 'unpaid', label: 'ค้างชำระ', tone: 'warning' },
+                ]}
+              />
+            </FormField>
+
+            {customerVisible ? (
+              <CustomerField
+                ref={customerRef}
+                id="income-customer"
+                label="ลูกค้า / เต็นท์"
+                value={d.customerName}
+                onChange={(v) => set('customerName', v)}
+                recent={recent.names}
+                suggestions={directoryNames}
+                error={errorFor(errors, 'income-customer')}
+                hint={d.paymentStatus === 'unpaid' ? 'ใส่ชื่อเพื่อติดตามยอดค้างได้ง่าย' : undefined}
+              />
+            ) : (
+              <Button variant="ghost" leadingIcon="plus" onClick={() => setShowCustomer(true)} className="justify-self-start">
+                เพิ่มชื่อลูกค้า
+              </Button>
+            )}
+
+            {showBrand || d.brand ? (
+              <BrandPicker id="income-brand" label="ยี่ห้อรถ" brands={CAR_BRANDS} value={d.brand} onChange={(v) => set('brand', v)} />
+            ) : (
+              <Button variant="ghost" leadingIcon="car" onClick={() => setShowBrand(true)} className="justify-self-start">
+                เลือกยี่ห้อ (ไม่บังคับ)
+              </Button>
+            )}
+
+            <FormField id="income-note" label="หมายเหตุ" error={errorFor(errors, 'income-note')} length={{ value: d.note.length, max: 200 }}>
+              <TextInput
+                id="income-note"
+                value={d.note}
+                onChange={(e) => set('note', e.target.value)}
+                maxLength={200}
+                invalid={!!errorFor(errors, 'income-note')}
+                aria-describedby={describedBy('income-note', { error: errorFor(errors, 'income-note') })}
+              />
+            </FormField>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 content-start gap-5">
-          <FormField id="income-payment" label="สถานะการชำระ" asGroup>
-            <ChoiceGroup
-              labelledBy={labelId('income-payment')}
-              value={d.paymentStatus}
-              onChange={(v) => v && set('paymentStatus', v)}
-              options={[
-                { value: 'paid', label: 'ชำระแล้ว', tone: 'success' },
-                { value: 'unpaid', label: 'ค้างชำระ', tone: 'warning' },
-              ]}
-            />
-          </FormField>
+        <SaveButtons busy={busy ? intent : null} online={online} primaryLabel="บันทึก" day={day} today={today} />
 
-          {customerVisible ? (
-            <CustomerField
-              ref={customerRef}
-              id="income-customer"
-              label="ลูกค้า / เต็นท์"
-              value={d.customerName}
-              onChange={(v) => set('customerName', v)}
-              recent={recent.names}
-              error={errorFor(errors, 'income-customer')}
-              hint={d.paymentStatus === 'unpaid' ? 'ใส่ชื่อเพื่อติดตามยอดค้างได้ง่าย' : undefined}
-            />
-          ) : (
-            <Button variant="ghost" leadingIcon="plus" onClick={() => setShowCustomer(true)} className="justify-self-start">
-              เพิ่มชื่อลูกค้า
-            </Button>
-          )}
+        <Dialog
+          open={askName !== null}
+          onClose={() => setAskName(null)}
+          variant="alert"
+          title="ยังไม่ได้ใส่ชื่อลูกค้า"
+          description="รายการค้างชำระที่ไม่มีชื่อจะไปอยู่ในกลุ่ม 'ลูกค้าทั่วไป' และติดตามได้ยาก"
+          footer={
+            <>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  const mode = askName ?? 'save'
+                  setAskName(null)
+                  void write(mode)
+                }}
+              >
+                บันทึกโดยไม่ใส่ชื่อ
+              </Button>
+              <Button
+                autoFocus
+                onClick={() => {
+                  setAskName(null)
+                  setShowCustomer(true)
+                  requestAnimationFrame(() => customerRef.current?.focus())
+                }}
+              >
+                ใส่ชื่อลูกค้า
+              </Button>
+            </>
+          }
+        >
+          {null}
+        </Dialog>
+      </form>
 
-          {showBrand || d.brand ? (
-            <BrandPicker id="income-brand" label="ยี่ห้อรถ" brands={CAR_BRANDS} value={d.brand} onChange={(v) => set('brand', v)} />
-          ) : (
-            <Button variant="ghost" leadingIcon="car" onClick={() => setShowBrand(true)} className="justify-self-start">
-              เลือกยี่ห้อ (ไม่บังคับ)
-            </Button>
-          )}
-
-          <FormField id="income-note" label="หมายเหตุ" error={errorFor(errors, 'income-note')} length={{ value: d.note.length, max: 200 }}>
-            <TextInput
-              id="income-note"
-              value={d.note}
-              onChange={(e) => set('note', e.target.value)}
-              maxLength={200}
-              invalid={!!errorFor(errors, 'income-note')}
-              aria-describedby={describedBy('income-note', { error: errorFor(errors, 'income-note') })}
-            />
-          </FormField>
-        </div>
-      </div>
-
-      <SaveButtons busy={busy ? intent : null} online={online} primaryLabel="บันทึก" day={day} today={today} />
-
-      <Dialog
-        open={askName !== null}
-        onClose={() => setAskName(null)}
-        variant="alert"
-        title="ยังไม่ได้ใส่ชื่อลูกค้า"
-        description="รายการค้างชำระที่ไม่มีชื่อจะไปอยู่ในกลุ่ม 'ลูกค้าทั่วไป' และติดตามได้ยาก"
-        footer={
-          <>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                const mode = askName ?? 'save'
-                setAskName(null)
-                void write(mode)
-              }}
-            >
-              บันทึกโดยไม่ใส่ชื่อ
-            </Button>
-            <Button
-              autoFocus
-              onClick={() => {
-                setAskName(null)
-                setShowCustomer(true)
-                requestAnimationFrame(() => customerRef.current?.focus())
-              }}
-            >
-              ใส่ชื่อลูกค้า
-            </Button>
-          </>
-        }
-      >
-        {null}
-      </Dialog>
-    </form>
+      {/* Outside the record form: a form may not hold another form */}
+      <CustomerFormDialog
+        open={newCustomer.value === 'new' && directory.customers !== null}
+        customer={null}
+        start={newCustomerFrom ?? undefined}
+        customers={directory.customers ?? []}
+        userId={userId || null}
+        onClose={newCustomer.close}
+        onReload={() => void directory.reload()}
+        onSaved={() => {
+          newCustomer.close()
+          void directory.reload()
+        }}
+      />
+    </>
   )
 }
 
