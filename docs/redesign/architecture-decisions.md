@@ -1,97 +1,119 @@
-# Architecture Decision Records — Step 05
+# Architecture Decision Records
 
-> วันที่: 2026-10-14 · รูปแบบ: Context → Decision → Consequences · สถานะ: **Proposed** (รออนุมัติ Step 05) / **Gated** (รอคำตอบเจ้าของ)
+> ADR-01..14 เขียนใน Step 05 (2026-10-14) · อัปเดตสถานะตามของจริงใน Step 12 (2026-10-20, `v2.1.0`) · ADR-15..20 บันทึกการตัดสินใจระหว่าง Step 07–11
+> รูปแบบ: Context → Decision → Consequences → **ผลจริง** · สถานะ: **Implemented** (ทำตามนั้น) · **Partial** (ทำบางส่วน/ต่างจากแผน) · **Superseded**
 
 | ADR | หัวข้อ | สถานะ |
 |---|---|---|
-| ADR-01 | คง stack: Next.js App Router + Supabase + Vercel | Proposed |
-| ADR-02 | DB เป็น enforcement boundary และไม่มี BFF หรือ Server Actions สำหรับข้อมูลธุรกิจ | Proposed |
-| ADR-03 | ไม่เพิ่ม data-fetching library (React Query/SWR) | Proposed |
-| ADR-04 | Allowlist สมาชิก `app_members` + RLS | Proposed |
-| ADR-05 | Aggregate ด้วย RPC ฝั่ง DB และ pagination helper | Proposed |
-| ADR-06 | Timezone Asia/Bangkok ทั้ง client และ DB | Proposed |
-| ADR-07 | Idempotency ด้วย `client_request_id` + optimistic concurrency ด้วย `updated_at` | Proposed |
-| ADR-08 | Supabase CLI migrations ใน repo | Proposed |
-| ADR-09 | คง `services[]` ใน MVP และย้ายเป็น column ภายหลัง | Proposed |
-| ADR-10 | เลิก sanitize ตอนบันทึก | Proposed |
-| ADR-11 | Observability แบบไม่เพิ่ม dependency | Proposed |
-| ADR-12 | Environment guard กัน Preview ชี้ production | Proposed |
-| ADR-13 | Route groups `(app)`/`(auth)` + server guard ชั้นที่ 2 | Proposed |
-| ADR-14 | Dependency policy: ลบ 1, เพิ่ม 0 (runtime) | Proposed |
+| ADR-01 | คง stack: Next.js App Router + Supabase + Vercel | Implemented |
+| ADR-02 | DB เป็นเส้นแบ่งความปลอดภัย ไม่มี BFF สำหรับข้อมูลธุรกิจ | Implemented (มีข้อยกเว้น 1 จุด) |
+| ADR-03 | ไม่เพิ่ม data-fetching library | Implemented |
+| ADR-04 | Allowlist สมาชิก `app_members` + RLS | Implemented |
+| ADR-05 | ยอดรวมด้วย RPC + pagination helper | Partial |
+| ADR-06 | Asia/Bangkok ทั้ง client และ DB | Implemented |
+| ADR-07 | `client_request_id` + optimistic concurrency ด้วย `updated_at` | Implemented |
+| ADR-08 | Supabase CLI migrations ใน repo | Partial |
+| ADR-09 | คง `services[]` แล้วย้ายเป็น column ภายหลัง | Implemented (ส่วนย้ายยังไม่ทำ) |
+| ADR-10 | เลิก sanitize ตอนบันทึก | Implemented |
+| ADR-11 | Observability แบบไม่เพิ่ม dependency | Implemented |
+| ADR-12 | Environment guard กัน Preview ชี้ production | Implemented |
+| ADR-13 | Route groups `(app)`/`(auth)` + server guard ชั้นที่ 2 | Implemented |
+| ADR-14 | Dependency policy | Implemented (เพิ่ม dev tools ใน Step 08) |
+| ADR-15 | `develop` เป็นที่รวมงาน · `main` รับเฉพาะ release/hotfix | Implemented (2026-10-19) |
+| ADR-16 | ออกจากระบบเฉพาะเครื่องที่กด | Implemented (D-03) |
+| ADR-17 | ฟอร์มที่ server render ต้องปลอดภัยก่อนหน้าพร้อม | Implemented (D-07 production · D-08 ใน `develop` #51) |
+| ADR-18 | ไลบรารีหนักโหลดเมื่อใช้ และล้มได้โดยหน้าไม่พัง | Implemented (O-07, D-11) |
+| ADR-19 | Test อัตโนมัติไม่แตะ production | Implemented |
+| ADR-20 | CSP production ไม่มี `unsafe-eval` | Implemented (D-05) |
 
 ---
 
 ## ADR-01 — คง stack เดิม
-**Context:** ระบบใช้ Next.js 16 App Router, React 19, Supabase และ Vercel อยู่แล้ว [V] ซึ่งตรงกับ target stack ของ master prompt และมีผู้ใช้จริง
-**Decision:** ไม่เปลี่ยน framework, hosting หรือ DB แต่ upgrade `next` เป็น 16.4.x (patch ด้านความปลอดภัย) ก่อนงานอื่น
-**Consequences:** ความเสี่ยงต่ำและความรู้เดิมใช้ต่อได้ แต่ต้องติดตาม advisory ของ Next ต่อเนื่อง
+**Context:** ระบบใช้ Next.js 16 App Router, React 19, Supabase และ Vercel อยู่แล้ว และมีผู้ใช้จริง
+**Decision:** ไม่เปลี่ยน framework, hosting หรือ DB · อัปเกรดเวอร์ชันเพื่อแก้ช่องโหว่
+**ผลจริง:** `next 16.3.8`, `react 19.2.4`, `@supabase/ssr 0.10` · อัปเกรด dependency ที่มีช่องโหว่ใน D-04 (เลือกเวอร์ชันที่ออกมาแล้ว ≥ 2 สัปดาห์) · production audit High/Critical = 0 [V]
 
-## ADR-02 — DB เป็น enforcement boundary
-**Context:** anon key อยู่ใน bundle และ PostgREST เรียกตรงได้ ดังนั้นการ validate ใน Server Actions จะถูกข้ามได้ถ้า table ยัง grant ให้ `authenticated` เขียนตรง การปิด grant แล้วบังคับให้ทุกอย่างผ่าน server จะทำให้ realtime และ client เดิม (v1.0.0) ใช้ไม่ได้ระหว่าง rollout และเพิ่ม latency (Vercel region ↔ Supabase region [U])
-**Decision:** กฎทั้งหมด (สิทธิ์, validation, audit, seq, multi-row update) อยู่ใน Postgres (RLS, constraints, triggers, RPC) และ client เรียก Supabase ตรง **ไม่ใช้ Server Actions/Route Handlers เป็นทางผ่านข้อมูลธุรกิจใน MVP**
-**Alternatives:** (a) BFF ด้วย Server Actions + revoke table grants: ปลอดภัยเท่ากันแต่ทำลาย compatibility และ realtime ต้องคิดใหม่ (b) client-only แบบเดิม: ไม่ปลอดภัย
-**Consequences:** client เก่าและใหม่อยู่ร่วมกันได้ และ business rule ต้องเขียน SQL (มี test ใน `supabase/tests`)
+## ADR-02 — DB เป็นเส้นแบ่งความปลอดภัย
+**Context:** anon key อยู่ใน bundle และ PostgREST เรียกตรงได้ · การ validate ใน Server Actions ถูกข้ามได้ถ้าตารางยังเขียนตรงได้
+**Decision:** กฎทั้งหมด (สิทธิ์, validation, audit, seq, การแก้หลายแถว) อยู่ใน Postgres · client เรียก Supabase ตรง ไม่ใช้ Server Actions/Route Handlers เป็นทางผ่านข้อมูลธุรกิจ
+**Consequences:** client เก่าและใหม่อยู่ร่วมกันได้ระหว่าง rollout · กฎธุรกิจต้องเขียน SQL พร้อม test
+**ผลจริง:** ตามนั้น (M001–M009, SQL tests ใน CI) · ข้อยกเว้น: `app/(app)/layout.tsx` นับลูกค้าค้างชำระฝั่ง server สำหรับ badge (ใช้ session ของผู้ใช้ จึงยังผ่าน RLS)
 
 ## ADR-03 — ไม่เพิ่ม data-fetching library
-**Context:** หน้าจอมีไม่กี่หน้า ข้อมูลมาจาก realtime + refresh และ master prompt ห้ามเพิ่ม dependency ที่ไม่จำเป็น
-**Decision:** feature hooks เขียนเองบน `useState`/`useEffect` + `Result` และ realtime provider ตัวเดียว
-**Consequences:** โค้ด hook มากขึ้นเล็กน้อย แต่ถ้าภายหลังต้องการ cache ข้ามหน้า สามารถทบทวนได้
+**Decision:** hook เขียนเองบน `useState`/`useEffect` + `Result` · ไม่ใช้ React Query/SWR
+**ผลจริง:** ตามนั้น · กันผลเก่าทับผลใหม่ด้วยตัวนับ request (`features/dashboard/hooks.ts`)
 
 ## ADR-04 — Allowlist สมาชิก
-**Context:** ไม่รู้ว่าเปิด sign-up อยู่หรือไม่ (ER-13) และแอปไม่มี role
-**Decision:** ตาราง `app_members` + `is_app_member()` ใน RLS ทุกตาราง **และ** ปิด sign-up
-**Consequences:** ป้องกันได้แม้การตั้งค่า Auth ผิดพลาดในอนาคต และรองรับ role (Q-01) โดยไม่ต้องเปลี่ยนโครง แต่ **ความเสี่ยง:** ลืม backfill บัญชีใดจะทำให้บัญชีนั้นเห็นข้อมูลว่าง (gate G6)
+**Context:** ไม่รู้ว่าเปิด sign-up อยู่หรือไม่ และแอปไม่มี role · incident 2026-10-14 พบว่าตารางยังไม่จำกัดสิทธิ์
+**Decision:** `app_members` + `is_app_member()` ใน RLS ทุกตาราง และปิด sign-up
+**ผลจริง:** M001–M002 ขึ้น production 2026-10-15 · ทุกบัญชีจริงเป็นสมาชิก · anon ถูกปฏิเสธ · คนที่ login แต่ไม่ใช่สมาชิกเห็นผลว่าง (ทดสอบใน `e2e/security.spec.ts`) [V] · สถานะการปิด sign-up [U]
 
-## ADR-05 — Aggregate ด้วย RPC + pagination helper
-**Context:** query รายปีอาจถูกตัดที่ max rows (ER-02) และ dashboard โหลดข้อมูล 1 ปีทุก realtime event (ER-31)
-**Decision:** ยอดรวมทุกชนิดคำนวณใน DB (`dashboard_today`, `daily_series`, `customer_breakdown`, `period_summary`, `debt_summary`) ส่วนรายการแถวผ่าน `fetchAllPages` ที่ตรวจ count
-**Consequences:** payload เล็กลง ตัวเลขถูกต้องไม่ว่าข้อมูลกี่แถว แต่ logic การรวมย้ายไป SQL จึงต้องมี test เทียบกับ logic เดิม (ผลต้องเท่ากันกับ fixture เดียวกัน)
+## ADR-05 — ยอดรวมด้วย RPC + pagination helper
+**Context:** query ทั้งปีถูกตัดที่ max rows (ER-02) และหน้าแรกโหลดข้อมูล 1 ปีทุกครั้ง (ER-31)
+**Decision:** ยอดรวมคำนวณใน DB · รายการแถวผ่าน `fetchAllPages` ที่ตรวจ count
+**ผลจริง (Partial):** RPC 3 ตัวของหน้าแรก (`dashboard_today`, `daily_series`, `customer_breakdown`) + `settle_records` · `fetchAllPages` ใช้ทุกรายการ · **ไม่ได้ทำ** `debt_summary`, `period_summary`: ยอดค้างและสรุปประวัติคำนวณใน client จากรายการที่โหลดครบ · ผลข้างเคียง: หน้าประวัติโหลดทั้งปี (known-issues K-03)
 
 ## ADR-06 — Asia/Bangkok
-**Context:** ER-01, ER-10, ER-11 มาจากการผสม UTC กับ local time ของเครื่อง
-**Decision:** `lib/time/bangkok.ts` ใช้ `Intl.DateTimeFormat(..., { timeZone: 'Asia/Bangkok' })` (ไม่เพิ่ม library) และ DB ใช้ `at time zone 'Asia/Bangkok'` ส่วนเวลาที่ส่งไป DB เป็น ISO มี offset `+07:00`
-**Consequences:** ผลถูกต้องไม่ว่าเครื่องตั้ง timezone อะไร และต้องมี test ที่ตั้ง `TZ=UTC` และ `TZ=Asia/Bangkok`
+**Decision:** `lib/time/bangkok.ts` ใช้ `Intl` (ไม่เพิ่ม library) · DB ใช้ `at time zone 'Asia/Bangkok'`
+**ผลจริง:** ตามนั้น · test รันด้วย `TZ=Asia/Bangkok` และมี test เฉพาะที่ตั้งเขตอื่น [V]
 
 ## ADR-07 — Idempotency และ concurrency
-**Context:** S03-04 #1–#3
-**Decision:** (1) `client_request_id uuid` unique (nullable) ต่อการบันทึก 1 ครั้ง (2) update พร้อมเงื่อนไข `updated_at` เดิม แล้ว 0 แถว = `CONFLICT` (3) ส่งเฉพาะ field ที่เปลี่ยน
-**Consequences:** กดลองใหม่หลัง timeout ไม่เกิดรายการซ้ำ และการแก้ชนกันถูกตรวจพบ (UI: "รายการนี้ถูกแก้จากเครื่องอื่น โหลดใหม่?")
+**Decision:** `client_request_id` (unique, nullable) ต่อการบันทึก 1 ครั้ง · update พร้อมเงื่อนไข `updated_at` เดิม · ส่งเฉพาะ field ที่เปลี่ยน
+**ผลจริง:** M004 + `features/records/api.ts` (`savedOnce`, `updateEntry`) · การบันทึกซ้ำนับเป็นสำเร็จ · การแก้ชนกันได้ `CONFLICT` [V]
 
 ## ADR-08 — Supabase CLI migrations
-**Context:** ไม่มี migration ใน repo [V] และ schema อยู่แต่ใน Dashboard
-**Decision:** `supabase/migrations` + `supabase/rollback` + `supabase/tests` โดยใช้ CLI ใน CI/เครื่อง dev (ไม่ใช่ runtime dependency) และ apply staging อัตโนมัติ ส่วน production ต้องอนุมัติ (Step 06)
-**Consequences:** ต้องมี baseline (M000) จาก production ก่อน ซึ่งต้องใช้สิทธิ์ (B3)
+**Decision:** `supabase/migrations` + `rollback` + `tests` · ใช้ CLI ใน CI/เครื่อง dev · staging อัตโนมัติ · production ผ่าน workflow ที่ต้องอนุมัติ
+**ผลจริง (Partial):** ไฟล์ใน repo + CI job `db` ทดสอบ migrations, SQL tests และ down scripts ทุก PR [V] · **workflow staging/production ไม่ได้สร้าง**: เจ้าของรัน SQL บน production เองก่อน merge (PR template บรรทัดแรก) · ประวัติ migration ใน CLI ของ production [U] (`database-migrations.md` §2)
 
 ## ADR-09 — คง `services[]`
-**Context:** TD-06 ซึ่งการเปลี่ยนโครงต้อง backfill และกระทบ client เดิม
-**Decision:** MVP ใช้ mapper ที่ขอบ data access และย้ายเป็น `car_type`/`car_brand`/`note_text` หลัง v2.0.0 ด้วย expand/contract
-**Consequences:** ยัง query ตามยี่ห้อใน DB ไม่ได้ (ไม่มี requirement ใน MVP)
+**Decision:** MVP แปลงที่ขอบ data access · ย้ายเป็น `car_type`/`car_brand`/`note` หลัง v2.0.0 ด้วย expand/contract
+**ผลจริง:** แปลงใน `features/records/editor.ts` · ยังไม่ย้าย (TD-06)
 
 ## ADR-10 — เลิก sanitize ตอนบันทึก
-**Context:** DOMPurify แปลง `<` เป็น `&lt;` ในข้อมูล (ER-08) และ output ทุกช่องทาง (React, Excel string, PDF text) ไม่ตีความ HTML
-**Decision:** บันทึกตามที่ผู้ใช้พิมพ์ (หลัง trim) แล้วป้องกันที่ output ห้าม `dangerouslySetInnerHTML` และ Excel ป้องกัน formula injection แล้วลบ `isomorphic-dompurify`
-**Consequences:** ข้อมูลเก่าที่ถูกแปลงไปแล้ว (`&lt;`) ยังคงอยู่ และไม่แก้ย้อนหลังอัตโนมัติ (แสดงตามที่เก็บ)
+**Decision:** เก็บตามที่พิมพ์ (หลัง trim) · ป้องกันที่ output · ลบ `isomorphic-dompurify`
+**ผลจริง:** ตามนั้น · ไม่มี `dangerouslySetInnerHTML` กับข้อมูลผู้ใช้ · Excel กัน formula injection (`lib/spreadsheet-text.ts`) [V]
 
 ## ADR-11 — Observability ไม่เพิ่ม dependency
-**Context:** ไม่มี monitoring (ER-30) และ Sentry/Analytics เป็น dependency + ค่าบริการ
-**Decision:** `reportError` → `POST /api/client-errors` → Vercel runtime logs แบบ JSON (ไม่มี PII) ส่วน alerting ใช้ฟีเจอร์ของ Vercel ตาม plan [U]
-**Alternatives:** Sentry (ดีกว่าเรื่อง grouping และ alert) ต้องอนุมัติ dependency + data processing
-**Consequences:** เห็น error ได้ แต่ grouping และการแจ้งเตือนจำกัด จึงทบทวนหลัง 1 เดือน (SM-08)
+**Decision:** `reportAppError` → `POST /api/client-errors` → Vercel runtime logs แบบ JSON ไม่มี PII
+**ผลจริง:** ตามนั้น · ข้อจำกัด: Vercel Hobby ดู log ย้อนได้ 30 นาที ไม่มี alert (K-12) · ทบทวน Sentry หรือ plan ถ้าต้องการเฝ้าระวังจริงจัง
 
 ## ADR-12 — Environment guard
-**Context:** Preview อาจชี้ production DB (Step 00 R01)
-**Decision:** `NEXT_PUBLIC_APP_ENV` + `PRODUCTION_SUPABASE_PROJECT_REF` แล้ว build fail ถ้า non-production ชี้ production ref และแสดงแถบ environment บน non-production (`security-design.md` §6)
-**Consequences:** ต้องตั้ง env ให้ครบทุก scope ก่อน build แรกหลังเปลี่ยน (checklist Step 06)
+**Decision:** `NEXT_PUBLIC_APP_ENV` + `PRODUCTION_SUPABASE_PROJECT_REF` → build ล้มถ้า non-production ชี้ production · แสดงแถบ environment
+**ผลจริง:** `lib/env-guard.ts` ใน `next.config.ts` + `StatusBar` · Preview ใช้ staging ตรวจแล้วใน Step 10 [V]
 
 ## ADR-13 — Route groups + server guard
-**Context:** proxy/middleware เคยมี advisory bypass (ER-09) และทุกหน้าเป็น client component ทำให้ตั้ง `<title>` ต่อหน้าไม่ได้
-**Decision:** `app/(app)/layout.tsx` (server) เรียก `getUser()` แล้ว redirect · `page.tsx` เป็น server shell ที่ export `metadata` · proxy ใช้ refresh session + redirect เพื่อ UX
-**Consequences:** server เรียก Auth 2 ครั้งต่อ page request (proxy + layout) ซึ่งยอมรับได้ (ผู้ใช้น้อย) และควรตั้ง function region ใกล้ Supabase
+**Decision:** `app/(app)/layout.tsx` (server) เรียก `getUser()` แล้ว redirect · `page.tsx` เป็น server shell ที่มี `metadata` · proxy refresh session + redirect
+**ผลจริง:** ตามนั้น · `getSessionUser` ใช้ `cache()` ให้ layout และ page เรียก Auth ครั้งเดียวต่อ request
 
 ## ADR-14 — Dependency policy
-**Decision:**
-- **Runtime เพิ่ม:** ไม่มี (ไอคอนและ dialog ใช้ทางเลือกที่ไม่ต้องเพิ่มตาม S04-01 ค่าเริ่มต้น ยกเว้นเจ้าของอนุมัติ)
-- **Runtime ลบ:** `isomorphic-dompurify` (ADR-10)
-- **Runtime upgrade:** `next` + `eslint-config-next` → 16.4.x และ `@supabase/ssr` → 0.10.x ล่าสุด (patch)
-- **Dev tools:** Supabase CLI (ใช้ผ่าน CI action หรือ binary ไม่จำเป็นต้องอยู่ใน `package.json`) ส่วน E2E/a11y tooling ตัดสินใน Step 08
-**Consequences:** bundle ไม่โตขึ้น และงาน UI ต้องเขียน focus trap ของ `<dialog>` เอง (มี test)
+**Decision:** runtime ไม่เพิ่ม · ลบ `isomorphic-dompurify`
+**ผลจริง:** runtime deps 7 ตัว (`architecture.md` §9) · Step 08 เพิ่ม dev tools `@playwright/test`, `@axe-core/playwright` · Supabase CLI ใช้เป็น binary ไม่อยู่ใน `package.json`
+
+---
+
+## ADR-15 — `develop` เป็นที่รวมงาน (2026-10-19, เจ้าของตัดสิน)
+**Context:** `main` deploy production อัตโนมัติ · หลัง v2.0.0 PR #41–#46 ตั้ง base เป็น `main` จึงขึ้น production โดยไม่ผ่าน RC และทำให้ D-07 (High) ขึ้น production (S10-01)
+**Decision:** งานปกติเข้า `develop` · `main` รับเฉพาะ `release/*` (merge commit) และ hotfix ที่เจ้าของอนุมัติ · back-merge หลัง release
+**Consequences:** ทุกการเปลี่ยนผ่าน RC บน Preview + staging ก่อนถึงผู้ใช้ · ต้องทำ release บ่อยพอ ไม่งั้นการแก้ค้างใน `develop` · `develop` ควรมี ruleset (K-17)
+
+## ADR-16 — ออกจากระบบเฉพาะเครื่องที่กด (D-03)
+**Context:** ร้านใช้บัญชีเดียวกันหลายเครื่อง (tablet หน้าร้าน + มือถือ) · `signOut()` เดิมออกทุกเครื่อง
+**Decision:** `signOut({ scope: 'local' })` · ถ้าเน็ตหลุดลบ cookie ในเครื่องเอง (D-06)
+**Consequences:** session ของเครื่องอื่นยังอยู่ · ถ้าเครื่องหายต้องเปลี่ยนรหัสผ่านเพื่อเตะทุก session
+
+## ADR-17 — ฟอร์มที่ server render ต้องปลอดภัยก่อนหน้าพร้อม (D-07, D-08)
+**Context:** O-01 (Step 09) ทำให้ฟอร์ม login มาพร้อม HTML · กดส่งก่อน JavaScript โหลด เบราว์เซอร์ส่ง GET ทำให้รหัสผ่านอยู่ใน URL (D-07 High) · ข้อความที่พิมพ์ก่อนพร้อมในฟอร์มบันทึกถูกล้าง (D-08)
+**Decision:** ทุกฟอร์มที่ server render: `method="post"` · ปุ่มส่งปิดจนหน้าพร้อม (`useHydrated`) · login ใช้ช่องแบบ uncontrolled · ฟอร์ม controlled เก็บค่าที่พิมพ์ก่อนพร้อมเข้า state (`useKeepEarlyTyping`)
+**Consequences:** ปุ่มเป็นสีจางช่วงสั้น ๆ ตอนโหลด (axe บน WebKit นับเป็น contrast แต่ WCAG ยกเว้นปุ่มที่ใช้ไม่ได้) · ต้องทดสอบด้วยการกัน JavaScript และบน WebKit (`testing-guide.md` §4.4)
+
+## ADR-18 — ไลบรารีหนักโหลดเมื่อใช้ และล้มได้โดยหน้าไม่พัง (O-07, D-11)
+**Decision:** `recharts` โหลดหลังข้อมูลหน้าแรกมาถึง · `exceljs`/`jspdf` โหลดตอนกด · import ที่ล้มแสดงข้อความในกล่องของมัน (`.catch(() => ({ default: Fallback }))`)
+**Consequences:** หน้าแรกเร็วขึ้น · เน็ตอ่อนแล้วไฟล์กราฟโหลดไม่ได้ หน้ายังใช้ได้ (เดิมทั้งหน้าเป็น error)
+
+## ADR-19 — Test อัตโนมัติไม่แตะ production
+**Decision:** CI และ E2E ใช้ Supabase ในเครื่อง (ปฏิเสธ host ที่ไม่ใช่ localhost) · RC test ใช้ Preview + staging (ปฏิเสธโดเมน production และตรวจว่าไม่มี request ไป production) · production ตรวจแบบอ่านอย่างเดียว ส่วนที่ต้อง login ให้เจ้าของทำ
+**Consequences:** ไม่มีข้อมูลทดสอบในร้าน · การตรวจหลัง deploy ที่ต้อง login พึ่งเจ้าของ
+
+## ADR-20 — CSP production ไม่มี `unsafe-eval` (D-05)
+**Decision:** ใส่ `'unsafe-eval'` เฉพาะ `next dev` · ใช้ `zod/mini` (ผ่าน `lib/zod.ts`) ซึ่งไม่ต้อง eval · test ตรวจว่าไม่มี CSP violation ในทุกหน้าและทุก dialog
+**Consequences:** ลดความเสียหายถ้ามี XSS · import zod ต้องผ่าน `lib/zod.ts` เท่านั้น

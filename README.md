@@ -1,55 +1,68 @@
-# 🚗 Car Wash Manager Pro (ระบบบริหารจัดการร้านล้างรถอัจฉริยะ)
+# Car Care Intelligence
 
-ระบบ Web Application สำหรับบริหารจัดการร้านล้างรถคาร์แคร์ขนาด SME ที่ถูกออกแบบมาเพื่อ **"ลดภาระ เพิ่มความสบาย และอุดรอยรั่ว"** ของธุรกิจครอบครัวโดยเฉพาะ 
+ระบบบันทึกรายรับ รายจ่าย และยอดค้างชำระของร้านคาร์แคร์ (ล้างรถ / ขัดสี) ใช้บนมือถือ tablet และ PC โดยคนในร้าน ออกแบบให้กดน้อย ตัวอักษรใหญ่ และอ่านง่ายสำหรับผู้ใช้ทุกวัย
 
-UI/UX ถูกออกแบบมาให้เป็นมิตรกับผู้ใช้งานวัยผู้ใหญ่ (User-Friendly for Elderly) เน้นการกดเลือก (Tap) ลดการพิมพ์ (Typing) และมีการแสดงผลข้อมูลแบบ Real-time ที่หน้า Dashboard ทำให้เจ้าของร้านมองเห็นภาพรวมธุรกิจได้ในหน้าเดียว
+**เวอร์ชันปัจจุบัน:** `v2.1.0` · ขึ้น production 2026-10-19 · ประวัติ release ดู [`docs/redesign/git-workflow.md`](docs/redesign/git-workflow.md) §9 และ [`docs/redesign/release-record.md`](docs/redesign/release-record.md)
 
----
+## หน้าจอและฟีเจอร์
 
-## ✨ Features (ฟีเจอร์เด่น)
+| หน้า | ทำอะไรได้ |
+|---|---|
+| **ภาพรวม** `/` | เงินสดสุทธิวันนี้ · รายรับ/รายจ่าย เทียบเมื่อวาน · การ์ดค้างชำระ (หรือ "ไม่มียอดค้าง") · รายการวันนี้ กดเพื่อแก้ไข · กราฟ 7/30 วันพร้อมตาราง · รายรับตามลูกค้า · สภาพอากาศและคุณภาพอากาศ |
+| **บันทึก** `/add` | รายรับ (ล้างรถ/ขัดสี, ทะเบียน, ประเภทรถ, ราคา, ชำระแล้ว/ค้างชำระ, ลูกค้า, ยี่ห้อ, หมายเหตุ) และรายจ่าย (ปุ่มลัดรายการที่ใช้บ่อย) · "บันทึกแล้วทำต่อ" · บอกลูกค้าประจำจากทะเบียน · ข้อมูลที่กรอกค้างไม่หายเมื่อรีเฟรช · กันบันทึกซ้ำ |
+| **ค้างชำระ** `/debts` | รายลูกค้า ค้างกี่วัน ยอดเท่าไร · สร้างบิล PDF · เคลียร์ยอดพร้อมยืนยันจำนวนรายการและยอด |
+| **ประวัติ** `/history` | เลือกเดือน/ปี · ค้นหาทะเบียน/ลูกค้า/หมายเหตุ · กรองวันที่และประเภท · แก้ไข/ลบ · ส่งออก Excel |
+| **เพิ่มเติม** `/more` | บัญชี · ธีมมืด/สว่าง · เวอร์ชัน · ออกจากระบบ (เฉพาะเครื่องนี้) |
 
-* 📊 **Real-time Dashboard:** สรุปยอดรายรับ รายจ่าย กำไรสุทธิ และเปรียบเทียบเปอร์เซ็นต์การเติบโตกับวันก่อนหน้าแบบอัตโนมัติ
-* 🌤️ **Smart Store Manager (ผู้จัดการร้าน AI):** * ดึงข้อมูลสภาพอากาศล่วงหน้าเพื่อแนะนำการเตรียมพร้อมรับมือลูกค้า
-    * ดึงข้อมูลฝุ่น PM2.5 (AQI) จากเซ็นเซอร์จริงในพื้นที่ (จ.เชียงราย) พร้อมระบบแจ้งเตือนให้พนักงานสวมหน้ากากอนามัยเมื่อค่าฝุ่นเกินมาตรฐาน
-* 📒 **Debt Tracking (สมุดทวงหนี้เต็นท์รถ):** ระบบบันทึกและติดตามยอดค้างชำระของลูกค้ากลุ่มเต็นท์รถ พร้อมปุ่ม "เคลียร์ยอด (จ่ายครบ)" ที่กดเพียงคลิกเดียวระบบจะอัปเดตสถานะรถทุกคันของลูกค้ารายนั้นให้ทันที
-* ⚡ **Quick Add & Loyalty System:**
-    * ระบบบันทึกรายการด่วน แยกล้างรถ / ขัดสี / รายจ่าย
-    * **Loyalty Tracker:** จดจำป้ายทะเบียนและแจ้งเตือน "ลูกค้าประจำ" ทันทีเมื่อกรอกป้ายทะเบียน
-    * **Quick Expense:** ปุ่มลัดสำหรับรายจ่ายที่ใช้บ่อย (เช่น ค่าน้ำยา, ค่าแรง) แบบเลื่อนปัดได้ (Drag-to-scroll)
-* 🔒 **Kiosk Mode Protection:** ระบบป้องกันการปัดหน้าจอรีเฟรช (Pull-to-refresh) โดยไม่ได้ตั้งใจ หากมีการรีเฟรช ระบบจะพากลับไปที่หน้า Dashboard ทันทีเพื่อความต่อเนื่องในการทำงาน
+ข้อมูลเห็นได้เฉพาะบัญชีที่เป็นสมาชิกร้าน (บังคับที่ฐานข้อมูลด้วย Row Level Security) · ติดตั้งเป็นแอปบนหน้าจอโฮมได้ (PWA manifest)
 
----
+## Tech stack
 
-## 🛠️ Tech Stack (เครื่องมือที่ใช้พัฒนา)
+- **Next.js 16** (App Router, `proxy.ts`) · **React 19** · **Tailwind CSS 4** (design tokens) · TypeScript
+- **Supabase**: Postgres (RLS, constraints, triggers, RPC) + Auth (อีเมล/รหัสผ่าน)
+- **Vercel**: hosting (`main` = production, branch อื่น = Preview ที่ใช้ฐานข้อมูล staging)
+- `recharts` (กราฟ), `exceljs` (Excel), `jspdf` (บิล PDF), `zod` (ตรวจข้อมูล) · Open-Meteo (อากาศ ไม่ต้องใช้ key)
+- Test: Vitest + Testing Library · Playwright + axe-core · SQL tests ด้วย Supabase CLI · GitHub Actions 9 checks
 
-* **Frontend:** [Next.js](https://nextjs.org/) (App Router), React, Tailwind CSS
-* **Backend & Database:** [Supabase](https://supabase.com/) (PostgreSQL, Authentication, Real-time Subscriptions)
-* **Data Visualization:** [Recharts](https://recharts.org/) (สำหรับกราฟสรุปรายได้)
-* **External APIs:** * [Open-Meteo API](https://open-meteo.com/) (พยากรณ์อากาศ)
-    * [WAQI API](https://aqicn.org/api/) (ข้อมูลคุณภาพอากาศ PM2.5 แบบ Real-time)
+## เริ่มต้น (นักพัฒนา)
 
----
+ต้องมี Node 22, Docker Desktop และ Supabase CLI 2.118.0 · ขั้นตอนเต็มใน [`docs/redesign/development-guide.md`](docs/redesign/development-guide.md)
 
-## 🚀 Getting Started (วิธีการรันโปรเจกต์)
+```bash
+git clone https://github.com/kittiphat78/car-care-intelligence.git
+cd car-care-intelligence && git switch develop
+npm ci
+supabase start -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+# สร้าง .env.local ตาม docs/redesign/environment-setup.md §4.1 (ฐานข้อมูลในเครื่อง ไม่ใช่ production)
+npm run dev                       # http://localhost:3000
+```
 
-1. **Clone repository:**
-   ```bash
-   git clone [https://github.com/your-username/your-repo-name.git](https://github.com/your-username/your-repo-name.git)
-   cd your-repo-name
-   Install dependencies:
+| คำสั่ง | |
+|---|---|
+| `npm run validate` | lint + type-check + unit test + build (รันก่อน push) |
+| `npm test` | unit / component tests |
+| `npm run test:e2e` | E2E กับ Supabase ในเครื่อง ([`testing-guide.md`](docs/redesign/testing-guide.md)) |
 
-2. **Install dependencies:**
-   ```bash
-   npm install
+**ห้าม** ชี้ `.env.local` ไปฐานข้อมูล production และห้าม commit ไฟล์ `.env*` (ยกเว้น `.env.example`)
 
-3. **Environment Variables:**
-   สร้างไฟล์ .env.local ที่ Root ของโปรเจกต์ และใส่ค่า API Keys ของ Supabase:
-   ```bash
-   NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+## เอกสาร
 
-4. **Run the development server:**
-   ```bash
-   npm run dev
+| เรื่อง | ไฟล์ |
+|---|---|
+| สถาปัตยกรรม, auth, สิทธิ์, data flow | [`architecture.md`](docs/redesign/architecture.md) |
+| เหตุผลของการตัดสินใจ | [`architecture-decisions.md`](docs/redesign/architecture-decisions.md) |
+| เตรียมเครื่อง, โครงโฟลเดอร์, วิธีเพิ่มฟีเจอร์ | [`development-guide.md`](docs/redesign/development-guide.md) |
+| ตัวแปร environment (placeholder) | [`environment-setup.md`](docs/redesign/environment-setup.md) |
+| ฐานข้อมูลและ migration | [`database-migrations.md`](docs/redesign/database-migrations.md), [`database-schema.md`](docs/redesign/database-schema.md) |
+| การทดสอบ | [`testing-guide.md`](docs/redesign/testing-guide.md) |
+| Branch และ release | [`git-workflow.md`](docs/redesign/git-workflow.md), [`release-checklist.md`](docs/redesign/release-checklist.md) |
+| Deploy บน Vercel | [`deployment-guide.md`](docs/redesign/deployment-guide.md) |
+| ย้อนกลับเมื่อมีปัญหา | [`rollback-plan.md`](docs/redesign/rollback-plan.md) |
+| ปัญหาที่รู้และหนี้ทางเทคนิค | [`known-issues.md`](docs/redesign/known-issues.md) |
+| สรุปส่งมอบโปรเจกต์ redesign | [`handover-report.md`](docs/redesign/handover-report.md) |
 
-เปิดเบราว์เซอร์ไปที่ http://localhost:3000 เพื่อดูผลลัพธ์
+เอกสารอื่นใน `docs/redesign/` เป็นบันทึกของแต่ละ Step (00–12) ของการ redesign ปี 2026 · `PROJECT_AUDIT.md` เป็นการตรวจเดิมก่อน redesign (ล้าสมัย)
+
+## ความปลอดภัย
+
+พบช่องโหว่หรือข้อมูลรั่ว แจ้งเจ้าของ repo โดยตรง (ไม่เปิด issue สาธารณะ) · การจัดการ key ที่รั่ว: [`environment-setup.md`](docs/redesign/environment-setup.md) §7

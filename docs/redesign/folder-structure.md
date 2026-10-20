@@ -1,5 +1,7 @@
 # Folder Structure — Step 05
 
+> **เอกสารแผน (2026-10-14)** · โครงที่สร้างจริงและกฎ import ปัจจุบันอยู่ที่ `development-guide.md` §4
+
 > วันที่: 2026-10-14 · ยืนยันโครงจาก `design-to-code-map.md` §3 (ⓢ ของ Step 04) และปรับตาม ADR
 > หลัก: แยกตาม **feature** (domain) โดย UI กลางแยกเป็น `components/` และ route group ไม่เปลี่ยน URL
 

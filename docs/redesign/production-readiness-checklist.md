@@ -66,6 +66,6 @@
 | Release notes + rollback plan พร้อม | ✅ |
 | Known issues ยอมรับได้ (D-08, iPhone keyboard, LCP ประวัติ/ค้างชำระ) | ⏳ เจ้าของยืนยัน |
 | ค้น Vercel logs หา `password=` (D-07) | ⏳ เจ้าของ |
-| **อนุมัติ Step 11** | ⏳ |
+| **อนุมัติ Step 11** | ✅ เจ้าของ 2026-10-19 ~22:06 |
 
-**ผล: Go** เมื่อเจ้าของอนุมัติ Step 11
+**ผล: Go** · release แล้ว ดู `release-record.md`

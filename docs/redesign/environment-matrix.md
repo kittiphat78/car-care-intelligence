@@ -1,5 +1,7 @@
 # Environment Matrix — Step 00
 
+> **ประวัติ (ก่อนมี staging)** · แผนในไฟล์นี้ทำครบแล้ว · สถานะและวิธีตั้งค่าปัจจุบันอยู่ที่ `environment-setup.md`
+
 > วันที่ตรวจ: 2026-10-14 · ป้ายกำกับ: **[V]** Verified · **[I]** Inferred · **[U]** Unknown
 
 ## 1. สถานะปัจจุบัน (As-Is)
