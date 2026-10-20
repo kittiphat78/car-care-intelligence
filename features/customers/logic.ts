@@ -218,6 +218,68 @@ export function phoneOwners(customers: readonly Customer[], number: string, self
   return customers.filter((c) => c.id !== selfId && c.customer_phones.some((p) => p.number === n))
 }
 
+// ── Records → customers (Phase 3: debts call button, plate hint on /add) ─────
+// Records keep the plate and the name as typed (no customer id, ADR-21), so a record is
+// matched to directory customers by its plate, then by its name (§5 matchDebtGroup).
+
+const PLATE_DIGITS = /^[0-9]?[ก-ฮ]{1,3}([0-9]{1,4})$/
+
+/**
+ * How sure a plate match is. `exact`: the same full plate ("กข 1234" = "กข1234ชร.").
+ * `digits`: only the numbers agree — a record typed as "1234" and a car "กข 1234", or
+ * two digits-only plates — which may be another car, so the user picks.
+ */
+export type PlateMatch = 'exact' | 'digits' | null
+
+export function comparePlates(recordPlate: string, vehicleCore: string): PlateMatch {
+  const core = plateCore(recordPlate)
+  if (!core || !vehicleCore) return null
+  if (core === vehicleCore) return isFullPlate(core) ? 'exact' : /^\d{3,}$/.test(core) ? 'digits' : null
+  const digitsOf = (c: string) => (/^\d+$/.test(c) ? c : (PLATE_DIGITS.exec(c)?.[1] ?? null))
+  const a = digitsOf(core)
+  const b = digitsOf(vehicleCore)
+  // One side digits only (at least 3 digits), the other a full plate with the same digits
+  const oneDigitsOnly = /^\d+$/.test(core) !== /^\d+$/.test(vehicleCore)
+  return oneDigitsOnly && a !== null && a.length >= 3 && a === b ? 'digits' : null
+}
+
+/** Directory customers with this plate, the exact matches first */
+export function customersForPlate(customers: readonly Customer[], plate: string): { exact: Customer[]; digits: Customer[] } {
+  const exact: Customer[] = []
+  const digits: Customer[] = []
+  for (const c of customers) {
+    const kinds = c.customer_vehicles.map((v) => comparePlates(plate, v.plate_core))
+    if (kinds.includes('exact')) exact.push(c)
+    else if (kinds.includes('digits')) digits.push(c)
+  }
+  return { exact, digits }
+}
+
+/** Directory customers with this name (spaces and case ignored) */
+export function customersNamed(customers: readonly Customer[], name: string): Customer[] {
+  const key = nameKey(name)
+  return key ? customers.filter((c) => nameKey(c.name) === key) : []
+}
+
+const unique = (list: readonly Customer[]) => [...new Map(list.map((c) => [c.id, c])).values()]
+
+/**
+ * The directory customers a group of unpaid records belongs to (US-10): exact plates and
+ * the same name first; numbers-only plate matches only when nothing surer was found. The
+ * unnamed group ("ลูกค้าทั่วไป") is matched by plates only. 0, 1 or several customers.
+ */
+export function matchDebtGroup(customers: readonly Customer[], group: { name: string | null; plates: readonly string[] }): Customer[] {
+  const byPlate = group.plates.map((p) => customersForPlate(customers, p))
+  const sure = unique([...byPlate.flatMap((m) => m.exact), ...(group.name ? customersNamed(customers, group.name) : [])])
+  return sure.length ? sure : unique(byPlate.flatMap((m) => m.digits))
+}
+
+/** Customers to suggest for a plate typed on /add (US-11): exact matches, else numbers-only ones */
+export function customersForTypedPlate(customers: readonly Customer[], plate: string): Customer[] {
+  const { exact, digits } = customersForPlate(customers, plate)
+  return exact.length ? exact : digits
+}
+
 // ── Draft ⇄ customer ─────────────────────────────────────────────────────────
 
 let keySeq = 0
@@ -232,11 +294,19 @@ export function emptyDraft(): CustomerDraft {
   return { name: '', note: '', phones: [emptyPhone(true)], vehicles: [emptyVehicle()] }
 }
 
-/** New customer from what was searched (§AC-02-5) or from a debt card / record (name and plate) */
-export function draftFrom({ query, name, plate }: { query?: string; name?: string; plate?: string }): CustomerDraft {
+/** New customer from what was searched (AC-02-5) or from a debt card / record (name and plates) */
+export function draftFrom({ query, name, plates = [] }: { query?: string; name?: string; plates?: readonly string[] }): CustomerDraft {
   const draft = emptyDraft()
   if (name) draft.name = name.trim()
-  if (plate) draft.vehicles[0].plate = normalizePlate(plate)
+  // One row per car (the same plate typed differently counts once)
+  const seen = new Set<string>()
+  const rows = plates.map(normalizePlate).filter((p) => {
+    const core = plateCore(p)
+    if (!core || seen.has(core)) return false
+    seen.add(core)
+    return true
+  })
+  if (rows.length) draft.vehicles = rows.slice(0, 50).map((plate) => ({ ...emptyVehicle(), plate }))
   if (query?.trim()) {
     const q = query.trim()
     const kind = classifyQuery(q)

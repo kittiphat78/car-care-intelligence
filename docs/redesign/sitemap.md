@@ -14,9 +14,11 @@ Car Care Intelligence
 ├── /debts                         ค้างชำระ (สมุดทวงหนี้)            [auth]  ใหม่
 │   ├── ?sort=amount|age
 │   ├── ?edit=income:<id>          ↳ dialog แก้ไขรายการ
-│   └── ?settle=<customer>         ↳ dialog ยืนยันเคลียร์ยอด
+│   ├── ?settle=<customer>         ↳ dialog ยืนยันเคลียร์ยอด
+│   └── ?customer=new              ↳ dialog เพิ่มลูกค้าจากการ์ด (v2.2.0, pushState)
 ├── /add                           บันทึก                          [auth]
-│   └── ?type=income|expense
+│   ├── ?type=income|expense
+│   └── ?customer=new              ↳ dialog "บันทึกเป็นลูกค้า" (v2.2.0, pushState)
 ├── /history                       ประวัติ                          [auth]
 │   ├── ?tab=income|expense&y=&m=&q=&from=&to=&job=
 │   ├── ?edit=<kind>:<id>          ↳ dialog แก้ไขรายการ

@@ -200,17 +200,20 @@ export interface CustomerFieldProps extends FieldBase {
   onChange: (value: string) => void
   /** Names used recently on this device, newest first */
   recent: readonly string[]
+  /** More names for the type-ahead list only (e.g. the customer directory, kept in memory) */
+  suggestions?: readonly string[]
   maxLength?: number
 }
 
 export const QUICK_PICK_COUNT = 3
 
 export const CustomerField = forwardRef<HTMLInputElement, CustomerFieldProps>(function CustomerField(
-  { id, label, required, error, hint, value, onChange, recent, maxLength = 50 },
+  { id, label, required, error, hint, value, onChange, recent, suggestions = [], maxLength = 50 },
   ref,
 ) {
   const listId = useId()
   const quick = recent.slice(0, QUICK_PICK_COUNT)
+  const typeAhead = useMemo(() => [...new Set([...recent.slice(0, 30), ...suggestions])].slice(0, 300), [recent, suggestions])
   return (
     <FormField id={id} label={label} required={required} error={error} hint={hint} length={{ value: value.length, max: maxLength }}>
       {quick.length > 0 && (
@@ -238,15 +241,15 @@ export const CustomerField = forwardRef<HTMLInputElement, CustomerFieldProps>(fu
         value={value}
         onChange={(e) => onChange(e.target.value)}
         maxLength={maxLength}
-        list={recent.length ? listId : undefined}
+        list={typeAhead.length ? listId : undefined}
         autoComplete="off"
         invalid={!!error}
         aria-describedby={describedBy(id, { hint, error })}
         placeholder="เช่น เต็นท์ A"
       />
-      {recent.length > 0 && (
+      {typeAhead.length > 0 && (
         <datalist id={listId}>
-          {recent.slice(0, 30).map((name) => (
+          {typeAhead.map((name) => (
             <option key={name} value={name} />
           ))}
         </datalist>

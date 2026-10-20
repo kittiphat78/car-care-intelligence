@@ -46,8 +46,8 @@ export interface CustomerFormDialogProps {
   open: boolean
   /** null: a new customer */
   customer: Customer | null
-  /** What a new customer starts with: the search text, or a name and plate */
-  start?: { query?: string; name?: string; plate?: string }
+  /** What a new customer starts with: the search text, or a name and plates (debt card, /add) */
+  start?: { query?: string; name?: string; plates?: readonly string[] }
   /** The whole directory, to warn about numbers and plates other customers have */
   customers: readonly Customer[]
   /** Keeps a new customer's draft for this account; null keeps none */

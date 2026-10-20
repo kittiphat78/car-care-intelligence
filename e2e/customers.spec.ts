@@ -32,6 +32,16 @@ async function removeLeftovers(prefix: string) {
   expect(r.ok, 'clean up earlier test customers').toBe(true)
 }
 
+/** Remove records of this test (service key, local only) */
+async function removeRecords(plate: string) {
+  const { url, serviceKey } = localSupabase()
+  const r = await fetch(`${url}/rest/v1/records?plate=eq.${encodeURIComponent(plate)}`, {
+    method: 'DELETE',
+    headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+  })
+  expect(r.ok, 'clean up test records').toBe(true)
+}
+
 /** The list row (phone: card, desktop: table row) of one customer */
 const rowOf = (page: Page, name: string) => page.locator('li, tr').filter({ has: page.getByRole('link', { name: new RegExp(`^${name}`) }) })
 
@@ -176,5 +186,73 @@ test('a full plate of another customer moves only when asked (AC-08-1, AC-08-2)'
   await page.getByRole('searchbox').fill(`${name} B`)
   await rowOf(page, `${name} B`).getByRole('link', { name: new RegExp(`^${name} B`) }).click()
   await expect(page.getByText('ยังไม่มีรถ')).toBeVisible()
+  await removeLeftovers(prefix)
+})
+
+test('/add names the customer of a plate; the debts card calls them (US-11, US-10)', async ({ page }, info) => {
+  const { prefix, name, n } = testData(info)
+  const plate = `${info.project.name === 'phone' ? 'ฮซ' : 'ฮฌ'} ${n}`
+  await removeLeftovers(prefix)
+  await removeRecords(plate)
+  await signIn(page, '/customers')
+
+  // A customer with a number and a car
+  await page.getByRole('button', { name: 'เพิ่มลูกค้า' }).first().click()
+  const form = page.getByRole('dialog', { name: 'เพิ่มลูกค้า' })
+  await form.getByRole('textbox', { name: /ชื่อลูกค้า/ }).fill(name)
+  await form.getByRole('textbox', { name: 'เบอร์', exact: true }).fill('080-000-0001')
+  await form.getByRole('textbox', { name: 'ทะเบียน' }).fill(plate)
+  await form.getByRole('button', { name: 'บันทึก', exact: true }).click()
+  await expect(page.getByRole('heading', { level: 1, name })).toBeVisible()
+
+  // /add: the plate (typed another way) names the customer; nothing is filled until asked
+  await page.goto('/add')
+  await page.getByLabel(/^ป้ายทะเบียน/).fill(plate.replace(' ', '-'))
+  await expect(page.getByText(`ลูกค้า: ${name}`)).toBeVisible()
+  await expect(page.getByLabel(/^ลูกค้า \/ เต็นท์/)).toHaveCount(0)
+  await page.getByRole('button', { name: `ใช้ชื่อนี้ ${name}` }).click()
+  await expect(page.getByLabel(/^ลูกค้า \/ เต็นท์/)).toHaveValue(name)
+  await page.getByRole('radio', { name: 'รถเก๋ง' }).click()
+  await page.getByLabel(/^ราคา \(บาท\)/).fill('150')
+  await page.getByRole('radio', { name: 'ค้างชำระ' }).click()
+  await page.getByRole('button', { name: 'บันทึก', exact: true }).click()
+  await expect(page).toHaveURL('/')
+
+  // /debts: the card calls the customer's main number
+  await page.goto('/debts')
+  const card = page.getByRole('article', { name })
+  await expect(card.getByRole('link', { name: `โทร 080-000-0001 ${name}` })).toHaveAttribute('href', 'tel:0800000001')
+  await expectAccessible(page, info, 'debts with call buttons')
+
+  await removeRecords(plate.replace(' ', '-'))
+  await removeLeftovers(prefix)
+})
+
+test('"บันทึกเป็นลูกค้า" after saving a job keeps the name and plate (US-13)', async ({ page }, info) => {
+  const { prefix, name, n } = testData(info)
+  const plate = `${info.project.name === 'phone' ? 'ฮญ' : 'ฮฐ'} ${n}`
+  await removeLeftovers(prefix)
+  await removeRecords(plate)
+  await signIn(page, '/add')
+
+  await page.getByLabel(/^ป้ายทะเบียน/).fill(plate)
+  await page.getByRole('radio', { name: 'รถเก๋ง' }).click()
+  await page.getByLabel(/^ราคา \(บาท\)/).fill('120')
+  await page.getByRole('button', { name: 'เพิ่มชื่อลูกค้า' }).click()
+  await page.getByLabel(/^ลูกค้า \/ เต็นท์/).fill(name)
+  await page.getByRole('button', { name: 'บันทึกแล้วทำต่อ' }).click()
+  const toast = page.getByRole('status').filter({ hasText: `บันทึก ${plate} ฿120 แล้ว` })
+  await toast.getByRole('button', { name: 'บันทึกเป็นลูกค้า' }).click()
+
+  const form = page.getByRole('dialog', { name: 'เพิ่มลูกค้า' })
+  await expect(form.getByRole('textbox', { name: /ชื่อลูกค้า/ })).toHaveValue(name)
+  await expect(form.getByRole('textbox', { name: 'ทะเบียน' })).toHaveValue(plate)
+  await form.getByRole('textbox', { name: 'เบอร์', exact: true }).fill('080-000-0002')
+  await form.getByRole('button', { name: 'บันทึก', exact: true }).click()
+  await expect(page.getByRole('status').filter({ hasText: `เพิ่มลูกค้า ${name} แล้ว` })).toBeVisible()
+  await expect(form).toHaveCount(0)
+  await expect(page).toHaveURL(/\/add/)
+
+  await removeRecords(plate)
   await removeLeftovers(prefix)
 })

@@ -13,11 +13,14 @@ import { SkeletonCard, SkeletonGroup } from '@/components/ui/Skeleton'
 import { useToast } from '@/components/ui/Toast'
 import { EmptyState, ErrorState } from '@/components/patterns/EmptyState'
 import { useOnline } from '@/components/patterns/StatusBar'
+import { CustomerFormDialog } from '@/features/customers/components/CustomerFormDialog'
+import { DebtContact } from '@/features/customers/components/DebtContact'
+import { useCustomerDirectory, useUrlDialog } from '@/features/customers/hooks'
 import { EditRecordDialog } from '@/features/records/components/EditRecordDialog'
 import { useEditParam } from '@/features/records/useEditParam'
 import type { Record as AppRecord } from '@/types'
 import { listUnpaid } from '../api'
-import { debtTotals, groupDebts, sortDebts, type DebtGroup, type DebtSort } from '../logic'
+import { UNNAMED_KEY, debtTotals, groupDebts, sortDebts, type DebtGroup, type DebtSort } from '../logic'
 import { DebtCustomerCard } from './DebtCustomerCard'
 import { SettleDialog } from './SettleDialog'
 
@@ -58,6 +61,11 @@ export function DebtsScreen() {
   const totals = debtTotals(groups)
   const records = unpaid?.ok ? unpaid.data : []
   const edit = useEditParam({ income: records, ready: unpaid !== null })
+
+  // Customer directory: a call button on each card (US-10), "เพิ่มเบอร์" when not in it yet
+  const directory = useCustomerDirectory()
+  const addCustomer = useUrlDialog('customer')
+  const [addFor, setAddFor] = useState<DebtGroup | null>(null)
 
   // ── URL helpers ──
   const withParam = (key: string, value: string | null) => {
@@ -158,6 +166,17 @@ export function DebtsScreen() {
               onBill={(group) => void bill(group)}
               onSettle={openSettle}
               onOpenRow={(r) => edit.open('income', r.id)}
+              contact={
+                <DebtContact
+                  name={g.key === UNNAMED_KEY ? null : g.name}
+                  plates={g.plates}
+                  customers={directory.customers}
+                  onAdd={() => {
+                    setAddFor(g)
+                    addCustomer.open('new')
+                  }}
+                />
+              }
             />
           ))}
         </div>
@@ -165,6 +184,19 @@ export function DebtsScreen() {
 
       <SettleDialog group={settling} onClose={closeSettle} onSettled={reload} />
       <EditRecordDialog target={edit.target} onClose={edit.close} onChanged={reload} />
+      <CustomerFormDialog
+        open={addCustomer.value === 'new' && directory.customers !== null}
+        customer={null}
+        start={addFor ? { name: addFor.name, plates: addFor.plates } : undefined}
+        customers={directory.customers ?? []}
+        userId={null}
+        onClose={addCustomer.close}
+        onReload={() => void directory.reload()}
+        onSaved={() => {
+          addCustomer.close()
+          void directory.reload()
+        }}
+      />
     </div>
   )
 }

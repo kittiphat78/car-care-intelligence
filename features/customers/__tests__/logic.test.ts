@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
   classifyQuery,
+  comparePlates,
+  customersForTypedPlate,
   draftFrom,
   draftFromCustomer,
   draftSignature,
   emptyDraft,
   formatPhone,
   isFullPlate,
+  matchDebtGroup,
   nameKey,
   normalizePhone,
   phoneOwners,
@@ -238,7 +241,7 @@ describe('drafts', () => {
     expect(draftFrom({ query: '1234' }).vehicles[0].plate).toBe('1234')
     expect(draftFrom({ query: '1กข 1234' }).vehicles[0].plate).toBe('1กข 1234')
     expect(draftFrom({ query: ' เต็นท์ใหม่ ' }).name).toBe('เต็นท์ใหม่')
-    expect(draftFrom({ name: 'ทดสอบ', plate: ' กข 1 ' })).toMatchObject({ name: 'ทดสอบ', vehicles: [{ plate: 'กข 1' }] })
+    expect(draftFrom({ name: 'ทดสอบ', plates: [' กข 1 '] })).toMatchObject({ name: 'ทดสอบ', vehicles: [{ plate: 'กข 1' }] })
   })
 
   it('a customer turns into a draft and back to the same signature', () => {
@@ -251,5 +254,53 @@ describe('drafts', () => {
     const copy = { ...d, phones: [...d.phones, { key: 'blank', number: '', label: '', isPrimary: false }] }
     expect(draftSignature(copy)).toBe(draftSignature(d))
     expect(draftSignature({ ...d, name: 'ทดสอบ 2' })).not.toBe(draftSignature(d))
+  })
+})
+
+describe('records → customers (Phase 3)', () => {
+  const tent = customer('ทดสอบ เต็นท์ A', [['0800000001', '', true]], ['1กข 1234', '7777'])
+  const bee = customer('ทดสอบ คุณบี', [['0800000002', '', true]], ['2ขค 5678'])
+  const dee = customer('ทดสอบ คุณดี', [], ['5678'])
+  const all = [tent, bee, dee]
+
+  it.each([
+    ['1กข 1234', '1กข1234', 'exact'],
+    ['1กข-1234 ชร.', '1กข1234', 'exact'],
+    ['1234', '1กข1234', 'digits'],
+    ['1กข 1234', '1234', 'digits'],
+    ['7777', '7777', 'digits'],
+    ['77', '77', null],
+    ['234', '1กข1234', null],
+    ['2กข 1234', '1กข1234', null],
+    ['1กข 1234', '2ขค1234', null],
+  ] as const)('compares the record plate %s with the car %s: %s', (record, core, kind) => {
+    expect(comparePlates(record, core)).toBe(kind)
+  })
+
+  it('finds the customer of a debt group by an exact plate or the same name first', () => {
+    expect(matchDebtGroup(all, { name: 'อื่น', plates: ['1กข1234กทม.'] })).toEqual([tent])
+    expect(matchDebtGroup(all, { name: ' ทดสอบ  เต็นท์ a ', plates: [] })).toEqual([tent])
+    // Exact plate of one customer and the name of another: both, the user picks
+    expect(matchDebtGroup(all, { name: 'ทดสอบ คุณบี', plates: ['1กข 1234'] }).map((c) => c.name)).toEqual(['ทดสอบ เต็นท์ A', 'ทดสอบ คุณบี'])
+  })
+
+  it('uses numbers-only plate matches only when nothing surer was found, and may find several', () => {
+    expect(matchDebtGroup(all, { name: 'ทดสอบ เต็นท์ A', plates: ['5678'] })).toEqual([tent])
+    expect(matchDebtGroup(all, { name: null, plates: ['5678'] }).map((c) => c.name)).toEqual(['ทดสอบ คุณบี', 'ทดสอบ คุณดี'])
+    expect(matchDebtGroup(all, { name: null, plates: ['9999'] })).toEqual([])
+    // The unnamed group is matched by plates only
+    expect(matchDebtGroup(all, { name: null, plates: [] })).toEqual([])
+  })
+
+  it('suggests customers for a plate typed on /add', () => {
+    expect(customersForTypedPlate(all, '2ขค 5678')).toEqual([bee])
+    expect(customersForTypedPlate(all, '5678').map((c) => c.name)).toEqual(['ทดสอบ คุณบี', 'ทดสอบ คุณดี'])
+    expect(customersForTypedPlate(all, '56')).toEqual([])
+  })
+
+  it('a new customer from a debt card gets one row per car', () => {
+    const draft = draftFrom({ name: 'ทดสอบ เต็นท์ C', plates: ['1กข 1234', '1กข-1234 ชร.', ' 7777 ', ''] })
+    expect(draft.name).toBe('ทดสอบ เต็นท์ C')
+    expect(draft.vehicles.map((v) => v.plate)).toEqual(['1กข 1234', '7777'])
   })
 })

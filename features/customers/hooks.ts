@@ -1,26 +1,28 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { reportAppError } from '@/lib/observability'
 import { ok, type Result } from '@/lib/result'
 import { LOCAL_DRAFT_PREFIX } from '@/features/auth/drafts'
 import { listCustomers } from './api'
 import { keepList, keptList } from './memory'
-import { draftSignature, emptyVehicle } from './logic'
+import { customersForTypedPlate, draftSignature, emptyVehicle, plateKey } from './logic'
 import type { Customer, CustomerDraft } from './types'
 
 // ── The directory (ADR-23) ───────────────────────────────────────────────────
 // Loaded whole and searched in the browser. The last list is kept in memory (memory.ts)
 // so going back from a customer to the list shows it at once while a fresh copy loads.
 
-export function useCustomerDirectory() {
+/** `enabled: false` waits (e.g. /add loads the directory only once a plate is being typed) */
+export function useCustomerDirectory({ enabled = true }: { enabled?: boolean } = {}) {
   const [result, setResult] = useState<Result<Customer[]> | null>(() => {
     const kept = keptList()
     return kept ? ok(kept) : null
   })
   // False while only the list kept from an earlier visit is shown (it may lack a customer just added)
   const [fresh, setFresh] = useState(false)
+  const requested = useRef(false)
 
   const reload = useCallback(async () => {
     const next = await listCustomers()
@@ -31,10 +33,12 @@ export function useCustomerDirectory() {
   }, [])
 
   useEffect(() => {
-    // Load on every visit; the result arrives after this effect
+    if (!enabled || requested.current) return
+    // Load once per visit; the result arrives after this effect
+    requested.current = true
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void reload()
-  }, [reload])
+  }, [enabled, reload])
 
   return { result, customers: result?.ok ? result.data : null, fresh, reload }
 }
@@ -169,4 +173,24 @@ export function useCustomerDraft(key: string | null, start: CustomerDraft) {
   )
 
   return { value, setValue, restored, discard, reset }
+}
+
+// ── Customers of a plate being typed (/add, US-11) ───────────────────────────
+
+export const PLATE_LOOKUP_DELAY_MS = 600
+
+/**
+ * Directory customers whose car matches `plate`, once the typing has paused (nothing while
+ * typing, nothing for fewer than 3 characters). Never fills anything in by itself.
+ */
+export function usePlateCustomers(customers: readonly Customer[] | null, plate: string, max = 3): Customer[] {
+  const [settled, setSettled] = useState('')
+  useEffect(() => {
+    const timer = setTimeout(() => setSettled(plate), PLATE_LOOKUP_DELAY_MS)
+    return () => clearTimeout(timer)
+  }, [plate])
+  return useMemo(
+    () => (customers && settled === plate && plateKey(plate).length >= 3 ? customersForTypedPlate(customers, plate).slice(0, max) : []),
+    [customers, settled, plate, max],
+  )
 }

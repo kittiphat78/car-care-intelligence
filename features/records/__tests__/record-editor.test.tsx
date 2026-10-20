@@ -3,14 +3,33 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { appError } from '@/lib/errors'
 import { ToastProvider } from '@/components/ui/Toast'
 
-const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn() }))
-vi.mock('next/navigation', () => ({ useRouter: () => router }))
+const router = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn() }))
+vi.mock('next/navigation', () => ({ useRouter: () => router, usePathname: () => '/add', useSearchParams: () => new URLSearchParams() }))
 
 const api = vi.hoisted(() => ({ createIncome: vi.fn(), createExpense: vi.fn(), countVisitsByPlate: vi.fn() }))
 vi.mock('../api', () => api)
 vi.mock('@/lib/observability', () => ({ reportAppError: vi.fn() }))
+const customersApi = vi.hoisted(() => ({ listCustomers: vi.fn(), saveCustomer: vi.fn(), deleteCustomer: vi.fn(), getCustomer: vi.fn() }))
+vi.mock('@/features/customers/api', () => customersApi)
 
 import { ExpenseEditor, IncomeEditor } from '../components/RecordEditor'
+import { forgetCustomers } from '@/features/customers/memory'
+import { plateCore, plateKey } from '@/features/customers/logic'
+import type { Customer } from '@/features/customers/types'
+
+const tent: Customer = {
+  id: 'tent',
+  name: 'ทดสอบ เต็นท์ A',
+  note: null,
+  created_at: '2026-10-20T03:00:00Z',
+  created_by_email: null,
+  updated_at: null,
+  updated_by_email: null,
+  customer_phones: [],
+  customer_vehicles: [
+    { id: 'v', plate: 'กข 1234', plate_key: plateKey('กข 1234'), plate_core: plateCore('กข 1234'), car_type: null, brand: null, model: null, color: null, note: null, position: 0 },
+  ],
+}
 
 const renderIncome = () =>
   render(
@@ -45,6 +64,8 @@ beforeEach(() => {
   api.countVisitsByPlate.mockReset().mockResolvedValue({ ok: true, data: 0 })
   sessionStorage.clear()
   localStorage.clear()
+  customersApi.listCustomers.mockReset().mockResolvedValue({ ok: true, data: [tent] })
+  forgetCustomers()
 })
 
 afterEach(() => {
@@ -254,5 +275,47 @@ describe('ExpenseEditor', () => {
     await press('บันทึกรายจ่าย')
     expect(api.createExpense).not.toHaveBeenCalled()
     expect(screen.getByRole('alert')).toHaveTextContent('กรุณาแก้ไข 1 ช่อง')
+  })
+})
+
+describe('IncomeEditor and the customer directory (Phase 3)', () => {
+  it('names the customer of a known plate once typing pauses, and fills nothing by itself (US-11)', async () => {
+    renderIncome()
+    fireEvent.change(screen.getByLabelText(/ป้ายทะเบียน/), { target: { value: 'กข-1234' } })
+    expect(screen.queryByText(/ลูกค้า: /)).toBeNull()
+    expect(await screen.findByText('ลูกค้า: ทดสอบ เต็นท์ A', {}, { timeout: 3000 })).toBeInTheDocument()
+    expect(screen.queryByLabelText(/^ลูกค้า \/ เต็นท์/)).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'ใช้ชื่อนี้ ทดสอบ เต็นท์ A' }))
+    expect(screen.getByLabelText(/^ลูกค้า \/ เต็นท์/)).toHaveValue('ทดสอบ เต็นท์ A')
+    expect(screen.queryByRole('button', { name: /ใช้ชื่อนี้/ })).toBeNull()
+  })
+
+  it('offers "บันทึกเป็นลูกค้า" after "บันทึกแล้วทำต่อ" for a name and plate the directory does not know (US-13)', async () => {
+    customersApi.listCustomers.mockResolvedValue({ ok: true, data: [] })
+    const pushState = vi.spyOn(window.history, 'pushState')
+    renderIncome()
+    fillIncome()
+    fireEvent.click(screen.getByRole('button', { name: 'เพิ่มชื่อลูกค้า' }))
+    fireEvent.change(screen.getByLabelText(/^ลูกค้า \/ เต็นท์/), { target: { value: 'ทดสอบ คุณใหม่' } })
+    await waitFor(() => expect(customersApi.listCustomers).toHaveBeenCalled())
+    await press('บันทึกแล้วทำต่อ')
+    const toast = screen.getByRole('status')
+    await act(async () => {
+      fireEvent.click(within(toast).getByRole('button', { name: 'บันทึกเป็นลูกค้า' }))
+    })
+    expect(pushState).toHaveBeenCalledWith(null, '', '/add?customer=new')
+    pushState.mockRestore()
+  })
+
+  it('does not offer it for a customer already in the directory', async () => {
+    renderIncome()
+    fireEvent.change(screen.getByLabelText(/ป้ายทะเบียน/), { target: { value: 'กข 1234' } })
+    fireEvent.click(screen.getByRole('radio', { name: 'รถเก๋ง' }))
+    fireEvent.change(screen.getByLabelText(/ราคา \(บาท\)/), { target: { value: '150' } })
+    fireEvent.click(screen.getByRole('button', { name: 'เพิ่มชื่อลูกค้า' }))
+    fireEvent.change(screen.getByLabelText(/^ลูกค้า \/ เต็นท์/), { target: { value: 'ใครก็ได้' } })
+    await waitFor(() => expect(customersApi.listCustomers).toHaveBeenCalled())
+    await press('บันทึกแล้วทำต่อ')
+    expect(within(screen.getByRole('status')).queryByRole('button', { name: 'บันทึกเป็นลูกค้า' })).toBeNull()
   })
 })

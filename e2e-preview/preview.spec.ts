@@ -171,7 +171,7 @@ test('CUJ: unpaid job → debts → bill PDF → settle', async ({ page }, info)
   db()
 })
 
-test('CUJ: customer directory: add 2 numbers, find by part of a number, call, edit, delete (v2.2.0)', async ({ page }, info) => {
+test('CUJ: customer directory: add, find, call, edit; plate hint on /add; call from debts; delete (v2.2.0)', async ({ page }, info) => {
   const id = tag(info)
   const name = `ทดสอบ ${id}`
   // A full plate is unique in the directory: letters per project, digits per run
@@ -210,6 +210,28 @@ test('CUJ: customer directory: add 2 numbers, find by part of a number, call, ed
   await edit.getByRole('button', { name: 'บันทึก', exact: true }).click()
   await expect(toast(page, 'บันทึกการแก้ไขแล้ว')).toBeVisible()
   await expect(page.getByRole('link', { name: `โทร 080-000-0003 ${name}` })).toBeVisible()
+
+  // Phase 3: /add names the customer of a plate; the debts card calls them
+  await page.goto('/add')
+  await page.getByLabel(/^ป้ายทะเบียน/).fill(plate)
+  await expect(page.getByText(`ลูกค้า: ${name}`)).toBeVisible()
+  await page.getByRole('button', { name: `ใช้ชื่อนี้ ${name}` }).click()
+  await page.getByLabel(/^ป้ายทะเบียน/).fill(id) // a plate the clean-up step knows
+  await page.getByRole('radio', { name: 'รถเก๋ง' }).click()
+  await page.getByLabel(/^ราคา \(บาท\)/).fill('1')
+  await page.getByRole('radio', { name: 'ค้างชำระ' }).click()
+  await page.getByRole('button', { name: 'บันทึก', exact: true }).click()
+  await expect(page).toHaveURL('/')
+  await page.goto('/debts')
+  await expect(page.getByRole('article', { name }).getByRole('link', { name: `โทร 080-000-0001 ${name}` })).toHaveAttribute('href', 'tel:0800000001')
+  await page.goto(`/history?q=${encodeURIComponent(id)}`)
+  await page.getByRole('button', { name: new RegExp(id) }).click()
+  await page.getByRole('dialog', { name: 'แก้ไขรายรับ' }).getByRole('button', { name: 'ลบ', exact: true }).click()
+  await page.getByRole('button', { name: 'ลบรายการ' }).click()
+  await expect(page.getByText(`ไม่พบรายการที่ตรงกับ “${id}”`)).toBeVisible()
+  await page.goto('/customers')
+  await page.getByRole('searchbox').fill(name)
+  await row.getByRole('link', { name: new RegExp(`^${name}`) }).click()
 
   await page.getByRole('button', { name: 'ลบลูกค้า' }).click()
   const confirm = page.getByRole('alertdialog', { name: `ลบ ${name}?` })
