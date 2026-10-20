@@ -162,6 +162,9 @@ test('CUJ: unpaid job → debts → bill PDF → settle', async ({ page }, info)
   await page.getByRole('alertdialog', { name: `เคลียร์ยอด ${customer}?` }).getByRole('button', { name: 'เคลียร์ยอด', exact: true }).click()
   await expect(toast(page, `เคลียร์ยอด ${customer} ฿444 แล้ว`)).toBeVisible()
   await expect(page).not.toHaveURL(/settle=/)
+  // The page refreshes the nav badge after the dialog closed (D-12); leave once that is done
+  await expect(page.locator('[aria-busy="true"]')).toHaveCount(0)
+  await expect(page).not.toHaveURL(/settle=/)
   // Clean up: delete the settled record
   await page.goto(`/history?q=${encodeURIComponent(plate)}`)
   await page.getByRole('button', { name: new RegExp(plate) }).click()
