@@ -36,7 +36,8 @@ test('เคลียร์ยอด, the history tabs and the edit dialog open 
     }),
   ).toEqual([])
 
-  await page.goto('/history')
+  // The whole year: the seed data may not reach the current month
+  await page.goto('/history?m=0')
   // A job of the seed data (plates "ทดสอบ …"); a card on phones, a table row on desktop
   const row = page.getByRole('main').getByRole('button', { name: /ทดสอบ/ }).first()
   await expect(row).toBeVisible()
@@ -54,24 +55,42 @@ test('เคลียร์ยอด, the history tabs and the edit dialog open 
   ).toEqual([])
 })
 
-test('a tab of the main menu opens from what was prefetched', async ({ page }) => {
-  // The prefetch is an ordinary render request of /debts, sent when the link appears
-  let prefetched = 0
-  page.on('requestfinished', (r) => {
-    const url = new URL(r.url())
-    if (url.pathname === '/debts' && (r.headers()['rsc'] === '1' || url.searchParams.has('_rsc'))) prefetched++
-  })
+test('a tab opened a moment ago opens again with no server request', async ({ page }) => {
   await signIn(page)
   const menu = page.getByRole('navigation', { name: 'เมนูหลัก' }).filter({ visible: true })
-  const debts = menu.getByRole('link', { name: /ค้างชำระ/ })
-  await expect(debts).toBeVisible()
-  // WebKit schedules prefetching later than Chromium: wait until it has been done
-  await expect.poll(() => prefetched, { timeout: 15_000 }).toBeGreaterThan(0)
-  await page.waitForLoadState('networkidle')
+  await menu.getByRole('link', { name: /ค้างชำระ/ }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'ค้างชำระ' })).toBeVisible()
+  await menu.getByRole('link', { name: /ภาพรวม/ }).click()
+  await expect(page.getByRole('heading', { level: 1, name: 'ภาพรวมวันนี้' })).toBeVisible()
+  // The browser kept /debts (staleTimes in next.config.ts)
   expect(
     await serverRenders(page, '/debts', async () => {
-      await debts.click()
+      await menu.getByRole('link', { name: /ค้างชำระ/ }).click()
       await expect(page.getByRole('heading', { level: 1, name: 'ค้างชำระ' })).toBeVisible()
     }),
   ).toEqual([])
+})
+
+test('typing in the customer search asks the server for nothing (ADR-23)', async ({ page }) => {
+  // Not even prefetches: next/link prefetched every link on screen again after each URL
+  // change, with the search in a request header (AppLink prefetches on a tap only)
+  await signIn(page, '/customers')
+  const search = page.getByRole('searchbox', { name: 'ค้นหาชื่อ เบอร์ หรือทะเบียน' })
+  await expect(search).toBeVisible()
+  await page.waitForLoadState('networkidle')
+  // The test's pointer stays where it last clicked; results appearing under it would count
+  // as the pointer moving over a card (AppLink prefetches on that). A phone has no pointer.
+  await page.mouse.move(0, 0)
+  const sent: string[] = []
+  const onRequest = (r: Request) => {
+    const url = new URL(r.url())
+    if (url.origin === new URL(page.url()).origin && !url.pathname.startsWith('/_next/static')) sent.push(r.url())
+  }
+  page.on('request', onRequest)
+  await search.pressSequentially('ทดสอบ 08', { delay: 80 })
+  // The URL follows the typing after a pause (CustomersScreen); wait past it
+  await expect(page).toHaveURL(/q=/)
+  await page.waitForTimeout(1500)
+  page.off('request', onRequest)
+  expect(sent).toEqual([])
 })
