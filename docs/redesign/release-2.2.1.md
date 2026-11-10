@@ -1,6 +1,6 @@
 # v2.2.1 — กดแล้วตอบสนองทันที + ปุ่ม "เพิ่มเบอร์"
 
-> สถานะ: **พร้อม release** (รอเจ้าของ merge) · RC `v2.2.1-rc.4` (`b402810`, tag แล้ว) · ฐาน: `v2.2.0` (`18b52bc`)
+> สถานะ: **Released** · production 2026-11-10 12:51 · PR #68 merge commit `6d7aaa6` · tag `v2.2.1` · RC `v2.2.1-rc.4` (`b402810`) · ฐาน: `v2.2.0` (`18b52bc`)
 > SemVer: PATCH (ปรับความเร็วหน้าจอ + ปุ่มลัดในหน้าลูกค้า + อัปเดต dependency ด้านความปลอดภัย · ไม่มี migration · ไม่เปลี่ยนข้อมูล) · ป้าย: **[V]** Verified · **[I]** Inferred · **[U]** Unknown
 
 ## สำหรับคนในร้าน
@@ -24,7 +24,7 @@
 | `30984e5` | **ความปลอดภัย:** `next` 16.3.8 → 16.4.3, `dompurify` 3.4.16 → 3.4.17, `zod` 4.4.3 → 4.6.7 · advisory ที่ประกาศหลัง v2.2.0 (มีผลกับ production v2.2.0 ด้วย): next critical — RCE ใน image optimizer กับไฟล์ SVG (GHSA-2464-fhr4-w9xw), RCE ใน `use cache` (GHSA-673q-mjm6-r5xr), DoS ผ่าน Server Actions (GHSA-p3m5-59mp-jv5r) · dompurify critical (ผ่าน jspdf) · zod high · แอปไม่ใช้ `next/image`, `use cache`, Server Actions แต่ `/_next/image` เรียกได้โดยไม่ login และมี `public/icons/icon.svg` · ทุกเวอร์ชันออกมาแล้ว ≥ 2 สัปดาห์ (D-04) · ที่เหลือ: `uuid` ผ่าน exceljs (moderate, แก้ได้ทางเดียวคือลด exceljs) | ✅ framework |
 | `b402810` | `chore(release): 2.2.1-rc.4` | เลขเวอร์ชัน |
 | `fa56053` | e2e-preview: ส่งออก Excel เลือกตั้งแต่มกราคม (ไม่ขึ้นกับว่าเดือนนี้มีรายการหรือยัง) | ❌ test |
-| — | release notes นี้ · `chore(release): 2.2.1` | ❌ docs / เลขเวอร์ชัน |
+| `5b0996a` `9c01899` | release notes นี้ · `chore(release): 2.2.1` | ❌ docs / เลขเวอร์ชัน |
 
 **ทำไมต้อง rc.3** [V]: rc.2 ให้เมนู prefetch ทั้งหน้าและลิงก์ทุกอันที่มีหน้า loading prefetch เอง ใน Next.js 16 ลิงก์ทุกอันบนจอ prefetch ใหม่ทุกครั้งที่ URL เปลี่ยน · พิมพ์ค้นหาลูกค้า 1 ครั้งจึงเกิดราว 40 request ให้ server render (แต่ละครั้งเช็ก session กับ Supabase Auth 2 ครั้ง) และ header ของ request มีคำค้นอยู่ด้วย (ขัดเจตนา ADR-23) · บน Preview ตอนที่ Supabase Auth ของ staging ช้า (sign-in 11–52 วินาที) หน้าจึงค้างที่ "กำลังโหลด"
 
@@ -46,6 +46,17 @@
 | Preview + staging (`e2e-preview`) | ผ่านครบ มือถือ · PC · iPhone (2026-11-10, รอบแรก 11 ผ่าน + รันซ้ำ 4 ข้อที่ล้มด้วยเหตุนอกโค้ด: ส่งออก Excel ×3 เพราะ staging ยังไม่มีรายการเดือนพฤศจิกายน → test เลือกตั้งแต่มกราคม `fa56053` · บันทึกรายการบนมือถือ ×1 เพราะ staging เพิ่งกลับมาจากถูกพัก) · Preview แสดง `v2.2.1-rc.4` · tag `v2.2.1-rc.4` [V] · rc.2: ล้มจาก prefetch และ Supabase Auth ของ staging ช้า → แก้ใน rc.3 |
 
 หมายเหตุ staging: 2026-11-10 โปรเจกต์ Supabase staging ถูกพักอัตโนมัติ (แพ็กเกจฟรี ไม่มีการใช้งาน > 7 วัน, DNS หายไป) จนเจ้าของกด Resume · production ไม่ถูกพัก (ตรวจแล้วตอบปกติ) [V]
+
+## Deploy และตรวจหลังขึ้น production [V]
+
+| เวลา (2026-11-10) | เหตุการณ์ |
+|---|---|
+| 12:50:48 | เจ้าของ merge PR #68 แบบ merge commit → `6d7aaa6` (`release/2.2.1` @ `9c01899` อยู่ใน `main` ครบ) |
+| 12:51:41 | Vercel production deployment `7674713773` success (commit `6d7aaa6`) |
+| หลัง deploy | Smoke test อ่านอย่างเดียวที่ `car-care-intelligence-53wd.vercel.app`: `/login` 200 ขึ้น `v2.2.1` · ไม่มีแถบ Preview · `/`, `/add`, `/debts`, `/history`, `/customers`, `/customers/<id>`, `/more` ไม่ login → 307 ไป `/login?next=` · header ความปลอดภัยครบ (CSP, HSTS, X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy) · JavaScript 12 ไฟล์ชี้ Supabase production เท่านั้น ไม่มี ref ของ staging ไม่มี key ฝั่ง server |
+| หลัง smoke | tag `v2.2.1` (annotated) บน `6d7aaa6` · back-merge fast-forward `develop` = `main` = `6d7aaa6` |
+
+ยังไม่ได้ทำ (เจ้าของ): ลองใช้จริงด้วยบัญชีร้านบนมือถือ (สลับแท็บ, เปิดเคลียร์ยอด, หน้าประวัติ, ค้นหาลูกค้า, ปุ่ม "เพิ่มเบอร์")
 
 ## Rollback
 
