@@ -20,7 +20,8 @@ export function BottomNav({ badges = {} }: BottomNavProps) {
 
   // The bar is as tall as its text needs (see below). The page's bottom padding, the
   // ActionBar on /add and toasts sit above it through --size-nav-bottom (64px + safe area
-  // by default), so that value follows the bar's real height. Hidden (≥ 1024px): default.
+  // by default), so that value follows the bar's real height. While hidden (≥ 1024px, or a
+  // short screen on a page with a save bar, globals.css) the stylesheet value applies.
   useEffect(() => {
     const nav = ref.current
     if (!nav || typeof ResizeObserver === 'undefined') return
@@ -42,6 +43,7 @@ export function BottomNav({ badges = {} }: BottomNavProps) {
     <nav
       ref={ref}
       aria-label="เมนูหลัก"
+      data-bottom-nav
       className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] shadow-elevation-2 lg:hidden"
     >
       {/* min-h in rem, not a fixed 64px: with large text (system font size, zoom) the bar
