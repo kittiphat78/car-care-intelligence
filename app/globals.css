@@ -48,6 +48,23 @@
   --toast-offset: calc(var(--size-nav-bottom) + 96px);
 }
 
+/* Short screen: a phone on its side, or large text (browser zoom shrinks the viewport;
+ * rem follows the browser's default text size). Only below lg, where the bottom nav is. */
+@custom-variant short (@media (max-height: 31.25rem) and (width < 1024px));
+
+/* On a short screen the save bar and the bottom nav took over half of it and left about
+ * 130px for the form (Phase A H3). On a page with a save bar (/add) the form needs that
+ * height more than the menu does, so the nav steps aside; it is back on the next page.
+ * BottomNav drops its inline --size-nav-bottom while it is hidden, so this value applies. */
+@media (max-height: 31.25rem) and (width < 1024px) {
+  :root:has([data-action-bar]) {
+    --size-nav-bottom: 0px;
+  }
+  :root:has([data-action-bar]) [data-bottom-nav] {
+    display: none;
+  }
+}
+
 /* No page scroll behind an open dialog */
 html:has(dialog[open]) {
   overflow: hidden;

@@ -75,8 +75,10 @@ export function DashboardScreen({ email }: { email: string }) {
         </div>
         {/* On phones the buttons always have their own line, kept to the right. Before,
             they shared the title's line until the weather and the update time arrived,
-            then wrapped and pushed every card down (CLS 0.5, Step 09 O-08) */}
-        <div className="flex items-center gap-2 max-md:basis-full max-md:justify-end">
+            then wrapped and pushed every card down (CLS 0.5, Step 09 O-08). They may wrap
+            under each other only when they cannot fit (large text): before, the page grew
+            sideways and the update button went off screen */}
+        <div className="flex flex-wrap items-center gap-2 max-md:basis-full max-md:justify-end">
           <WeatherStrip weather={weather} onOpen={weatherDetail.show} />
           <Button
             variant="secondary"

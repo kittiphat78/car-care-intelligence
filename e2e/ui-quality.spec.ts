@@ -58,6 +58,48 @@ test('the bottom bar keeps its labels with large text and on a 280 px fold', asy
   expect(await labels(), 'text 200%').toEqual({ cut: [], touching: 0, room: true })
 })
 
+test('the record form keeps its room on a phone on its side and with large text', async ({ page }) => {
+  test.skip(test.info().project.name !== 'phone', 'phone layout only')
+  await signIn(page)
+  const nav = page.locator('[data-bottom-nav]')
+  const bar = () =>
+    page.evaluate(() => {
+      const r = document.querySelector('[data-action-bar]')!.getBoundingClientRect()
+      return { top: Math.round(r.top), bottom: Math.round(r.bottom), height: Math.round(r.height), vh: innerHeight }
+    })
+
+  // Phone on its side: the nav steps aside on /add, the save bar is one slim row at the bottom
+  for (const size of [{ width: 667, height: 375 }, { width: 932, height: 430 }]) {
+    await page.setViewportSize(size)
+    await page.goto('/add')
+    await expect(page.getByRole('button', { name: 'บันทึก', exact: true })).toBeEnabled()
+    await expect(nav).toBeHidden()
+    const b = await bar()
+    expect(b.bottom, `${size.width}: bar at the bottom edge`).toBe(b.vh)
+    expect(b.height, `${size.width}: slim bar`).toBeLessThanOrEqual(72)
+  }
+  // The nav is back on every other page, and on /add when the screen is tall
+  await page.goto('/')
+  await expect(nav).toBeVisible()
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/add')
+  await expect(nav).toBeVisible()
+  const tall = await bar()
+  expect(tall.bottom, 'bar above the nav').toBeLessThanOrEqual(tall.vh - 64)
+
+  // 320 px: the date quick picks stay together on one line
+  await page.setViewportSize({ width: 320, height: 640 })
+  const top = (name: string) => page.getByRole('button', { name, exact: true }).evaluate((el) => Math.round(el.getBoundingClientRect().top))
+  expect(await top('เมื่อวาน')).toBe(await top('วันนี้'))
+
+  // Large text on the dashboard: the header buttons wrap instead of widening the page
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/')
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  await page.evaluate(() => (document.documentElement.style.fontSize = '200%'))
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), 'no sideways scroll').toBeLessThanOrEqual(0)
+})
+
 test('pages are accessible in the light theme too', async ({ page }, info) => {
   await page.addInitScript(() => localStorage.setItem('car-care-theme', 'light'))
   await signIn(page)

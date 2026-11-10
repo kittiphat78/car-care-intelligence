@@ -85,7 +85,7 @@ Tones: `neutral` · `success` "ชำระแล้ว" · `warning` "ค้า
 ### 1.8 Dialog
 | | |
 |---|---|
-| Variants | `modal` (กลางจอ, max 480/560px) บน Medium/Expanded · `sheet` (bottom sheet, มุมบน radius xl, สูงสุด 90dvh, มี handle) บน Compact · `alert` (`role="alertdialog"`, กลางจอทุกขนาด, max 400px) |
+| Variants | `modal` (กลางจอ, max 480/560px) บน Medium/Expanded · `sheet` (bottom sheet, มุมบน radius xl, สูงสุด 90dvh, มี handle) บน Compact · จอเตี้ย: sheet/modal สูงได้เต็มจอ หัวและท้ายแคบลง · `alert` (`role="alertdialog"`, กลางจอทุกขนาด, max 400px) |
 | Anatomy | Header (หัวข้อ `h2` + IconButton ปิด) · Body (scroll ได้) · Footer (ปุ่มติดล่าง) |
 | พฤติกรรม | focus trap, focus เริ่มต้นตามสเปก (IS §3.2), Esc ปิด, คลิกฉากหลังปิด (ยกเว้น alert), back ปิด (URL state) และคืน focus |
 | Motion | sheet เลื่อนขึ้น 220ms และ modal fade+scale 0.98→1 220ms (reduced: fade อย่างเดียว) |
@@ -133,7 +133,7 @@ Banner danger บนสุดของฟอร์ม "กรุณาแก้�
 |---|---|
 | `PlateField` | สูง 64px, ข้อความ 24px/700 กึ่งกลาง, `autocapitalize="characters"`, max 20 + counter และ slot ใต้ช่องสำหรับ "ลูกค้าประจำ ครั้งที่ N" (Badge info) |
 | `MoneyField` | สูง 64px, prefix "฿", ข้อความ 28px/700 ชิดขวา, `inputMode="numeric"`, รับเฉพาะตัวเลข และแสดงคั่นหลักพันเมื่อ blur · tone `expense` สำหรับรายจ่าย (ตัวเลข `expense`) |
-| `DateField` | ปุ่มแสดง "วันนี้ · 14 ต.ค. 2569" (พ.ศ.) ที่ focus ได้ แล้วเปิด native date input · ถ้าไม่ใช่วันนี้ แสดง Badge warning "บันทึกย้อนหลัง" · มีปุ่มลัด "วันนี้" / "เมื่อวาน" |
+| `DateField` | ปุ่มแสดง "วันนี้ · 14 ต.ค. 2569" (พ.ศ.) ที่ focus ได้ แล้วเปิด native date input · ถ้าไม่ใช่วันนี้ แสดง Badge warning "บันทึกย้อนหลัง" · มีปุ่มลัด "วันนี้" / "เมื่อวาน" (ตกบรรทัดเป็นคู่ ไม่แยกกัน) |
 | `TimeField` | native `type="time"` 24 ชม. |
 | `SearchField` | TextInput + ไอคอนค้นหา + ปุ่มล้าง, `type="search"` และ `enterkeyhint="search"` |
 | `CustomerField` | quick-pick chips (3) + TextInput + datalist (30 ชื่อล่าสุด) |
@@ -141,7 +141,7 @@ Banner danger บนสุดของฟอร์ม "กรุณาแก้�
 | `MonthYearPicker` | 2 select (เดือนรวม "ทั้งปี" และปี พ.ศ. ถึงปีปัจจุบัน) โดยมี label ที่ผูกจริง |
 
 ### 2.4 ActionBar
-แถบติดล่างเหนือ nav: พื้น `surface`, elevation-2, padding 12px + safe-area และมีปุ่ม secondary (ซ้าย, 40%) + primary (ขวา, 60%) ขนาด `lg` · ป้าย "บันทึกย้อนหลัง" อยู่บนแถบเมื่อมี · ซ่อนเมื่อ virtual keyboard เปิดบน Compact (IS §2.4) · Expanded: เป็นแถวปกติท้ายฟอร์ม
+แถบติดล่างเหนือ nav: พื้น `surface`, elevation-2, padding 12px + safe-area และมีปุ่ม secondary (ซ้าย, 40%) + primary (ขวา, 60%) ขนาด `lg` · ป้าย "บันทึกย้อนหลัง" อยู่บนแถบเมื่อมี · ซ่อนเมื่อ virtual keyboard เปิดบน Compact (IS §2.4) · Expanded: เป็นแถวปกติท้ายฟอร์ม · **จอเตี้ย** (สูง ≤ 500px ที่ตัวอักษรปกติ และกว้าง < 1024: มือถือแนวนอน, ตัวอักษรใหญ่): BottomNav หลบไปบนหน้าที่มี ActionBar, แถบชิดขอบล่าง padding 8px + safe-area และปุ่มสูง 48px
 
 ### 2.5 EmptyState
 ไอคอน 40px (`text-tertiary`) + หัวข้อ 18px/600 + คำอธิบาย 16px + ปุ่ม (ถ้ามี) และจัดกึ่งกลาง

@@ -158,12 +158,16 @@ export function DateField({ id, label, required, error, value, onChange, today =
           aria-describedby={describedBy(id, { hint: hintText, error })}
           className="min-w-36 flex-1"
         />
-        <Button size="sm" variant={value === today ? 'primary' : 'secondary'} aria-pressed={value === today} onClick={() => onChange(today)}>
-          วันนี้
-        </Button>
-        <Button size="sm" variant={value === yesterday ? 'primary' : 'secondary'} aria-pressed={value === yesterday} onClick={() => onChange(yesterday)}>
-          เมื่อวาน
-        </Button>
+        {/* The two quick picks wrap as a pair: on a 320px dialog "เมื่อวาน" alone used to
+            drop to its own line (Phase A M10) */}
+        <div className="flex gap-2">
+          <Button size="sm" variant={value === today ? 'primary' : 'secondary'} aria-pressed={value === today} onClick={() => onChange(today)}>
+            วันนี้
+          </Button>
+          <Button size="sm" variant={value === yesterday ? 'primary' : 'secondary'} aria-pressed={value === yesterday} onClick={() => onChange(yesterday)}>
+            เมื่อวาน
+          </Button>
+        </div>
       </div>
     </FormField>
   )
