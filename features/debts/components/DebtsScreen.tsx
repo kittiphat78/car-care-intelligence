@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { AppLink } from '@/components/ui/AppLink'
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { bangkokToday } from '@/lib/time/bangkok'
@@ -169,9 +169,9 @@ export function DebtsScreen() {
           icon="check-circle"
           title="ไม่มีรายการค้างชำระ"
           action={
-            <Link href="/" className={buttonClassName({ variant: 'secondary' })}>
+            <AppLink href="/" className={buttonClassName({ variant: 'secondary' })}>
               กลับภาพรวม
-            </Link>
+            </AppLink>
           }
         >
           ทุกรายการได้รับชำระแล้ว

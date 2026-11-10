@@ -1,10 +1,11 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const nav = vi.hoisted(() => ({ pathname: '/', search: '' }))
+const nav = vi.hoisted(() => ({ pathname: '/', search: '', prefetch: vi.fn() }))
 vi.mock('next/navigation', () => ({
   usePathname: () => nav.pathname,
   useSearchParams: () => new URLSearchParams(nav.search),
+  useRouter: () => ({ prefetch: nav.prefetch }),
 }))
 
 import { BottomNav } from '../nav/BottomNav'
@@ -51,6 +52,15 @@ describe('BottomNav', () => {
     expect(links.map((l) => l.textContent)).toEqual(['ภาพรวม', 'ค้างชำระ', 'บันทึก', 'ประวัติ', 'เพิ่มเติม'])
     expect(within(menu).getByRole('link', { name: 'ประวัติ' })).toHaveAttribute('aria-current', 'page')
     expect(within(menu).getByRole('link', { name: 'ภาพรวม' })).not.toHaveAttribute('aria-current')
+  })
+
+  it('prefetches a tab when a finger touches it, not when it appears (AppLink)', () => {
+    nav.pathname = '/'
+    nav.prefetch.mockReset()
+    render(<BottomNav />)
+    expect(nav.prefetch).not.toHaveBeenCalled()
+    fireEvent.touchStart(within(screen.getByRole('navigation', { name: 'เมนูหลัก' })).getByRole('link', { name: 'ค้างชำระ' }))
+    expect(nav.prefetch).toHaveBeenCalledWith('/debts')
   })
 
   it('keeps five places on phones: ลูกค้า is reached from เพิ่มเติม, which stays marked (Q-1)', () => {

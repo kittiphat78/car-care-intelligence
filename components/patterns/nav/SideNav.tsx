@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { AppLink } from '@/components/ui/AppLink'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/cn'
 import { pushOnPlainClick } from '@/lib/url-state'
@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/Switch'
 import { buttonClassName } from '@/components/ui/Button'
 import { useTheme } from '@/components/patterns/theme'
 import { NAV_ITEMS, badgeText, isActivePath, withLogoutParam } from './items'
+import { PendingDot } from './TabIcon'
 
 // component-specifications.md §2.10 — wide screens (≥ 1024px)
 
@@ -34,10 +35,10 @@ export function SideNav({ email, badges = {} }: SideNavProps) {
       </div>
 
       <div className="px-4 pb-4">
-        <Link href="/add" className={buttonClassName({ size: 'lg', fullWidth: true })}>
+        <AppLink href="/add" className={buttonClassName({ size: 'lg', fullWidth: true })}>
           <Icon name="plus" />
           บันทึกรายการ
-        </Link>
+        </AppLink>
       </div>
 
       <nav aria-label="เมนูหลัก" className="flex-1 overflow-y-auto px-3">
@@ -47,9 +48,8 @@ export function SideNav({ email, badges = {} }: SideNavProps) {
             const count = badges[item.href] ?? 0
             return (
               <li key={item.href}>
-                <Link
+                <AppLink
                   href={item.href}
-                  prefetch
                   aria-current={active ? 'page' : undefined}
                   className={cn(
                     'focus-ring flex min-h-12 items-center gap-3 rounded-md px-3 text-body',
@@ -58,13 +58,14 @@ export function SideNav({ email, badges = {} }: SideNavProps) {
                 >
                   <Icon name={item.icon} />
                   <span className="flex-1">{item.label}</span>
+                  <PendingDot />
                   {count > 0 && (
                     <span className="grid h-6 min-w-6 place-items-center rounded-full bg-warning px-1.5 text-caption font-bold text-on-primary">
                       <span aria-hidden="true">{badgeText(count)}</span>
                       <span className="sr-only">{`${count} ราย`}</span>
                     </span>
                   )}
-                </Link>
+                </AppLink>
               </li>
             )
           })}
@@ -74,16 +75,11 @@ export function SideNav({ email, badges = {} }: SideNavProps) {
       <div className="grid grid-cols-1 gap-2 border-t border-border px-4 pt-3 pb-5">
         <Switch label="ธีมมืด" checked={theme === 'dark'} onChange={(dark) => setTheme(dark ? 'dark' : 'light')} />
         {email && <p className="truncate text-caption text-text-secondary">{email}</p>}
-        <Link
-          href={withLogoutParam(pathname, searchParams.toString())}
-          onClick={pushOnPlainClick}
-          prefetch={false}
-          scroll={false}
-          className={buttonClassName({ variant: 'danger-ghost', fullWidth: true })}
-        >
+        {/* A plain link: it only adds ?logout=1 here, in the browser (lib/url-state.ts) */}
+        <a href={withLogoutParam(pathname, searchParams.toString())} onClick={pushOnPlainClick} className={buttonClassName({ variant: 'danger-ghost', fullWidth: true })}>
           <Icon name="logout" />
           ออกจากระบบ
-        </Link>
+        </a>
         {VERSION && <p className="text-caption text-text-tertiary">เวอร์ชัน {VERSION}</p>}
       </div>
     </aside>

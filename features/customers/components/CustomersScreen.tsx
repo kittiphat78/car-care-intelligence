@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { AppLink } from '@/components/ui/AppLink'
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/cn'
@@ -177,7 +177,7 @@ function CustomerCard({ result: { customer, match }, onOpen }: { result: SearchR
   const cars = vehicleSummary(customer)
   return (
     <Card className="grid grid-cols-1 gap-2 p-0!">
-      <Link href={`/customers/${customer.id}`} onClick={onOpen} className="focus-ring grid grid-cols-1 gap-0.5 rounded-lg px-4 pt-3 pb-1 hover:bg-surface-2">
+      <AppLink href={`/customers/${customer.id}`} onClick={onOpen} className="focus-ring grid grid-cols-1 gap-0.5 rounded-lg px-4 pt-3 pb-1 hover:bg-surface-2">
         <span className="flex min-w-0 items-center gap-2">
           <span className="min-w-0 flex-1 truncate text-heading text-text">{customer.name}</span>
           <Icon name="chevron-right" className="text-text-tertiary" />
@@ -191,7 +191,7 @@ function CustomerCard({ result: { customer, match }, onOpen }: { result: SearchR
         )}
         {!phone && <span className="text-body text-text-tertiary">ยังไม่มีเบอร์</span>}
         {match && <span className="truncate text-caption font-medium text-link">{matchText(match)}</span>}
-      </Link>
+      </AppLink>
       {phone ? <CallActions number={phone.number} who={customer.name} className="px-4 pb-3" /> : <span className="pb-2" />}
     </Card>
   )
@@ -229,13 +229,13 @@ function CustomerTable({ results, onOpen }: { results: readonly SearchResult[]; 
             return (
               <tr key={customer.id} className="border-t border-border hover:bg-surface-2">
                 <td className={cn(td, 'max-w-80')}>
-                  <Link
+                  <AppLink
                     href={`/customers/${customer.id}`}
                     onClick={onOpen}
                     className="focus-ring rounded-sm font-semibold text-link underline-offset-4 hover:underline"
                   >
                     {customer.name}
-                  </Link>
+                  </AppLink>
                   {match && <p className="text-caption text-text-secondary">{matchText(match)}</p>}
                 </td>
                 <td className={cn(td, 'text-text-secondary')}>

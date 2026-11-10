@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { AppLink } from '@/components/ui/AppLink'
 import { useMemo, useState } from 'react'
 import { Button, buttonClassName } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
@@ -47,19 +47,19 @@ export function DebtContact({ name, plates, customers, onAdd }: DebtContactProps
         {phone ? (
           <CallLink number={phone.number} who={customer.name} className="w-full" />
         ) : (
-          <Link
+          <AppLink
             href={`/customers/${customer.id}?edit=customer:${customer.id}`}
             aria-label={`เพิ่มเบอร์ ${customer.name}`}
             className={buttonClassName({ variant: 'secondary', size: 'sm', fullWidth: true })}
           >
             <Icon name="plus" />
             เพิ่มเบอร์
-          </Link>
+          </AppLink>
         )}
         {/* Who is called, when the directory knows the car under another name */}
         {other && (
           <p className="text-caption text-text-secondary">
-            ในสมุดลูกค้า: <Link href={`/customers/${customer.id}`} className="focus-ring rounded-sm text-link underline underline-offset-4">{customer.name}</Link>
+            ในสมุดลูกค้า: <AppLink href={`/customers/${customer.id}`} className="focus-ring rounded-sm text-link underline underline-offset-4">{customer.name}</AppLink>
           </p>
         )}
       </div>
@@ -78,9 +78,9 @@ export function DebtContact({ name, plates, customers, onAdd }: DebtContactProps
             const phone = primaryPhone(c)
             return (
               <li key={c.id} className="grid grid-cols-1 gap-2 py-3">
-                <Link href={`/customers/${c.id}`} className="focus-ring justify-self-start rounded-sm text-body font-semibold text-link underline-offset-4 hover:underline">
+                <AppLink href={`/customers/${c.id}`} className="focus-ring justify-self-start rounded-sm text-body font-semibold text-link underline-offset-4 hover:underline">
                   {c.name}
-                </Link>
+                </AppLink>
                 {phone ? <CallActions number={phone.number} who={c.name} /> : <p className="text-body text-text-tertiary">ยังไม่มีเบอร์</p>}
               </li>
             )

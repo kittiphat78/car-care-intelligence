@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { AppLink } from '@/components/ui/AppLink'
 import { useEffect, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { formatBangkok } from '@/lib/time/bangkok'
@@ -49,7 +49,7 @@ export function CustomerDetailScreen({ id }: { id: string }) {
   }
 
   const backLink = (
-    <Link
+    <AppLink
       href="/customers"
       onClick={(e) => {
         if (!fromList) return
@@ -60,7 +60,7 @@ export function CustomerDetailScreen({ id }: { id: string }) {
     >
       <Icon name="chevron-left" />
       ลูกค้า
-    </Link>
+    </AppLink>
   )
 
   let body: ReactNode
@@ -85,9 +85,9 @@ export function CustomerDetailScreen({ id }: { id: string }) {
           icon="users"
           title="ไม่พบลูกค้านี้"
           action={
-            <Link href="/customers" className={buttonClassName({ variant: 'secondary' })}>
+            <AppLink href="/customers" className={buttonClassName({ variant: 'secondary' })}>
               กลับรายชื่อลูกค้า
-            </Link>
+            </AppLink>
           }
         >
           อาจถูกลบไปแล้ว

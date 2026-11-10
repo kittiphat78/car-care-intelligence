@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { AppLink } from '@/components/ui/AppLink'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
 import { Icon } from '@/components/ui/Icon'
@@ -38,7 +38,7 @@ export function MoreScreen({ email }: { email: string }) {
       <PageHeader title="เพิ่มเติม" />
 
       {/* The way to the customer directory on phones (Q-1); SideNav has it on wide screens */}
-      <Link href="/customers" prefetch className="focus-ring block rounded-lg">
+      <AppLink href="/customers" className="focus-ring block rounded-lg">
         <Card interactive className="flex min-h-18 items-center gap-4">
           <span aria-hidden="true" className="grid size-11 shrink-0 place-items-center rounded-md bg-primary-subtle text-link">
             <Icon name="users" size="lg" />
@@ -49,7 +49,7 @@ export function MoreScreen({ email }: { email: string }) {
           </span>
           <Icon name="chevron-right" className="text-text-tertiary" />
         </Card>
-      </Link>
+      </AppLink>
 
       <Section title="บัญชี">
         <p className="flex items-center gap-2 text-body text-text-secondary">
@@ -76,16 +76,11 @@ export function MoreScreen({ email }: { email: string }) {
         <p className="text-caption text-text-tertiary">ลืมรหัสผ่านหรือต้องการบัญชีใหม่ ติดต่อผู้ดูแลร้าน</p>
       </Section>
 
-      <Link
-        href={withLogoutParam(pathname, searchParams.toString())}
-        onClick={pushOnPlainClick}
-        prefetch={false}
-        scroll={false}
-        className={buttonClassName({ variant: 'danger-ghost', fullWidth: true })}
-      >
+      {/* A plain link: it only adds ?logout=1 here, in the browser (lib/url-state.ts) */}
+      <a href={withLogoutParam(pathname, searchParams.toString())} onClick={pushOnPlainClick} className={buttonClassName({ variant: 'danger-ghost', fullWidth: true })}>
         <Icon name="logout" />
         ออกจากระบบ
-      </Link>
+      </a>
     </div>
   )
 }

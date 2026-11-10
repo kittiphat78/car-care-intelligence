@@ -27,6 +27,10 @@ const restrictedSyntax = CLASS_RULES.flatMap(([pattern, message]) => [
   },
 ]);
 
+// next/link prefetches every link that comes into view, again on every URL change (typing
+// in a search): dozens of server renders, each checking the session (release-2.2.1.md)
+const NEXT_LINK = { name: "next/link", importNames: ["default"], message: "ใช้ AppLink (@/components/ui/AppLink) แทน next/link: โหลดหน้าล่วงหน้าเฉพาะตอนแตะ/ชี้ (release-2.2.1.md)" };
+
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
@@ -41,7 +45,10 @@ const eslintConfig = defineConfig([
     files: ["**/*.{ts,tsx}"],
     ignores: ["lib/zod.ts"],
     rules: {
-      "no-restricted-imports": ["error", { paths: ["zod", "zod/mini", "zod/v4"].map((name) => ({ name, message: "import { z } from '@/lib/zod' (zod/mini ที่ตั้งค่าให้ผ่าน CSP แล้ว · D-05, O-06)" })) }],
+      "no-restricted-imports": [
+        "error",
+        { paths: [...["zod", "zod/mini", "zod/v4"].map((name) => ({ name, message: "import { z } from '@/lib/zod' (zod/mini ที่ตั้งค่าให้ผ่าน CSP แล้ว · D-05, O-06)" })), NEXT_LINK] },
+      ],
     },
   },
   {
@@ -52,6 +59,7 @@ const eslintConfig = defineConfig([
       "no-restricted-imports": [
         "error",
         {
+          paths: [NEXT_LINK],
           patterns: [
             { group: ["@/features/*", "@/features/**"], message: "components/ui และ patterns ห้าม import จาก features (folder-structure.md §2)" },
             { group: ["@/lib/supabase", "@/lib/supabase/*", "@supabase/*"], message: "components/ui และ patterns ห้ามเรียก Supabase" },
