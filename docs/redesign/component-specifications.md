@@ -162,7 +162,7 @@ Dialog `alert`: หัวข้อ (คำถาม) + สรุปขอบเ�
 
 | Component | สเปก |
 |---|---|
-| `BottomNav` | Compact/Medium: สูง 64px + safe-area, 5 ช่องเท่ากัน (ไอคอน 24px + ป้าย 14px/500) · active: ไอคอนและข้อความ `text-link` + pill พื้น `action-primary-subtle` + `aria-current="page"` · ช่อง "บันทึก" ตรงกลาง: วงกลม 56px พื้น `action-primary` ไอคอนขาว (ไม่ใช้ gradient) และป้ายด้านล่าง · Badge ค้างชำระ: วงกลม 20px พื้น `warning` ตัวขาว 14px (ตัวเลข ≤ 9 แล้วแสดง "9+") |
+| `BottomNav` | Compact/Medium: สูงอย่างน้อย 64px (4rem) + safe-area และโตตามขนาดตัวอักษร (ป้ายขึ้นได้ 2 บรรทัด, `--size-nav-bottom` เท่าความสูงจริง), 5 ช่องเท่ากัน (ไอคอน 24px + ป้าย 14px/500) · active: ไอคอนและข้อความ `text-link` + pill พื้น `action-primary-subtle` + `aria-current="page"` · ช่อง "บันทึก" ตรงกลาง: วงกลม 56px พื้น `action-primary` ไอคอนขาว (ไม่ใช้ gradient) และป้ายด้านล่าง · Badge ค้างชำระ: วงกลม 20px พื้น `warning` ตัวขาว 14px (ตัวเลข ≤ 9 แล้วแสดง "9+") |
 | `SideNav` | Expanded: กว้าง 240px, พื้น `surface`, ขอบขวา `border` · บนสุด: โลโก้ + ชื่อ "คาร์แคร์" · ปุ่ม "บันทึกรายการ" (Button primary lg full) · รายการ nav 48px (ไอคอน + ข้อความ 16px) · ล่างสุด: theme toggle, ชื่อบัญชี, "ออกจากระบบ" และเวอร์ชัน |
 
 ### 2.11 ChartCard
@@ -239,7 +239,7 @@ SegmentedControl โหมด (ฉบับธนาคาร / ฉบับภ�
 FormField อีเมล (`type="email"`, `autocomplete="username"`) · รหัสผ่าน + IconButton แสดง/ซ่อน (focus ได้) · Checkbox "จดจำอีเมล" (44px target) · Banner danger · Button primary lg full "เข้าสู่ระบบ" · ข้อความ "ลืมรหัสผ่าน? ติดต่อผู้ดูแลร้าน"
 
 ### 3.15 Checkbox / Switch
-Checkbox 24px ในพื้นที่แตะ 44px, ขอบ `border-strong` และ checked พื้น `action-primary` + ✓ · Switch (theme toggle) 52×32 พร้อมข้อความ "ธีมมืด" และ `role="switch"` + `aria-checked`
+Checkbox 24px ในพื้นที่แตะ 44px, ขอบ `border-strong` และ checked พื้น `action-primary` + ✓ · Switch (theme toggle) ราง 52×32 ในปุ่มสูง 44px (พื้นที่แตะ) และแตะข้อความ "ธีมมืด" ก็สลับได้ และ `role="switch"` + `aria-checked`
 
 ## 4. Component Inventory Summary
 

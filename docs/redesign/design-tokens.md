@@ -187,7 +187,7 @@
 | `--size-icon-sm` | 16px | ไอคอนใน badge |
 | `--size-icon-md` | 20px | ไอคอนในปุ่ม, nav |
 | `--size-icon-lg` | 24px | ไอคอนหลักของการ์ด |
-| `--size-nav-bottom` | 64px + safe-area | bottom nav |
+| `--size-nav-bottom` | 4rem (= 64px ที่ตัวอักษรปกติ) + safe-area · BottomNav ตั้งค่าให้เท่าความสูงจริงเมื่อโตตามตัวอักษร (UX refresh PR 1) | bottom nav |
 | `--size-sidebar` | 240px | sidebar (Expanded) |
 | `--size-content-max` | 720px (Medium) / 1200px (Expanded) | ความกว้างเนื้อหา |
 | `--size-dialog-max` | 480px (ทั่วไป) / 560px (แก้ไขรายการ) | dialog |

@@ -27,6 +27,37 @@ test('no page is wider than the narrowest phone (320 px)', async ({ page }) => {
   }
 })
 
+// WCAG 1.4.4 Resize text: with the phone's text at 200% the bottom bar used to stay 64px
+// tall and cut every label off; on a folded phone (280 px) the labels ran into each other
+test('the bottom bar keeps its labels with large text and on a 280 px fold', async ({ page }) => {
+  test.skip(test.info().project.name !== 'phone', 'phone layout only')
+  await signIn(page)
+  const labels = () =>
+    page.evaluate(() => {
+      const nav = document.querySelector('nav[aria-label="เมนูหลัก"].bottom-0')!.getBoundingClientRect()
+      const spans = [...document.querySelectorAll('nav[aria-label="เมนูหลัก"].bottom-0 a > span:not([aria-hidden]):not(.absolute)')].filter((s) => s.textContent?.trim())
+      const boxes = spans.map((s) => s.getBoundingClientRect())
+      return {
+        // every label fully inside the bar and not clamped
+        cut: spans.filter((s, i) => s.scrollHeight > s.clientHeight + 1 || boxes[i].bottom > nav.bottom + 1 || boxes[i].top < nav.top - 1).map((s) => s.textContent),
+        // no two labels touching
+        touching: boxes.slice(1).filter((b, i) => b.left < boxes[i].right + 2).length,
+        // the page leaves room for the bar (content never hidden under it)
+        room: parseFloat(getComputedStyle(document.querySelector('main')!).paddingBottom) >= nav.height,
+      }
+    })
+
+  await page.setViewportSize({ width: 280, height: 653 })
+  await page.goto('/')
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  expect(await labels(), '280 px').toEqual({ cut: [], touching: 0, room: true })
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.evaluate(() => (document.documentElement.style.fontSize = '200%'))
+  await page.waitForTimeout(300) // the bar measures itself after it grew
+  expect(await labels(), 'text 200%').toEqual({ cut: [], touching: 0, room: true })
+})
+
 test('pages are accessible in the light theme too', async ({ page }, info) => {
   await page.addInitScript(() => localStorage.setItem('car-care-theme', 'light'))
   await signIn(page)
