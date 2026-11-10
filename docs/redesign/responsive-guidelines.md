@@ -20,7 +20,7 @@
 
 | | Compact | Medium | Expanded |
 |---|---|---|---|
-| Primary nav | BottomNav 5 ช่อง (64px + safe-area) | BottomNav 5 ช่อง (ป้ายข้างไอคอนเมื่อกว้าง ≥ 720) | SideNav ซ้าย แสดงตลอด |
+| Primary nav | BottomNav 5 ช่อง (สูงอย่างน้อย 64px + safe-area · โตตามขนาดตัวอักษร ป้ายขึ้นได้ 2 บรรทัด ไม่ตัดทิ้ง) | BottomNav 5 ช่อง (ป้ายข้างไอคอนเมื่อกว้าง ≥ 720) | SideNav ซ้าย แสดงตลอด |
 | ปุ่มบันทึก | วงกลมกลาง BottomNav | วงกลมกลาง | Button primary บนสุดของ SideNav |
 | Badge ค้างชำระ | บนไอคอน | บนไอคอน | ท้ายข้อความ "ค้างชำระ (3)" |
 | เพิ่มเติม | ช่องที่ 5 → `/more` | ช่องที่ 5 → `/more` | อยู่ล่าง SideNav และ `/more` เปิดได้ |
