@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { AppLink } from '@/components/ui/AppLink'
 import { useEffect, useId, useMemo, useState } from 'react'
 import { bangkokParts, formatBangkok, startOfBangkokDay } from '@/lib/time/bangkok'
 import { toUserMessage } from '@/lib/errors'
@@ -114,10 +114,10 @@ export function DashboardScreen({ email }: { email: string }) {
 
         <Card as="section" aria-labelledby={listId} className="lg:col-span-7 lg:row-span-2 lg:row-start-2">
           <CardHeader id={listId} title={`รายการวันนี้${records.length ? ` (${records.length})` : ''}`}>
-            <Link href="/add" className={buttonClassName({ variant: 'ghost' })}>
+            <AppLink href="/add" className={buttonClassName({ variant: 'ghost' })}>
               <Icon name="plus" />
               บันทึก
-            </Link>
+            </AppLink>
           </CardHeader>
           {loading ? (
             <SkeletonGroup className="grid grid-cols-1 divide-y divide-border">
@@ -132,10 +132,10 @@ export function DashboardScreen({ email }: { email: string }) {
               icon="car"
               title="ยังไม่มีงานวันนี้"
               action={
-                <Link href="/add" className={buttonClassName({})}>
+                <AppLink href="/add" className={buttonClassName({})}>
                   <Icon name="plus" />
                   บันทึกรายการแรก
-                </Link>
+                </AppLink>
               }
             />
           ) : (

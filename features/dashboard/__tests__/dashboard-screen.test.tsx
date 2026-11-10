@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { appError } from '@/lib/errors'
 import { ToastProvider } from '@/components/ui/Toast'
@@ -75,10 +75,24 @@ describe('DashboardScreen', () => {
     expect(screen.getByText('กำลังโหลดยอดค้างชำระ…')).toBeInTheDocument()
   })
 
-  it('opens the edit dialog through the URL so the back button closes it', async () => {
+  it('opens the edit dialog through the URL so the back button closes it, with no server request', async () => {
+    const pushState = vi.spyOn(window.history, 'pushState')
     await renderScreen()
     fireEvent.click(screen.getAllByRole('button', { name: /แตะเพื่อแก้ไข/ })[0])
-    expect(nav.push).toHaveBeenCalledWith('/?edit=income%3A2', { scroll: false })
+    expect(pushState).toHaveBeenCalledWith(null, '', '/?edit=income%3A2')
+    expect(nav.push).not.toHaveBeenCalled()
+    pushState.mockRestore()
+  })
+
+  it('shows the figures of the last visit at once, then a fresh copy', async () => {
+    await renderScreen()
+    cleanup()
+    load.loadDashboard.mockReturnValue(new Promise(() => {}))
+    await renderScreen()
+    // No skeleton: the kept figures, while the ⟳ button says it is updating
+    expect(screen.queryByText('กำลังโหลดยอดค้างชำระ…')).toBeNull()
+    expect(screen.getByRole('region', { name: 'เงินสดสุทธิวันนี้' })).toHaveTextContent('฿250')
+    expect(screen.getByRole('button', { name: /กำลังอัปเดต/ })).toBeInTheDocument()
   })
 
   it('shows an error in the failing card only, never ฿0', async () => {

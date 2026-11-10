@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { AppLink } from '@/components/ui/AppLink'
 import { useEffect } from 'react'
 import { reportError } from '@/lib/observability'
 import { Button, buttonClassName } from '@/components/ui/Button'
@@ -25,9 +25,9 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
           <Button leadingIcon="refresh" fullWidth onClick={() => reset()}>
             ลองอีกครั้ง
           </Button>
-          <Link href="/" className={buttonClassName({ variant: 'secondary', fullWidth: true })}>
+          <AppLink href="/" className={buttonClassName({ variant: 'secondary', fullWidth: true })}>
             กลับหน้าภาพรวม
-          </Link>
+          </AppLink>
         </div>
       </div>
     </main>

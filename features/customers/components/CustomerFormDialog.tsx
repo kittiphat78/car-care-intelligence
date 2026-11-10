@@ -56,6 +56,8 @@ export interface CustomerFormDialogProps {
   onSaved: (saved: SavedCustomer, isNew: boolean) => void
   /** Load the directory again (after a clash with another device) */
   onReload: () => void
+  /** Field focused when the form opens, e.g. the phone after "เพิ่มเบอร์" (else the dialog's own choice) */
+  focusField?: string | null
 }
 
 export function CustomerFormDialog(props: CustomerFormDialogProps) {
@@ -70,7 +72,7 @@ const errorFor = (errors: readonly FieldError[], id: string) => errors.find((e) 
 const selectClass =
   'focus-ring min-h-12 w-full min-w-0 appearance-none rounded-md border border-border-strong bg-surface px-3 pr-8 text-body-lg text-text'
 
-function FormBody({ customer, start, customers, userId, onClose, onSaved, onReload }: CustomerFormDialogProps) {
+function FormBody({ customer, start, customers, userId, onClose, onSaved, onReload, focusField = null }: CustomerFormDialogProps) {
   const toast = useToast()
   const online = useOnline()
   const ready = useHydrated()
@@ -101,6 +103,13 @@ function FormBody({ customer, start, customers, userId, onClose, onSaved, onRelo
   const dirty = draftSignature(d) !== draftSignature(startDraft)
   const checked = checkCustomer(d, { customers, selfId, moves })
   const errors = attempt > 0 && !checked.ok ? checked.errors : []
+
+  // Opened for one field: focus it (runs after the dialog's own first focus)
+  useEffect(() => {
+    if (focusField) document.getElementById(focusField)?.focus()
+    // Once, when the form opens
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // A row that was just added gets the focus
   useEffect(() => {

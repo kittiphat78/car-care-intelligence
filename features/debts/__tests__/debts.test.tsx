@@ -107,10 +107,13 @@ describe('DebtsScreen', () => {
     expect(within(cards[1]).getByText(/เร่งด่วน · ค้างนานสุด/)).toBeInTheDocument()
   })
 
-  it('opens the settle dialog through the URL', async () => {
+  it('opens the settle dialog through the URL, with no server request', async () => {
+    const pushState = vi.spyOn(window.history, 'pushState')
     await renderScreen()
     fireEvent.click(screen.getByRole('button', { name: 'เคลียร์ยอด เต็นท์ A' }))
-    expect(nav.push).toHaveBeenCalledWith('/debts?settle=%E0%B9%80%E0%B8%95%E0%B9%87%E0%B8%99%E0%B8%97%E0%B9%8C+A', { scroll: false })
+    expect(pushState).toHaveBeenCalledWith(null, '', '/debts?settle=%E0%B9%80%E0%B8%95%E0%B9%87%E0%B8%99%E0%B8%97%E0%B9%8C+A')
+    expect(nav.push).not.toHaveBeenCalled()
+    pushState.mockRestore()
   })
 
   it('settles exactly the jobs shown and confirms the amount', async () => {
@@ -131,12 +134,14 @@ describe('DebtsScreen', () => {
   it('refreshes the nav badge only once ?settle= has left the URL (D-12)', async () => {
     nav.search = 'settle=เต็นท์ A'
     api.settleRecords.mockResolvedValue({ ok: true, data: { updatedCount: 2, total: 1300 } })
+    const replaceState = vi.spyOn(window.history, 'replaceState')
     await renderScreen()
     await act(async () => {
       fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'เคลียร์ยอด' }))
     })
     // Closing: the URL still has ?settle= — a refresh now would be for that old URL
-    expect(nav.replace).toHaveBeenCalledWith('/debts', { scroll: false })
+    expect(replaceState).toHaveBeenCalledWith(null, '', '/debts')
+    replaceState.mockRestore()
     expect(nav.refresh).not.toHaveBeenCalled()
     expect(document.querySelector('[aria-busy="true"]')).not.toBeNull()
 

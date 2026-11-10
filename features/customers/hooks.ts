@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { usePathname, useSearchParams } from 'next/navigation'
 import { reportAppError } from '@/lib/observability'
 import { ok, type Result } from '@/lib/result'
 import { LOCAL_DRAFT_PREFIX } from '@/features/auth/drafts'
@@ -41,62 +40,6 @@ export function useCustomerDirectory({ enabled = true }: { enabled?: boolean } =
   }, [enabled, reload])
 
   return { result, customers: result?.ok ? result.data : null, fresh, reload }
-}
-
-// ── URL state without a server request ───────────────────────────────────────
-// Search text and open dialogs live in the URL (back button, AC-02-4, AC-06-3), but are
-// changed with the browser's own history API: Next.js keeps useSearchParams in step and
-// sends no request, so names and phone numbers typed into the search never reach a
-// server log (ADR-23).
-
-export function useUrlWith() {
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  return useCallback(
-    (patch: Readonly<Record<string, string | null>>) => {
-      const params = new URLSearchParams(searchParams.toString())
-      for (const [key, value] of Object.entries(patch)) {
-        if (value === null || value === '') params.delete(key)
-        else params.set(key, value)
-      }
-      const query = params.toString()
-      return query ? `${pathname}?${query}` : pathname
-    },
-    [pathname, searchParams],
-  )
-}
-
-/** A dialog bound to `?key=value`: open adds a history entry, close goes back to the page under it */
-export function useUrlDialog(key: string) {
-  const searchParams = useSearchParams()
-  const urlWith = useUrlWith()
-  const openedHere = useRef(false)
-  const value = searchParams.get(key)
-
-  /** `also`: other values for the page under the dialog too (e.g. a search still being typed) */
-  const open = useCallback(
-    (next: string, also: Readonly<Record<string, string | null>> = {}) => {
-      openedHere.current = true
-      if (Object.keys(also).length) window.history.replaceState(null, '', urlWith(also))
-      window.history.pushState(null, '', urlWith({ ...also, [key]: next }))
-    },
-    [key, urlWith],
-  )
-
-  const close = useCallback(() => {
-    if (openedHere.current) {
-      openedHere.current = false
-      window.history.back()
-    } else {
-      // Opened from a link or a reload: there is no entry of ours to go back to
-      window.history.replaceState(null, '', urlWith({ [key]: null }))
-    }
-  }, [key, urlWith])
-
-  /** True when open() added the history entry the dialog is on */
-  const openedByUs = useCallback(() => openedHere.current, [])
-
-  return { value, open, close, openedByUs }
 }
 
 // ── Draft of a new customer (AC-01-5) ────────────────────────────────────────

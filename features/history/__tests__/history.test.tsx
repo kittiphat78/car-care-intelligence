@@ -131,30 +131,37 @@ describe('HistoryScreen', () => {
     }
   })
 
-  it('keeps the tab in the URL', async () => {
+  it('keeps the tab in the URL, with no server request', async () => {
+    const replaceState = vi.spyOn(window.history, 'replaceState')
     await renderScreen()
     fireEvent.click(screen.getByRole('tab', { name: 'รายจ่าย' }))
-    expect(nav.replace).toHaveBeenCalledWith('/history?tab=expense', { scroll: false })
+    expect(replaceState).toHaveBeenCalledWith(null, '', '/history?tab=expense')
+    expect(nav.replace).not.toHaveBeenCalled()
+    replaceState.mockRestore()
   })
 
   it('updates the search in the URL after typing stops', async () => {
     vi.useRealTimers()
     vi.useFakeTimers({ now: NOW })
+    const replaceState = vi.spyOn(window.history, 'replaceState')
     await renderScreen()
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'กข 2' } })
-    expect(nav.replace).not.toHaveBeenCalled()
+    expect(replaceState).not.toHaveBeenCalled()
     await act(async () => {
       vi.advanceTimersByTime(300)
     })
-    expect(nav.replace).toHaveBeenCalledWith('/history?q=%E0%B8%81%E0%B8%82+2', { scroll: false })
+    expect(replaceState).toHaveBeenCalledWith(null, '', '/history?q=%E0%B8%81%E0%B8%82+2')
+    replaceState.mockRestore()
   })
 
   it('says nothing matched and offers to clear the filters', async () => {
     nav.search = 'q=zzz'
+    const replaceState = vi.spyOn(window.history, 'replaceState')
     await renderScreen()
     expect(screen.getByText('ไม่พบรายการที่ตรงกับ “zzz”')).toBeInTheDocument()
     fireEvent.click(screen.getAllByRole('button', { name: 'ล้างตัวกรอง' })[0])
-    expect(nav.replace).toHaveBeenCalledWith('/history', { scroll: false })
+    expect(replaceState).toHaveBeenCalledWith(null, '', '/history')
+    replaceState.mockRestore()
   })
 
   it('shows a load error above the list, not ฿0', async () => {

@@ -77,6 +77,17 @@ async function signIn(page: Page) {
   await page.getByLabel('รหัสผ่าน', { exact: true }).fill(PASSWORD)
   await page.getByRole('button', { name: 'เข้าสู่ระบบ' }).click()
   await page.waitForURL((u) => u.pathname === '/')
+  await dashboardShown(page)
+}
+
+/**
+ * The dashboard itself is on screen, not just its URL. Since v2.2.1 the URL changes at
+ * once and the page follows: a page.goto() in between makes Safari cancel the page's
+ * request, and Next.js then loads "/" in full, which cuts the goto short (K-20).
+ */
+async function dashboardShown(page: Page) {
+  await expect(page).toHaveURL('/')
+  await expect(page.getByRole('region', { name: 'เงินสดสุทธิวันนี้' })).toBeVisible()
 }
 
 const toast = (page: Page, text: string | RegExp) => page.getByRole('status').filter({ hasText: text })
@@ -108,7 +119,7 @@ test('CUJ: record, see, edit and delete income; record and delete an expense', a
   await page.getByRole('radio', { name: 'รถเก๋ง' }).click()
   await page.getByLabel(/^ราคา \(บาท\)/).fill('111')
   await page.getByRole('button', { name: 'บันทึก', exact: true }).click()
-  await expect(page).toHaveURL('/')
+  await dashboardShown(page)
   await expect(toast(page, `บันทึก ${plate} ฿111 แล้ว`)).toBeVisible()
   await page.goto(`/history?q=${encodeURIComponent(plate)}`)
   await page.getByRole('button', { name: new RegExp(plate) }).click()
@@ -128,7 +139,7 @@ test('CUJ: record, see, edit and delete income; record and delete an expense', a
   await page.getByLabel(/^จำนวนเงินที่จ่าย/).fill('33')
   await page.getByLabel(/^จ่ายค่าอะไร/).fill(title)
   await page.getByRole('button', { name: 'บันทึกรายจ่าย' }).click()
-  await expect(page).toHaveURL('/')
+  await dashboardShown(page)
   await expect(toast(page, `บันทึกรายจ่าย ${title} ฿33 แล้ว`)).toBeVisible()
   await page.goto(`/history?tab=expense&q=${encodeURIComponent(plate)}`)
   await page.getByRole('button', { name: new RegExp(plate) }).click()
@@ -151,7 +162,7 @@ test('CUJ: unpaid job → debts → bill PDF → settle', async ({ page }, info)
   await page.getByRole('radio', { name: 'ค้างชำระ' }).click()
   await page.getByLabel(/^ลูกค้า \/ เต็นท์/).fill(customer)
   await page.getByRole('button', { name: 'บันทึก', exact: true }).click()
-  await expect(page).toHaveURL('/')
+  await dashboardShown(page)
   await page.goto('/debts')
   const card = page.getByRole('article', { name: customer })
   await expect(card).toContainText('฿444')
@@ -225,7 +236,7 @@ test('CUJ: customer directory: add, find, call, edit; plate hint on /add; call f
   await page.getByLabel(/^ราคา \(บาท\)/).fill('1')
   await page.getByRole('radio', { name: 'ค้างชำระ' }).click()
   await page.getByRole('button', { name: 'บันทึก', exact: true }).click()
-  await expect(page).toHaveURL('/')
+  await dashboardShown(page)
   await page.goto('/debts')
   await expect(page.getByRole('article', { name }).getByRole('link', { name: `โทร 080-000-0001 ${name}` })).toHaveAttribute('href', 'tel:0800000001')
   // Phase 3b: the customer page counts the job (matched by the name)
@@ -264,7 +275,9 @@ test('CUJ: export Excel, every page loads, no console errors, accessible, fits 3
   await page.waitForFunction(() => !document.querySelector('[aria-busy="true"]'), null, { timeout: 30000 })
   await page.getByRole('button', { name: 'ส่งออก Excel' }).click()
   const dialog = page.getByRole('dialog', { name: 'ส่งออก Excel' })
-  await expect(dialog).toContainText(/พบ [\d,]+ รายการ/)
+  // From January: the current month alone may have no records yet (nothing to download)
+  await dialog.getByLabel('ตั้งแต่: เดือน').selectOption('1')
+  await expect(dialog).toContainText(/พบ [1-9][\d,]* รายการ/)
   const download = page.waitForEvent('download')
   await dialog.getByRole('button', { name: 'ดาวน์โหลด Excel' }).click()
   expect((await download).suggestedFilename()).toMatch(/\.xlsx$/)

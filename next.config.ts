@@ -28,6 +28,13 @@ function supabaseOrigins(url: string | undefined): string[] {
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  experimental: {
+    // A tab visited in the last 5 minutes opens from the browser's copy, with no server
+    // request. Pages only carry the signed-in account; their data is loaded in the
+    // browser on every visit, so the copy holds nothing that goes out of date. Sign-in and
+    // sign-out call router.refresh(), which empties it.
+    staleTimes: { dynamic: 300 },
+  },
   // แนบเลขเวอร์ชันไปกับรายงาน error (lib/observability.ts)
   env: {
     NEXT_PUBLIC_APP_VERSION: version,

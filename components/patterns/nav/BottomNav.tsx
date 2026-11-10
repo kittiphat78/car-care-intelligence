@@ -1,10 +1,10 @@
 'use client'
 
-import Link from 'next/link'
+import { AppLink } from '@/components/ui/AppLink'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/cn'
-import { Icon } from '@/components/ui/Icon'
 import { NAV_ITEMS, badgeText, isActivePath } from './items'
+import { TabIcon } from './TabIcon'
 
 // component-specifications.md §2.10 — phones and tablets (< 1024px)
 
@@ -27,7 +27,7 @@ export function BottomNav({ badges = {} }: BottomNavProps) {
           const count = badges[item.href] ?? 0
           return (
             <li key={item.href} className="min-w-0">
-              <Link
+              <AppLink
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
@@ -35,17 +35,7 @@ export function BottomNav({ badges = {} }: BottomNavProps) {
                   active ? 'text-link' : 'text-text-secondary',
                 )}
               >
-                {item.isPrimary ? (
-                  // Inside the bar, not raised above it: a raised button covered the save
-                  // buttons on /add and the content while scrolling
-                  <span className="grid size-10 place-items-center rounded-full bg-primary text-on-primary">
-                    <Icon name={item.icon} size="lg" />
-                  </span>
-                ) : (
-                  <span className={cn('grid h-7 w-13 place-items-center rounded-full transition-colors duration-150', active && 'bg-primary-subtle')}>
-                    <Icon name={item.icon} size="lg" />
-                  </span>
-                )}
+                <TabIcon icon={item.icon} active={active} primary={item.isPrimary} />
                 <span className="truncate">{item.label}</span>
                 {count > 0 && (
                   <span className="absolute top-0.5 left-[calc(50%+6px)] grid h-5 min-w-5 place-items-center rounded-full bg-warning px-1 text-caption leading-none font-bold text-on-primary">
@@ -53,7 +43,7 @@ export function BottomNav({ badges = {} }: BottomNavProps) {
                     <span className="sr-only">{`${count} ราย`}</span>
                   </span>
                 )}
-              </Link>
+              </AppLink>
             </li>
           )
         })}

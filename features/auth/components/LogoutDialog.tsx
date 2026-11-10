@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import { useToast } from '@/components/ui/Toast'
 import { toUserMessage } from '@/lib/errors'
+import { forgetScreens } from '@/lib/screen-memory'
+import { replaceUrl } from '@/lib/url-state'
 import { forgetCustomers } from '@/features/customers/memory'
 import { signOut } from '../api'
 import { clearLocalDrafts } from '../drafts'
@@ -30,7 +32,8 @@ export function LogoutDialog({ email }: { email: string }) {
     params.delete('logout')
     const query = params.toString()
     setError(null)
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false })
+    // In the browser only, so the dialog closes at once (lib/url-state.ts)
+    replaceUrl(query ? `${pathname}?${query}` : pathname)
   }
 
   async function confirm() {
@@ -44,6 +47,7 @@ export function LogoutDialog({ email }: { email: string }) {
     }
     clearLocalDrafts()
     forgetCustomers()
+    forgetScreens()
     // The server could not be reached, but this device is signed out (UF-AUTH-04)
     if (result.data.localOnly) toast.info('ออกจากระบบในเครื่องนี้แล้ว')
     router.replace('/login')

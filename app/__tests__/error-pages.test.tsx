@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/lib/observability', () => ({ reportError: vi.fn() }))
+vi.mock('next/navigation', () => ({ useRouter: () => ({ prefetch: vi.fn() }) }))
 
 import ErrorPage from '../error'
 import NotFound from '../not-found'

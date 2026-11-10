@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { reportAppError } from '@/lib/observability'
+import { keepScreen, keptScreen } from '@/lib/screen-memory'
 import { bangkokToday } from '@/lib/time/bangkok'
 import { loadDashboard, type DashboardData } from './api'
 
@@ -20,11 +21,25 @@ export interface DashboardState {
   refresh: () => void
 }
 
+interface KeptDashboard {
+  day: string
+  data: DashboardData
+  loadedAt: Date
+}
+
+/** What the dashboard showed last in this tab, if it is still for today */
+function keptForToday(): KeptDashboard | null {
+  const kept = keptScreen<KeptDashboard>('dashboard')
+  return kept && kept.day === bangkokToday() ? kept : null
+}
+
 export function useDashboardData(): DashboardState {
-  const [day, setDay] = useState(bangkokToday)
-  const [data, setData] = useState<DashboardData | null>(null)
+  // Back on the dashboard: the last figures at once, a fresh copy right after (the ⟳ spins)
+  const [kept] = useState(keptForToday)
+  const [day, setDay] = useState(() => kept?.day ?? bangkokToday())
+  const [data, setData] = useState<DashboardData | null>(kept?.data ?? null)
   const [refreshing, setRefreshing] = useState(false)
-  const [loadedAt, setLoadedAt] = useState<Date | null>(null)
+  const [loadedAt, setLoadedAt] = useState<Date | null>(kept?.loadedAt ?? null)
   const latest = useRef(0)
 
   const load = useCallback(async () => {
@@ -35,9 +50,11 @@ export function useDashboardData(): DashboardState {
     // An older, slower reload must not overwrite a newer one
     if (call !== latest.current) return
     for (const part of Object.values(result)) if (!part.ok) reportAppError(part.error)
+    const at = new Date()
+    keepScreen<KeptDashboard>('dashboard', { day: today, data: result, loadedAt: at })
     setDay(today)
     setData(result)
-    setLoadedAt(new Date())
+    setLoadedAt(at)
     setRefreshing(false)
   }, [])
 

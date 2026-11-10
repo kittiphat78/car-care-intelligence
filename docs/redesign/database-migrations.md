@@ -95,6 +95,9 @@ npm run validate                                    # ถ้ามีโค้�
 2. **Staging:** ใส่ migration ลง staging ก่อนทดสอบ RC บน Preview [U: วิธีที่ใช้กับ staging ไม่มีบันทึก · แนะนำ SQL Editor ของ staging หรือ `supabase link --project-ref <staging-ref>` + `supabase db push` หลังตรวจ `migration list`]
 3. **Backup production** (§4)
 4. **Production:** ระหว่าง release (`git-workflow.md` §4) เจ้าของรัน migration บน production **ก่อน** merge release PR · ช่วงนอกเวลาทำการ (Q-19) · แล้วรัน query ตรวจผลที่เขียนไว้ในไฟล์
+   - **ก่อนกด Run ทุกไฟล์ ดูแถบบนของ Supabase ต้องเป็น `carwash · main · PRODUCTION`** (ref `fgzeaxntmvirrrsqpmeu`) · v2.2.0 เคยรันผิดไปที่ staging เพราะผลตรวจ "พร้อม" ได้เหมือนกันทั้งสองที่ (`release-2.2.0.md`)
+   - รันคู่กับ `select count(*) from public.records;` เพื่อยืนยันว่าเป็นข้อมูลจริงของร้าน
+   - จบด้วย `notify pgrst, 'reload schema';` ให้ API รู้จักตาราง/ฟังก์ชันใหม่ทันที
 5. บันทึกใน release record: ไฟล์ที่รัน · เวลา · ผลตรวจ
 
 ลำดับเมื่อ release มีทั้ง DB และแอป: **DB (expand) → แอป** · ถ้ามี constraint ที่แอปเก่ายังส่งค่าผิดได้ ให้ปล่อยแอปที่ตรวจค่าก่อน แล้วค่อย constraint (`migration-and-rollback.md` §2)

@@ -186,6 +186,14 @@ test('a full plate of another customer moves only when asked (AC-08-1, AC-08-2)'
   await page.getByRole('searchbox').fill(`${name} B`)
   await rowOf(page, `${name} B`).getByRole('link', { name: new RegExp(`^${name} B`) }).click()
   await expect(page.getByText('ยังไม่มีรถ')).toBeVisible()
+
+  // B has no number either: "เพิ่มเบอร์" opens the edit form, ready to type the number
+  await page.getByRole('button', { name: 'เพิ่มเบอร์' }).click()
+  const edit = page.getByRole('dialog', { name: 'แก้ไขลูกค้า' })
+  await expect(edit.getByRole('textbox', { name: 'เบอร์', exact: true })).toBeFocused()
+  await page.keyboard.type('080-000-0003')
+  await edit.getByRole('button', { name: 'บันทึก', exact: true }).click()
+  await expect(page.getByRole('link', { name: `โทร 080-000-0003 ${name} B` })).toHaveAttribute('href', 'tel:0800000003')
   await removeLeftovers(prefix)
 })
 

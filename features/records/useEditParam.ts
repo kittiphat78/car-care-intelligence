@@ -4,12 +4,14 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useToast } from '@/components/ui/Toast'
 import type { Expense, Record as AppRecord } from '@/types'
+import { pushUrl, replaceUrl } from '@/lib/url-state'
 import { getEntry } from './api'
 import type { EditTarget } from './components/EditRecordDialog'
 
 // The edit dialog lives in the URL (?edit=income:<id> / ?edit=expense:<id>), so the
 // back button closes it and a link can open it (design-to-code-map.md §4). Used by
-// the dashboard, the debts page and history.
+// the dashboard, the debts page and history. Opening and closing change the URL in the
+// browser only (lib/url-state.ts), so the dialog shows at once.
 
 type Kind = EditTarget['kind']
 
@@ -44,7 +46,7 @@ export function useEditParam({ income = [], expenses = [], ready = true }: { inc
       openedHere.current = false
       router.back()
     } else {
-      router.replace(withoutEdit(), { scroll: false })
+      replaceUrl(withoutEdit())
     }
   }, [router, withoutEdit])
 
@@ -53,9 +55,9 @@ export function useEditParam({ income = [], expenses = [], ready = true }: { inc
       openedHere.current = true
       const params = new URLSearchParams(searchParams.toString())
       params.set('edit', `${k}:${rowId}`)
-      router.push(`${pathname}?${params.toString()}`, { scroll: false })
+      pushUrl(`${pathname}?${params.toString()}`)
     },
-    [router, pathname, searchParams],
+    [pathname, searchParams],
   )
 
   // A link to a row that is not on screen: look it up once
@@ -68,13 +70,13 @@ export function useEditParam({ income = [], expenses = [], ready = true }: { inc
       if (result.ok && result.data) setFetched({ kind, row: result.data } as EditTarget)
       else {
         toast.info('ไม่พบรายการนี้ อาจถูกลบไปแล้ว')
-        router.replace(withoutEdit(), { scroll: false })
+        replaceUrl(withoutEdit())
       }
     })
     return () => {
       cancelled = true
     }
-  }, [valid, fromList, ready, fetched, kind, id, toast, router, withoutEdit])
+  }, [valid, fromList, ready, fetched, kind, id, toast, withoutEdit])
 
   return { target, open, close }
 }

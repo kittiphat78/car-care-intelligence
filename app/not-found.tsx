@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { AppLink } from '@/components/ui/AppLink'
 import { buttonClassName } from '@/components/ui/Button'
 import { Icon } from '@/components/ui/Icon'
 
@@ -10,9 +10,9 @@ export default function NotFound() {
         <Icon name="search" className="size-10 text-text-tertiary" />
         <h1 className="text-title text-text">ไม่พบหน้านี้</h1>
         <p className="text-body text-text-secondary">ลิงก์อาจไม่ถูกต้องหรือถูกย้ายไปแล้ว</p>
-        <Link href="/" className={buttonClassName({ fullWidth: true })}>
+        <AppLink href="/" className={buttonClassName({ fullWidth: true })}>
           กลับหน้าภาพรวม
-        </Link>
+        </AppLink>
       </div>
     </main>
   )

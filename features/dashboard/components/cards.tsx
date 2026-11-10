@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { AppLink } from '@/components/ui/AppLink'
 import { useId, useState } from 'react'
 import { cn } from '@/lib/cn'
 import { Card } from '@/components/ui/Card'
@@ -151,7 +151,7 @@ export function DebtSummaryCard({ debt }: { debt: DebtSummary }) {
   // loading placeholder (Step 10, D-09)
   if (debt.total <= 0) {
     return (
-      <Link href="/debts" className="focus-ring block rounded-lg">
+      <AppLink href="/debts" className="focus-ring block rounded-lg">
         <Card interactive className="grid grid-cols-1 gap-1">
           <p className="flex items-center gap-2 text-label text-text-secondary">
             <Icon name="check-circle" className="text-success-text" />
@@ -166,11 +166,11 @@ export function DebtSummaryCard({ debt }: { debt: DebtSummary }) {
             </span>
           </p>
         </Card>
-      </Link>
+      </AppLink>
     )
   }
   return (
-    <Link href="/debts" className="focus-ring block rounded-lg">
+    <AppLink href="/debts" className="focus-ring block rounded-lg">
       <Card tone="warning" interactive className="grid grid-cols-1 gap-1">
         <p className="flex items-center gap-2 text-label text-warning-text">
           <Icon name="clock" />
@@ -187,7 +187,7 @@ export function DebtSummaryCard({ debt }: { debt: DebtSummary }) {
           </span>
         </p>
       </Card>
-    </Link>
+    </AppLink>
   )
 }
 
