@@ -100,6 +100,28 @@ test('the record form keeps its room on a phone on its side and with large text'
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), 'no sideways scroll').toBeLessThanOrEqual(0)
 })
 
+test('plates and customer names are never cut in lists', async ({ page }) => {
+  test.skip(test.info().project.name !== 'phone', 'phone layout only')
+  await signIn(page)
+  // Row plates, customer names and times (RecordRow, DebtRow), debt card names and customer card names: fully shown
+  const cut = () =>
+    page.evaluate(() =>
+      [...document.querySelectorAll('main button:has(.bg-wash-subtle, .bg-polish-subtle) .text-subheading:not(.tabular-nums), main button:has(.bg-wash-subtle, .bg-polish-subtle) span.text-caption:not(.truncate), main article h2, main li button .font-semibold, main a .text-heading')]
+        .filter((el) => el.scrollWidth > el.clientWidth + 1 || getComputedStyle(el).textOverflow === 'ellipsis')
+        .map((el) => el.textContent),
+    )
+  for (const path of ['/', '/history', '/debts', '/customers']) {
+    await page.setViewportSize({ width: 280, height: 653 })
+    await page.goto(path)
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+    await page.waitForLoadState('networkidle')
+    expect(await cut(), `${path} at 280 px`).toEqual([])
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.evaluate(() => (document.documentElement.style.fontSize = '200%'))
+    expect(await cut(), `${path} with text 200%`).toEqual([])
+  }
+})
+
 test('pages are accessible in the light theme too', async ({ page }, info) => {
   await page.addInitScript(() => localStorage.setItem('car-care-theme', 'light'))
   await signIn(page)

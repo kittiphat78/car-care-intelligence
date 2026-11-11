@@ -25,9 +25,9 @@ function DebtRow({ record, today, onOpen }: { record: AppRecord; today: string; 
       className="focus-ring flex w-full items-center gap-3 rounded-md px-2 py-2.5 text-left hover:bg-surface-2"
     >
       <span className="grid grid-cols-1 min-w-0 flex-1">
-        <span className="truncate text-body font-semibold text-text">{record.plate}</span>
+        <span className="text-body font-semibold break-words text-text">{record.plate}</span>
         <span className="truncate text-caption text-text-tertiary">
-          {date} · <span className="sr-only">ค้าง </span>{days} วัน{note ? ` · ${note}` : ''}
+          {date} · {days === 0 ? 'ค้างวันนี้' : <><span className="sr-only">ค้าง </span>{days} วัน</>}{note ? ` · ${note}` : ''}
         </span>
       </span>
       <span className="shrink-0 text-body font-bold text-unpaid tabular-nums">{baht(record.price)}</span>
@@ -56,15 +56,18 @@ export function DebtCustomerCard({ group, today, online, billing, onBill, onSett
 
   return (
     <Card as="article" aria-labelledby={id} className="grid grid-cols-1 content-start gap-3">
-      <header className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h2 id={id} className="truncate text-heading text-text">
+      {/* The name is never cut (who to chase); when name and total do not fit side by side
+          (280px, large text) the total moves under the name */}
+      <header className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+        <div className="min-w-[min(100%,10rem)] flex-1">
+          <h2 id={id} className="text-heading break-words text-text">
             {group.name}
           </h2>
           <div className="mt-1 flex flex-wrap items-center gap-2">
             <span className="text-caption text-text-secondary">{group.items.length} คัน</span>
             <Badge tone={group.urgent ? 'danger' : 'warning'} icon="clock">
-              {group.urgent ? 'เร่งด่วน · ' : ''}ค้างนานสุด {group.oldestDays} วัน
+              {group.urgent ? 'เร่งด่วน · ' : ''}
+              {group.oldestDays === 0 ? 'ค้างวันนี้' : `ค้างนานสุด ${group.oldestDays} วัน`}
             </Badge>
           </div>
         </div>

@@ -195,10 +195,11 @@ function CustomerDetails({
                   <li key={p.id} className="grid grid-cols-1 gap-2 px-1 py-3 first:pt-0 last:pb-0">
                     <p className="flex flex-wrap items-center gap-2">
                       <span className="text-body-lg font-semibold text-text tabular-nums select-all">{formatPhone(p.number)}</span>
-                      {p.label && <span className="text-body text-text-secondary">{p.label}</span>}
+                      {p.label && <span className="min-w-0 text-body break-words text-text-secondary">{p.label}</span>}
                       {p.id === mainId && phones.length > 1 && <Badge tone="info">เบอร์หลัก</Badge>}
                     </p>
-                    <CallActions number={p.number} who={customer.name} />
+                    {/* The number is on the line above: the button says only "โทร" (Phase A L4) */}
+                    <CallActions number={p.number} who={customer.name} short />
                   </li>
                 ))}
               </ul>
