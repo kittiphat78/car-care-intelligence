@@ -91,6 +91,12 @@ afterEach(() => {
 // ── Call and copy ────────────────────────────────────────────────────────────
 
 describe('CallLink and CopyNumberButton', () => {
+  it('says only "โทร" when the number is already shown beside it, and still reads the number (L4)', () => {
+    render(<CallLink number="0800000001" who="ทดสอบ เต็นท์ A" short />)
+    const link = screen.getByRole('link', { name: 'โทร 080-000-0001 ทดสอบ เต็นท์ A' })
+    expect(link).toHaveTextContent(/^โทร$/)
+  })
+
   it('dials the stored number; the name read aloud starts with the visible text (AC-03-1)', () => {
     render(<CallLink number="0800000001" who="ทดสอบ เต็นท์ A" />)
     const link = screen.getByRole('link', { name: 'โทร 080-000-0001 ทดสอบ เต็นท์ A' })

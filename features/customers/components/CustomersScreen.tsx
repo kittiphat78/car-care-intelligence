@@ -179,11 +179,11 @@ function CustomerCard({ result: { customer, match }, onOpen }: { result: SearchR
     <Card className="grid grid-cols-1 gap-2 p-0!">
       <AppLink href={`/customers/${customer.id}`} onClick={onOpen} className="focus-ring grid grid-cols-1 gap-0.5 rounded-lg px-4 pt-3 pb-1 hover:bg-surface-2">
         <span className="flex min-w-0 items-center gap-2">
-          <span className="min-w-0 flex-1 truncate text-heading text-text">{customer.name}</span>
+          <span className="min-w-0 flex-1 text-heading break-words text-text">{customer.name}</span>
           <Icon name="chevron-right" className="text-text-tertiary" />
         </span>
         {cars.first && (
-          <span className="truncate text-body text-text-secondary">
+          <span className="text-body break-words text-text-secondary">
             {cars.first}
             {cars.make && ` · ${cars.make}`}
             {cars.more > 0 && ` · +${cars.more} คัน`}
