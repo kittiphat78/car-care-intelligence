@@ -238,7 +238,10 @@ test('a car can be recorded with the keyboard only (AC-34-2)', async ({ page }, 
   await expect(page.getByRole('status').filter({ hasText: `บันทึก ${plate} ฿120 แล้ว` })).toBeVisible()
 })
 
-test('the skip link moves focus to the main content', async ({ page }) => {
+test('the skip link moves focus to the main content', async ({ page, browserName }) => {
+  // Safari moves Tab between form fields only unless the user turns on "Press Tab to
+  // highlight each item"; WebKit here does the same, and iPhones have no Tab key
+  test.skip(browserName === 'webkit', 'Safari does not Tab to links by default')
   await signIn(page)
   await page.keyboard.press('Tab')
   const skip = page.getByRole('link', { name: 'ข้ามไปเนื้อหา' })

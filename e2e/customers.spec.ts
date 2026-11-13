@@ -70,8 +70,9 @@ test('customer directory: add 2 numbers and 2 vehicles, find, call, edit, delete
   // From here on: errors of the customer pages only (not of the dashboard left behind)
   page.on('pageerror', (e) => problems.push(`pageerror: ${e.message}`))
   page.on('console', (m) => {
-    // The local and CI stacks run without the realtime service the dashboard listens to
-    if (m.type() === 'error' && !/realtime\/v1\/websocket/.test(m.text())) problems.push(`console: ${m.text()}`)
+    // The local and CI stacks run without the realtime service the dashboard listens to.
+    // Safari (WebKit) reports the viewport's interactive-widget key it does not know (K-02)
+    if (m.type() === 'error' && !/realtime\/v1\/websocket|interactive-widget/.test(m.text())) problems.push(`console: ${m.text()}`)
   })
   await expectAccessible(page, info, 'customers')
 

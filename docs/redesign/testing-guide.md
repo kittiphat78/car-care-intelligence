@@ -12,7 +12,7 @@
 | SQL | `psql` + `DO $$ … assert … $$` | `supabase/tests/*.test.sql` | Postgres ในเครื่อง/CI | `db` | 5 ไฟล์ [V] |
 | Rollback | `psql` รัน down script ทุกไฟล์ (ใหม่→เก่า) | `supabase/rollback/*.down.sql` | Postgres ในเครื่อง/CI | `db` | 9 ไฟล์ [V] |
 | E2E + a11y | Playwright 1.63 + axe-core 4.13 | `e2e/*.spec.ts` | **Supabase ในเครื่อง** (migrations + seed) | `e2e` | 55 ผ่าน รวมมือถือ (Pixel 7) และ PC (1440 px) Chromium · ข้าม 9 ที่ตั้งใจรันแค่ project เดียว [V] |
-| E2E WebKit (Safari) | Playwright WebKit | ชุดเดียวกับข้างบน + config ชั่วคราว (§4.3) | Supabase ในเครื่อง | ❌ รันเอง | 44 ผ่าน / 11 ล้ม บน rc.4 (`preview-test-results.md` §3) |
+| E2E อุปกรณ์อื่น (iPhone/iPad WebKit, Android จอเล็ก, laptop 1366) | Playwright | ชุดเดียวกับข้างบน · `npm run test:e2e:device` (§4.3) | Supabase ในเครื่อง | ❌ รันเอง | ดู §4.3 |
 | Preview / RC | Playwright | `e2e-preview/` | **staging** ผ่าน Vercel Preview | ❌ รันเอง | มือถือ 3/3 · PC 6/6 · iPhone 3/3 บน rc.4 [V] |
 | Smoke production | สคริปต์อ่านอย่างเดียว + เจ้าของ login ตรวจ | `smoke-test-results.md` | production (อ่านอย่างเดียว) | ❌ | ทำทุก release |
 | Performance | Lighthouse 13 (lab, จำกัด CPU/เน็ต) | `performance-audit.md` | — | ❌ | ตอน audit |
@@ -78,29 +78,23 @@ npx playwright show-report                  # ดูรายงาน
 - `playwright.config.ts` ใช้ `next start` เดิมถ้ามีอยู่แล้วที่ port 3100 (นอก CI) · หลัง build ใหม่ให้ปิดตัวเก่าก่อน
 - ชุด test: `cuj.spec.ts` (CUJ-1..8), `security.spec.ts` (RLS 3 บัญชี, headers, CSP, D-07), `regression.spec.ts` (ฟีเจอร์ v1, D-11), `ui-quality.spec.ts` (axe WCAG 2.2 + Label in Name, 320 px, ธีมสว่าง, focus), `logout.spec.ts` (ออกจากระบบ 2 เครื่อง)
 
-### 4.3 WebKit (เครื่องยนต์ของ Safari)
+### 4.3 อุปกรณ์อื่น: iPhone, iPad (WebKit), Android จอเล็ก, laptop 1366
 
-ไม่มีใน CI · ใช้ก่อน release เพื่อจับปัญหาที่เกิดก่อนหน้าพร้อม (WebKit ช้ากว่า Chromium) · สร้างไฟล์ชั่วคราว **ไม่ commit**:
+ไม่มีใน CI (WebKit ติดตั้งและรันช้า) · รันก่อน release หรือเมื่อแก้หน้าตา · ชุด E2E เดียวกัน ทีละอุปกรณ์ (`playwright.devices.config.ts`) โดยแต่ละอุปกรณ์รันเป็น project `phone` หรือ `desktop` ทุก test จึงเลือกสิ่งที่ตรวจตามเลย์เอาต์เหมือนเดิม
 
-```ts
-// playwright.webkit.config.ts
-import { defineConfig, devices } from '@playwright/test'
-import base from './playwright.config'
-export default defineConfig({
-  ...base,
-  projects: [
-    { name: 'phone', use: { ...devices['iPhone 13'] } },
-    { name: 'desktop', use: { ...devices['Desktop Safari'], viewport: { width: 1440, height: 900 } } },
-  ],
-})
-```
+| `DEVICE` | อุปกรณ์ | เครื่องยนต์ | project |
+|---|---|---|---|
+| `iphone` | iPhone 13 (390×664) | WebKit | phone |
+| `ipad` | iPad Pro 12.9" แนวตั้ง (1024×1366, จอสัมผัส) | WebKit | desktop |
+| `android-small` | Galaxy S8 (360×740) | Chromium | phone |
+| `laptop` | laptop 1366×768 | Chromium | desktop |
 
 ```bash
-npx playwright install webkit
-npx playwright test -c playwright.webkit.config.ts
+npx playwright install webkit              # ครั้งแรกเท่านั้น
+DEVICE=iphone npm run test:e2e:device       # build และตัวแปร E2E_* เหมือน §4.1
 ```
 
-ล้มที่รู้อยู่แล้ว (ไม่ใช่ defect): skip link 2 ข้อ (WebKit ไม่ Tab ไปที่ลิงก์ เหมือน Safari) และ contrast ของปุ่มบันทึกตอนยังกดไม่ได้ 1 ข้อ (WCAG ยกเว้นปุ่มที่ใช้ไม่ได้) · ล้มจาก D-08 อีก 8 ข้อหายไปตั้งแต่ PR #51
+ผลบน `develop` `8069f9e` (2026-11-14) หลังแก้ test ใน PR นี้: Android จอเล็ก 36 ผ่าน · laptop 41 ผ่าน · iPhone 33 ผ่าน / 2 ล้ม · iPad 39 ผ่าน / 1 ล้ม · แก้ test ไป 2 หมวด: skip link (Safari ไม่ Tab ไปที่ลิงก์โดยค่าเริ่มต้น จึงข้ามบน WebKit) และข้อความ `interactive-widget` ใน console ของ Safari (K-02) · ที่เหลือคือ **บั๊กจริง**: แตะ "เพิ่มลูกค้าใหม่ชื่อ …" ทันทีหลังพิมพ์ค้นหา บน Safari ฟอร์มไม่เปิด 2 ใน 6 ครั้ง (การเขียนคำค้นลง URL ที่ตามมาทีหลังลบ `?new=` ทิ้ง) แก้ใน PR แยก · iPhone CUJ-1: contrast ของปุ่มเข้าสู่ระบบระหว่างรอหน้าพร้อม (axe) ล้มเป็นบางรอบตั้งแต่ v2.2.0 (`release-2.2.1.md`)
 
 ### 4.4 เขียน E2E ใหม่
 
