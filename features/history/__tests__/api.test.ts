@@ -5,7 +5,7 @@ import { err, ok } from '@/lib/result'
 const listBetween = vi.hoisted(() => vi.fn())
 vi.mock('@/features/records/api', () => ({ listBetween }))
 
-import { loadExportRange, loadYear } from '@/features/history/api'
+import { loadExportRange, loadPeriod } from '@/features/history/api'
 
 describe('history api', () => {
   beforeEach(() => {
@@ -43,7 +43,7 @@ describe('history api', () => {
   it('loads a Bangkok calendar year newest first and keeps each side separate', async () => {
     const failure = appError('NETWORK')
     listBetween.mockImplementation(async (table: string) => (table === 'records' ? ok([{ id: 'r1' }]) : err(failure)))
-    const result = await loadYear(2026)
+    const result = await loadPeriod(2026, 0)
     expect(listBetween).toHaveBeenCalledWith(
       'records',
       new Date('2025-12-31T17:00:00.000Z'),
@@ -52,5 +52,11 @@ describe('history api', () => {
     )
     expect(result.records).toEqual({ ok: true, data: [{ id: 'r1' }] })
     expect(result.expenses).toEqual({ ok: false, error: failure })
+  })
+
+  it('loads one Bangkok month', async () => {
+    listBetween.mockResolvedValue(ok([]))
+    await loadPeriod(2026, 3)
+    expect(listBetween).toHaveBeenCalledWith('records', new Date('2026-02-28T17:00:00.000Z'), new Date('2026-03-31T17:00:00.000Z'), { ascending: false })
   })
 })
