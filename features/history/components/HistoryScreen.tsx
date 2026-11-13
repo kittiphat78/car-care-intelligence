@@ -73,12 +73,18 @@ export function HistoryScreen() {
     (patch: Partial<HistoryFilters>) => {
       const next = { ...filters, ...patch }
       const params = new URLSearchParams(filtersQuery(next))
-      // Keep dialogs that are open (edit/export)
-      for (const key of ['edit', 'export']) if (searchParams.has(key)) params.set(key, searchParams.get(key)!)
+      // Keep dialogs that are open (edit/export), read from the address as it is now: the
+      // search is written after a typing pause, and a dialog opened in that pause is not in
+      // the params of the last render (it closed again on slow phones, lib/url-state.ts)
+      const live = new URLSearchParams(window.location.search)
+      for (const key of ['edit', 'export']) {
+        const value = live.get(key)
+        if (value !== null) params.set(key, value)
+      }
       const query = params.toString()
       replaceUrl(query ? `${pathname}?${query}` : pathname)
     },
-    [filters, searchParams, pathname],
+    [filters, pathname],
   )
 
   // Search: type freely, update the URL after a short pause (UF-HIST-01)

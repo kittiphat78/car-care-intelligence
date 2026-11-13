@@ -101,6 +101,7 @@ async function renderScreen() {
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'], now: NOW })
+  window.history.replaceState(null, '', '/history')
   nav.push.mockReset()
   nav.replace.mockReset()
   nav.search = ''
