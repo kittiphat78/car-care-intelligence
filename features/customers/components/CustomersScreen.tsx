@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/cn'
 import { toUserMessage } from '@/lib/errors'
-import { useMediaQuery, WIDE_SCREEN } from '@/lib/use-media-query'
+import { useMediaQuery, TABLE_SCREEN } from '@/lib/use-media-query'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Icon } from '@/components/ui/Icon'
@@ -47,7 +47,7 @@ export function CustomersScreen({ userId }: { userId: string }) {
   const urlWith = useUrlWith()
   const { result, customers, reload } = useCustomerDirectory()
   const form = useUrlDialog('new')
-  const wide = useMediaQuery(WIDE_SCREEN)
+  const wide = useMediaQuery(TABLE_SCREEN)
 
   // Type freely; the URL follows after a short pause (fewer history calls, Safari limits them)
   const [query, setQuery] = useState(() => searchParams.get('q') ?? '')
@@ -202,8 +202,9 @@ function CustomerCard({ result: { customer, match }, onOpen }: { result: SearchR
 function CustomerTable({ results, onOpen }: { results: readonly SearchResult[]; onOpen: (e: MouseEvent<HTMLAnchorElement>) => void }) {
   const th = 'sticky top-0 bg-surface-2 px-3 py-2 text-left text-caption font-medium text-text-secondary'
   const td = 'px-3 py-3 align-middle'
+  // Scrolls sideways when large text makes the columns wider than the card
   return (
-    <Card className="overflow-hidden p-0!">
+    <Card className="overflow-x-auto p-0!">
       <table className="w-full text-body">
         <caption className="sr-only">รายชื่อลูกค้า</caption>
         <thead>
@@ -228,15 +229,17 @@ function CustomerTable({ results, onOpen }: { results: readonly SearchResult[]; 
             const cars = vehicleSummary(customer)
             return (
               <tr key={customer.id} className="border-t border-border hover:bg-surface-2">
-                <td className={cn(td, 'max-w-80')}>
+                {/* The name link is a 44px target (it was 21px tall, Phase A M2); the cell's
+                    own padding shrinks so the row does not grow */}
+                <td className="max-w-80 px-3 py-1 align-middle">
                   <AppLink
                     href={`/customers/${customer.id}`}
                     onClick={onOpen}
-                    className="focus-ring rounded-sm font-semibold text-link underline-offset-4 hover:underline"
+                    className="focus-ring flex min-h-11 w-fit items-center rounded-sm font-semibold break-words text-link underline-offset-4 hover:underline"
                   >
                     {customer.name}
                   </AppLink>
-                  {match && <p className="text-caption text-text-secondary">{matchText(match)}</p>}
+                  {match && <p className="pb-2 text-caption text-text-secondary">{matchText(match)}</p>}
                 </td>
                 <td className={cn(td, 'text-text-secondary')}>
                   {cars.first ?? '—'}

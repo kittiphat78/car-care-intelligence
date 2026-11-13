@@ -121,7 +121,7 @@ describe('HistoryScreen', () => {
 
   it('shows only the table on a wide screen', async () => {
     const original = window.matchMedia
-    window.matchMedia = ((query: string) => ({ matches: query === '(min-width: 1024px)', media: query, addEventListener: () => {}, removeEventListener: () => {} })) as unknown as typeof window.matchMedia
+    window.matchMedia = ((query: string) => ({ matches: query === '(min-width: 1280px)', media: query, addEventListener: () => {}, removeEventListener: () => {} })) as unknown as typeof window.matchMedia
     try {
       await renderScreen()
       expect(screen.getByRole('table', { name: 'รายการรายรับ' })).toHaveTextContent('กข 1')

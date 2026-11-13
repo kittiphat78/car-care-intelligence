@@ -138,7 +138,7 @@ Banner danger บนสุดของฟอร์ม "กรุณาแก้�
 | `SearchField` | TextInput + ไอคอนค้นหา + ปุ่มล้าง, `type="search"` และ `enterkeyhint="search"` |
 | `CustomerField` | quick-pick chips (3) + TextInput + datalist (30 ชื่อล่าสุด) |
 | `BrandPicker` | SearchField + Chip group (8 ยอดนิยม) + ปุ่ม "ดูทั้งหมด (24)" |
-| `MonthYearPicker` | 2 select (เดือนรวม "ทั้งปี" และปี พ.ศ. ถึงปีปัจจุบัน) โดยมี label ที่ผูกจริง |
+| `MonthYearPicker` | 2 select (เดือนรวม "ทั้งปี" และปี พ.ศ. ถึงปีปัจจุบัน) โดยมี label ที่ผูกจริง · อยู่บรรทัดเดียวกัน (ราว 3 : 2) และตกเป็นคนละบรรทัดเมื่อตัวอักษรใหญ่ ไม่ตัดชื่อเดือน |
 
 ### 2.4 ActionBar
 แถบติดล่างเหนือ nav: พื้น `surface`, elevation-2, padding 12px + safe-area และมีปุ่ม secondary (ซ้าย, 40%) + primary (ขวา, 60%) ขนาด `lg` · ป้าย "บันทึกย้อนหลัง" อยู่บนแถบเมื่อมี · ซ่อนเมื่อ virtual keyboard เปิดบน Compact (IS §2.4) · Expanded: เป็นแถวปกติท้ายฟอร์ม · **จอเตี้ย** (สูง ≤ 500px ที่ตัวอักษรปกติ และกว้าง < 1024: มือถือแนวนอน, ตัวอักษรใหญ่): BottomNav หลบไปบนหน้าที่มี ActionBar, แถบชิดขอบล่าง padding 8px + safe-area และปุ่มสูง 48px
@@ -169,7 +169,7 @@ Dialog `alert`: หัวข้อ (คำถาม) + สรุปขอบเ�
 Card + หัวข้อ + SegmentedControl (7/30 วัน) + กราฟแท่ง (recharts เดิม) สูง 200px (Compact) / 240px (Expanded) + **สรุปข้อความ** ("7 วันล่าสุด: รายรับ ฿x, รายจ่าย ฿y") + ปุ่ม "ดูเป็นตาราง" (เปิด `<table>` ใน disclosure) · สีจาก tokens โดยอ่านจาก CSS variables (ไม่ hardcode ตาม theme แบบเดิม)
 
 ### 2.12 DataTable (Expanded เท่านั้น)
-`<table>` จริง มี `caption` (sr-only), หัวตาราง sticky, แถวสูง 52px, ตัวเลขชิดขวา tabular และแถวกดได้ (ปุ่ม "แก้ไข" ในแถว ไม่ทำให้ทั้งแถวเป็นลิงก์) · ใช้ใน `/history` บน Expanded ส่วน Compact/Medium ใช้ RecordRow
+`<table>` จริง มี `caption` (sr-only), หัวตาราง sticky, แถวสูง 52px, ตัวเลขชิดขวา tabular และแถวกดได้ (ปุ่ม "แก้ไข" ในแถว ไม่ทำให้ทั้งแถวเป็นลิงก์) · ใช้ใน `/history` และ `/customers` เมื่อกว้าง ≥ 1280 (`TABLE_SCREEN`) ส่วนจอที่แคบกว่าใช้ RecordRow / การ์ด: ที่ 1024 SideNav กินไป 240px เหลือ 720px ให้ตาราง 850px และปุ่ม "แก้ไข" ถูกตัดจนกดไม่ได้ · การ์ดของตาราง `overflow-x-auto` (ไม่ใช่ hidden): ตัวอักษรใหญ่แล้วเลื่อนแนวนอนในการ์ด ไม่ตัดคอลัมน์ขวาทิ้ง
 
 ---
 

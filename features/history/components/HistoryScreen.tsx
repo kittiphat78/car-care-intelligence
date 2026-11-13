@@ -24,7 +24,7 @@ import { EditRecordDialog } from '@/features/records/components/EditRecordDialog
 import { ExpenseRow, IncomeRow } from '@/features/records/components/RecordRow'
 import { useEditParam } from '@/features/records/useEditParam'
 import type { Expense, Record as AppRecord } from '@/types'
-import { useMediaQuery, WIDE_SCREEN } from '@/lib/use-media-query'
+import { useMediaQuery, TABLE_SCREEN } from '@/lib/use-media-query'
 import { loadYear } from '../api'
 import {
   activeFilterCount,
@@ -406,7 +406,7 @@ const RecordList = memo(function RecordList({
   onClear: () => void
   onOpen: (id: string) => void
 }) {
-  const wide = useMediaQuery(WIDE_SCREEN)
+  const wide = useMediaQuery(TABLE_SCREEN)
   if (empty || groups.length === 0) {
     return (
       <Card>
@@ -478,8 +478,11 @@ const by = (email?: string) => email?.split('@')[0] ?? '—'
 function DataTable({ groups, kind, onOpen }: { groups: DayGroup<AppRecord>[] | DayGroup<Expense>[]; kind: 'income' | 'expense'; onOpen: (id: string) => void }) {
   const th = 'sticky top-0 bg-surface-2 px-3 py-2 text-left text-caption font-medium text-text-secondary'
   const td = 'px-3 py-3 align-middle'
+  // overflow-x-auto, not hidden: with large text the columns can be wider than the card.
+  // It scrolls sideways instead of cutting off the edit buttons, and tabbing to one
+  // scrolls it into view (accessibility-guidelines 1.4.10 allows this for DataTable)
   return (
-    <Card className="overflow-hidden p-0!">
+    <Card className="overflow-x-auto p-0!">
       <table className="w-full text-body">
         <caption className="sr-only">{kind === 'income' ? 'รายการรายรับ' : 'รายการรายจ่าย'}</caption>
         <thead>

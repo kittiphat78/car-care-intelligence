@@ -122,6 +122,57 @@ test('plates and customer names are never cut in lists', async ({ page }) => {
   }
 })
 
+test('tables fit iPad Pro portrait and small laptops, and scroll with large text', async ({ page }) => {
+  test.skip(test.info().project.name !== 'desktop', 'wide layout only')
+  await signIn(page)
+  // Seed records ("ทดสอบ …") over the whole year, so the list is never empty
+  const history = `/history?m=0&q=${encodeURIComponent('ทดสอบ')}`
+  const edits = page.locator('main table').getByRole('button', { name: /^แก้ไข / })
+  const sideways = () => page.evaluate(() => document.documentElement.scrollWidth - innerWidth)
+
+  // iPad Pro portrait: the side nav leaves 720 px, too little for the table, so the list
+  await page.setViewportSize({ width: 1024, height: 1366 })
+  await page.goto(history)
+  await expect(page.getByRole('button', { name: /แตะเพื่อแก้ไข/ }).first()).toBeVisible()
+  await expect(page.locator('main table')).toHaveCount(0)
+  expect(await sideways(), 'no sideways scroll at 1024').toBeLessThanOrEqual(0)
+
+  // From 1280 the table, with every edit button inside its card
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await expect(edits.first()).toBeVisible()
+  const outside = await page.evaluate(() => {
+    const card = document.querySelector('main table')!.parentElement!.getBoundingClientRect()
+    return [...document.querySelectorAll('main table button')].filter((b) => b.getBoundingClientRect().right > card.right + 1).length
+  })
+  expect(outside, 'edit buttons outside the table card at 1280').toBe(0)
+
+  // Text 200%: the table scrolls sideways inside its card (it was cut off), the page does not
+  await page.evaluate(() => (document.documentElement.style.fontSize = '200%'))
+  const card = await page.evaluate(() => {
+    const el = document.querySelector('main table')!.parentElement!
+    return { scrolls: el.scrollWidth > el.clientWidth, overflow: getComputedStyle(el).overflowX }
+  })
+  expect(card).toEqual({ scrolls: true, overflow: 'auto' })
+  expect(await sideways(), 'no page scroll with text 200%').toBeLessThanOrEqual(0)
+  await page.evaluate(() => (document.documentElement.style.fontSize = ''))
+
+  // Customer names in the table are 44 px targets (they were 21 px)
+  await page.goto('/customers')
+  const name = page.locator('main table tbody a').first()
+  await expect(name).toBeVisible()
+  expect((await name.boundingBox())!.height).toBeGreaterThanOrEqual(44)
+
+  // The month and year pickers share a line, and with large text take one each (not cut short)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/history')
+  const month = page.getByLabel('ช่วงเวลา: เดือน')
+  const year = page.getByLabel('ช่วงเวลา: ปี')
+  expect((await year.boundingBox())!.y).toBe((await month.boundingBox())!.y)
+  await page.evaluate(() => (document.documentElement.style.fontSize = '200%'))
+  const m = (await month.boundingBox())!
+  expect((await year.boundingBox())!.y).toBeGreaterThanOrEqual(m.y + m.height)
+})
+
 test('pages are accessible in the light theme too', async ({ page }, info) => {
   await page.addInitScript(() => localStorage.setItem('car-care-theme', 'light'))
   await signIn(page)
