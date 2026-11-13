@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { localSupabase } from './global-setup'
 import { expectAccessible, signIn, uniquePlate } from './helpers'
 
 // Step 08 · Responsive layout, accessibility in both themes, keyboard-only use.
@@ -156,11 +157,27 @@ test('tables fit iPad Pro portrait and small laptops, and scroll with large text
   expect(await sideways(), 'no page scroll with text 200%').toBeLessThanOrEqual(0)
   await page.evaluate(() => (document.documentElement.style.fontSize = ''))
 
-  // Customer names in the table are 44 px targets (they were 21 px)
-  await page.goto('/customers')
-  const name = page.locator('main table tbody a').first()
-  await expect(name).toBeVisible()
-  expect((await name.boundingBox())!.height).toBeGreaterThanOrEqual(44)
+  // Customer names in the table are 44 px targets (they were 21 px). The CI seed has no
+  // customers, so add one and remove it afterwards (service key, local only)
+  const who = `ทดสอบ E2E-T ${`${Date.now() % 10000}`.padStart(4, '0')}`
+  try {
+    await page.goto('/customers')
+    await page.getByRole('button', { name: 'เพิ่มลูกค้า' }).first().click()
+    const form = page.getByRole('dialog', { name: 'เพิ่มลูกค้า' })
+    await form.getByRole('textbox', { name: /ชื่อลูกค้า/ }).fill(who)
+    await form.getByRole('button', { name: 'บันทึก', exact: true }).click()
+    await expect(page.getByRole('heading', { level: 1, name: who })).toBeVisible()
+    await page.goto('/customers')
+    const name = page.locator('main table tbody').getByRole('link', { name: who })
+    await expect(name).toBeVisible()
+    expect((await name.boundingBox())!.height).toBeGreaterThanOrEqual(44)
+  } finally {
+    const { url, serviceKey } = localSupabase()
+    await fetch(`${url}/rest/v1/customers?name=like.${encodeURIComponent('ทดสอบ E2E-T*')}`, {
+      method: 'DELETE',
+      headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+    })
+  }
 
   // The month and year pickers share a line, and with large text take one each (not cut short)
   await page.setViewportSize({ width: 390, height: 844 })
