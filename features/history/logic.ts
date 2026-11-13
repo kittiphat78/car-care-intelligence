@@ -21,6 +21,21 @@ export interface HistoryFilters {
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/
 
+/**
+ * The URL parameters that are filters, as one string. Other parameters (?edit, ?export)
+ * change the URL too: parsing only these keeps the same filters object when a dialog
+ * opens, so the list does not render all its rows again (opening the edit dialog on a
+ * year of ~1,000 rows took ~850 ms on a slow phone, UX-04)
+ */
+export function filterParams(params: Pick<URLSearchParams, 'get'>): string {
+  const kept = new URLSearchParams()
+  for (const key of ['y', 'm', 'tab', 'q', 'from', 'to', 'job']) {
+    const value = params.get(key)
+    if (value !== null) kept.set(key, value)
+  }
+  return kept.toString()
+}
+
 export function parseFilters(params: URLSearchParams, now: Date = new Date()): HistoryFilters {
   const today = bangkokParts(now)
   const year = Number(params.get('y'))
