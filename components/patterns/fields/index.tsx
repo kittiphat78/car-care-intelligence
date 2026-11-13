@@ -384,8 +384,10 @@ export function MonthYearPicker({
 }) {
   return (
     <FormField id={id} label={label} asGroup error={error}>
-      <div role="group" aria-labelledby={labelId(id)} className="grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-2">
-        <span className="relative min-w-0">
+      {/* Month and year share a line (about 3 : 2); with large text each takes its own
+          line instead of cutting the names short ("พฤศจิก…" at 200%) */}
+      <div role="group" aria-labelledby={labelId(id)} className="flex flex-wrap gap-2">
+        <span className="relative min-w-0 flex-[3_1_8rem]">
           <select
             id={`${id}-month`}
             aria-label={`${label}: เดือน`}
@@ -403,7 +405,7 @@ export function MonthYearPicker({
           </select>
           <Icon name="chevron-down" className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-text-secondary" />
         </span>
-        <span className="relative min-w-0">
+        <span className="relative min-w-0 flex-[2_1_6rem]">
           <select
             id={`${id}-year`}
             aria-label={`${label}: ปี`}
