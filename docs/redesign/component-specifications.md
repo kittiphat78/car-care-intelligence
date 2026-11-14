@@ -142,7 +142,7 @@ Banner danger บนสุดของฟอร์ม "กรุณาแก้�
 | `MonthYearPicker` | 2 select (เดือนรวม "ทั้งปี" และปี พ.ศ. ถึงปีปัจจุบัน) โดยมี label ที่ผูกจริง · อยู่บรรทัดเดียวกัน (ราว 3 : 2) และตกเป็นคนละบรรทัดเมื่อตัวอักษรใหญ่ ไม่ตัดชื่อเดือน |
 
 ### 2.4 ActionBar
-แถบติดล่างเหนือ nav: พื้น `surface`, elevation-2, padding 12px + safe-area และมีปุ่ม secondary (ซ้าย, 40%) + primary (ขวา, 60%) ขนาด `lg` · ป้าย "บันทึกย้อนหลัง" อยู่บนแถบเมื่อมี · ซ่อนเมื่อ virtual keyboard เปิดบน Compact (IS §2.4) · Expanded: เป็นแถวปกติท้ายฟอร์ม · **จอเตี้ย** (สูง ≤ 500px ที่ตัวอักษรปกติ และกว้าง < 1024: มือถือแนวนอน, ตัวอักษรใหญ่): BottomNav หลบไปบนหน้าที่มี ActionBar, แถบชิดขอบล่าง padding 8px + safe-area และปุ่มสูง 48px
+แถบติดล่างเหนือ nav: กระจกลอย (`glass-float`, blur 12px หรือพื้นทึบเมื่อไม่รองรับ, ADR-28), elevation-2, padding 12px + safe-area และมีปุ่ม secondary (ซ้าย, 40%) + primary (ขวา, 60%) ขนาด `lg` · ป้าย "บันทึกย้อนหลัง" อยู่บนแถบเมื่อมี · ซ่อนเมื่อ virtual keyboard เปิดบน Compact (IS §2.4) · Expanded: เป็นแถวปกติท้ายฟอร์ม (ไม่มีพื้นและไม่ blur) · **จอเตี้ย** (สูง ≤ 500px ที่ตัวอักษรปกติ และกว้าง < 1024: มือถือแนวนอน, ตัวอักษรใหญ่): BottomNav หลบไปบนหน้าที่มี ActionBar, แถบชิดขอบล่าง padding 8px + safe-area และปุ่มสูง 48px
 
 ### 2.5 EmptyState
 ไอคอน 40px (`text-tertiary`) + หัวข้อ 18px/600 + คำอธิบาย 16px + ปุ่ม (ถ้ามี) และจัดกึ่งกลาง
@@ -163,8 +163,8 @@ Dialog `alert`: หัวข้อ (คำถาม) + สรุปขอบเ�
 
 | Component | สเปก |
 |---|---|
-| `BottomNav` | Compact/Medium: สูงอย่างน้อย 64px (4rem) + safe-area และโตตามขนาดตัวอักษร (ป้ายขึ้นได้ 2 บรรทัด, `--size-nav-bottom` เท่าความสูงจริง), 5 ช่องเท่ากัน (ไอคอน 24px + ป้าย 14px/500) · active: ไอคอนและข้อความ `text-link` + pill พื้น `action-primary-subtle` + `aria-current="page"` · ช่อง "บันทึก" ตรงกลาง: วงกลม 56px พื้น `action-primary` ไอคอนขาว (ไม่ใช้ gradient) และป้ายด้านล่าง · Badge ค้างชำระ: วงกลม 20px พื้น `warning` ตัวขาว 14px (ตัวเลข ≤ 9 แล้วแสดง "9+") |
-| `SideNav` | Expanded: กว้าง 240px, พื้น `surface`, ขอบขวา `border` · บนสุด: โลโก้ + ชื่อ "คาร์แคร์" · ปุ่ม "บันทึกรายการ" (Button primary lg full) · รายการ nav 48px (ไอคอน + ข้อความ 16px) · ล่างสุด: theme toggle, ชื่อบัญชี, "ออกจากระบบ" และเวอร์ชัน |
+| `BottomNav` | กระจกลอย (`glass-float`, blur 12px หรือพื้นทึบ) ขอบบนสว่าง (ADR-28) · Compact/Medium: สูงอย่างน้อย 64px (4rem) + safe-area และโตตามขนาดตัวอักษร (ป้ายขึ้นได้ 2 บรรทัด, `--size-nav-bottom` เท่าความสูงจริง), 5 ช่องเท่ากัน (ไอคอน 24px + ป้าย 14px/500) · active: ไอคอนและข้อความ `text-link` + pill พื้น `action-primary-subtle` + `aria-current="page"` · ช่อง "บันทึก" ตรงกลาง: วงกลม 40px ไล่สี `action-primary` → `gradient-to` ไอคอนขาว (ADR-28, ป้าย "บันทึก" ด้านล่างบอกความหมาย) และป้ายด้านล่าง · Badge ค้างชำระ: วงกลม 20px พื้น `warning` ตัวขาว 14px (ตัวเลข ≤ 9 แล้วแสดง "9+") |
+| `SideNav` | Expanded: กว้าง 240px, กระจกลอย (`glass-float`) ขอบขวาสว่าง (ADR-28) · บนสุด: โลโก้ (ไล่สีน้ำเงิน→ม่วง) + ชื่อ "คาร์แคร์" · ปุ่ม "บันทึกรายการ" (Button primary lg full) · รายการ nav 48px (ไอคอน + ข้อความ 16px) · ล่างสุด: theme toggle, ชื่อบัญชี, "ออกจากระบบ" และเวอร์ชัน |
 
 ### 2.11 ChartCard
 Card + หัวข้อ + SegmentedControl (7/30 วัน) + กราฟแท่ง (recharts เดิม) สูง 200px (Compact) / 240px (Expanded) + **สรุปข้อความ** ("7 วันล่าสุด: รายรับ ฿x, รายจ่าย ฿y") + ปุ่ม "ดูเป็นตาราง" (เปิด `<table>` ใน disclosure) · สีจาก tokens โดยอ่านจาก CSS variables (ไม่ hardcode ตาม theme แบบเดิม)

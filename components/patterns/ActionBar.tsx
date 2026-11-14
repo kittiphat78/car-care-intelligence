@@ -10,7 +10,7 @@ export function ActionBar({ children, note }: { children: ReactNode; note?: Reac
   return (
     <div
       data-action-bar
-      className="sticky bottom-(--size-nav-bottom) z-10 -mx-(--page-gutter) mt-2 border-t border-border bg-surface px-(--page-gutter) pt-3 pb-3 shadow-elevation-2 short:pt-2 short:pb-[max(0.5rem,env(safe-area-inset-bottom))] short:[&_button]:min-h-12 lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:px-0 lg:shadow-none"
+      className="sticky bottom-(--size-nav-bottom) z-10 -mx-(--page-gutter) mt-2 border-t glass-float px-(--page-gutter) pt-3 pb-3 shadow-elevation-2 short:pt-2 short:pb-[max(0.5rem,env(safe-area-inset-bottom))] short:[&_button]:min-h-12 lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:px-0 lg:shadow-none lg:[-webkit-backdrop-filter:none] lg:[backdrop-filter:none]"
     >
       {note && <div className="mb-2">{note}</div>}
       {/* Secondary sizes to its label (never wraps), primary takes the rest. On a screen
