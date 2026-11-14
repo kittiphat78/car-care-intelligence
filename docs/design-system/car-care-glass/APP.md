@@ -1,6 +1,6 @@
 # ระบบดีไซน์ "คาร์แคร์กระจก" (Car Care Glass)
 
-> สถานะ: **PR 5/8 เพิ่ม/แก้รายการ** (2026-11-14) · ADR-28 (`docs/redesign/architecture-decisions.md`) · **ไฟล์นี้ override [`MASTER.md`](./MASTER.md)** ซึ่งเป็นผลดิบจากสกิล
+> สถานะ: **PR 6/8 ประวัติ** (2026-11-14) · ADR-28 (`docs/redesign/architecture-decisions.md`) · **ไฟล์นี้ override [`MASTER.md`](./MASTER.md)** ซึ่งเป็นผลดิบจากสกิล
 > ค่าจริงอยู่ที่ `app/styles/tokens.css` · ตาราง contrast ที่ `docs/redesign/design-tokens.md` §3.3–3.4 · test `app/styles/__tests__/tokens.test.ts`
 
 ## 1. ที่มา
@@ -100,7 +100,7 @@ CSS เท่านั้น (ไม่ใช้ GSAP ที่สกิลแ�
 | 2 | `feature/ux-glass-components` | utility `glass` / `glass-float` · Card กระจก · Toast กระจกลอย blur · Dialog พื้นทึบไม่ blur · Button ขอบ+เงา · Tabs ช่องเลือกน้ำเงิน · Badge แคปซูล · TextInput, Switch, Skeleton ใช้ token ใหม่โดยไม่ต้องแก้ | merge แล้ว (#80) |
 | 3 | `feature/ux-glass-menus` | BottomNav, SideNav, ActionBar (มือถือ) เป็นกระจกลอย blur · ปุ่มบันทึกกลางเมนูและโลโก้ไล่สี · PageHeader ไม่เปลี่ยน (คำไล่สีในหัวข้อมากับ PR ของแต่ละหน้า) | merge แล้ว (#81) |
 | 4 | `feature/ux-glass-home` | ป้ายสถานะ · การ์ด วันนี้/สัปดาห์นี้/เดือนนี้ · ทางลัด 4 ใบ · งานวันนี้ (โดนัท + แถบ) · กราฟเส้นไล่สี · ยอดเงินสดไล่สี · utility `text-gradient`, `glass-featured` | merge แล้ว (#82) |
-| 5 | `feature/ux-glass-record-form` | หัวข้อ "บันทึก<ไล่สี>รายการ" · ฟอร์มบนการ์ดกระจก (จอคอม) · ตัวเลือก tile ที่มีไอคอน (ล้างรถ/ขัดสี) ไอคอนในกรอบสีอยู่ซ้าย ทั้งหน้าเพิ่มและ dialog แก้ไข | ส่งตรวจ |
-| 6 | ประวัติ | | |
+| 5 | `feature/ux-glass-record-form` | หัวข้อ "บันทึก<ไล่สี>รายการ" · ฟอร์มบนการ์ดกระจก (จอคอม) · ตัวเลือก tile ที่มีไอคอน (ล้างรถ/ขัดสี) ไอคอนในกรอบสีอยู่ซ้าย ทั้งหน้าเพิ่มและ dialog แก้ไข | merge แล้ว (#83) |
+| 6 | `feature/ux-glass-history` | ยอดรายรับไล่สี · กล่องสถิติกระจก · หัววันที่ติดบนเป็นพื้นทึบของกระจกลอย (ไม่ blur: มีหลายหัว) · ตารางบนการ์ดกระจก (จาก PR 2) | ส่งตรวจ |
 | 7 | ลูกค้า + ค้างชำระ | | |
 | 8 | ตั้งค่า + เข้าสู่ระบบ + PWA | `manifest.json` theme/background color ตาม `--color-bg` ใหม่ | |
