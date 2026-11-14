@@ -115,7 +115,7 @@ function over(under: string, overlay: string): string {
 }
 
 describe('glass tokens', () => {
-  const ON_PAGE = ['text', 'text-secondary', 'text-tertiary', 'primary-text', 'income', 'expense', 'unpaid', 'wash', 'polish', 'success-text', 'danger-text', 'warning-text']
+  const ON_PAGE = ['text', 'text-secondary', 'text-tertiary', 'primary-text', 'income', 'expense', 'unpaid', 'wash', 'polish', 'success-text', 'danger-text', 'warning-text', 'info-text']
 
   for (const [themeName, theme] of [['dark', dark], ['light', light]] as const) {
     const bg = resolve(theme, '--color-bg')
@@ -139,9 +139,9 @@ describe('glass tokens', () => {
       for (const surface of card) expect(contrastRatio(resolve(theme, '--color-action-primary-edge'), surface)).toBeGreaterThanOrEqual(3)
     })
 
-    it(`${themeName}: the solid fallback of floating bars keeps body text 4.5:1`, () => {
-      expect(contrastRatio(resolve(theme, '--color-text'), resolve(theme, '--color-glass-float-solid'))).toBeGreaterThanOrEqual(4.5)
-      expect(contrastRatio(resolve(theme, '--color-text-secondary'), resolve(theme, '--color-glass-float-solid'))).toBeGreaterThanOrEqual(4.5)
+    // Dialogs always use it, and so do floating bars without blur
+    it.each(ON_PAGE)(`${themeName}: %s stays 4.5:1 on the solid floating colour (dialogs)`, (fg) => {
+      expect(contrastRatio(resolve(theme, token(fg)), resolve(theme, '--color-glass-float-solid'))).toBeGreaterThanOrEqual(4.5)
     })
   }
 })

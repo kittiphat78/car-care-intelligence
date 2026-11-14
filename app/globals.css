@@ -15,6 +15,7 @@
   --color-wash-subtle: var(--color-job-wash-subtle);
   --color-polish: var(--color-job-polish);
   --color-polish-subtle: var(--color-job-polish-subtle);
+  --color-primary-edge: var(--color-action-primary-edge);
 }
 
 /* Motion (design-tokens.md §10). With reduced motion, components switch to fade-in. */
@@ -76,6 +77,32 @@ html:has(dialog[open]) {
   &:focus-visible {
     outline: 3px solid var(--color-focus-ring);
     outline-offset: var(--focus-ring-offset);
+  }
+}
+
+/* Glass (ADR-28, docs/design-system/car-care-glass/APP.md §4).
+ * glass: a card. Translucent with a light edge and a soft shadow, never blurred (lists hold
+ * many cards, and a blur per card is slow on low-end phones).
+ * glass-float: something that floats over the page (bars, menus, dialogs, toasts), the only
+ * parts with a backdrop blur. Solid where blur is unsupported or the user asks for less
+ * transparency, so text never sits on an unblurred see-through surface. */
+@utility glass {
+  background-color: var(--color-glass);
+  border-color: var(--color-glass-border);
+  box-shadow: var(--shadow-elevation-1);
+}
+@utility glass-float {
+  background-color: var(--color-glass-float-solid);
+  border-color: var(--color-glass-border);
+  @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+    background-color: var(--color-glass-float);
+    -webkit-backdrop-filter: blur(var(--blur-float)) saturate(140%);
+    backdrop-filter: blur(var(--blur-float)) saturate(140%);
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    background-color: var(--color-glass-float-solid);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 }
 

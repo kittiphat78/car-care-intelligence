@@ -39,7 +39,7 @@
 |---|---|
 | ใช้กับ | ทุกการกระทำ |
 | Anatomy | [ไอคอนนำหน้า?] ข้อความ [ไอคอนตามหลัง?] |
-| Variants | `primary` (พื้น `action-primary`) · `secondary` (พื้น `surface`, ขอบ `border-strong`, ข้อความ `text`) · `ghost` (ไม่มีพื้น, ข้อความ `text-link`) · `danger` (พื้น `danger`) · `danger-ghost` (ข้อความ `danger-text`) · `success` (พื้น `success`) สำหรับ "เคลียร์ยอด" เท่านั้น |
+| Variants | `primary` (พื้น `action-primary`, ขอบ `action-primary-edge` และเงานุ่มสีน้ำเงิน, ADR-28) · `secondary` (พื้น `surface`, ขอบ `border-strong`, ข้อความ `text`) · `ghost` (ไม่มีพื้น, ข้อความ `text-link`) · `danger` (พื้น `danger`) · `danger-ghost` (ข้อความ `danger-text`) · `success` (พื้น `success`) สำหรับ "เคลียร์ยอด" เท่านั้น |
 | Sizes | `md` 48px (ข้อความ 16px/600) · `lg` 56px (18px/600) |
 | Width | `auto` หรือ `full` |
 | States | §0.1 ทั้งหมด และ loading: ข้อความจาก prop `loadingText` (เช่น "กำลังบันทึก…") |
@@ -70,15 +70,15 @@
 | | |
 |---|---|
 | ใช้กับ | รายรับ/รายจ่าย (`/add`, `/history`), 7/30 วัน, สัปดาห์/เดือน/ปี |
-| Visual | ราง `surface-2`, ช่องที่เลือกพื้น `surface` + elevation-1 + ข้อความ `text` 600 และสูง 44px |
+| Visual | รางกระจก (`glass` + ขอบ), ช่องที่เลือกพื้น `action-primary` ข้อความ `on-action-primary` 600 พร้อมเงานุ่ม และสูง 44px (ADR-28) |
 | ARIA | ถ้าสลับ **เนื้อหา** ใช้ `tablist`/`tab`/`tabpanel` และถ้าสลับ **ค่า** ใช้ radiogroup |
 
 ### 1.6 Card
-พื้น `surface`, ขอบ `border`, radius lg, padding `--card-padding` และ elevation-0
-Variants: `static` · `interactive` (ทั้งการ์ดเป็น `<button>` หรือ `<a>` ไม่ใช่ `div role="button"`, hover elevation-1) · `tone="warning"` (พื้น `warning-subtle`, ขอบ `warning`)
+กระจก (`glass`: พื้นโปร่ง `--color-glass`, ขอบสว่าง `--color-glass-border`, เงา elevation-1, **ไม่มี blur**), radius lg (20px) และ padding `--card-padding` (ADR-28)
+Variants: `static` · `interactive` (ทั้งการ์ดเป็น `<button>` หรือ `<a>` ไม่ใช่ `div role="button"`, hover ขอบ `border-strong` + elevation-2) · `tone="warning"` (พื้น `warning-subtle`, ขอบ `warning`)
 
 ### 1.7 Badge
-สูง 24px, ข้อความ 14px/500, radius sm และมีไอคอน 16px ได้
+สูง 24px, ข้อความ 14px/500, ทรงแคปซูล (radius full, ADR-28) และมีไอคอน 16px ได้
 Tones: `neutral` · `success` "ชำระแล้ว" · `warning` "ค้างชำระ" · `danger` "เร่งด่วน" · `wash` "ล้างรถ" · `polish` "ขัดสี" · `info`
 กฎ: badge สถานะมีข้อความเสมอ
 
@@ -88,6 +88,7 @@ Tones: `neutral` · `success` "ชำระแล้ว" · `warning` "ค้า
 | Variants | `modal` (กลางจอ, max 480/560px) บน Medium/Expanded · `sheet` (bottom sheet, มุมบน radius xl, สูงสุด 90dvh, มี handle) บน Compact · จอเตี้ย: sheet/modal สูงได้เต็มจอ หัวและท้ายแคบลง · `alert` (`role="alertdialog"`, กลางจอทุกขนาด, max 400px) |
 | Anatomy | Header (หัวข้อ `h2` + IconButton ปิด) · Body (scroll ได้) · Footer (ปุ่มติดล่าง) |
 | พฤติกรรม | focus trap, focus เริ่มต้นตามสเปก (IS §3.2), Esc ปิด, คลิกฉากหลังปิด (ยกเว้น alert), back ปิด (URL state) และคืน focus |
+| Visual | พื้นทึบของกระจกลอย (`glass-float-solid`) + ขอบสว่าง + elevation-3 · **ไม่ blur** เพราะฉากหลังมืดอยู่แล้ว และ blur ทำให้เปิดช้าลง ~30ms บนมือถือช้า (เจ้าของเลือก 2026-11-14, G-02) |
 | Motion | sheet เลื่อนขึ้น 220ms และ modal fade+scale 0.98→1 220ms (reduced: fade อย่างเดียว) |
 | ARIA | `role="dialog"` + `aria-modal="true"` + `aria-labelledby` |
 | Implementation | ใช้ `<dialog>` element หรือ library ที่จัดการ focus ได้ (ตัดสิน Step 05) |
@@ -96,8 +97,8 @@ Tones: `neutral` · `success` "ชำระแล้ว" · `warning` "ค้า
 | | |
 |---|---|
 | ตำแหน่ง | Compact: บน action bar/nav ด้านล่าง · Expanded: มุมขวาล่าง |
-| Visual | พื้น `surface-inverse`, ข้อความ `text-inverse` 16px, ไอคอนสถานะ, ปุ่มปิด และปุ่ม action (เช่น "ลองอีกครั้ง") ได้ 1 ปุ่ม |
-| Tones | `success` (ไอคอน ✓ สี `success-text` ของ theme ตรงข้าม) · `error` · `info` |
+| Visual | กระจกลอย (`glass-float`, blur 12px หรือพื้นทึบ), ข้อความ `text` 16px, ไอคอนสถานะสีตาม tone, ปุ่มปิด และปุ่ม action (เช่น "ลองอีกครั้ง") ได้ 1 ปุ่ม |
+| Tones | `success` (ไอคอน ✓ สี `success-text`) · `error` (`danger-text`) · `info` (`info-text`) · ข้อความบอกสถานะเสมอ สีไอคอนแค่ย้ำ |
 | เวลา | success/info 5 วินาที (หยุดเมื่อ hover/focus) และ error ค้างจนปิด (IS §3.1) |
 | Stack | สูงสุด 3 อัน โดยอันใหม่อยู่ใกล้ขอบ |
 | ARIA | success/info `role="status"` และ error `role="alert"` |

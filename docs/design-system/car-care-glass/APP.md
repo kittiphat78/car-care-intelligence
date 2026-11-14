@@ -1,6 +1,6 @@
 # ระบบดีไซน์ "คาร์แคร์กระจก" (Car Care Glass)
 
-> สถานะ: **PR 1/8 tokens** (2026-11-14) · ADR-28 (`docs/redesign/architecture-decisions.md`) · **ไฟล์นี้ override [`MASTER.md`](./MASTER.md)** ซึ่งเป็นผลดิบจากสกิล
+> สถานะ: **PR 2/8 ชิ้นส่วนพื้นฐาน** (2026-11-14) · ADR-28 (`docs/redesign/architecture-decisions.md`) · **ไฟล์นี้ override [`MASTER.md`](./MASTER.md)** ซึ่งเป็นผลดิบจากสกิล
 > ค่าจริงอยู่ที่ `app/styles/tokens.css` · ตาราง contrast ที่ `docs/redesign/design-tokens.md` §3.3–3.4 · test `app/styles/__tests__/tokens.test.ts`
 
 ## 1. ที่มา
@@ -12,7 +12,7 @@
 ## 2. หลักการ
 
 1. **กระจกเพื่อความชัด ไม่ใช่ตกแต่ง:** การ์ดโปร่งพอเห็นแสงไล่สีด้านหลัง แต่ทึบพอให้ตัวอักษรผ่าน AA ทุกจุด
-2. **blur เฉพาะชิ้นที่ลอยทับ:** แถบบน, เมนูล่าง, เมนูข้าง, แถบปุ่มบันทึก, dialog, toast · การ์ด แถว และตารางไม่มี blur (มือถือ Android ราคาประหยัดวาด blur ช้า)
+2. **blur เฉพาะชิ้นที่ลอยทับ:** แถบบน, เมนูล่าง, เมนูข้าง, แถบปุ่มบันทึก, toast (dialog ใช้พื้นทึบ ดู §4) · การ์ด แถว และตารางไม่มี blur (มือถือ Android ราคาประหยัดวาด blur ช้า)
 3. **ตัวเลขจริงเท่านั้น:** ป้ายและการ์ดทุกใบใช้ข้อมูลที่ระบบโหลดอยู่แล้ว ไม่มีตัวเลขโฆษณา ไม่มี "Live" ถ้าข้อมูลไม่ได้สด
 4. **ความหมายของสีเดิม:** น้ำเงิน = ปุ่มหลัก · เขียว/แดง = เงินเข้า/ออก (มี +/− หรือลูกศรเสมอ) · อำพัน = ค้างชำระ · ฟ้า = ล้างรถ · ม่วง = ขัดสี
 5. **ไม่ช้าลง:** ทุก PR วัดแบบจับคู่กับ develop ถ้าช้าลงต้องแจ้งเจ้าของก่อนส่ง
@@ -44,7 +44,8 @@
 |---|---|---|---|
 | การ์ด (Card, ส่วนสรุป, แถวในการ์ด) | `--color-glass` | ไม่มี | `--color-glass-border` + `--shadow-elevation-1` |
 | แถบบน, เมนูล่าง, เมนูข้าง, แถบปุ่มบันทึก | `--color-glass-float` | `--blur-float` | `--color-glass-border` |
-| Dialog, Toast | `--color-glass-float` | `--blur-float` | `--shadow-elevation-3` |
+| Toast | `--color-glass-float` | `--blur-float` | `--shadow-elevation-3` |
+| Dialog | `--color-glass-float-solid` (ทึบ) | **ไม่มี** (ฉากหลังมืดอยู่แล้ว · blur ทำให้เปิดช้าลง ~30ms, เจ้าของเลือก 2026-11-14) | `--shadow-elevation-3` |
 | ช่องกรอก, ปุ่มรอง | `--color-surface` (ทึบ) | ไม่มี | `--color-border-strong` (3:1) |
 
 - `@supports (backdrop-filter: blur())` เท่านั้นที่ใช้พื้นโปร่ง ถ้าไม่รองรับใช้ `--color-glass-float-solid`
@@ -95,8 +96,8 @@ CSS เท่านั้น (ไม่ใช้ GSAP ที่สกิลแ�
 
 | # | branch | เนื้อหา | สถานะ |
 |---|---|---|---|
-| 1 | `feature/ux-glass-tokens` | tokens + ฟอนต์ + แสงพื้นหลัง + เอกสารนี้ + ADR-28 | ส่งตรวจ |
-| 2 | ชิ้นส่วนพื้นฐาน | Button, TextInput, Card, Dialog, Badge, Tabs, Switch, Toast, Skeleton | |
+| 1 | `feature/ux-glass-tokens` | tokens + ฟอนต์ + แสงพื้นหลัง + เอกสารนี้ + ADR-28 | merge แล้ว (#79) |
+| 2 | `feature/ux-glass-components` | utility `glass` / `glass-float` · Card กระจก · Toast กระจกลอย blur · Dialog พื้นทึบไม่ blur · Button ขอบ+เงา · Tabs ช่องเลือกน้ำเงิน · Badge แคปซูล · TextInput, Switch, Skeleton ใช้ token ใหม่โดยไม่ต้องแก้ | ส่งตรวจ |
 | 3 | เมนู | BottomNav, SideNav, PageHeader, ActionBar (blur) | |
 | 4 | หน้าแรก | ส่วนบน + กราฟ + ทางลัด + การ์ด 3 ช่อง + ป้ายสถานะ | |
 | 5 | เพิ่ม / แก้รายการ | | |
