@@ -48,7 +48,7 @@
 
 | เวลา (2026-11-14) | เหตุการณ์ |
 |---|---|
-| ก่อน merge | CI ของ PR #77 รอบแรก: `e2e` ล้มที่ขั้น "Start Supabase" (เปิดฐานข้อมูลทดสอบใน CI ไม่สำเร็จ ก่อน build และ test) · commit เดียวกันตอน push ผ่าน 9/9 และงาน `db` ใน PR เดียวกันผ่าน · เจ้าของกด Re-run failed jobs แล้วผ่าน |
+| ก่อน merge | CI ของ PR #77 รอบแรก: `e2e` ล้มที่ขั้น "Start Supabase" (เปิดฐานข้อมูลทดสอบใน CI ไม่สำเร็จ ก่อน build และ test) · commit เดียวกันตอน push ผ่าน 9/9 และงาน `db` ใน PR เดียวกันผ่าน · ผลของการรันซ้ำก่อน merge: [U] (ตรวจผ่าน API ไม่ได้ในวันนั้นเพราะเกินโควตา) |
 | 11:16:35 | เจ้าของ merge PR #77 แบบ merge commit → `9d1b731` (`release/2.2.2` @ `7807841` อยู่ใน `main` ครบ) |
 | 11:17:11 | Vercel production deployment `7782451897` success (commit `9d1b731`) |
 | หลัง deploy | Smoke test อ่านอย่างเดียวที่ `car-care-intelligence-53wd.vercel.app`: `/login` 200 ขึ้น `v2.2.2` · ไม่มีแถบ Preview · `/`, `/add`, `/debts`, `/history`, `/customers`, `/more` ไม่ login → 307 ไป `/login` (`?next=`) · header ความปลอดภัยครบ (CSP, HSTS, X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy) · JavaScript 12 ไฟล์ชี้ Supabase production (`fgze…`) เท่านั้น ไม่มี key หรือชื่อฝั่ง server |
