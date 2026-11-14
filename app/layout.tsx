@@ -1,15 +1,16 @@
 import type { Metadata, Viewport } from 'next'
-import { Sarabun } from 'next/font/google'
+import { Noto_Sans_Thai } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/patterns/Providers'
 import { THEME_COLOR, THEME_STORAGE_KEY } from '@/components/patterns/theme-constants'
 
-const sarabun = Sarabun({
+// One variable font for every weight (ADR-28): Thai + Latin 56 KB, Sarabun 4 weights was 84 KB.
+// The PDF bill keeps its own Sarabun files (lib/generateBill.ts).
+const notoThai = Noto_Sans_Thai({
   subsets: ['thai', 'latin'],
-  // 800 was only used by the v1 design (design-to-code-map.md §6)
-  weight: ['400', '500', '600', '700'],
+  weight: 'variable',
   display: 'swap',
-  variable: '--font-sarabun',
+  variable: '--font-noto-thai',
 })
 
 export const metadata: Metadata = {
@@ -71,7 +72,7 @@ const themeScript = `
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="th" className={sarabun.variable} data-theme="dark" suppressHydrationWarning>
+    <html lang="th" className={notoThai.variable} data-theme="dark" suppressHydrationWarning>
       <head>
         {/* The app has its own light and dark themes. This asks "force dark" extensions
             (Dark Reader) to leave the page alone: they rewrite the colour variables the

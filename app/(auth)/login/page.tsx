@@ -10,7 +10,7 @@ const VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? ''
 // screen-specifications.md §1 — a centred box, no navigation, no decorations
 export default function LoginPage() {
   return (
-    <div className="grid min-h-dvh place-items-center bg-bg px-(--page-gutter) py-10">
+    <div className="grid min-h-dvh place-items-center px-(--page-gutter) py-10">
       <div className="grid w-full max-w-100 grid-cols-1 gap-6">
         <header className="grid justify-items-center gap-2 text-center">
           <span aria-hidden="true" className="grid size-16 place-items-center rounded-lg bg-primary text-on-primary">
