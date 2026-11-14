@@ -22,6 +22,22 @@ export function replaceUrl(url: string): void {
   window.history.replaceState(null, '', url)
 }
 
+/**
+ * The address as it is now, with some search params set (or removed with null / ''). For
+ * a write that comes later, e.g. after a typing pause: useUrlWith() knows the params of
+ * the last render only, so it would drop a dialog opened since (?new=, ?export=). On a
+ * slow iPhone that closed "add customer" when it was tapped right after typing.
+ */
+export function liveUrlWith(patch: Patch): string {
+  const params = new URLSearchParams(window.location.search)
+  for (const [key, value] of Object.entries(patch)) {
+    if (value === null || value === '') params.delete(key)
+    else params.set(key, value)
+  }
+  const query = params.toString()
+  return query ? `${window.location.pathname}?${query}` : window.location.pathname
+}
+
 /** The current URL with some search params set (or removed with null / '') */
 export function useUrlWith() {
   const pathname = usePathname()

@@ -14,7 +14,7 @@ import { EmptyState, ErrorState } from '@/components/patterns/EmptyState'
 import { PageHeader } from '@/components/patterns/PageHeader'
 import { SearchField } from '@/components/patterns/fields'
 import { useCustomerDirectory } from '../hooks'
-import { useUrlDialog, useUrlWith } from '@/lib/url-state'
+import { liveUrlWith, replaceUrl, useUrlDialog, useUrlWith } from '@/lib/url-state'
 import { setOpenedFromList } from '../memory'
 import { classifyQuery, normalizePhone, primaryPhone, searchCustomers, vehicleSummary, type SearchMatch, type SearchResult } from '../logic'
 import { CallActions } from './CallButton'
@@ -56,11 +56,12 @@ export function CustomersScreen({ userId }: { userId: string }) {
   useEffect(() => {
     if (query === urlQuery) return
     const timer = setTimeout(() => {
-      // A late URL change while a customer page is opening would cancel that navigation
-      if (!leaving.current) window.history.replaceState(null, '', urlWith({ q: query }))
+      // A late URL change while a customer page is opening would cancel that navigation.
+      // From the address as it is now: "add customer" may have opened its form since
+      if (!leaving.current) replaceUrl(liveUrlWith({ q: query }))
     }, SEARCH_URL_DELAY_MS)
     return () => clearTimeout(timer)
-  }, [query, urlQuery, urlWith])
+  }, [query, urlQuery])
 
   /** A customer is opened: write the search now (it is there on the way back) and nothing after */
   function openCustomer(e: MouseEvent<HTMLAnchorElement>) {

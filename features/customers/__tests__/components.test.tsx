@@ -75,6 +75,8 @@ beforeEach(() => {
   for (const fn of [nav.push, nav.replace, nav.back]) fn.mockReset()
   nav.search = ''
   nav.pathname = '/customers'
+  // The address the page reads for writes that come later (liveUrlWith)
+  window.history.replaceState(null, '', '/customers')
   api.listCustomers.mockReset().mockResolvedValue({ ok: true, data: [A, B] })
   api.saveCustomer.mockReset().mockResolvedValue({ ok: true, data: { id: 'new-id', updated_at: null } })
   api.deleteCustomer.mockReset().mockResolvedValue({ ok: true, data: undefined })
@@ -378,6 +380,19 @@ describe('CustomersScreen', () => {
     })
     // A late change would cancel the navigation that is under way
     expect(replaceState).not.toHaveBeenCalled()
+    vi.useRealTimers()
+  })
+
+  it('tapping "add" right after typing keeps the form open when the search is written later (Safari)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    await renderList()
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'ทดสอบ ใหม่' } })
+    fireEvent.click(screen.getByRole('button', { name: 'เพิ่มลูกค้าใหม่ชื่อ ทดสอบ ใหม่' }))
+    await act(async () => {
+      vi.advanceTimersByTime(1000)
+    })
+    // Before, the late write used the address of the last render and dropped ?new=
+    expect(new URLSearchParams(window.location.search).get('new')).toBe('search')
     vi.useRealTimers()
   })
 
