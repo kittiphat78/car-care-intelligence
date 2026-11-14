@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import { localSupabase } from './global-setup'
 import { expectAccessible, signIn, uniquePlate } from './helpers'
 
 // Step 08 · Responsive layout, accessibility in both themes, keyboard-only use.
@@ -25,6 +26,168 @@ test('no page is wider than the narrowest phone (320 px)', async ({ page }) => {
     })
     expect(overflow, path).toEqual({ scroll: 0, wide: 0 })
   }
+})
+
+// WCAG 1.4.4 Resize text: with the phone's text at 200% the bottom bar used to stay 64px
+// tall and cut every label off; on a folded phone (280 px) the labels ran into each other
+test('the bottom bar keeps its labels with large text and on a 280 px fold', async ({ page }) => {
+  test.skip(test.info().project.name !== 'phone', 'phone layout only')
+  await signIn(page)
+  const labels = () =>
+    page.evaluate(() => {
+      const nav = document.querySelector('nav[aria-label="เมนูหลัก"].bottom-0')!.getBoundingClientRect()
+      const spans = [...document.querySelectorAll('nav[aria-label="เมนูหลัก"].bottom-0 a > span:not([aria-hidden]):not(.absolute)')].filter((s) => s.textContent?.trim())
+      const boxes = spans.map((s) => s.getBoundingClientRect())
+      return {
+        // every label fully inside the bar and not clamped
+        cut: spans.filter((s, i) => s.scrollHeight > s.clientHeight + 1 || boxes[i].bottom > nav.bottom + 1 || boxes[i].top < nav.top - 1).map((s) => s.textContent),
+        // no two labels touching
+        touching: boxes.slice(1).filter((b, i) => b.left < boxes[i].right + 2).length,
+        // the page leaves room for the bar (content never hidden under it)
+        room: parseFloat(getComputedStyle(document.querySelector('main')!).paddingBottom) >= nav.height,
+      }
+    })
+
+  await page.setViewportSize({ width: 280, height: 653 })
+  await page.goto('/')
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  expect(await labels(), '280 px').toEqual({ cut: [], touching: 0, room: true })
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.evaluate(() => (document.documentElement.style.fontSize = '200%'))
+  await page.waitForTimeout(300) // the bar measures itself after it grew
+  expect(await labels(), 'text 200%').toEqual({ cut: [], touching: 0, room: true })
+})
+
+test('the record form keeps its room on a phone on its side and with large text', async ({ page }) => {
+  test.skip(test.info().project.name !== 'phone', 'phone layout only')
+  await signIn(page)
+  const nav = page.locator('[data-bottom-nav]')
+  const bar = () =>
+    page.evaluate(() => {
+      const r = document.querySelector('[data-action-bar]')!.getBoundingClientRect()
+      return { top: Math.round(r.top), bottom: Math.round(r.bottom), height: Math.round(r.height), vh: innerHeight }
+    })
+
+  // Phone on its side: the nav steps aside on /add, the save bar is one slim row at the bottom
+  for (const size of [{ width: 667, height: 375 }, { width: 932, height: 430 }]) {
+    await page.setViewportSize(size)
+    await page.goto('/add')
+    await expect(page.getByRole('button', { name: 'บันทึก', exact: true })).toBeEnabled()
+    await expect(nav).toBeHidden()
+    const b = await bar()
+    expect(b.bottom, `${size.width}: bar at the bottom edge`).toBe(b.vh)
+    expect(b.height, `${size.width}: slim bar`).toBeLessThanOrEqual(72)
+  }
+  // The nav is back on every other page, and on /add when the screen is tall
+  await page.goto('/')
+  await expect(nav).toBeVisible()
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/add')
+  await expect(nav).toBeVisible()
+  const tall = await bar()
+  expect(tall.bottom, 'bar above the nav').toBeLessThanOrEqual(tall.vh - 64)
+
+  // 320 px: the date quick picks stay together on one line
+  await page.setViewportSize({ width: 320, height: 640 })
+  const top = (name: string) => page.getByRole('button', { name, exact: true }).evaluate((el) => Math.round(el.getBoundingClientRect().top))
+  expect(await top('เมื่อวาน')).toBe(await top('วันนี้'))
+
+  // Large text on the dashboard: the header buttons wrap instead of widening the page
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/')
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+  await page.evaluate(() => (document.documentElement.style.fontSize = '200%'))
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), 'no sideways scroll').toBeLessThanOrEqual(0)
+})
+
+test('plates and customer names are never cut in lists', async ({ page }) => {
+  test.skip(test.info().project.name !== 'phone', 'phone layout only')
+  await signIn(page)
+  // Row plates, customer names and times (RecordRow, DebtRow), debt card names and customer card names: fully shown
+  const cut = () =>
+    page.evaluate(() =>
+      [...document.querySelectorAll('main button:has(.bg-wash-subtle, .bg-polish-subtle) .text-subheading:not(.tabular-nums), main button:has(.bg-wash-subtle, .bg-polish-subtle) span.text-caption:not(.truncate), main article h2, main li button .font-semibold, main a .text-heading')]
+        .filter((el) => el.scrollWidth > el.clientWidth + 1 || getComputedStyle(el).textOverflow === 'ellipsis')
+        .map((el) => el.textContent),
+    )
+  for (const path of ['/', '/history', '/debts', '/customers']) {
+    await page.setViewportSize({ width: 280, height: 653 })
+    await page.goto(path)
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+    await page.waitForLoadState('networkidle')
+    expect(await cut(), `${path} at 280 px`).toEqual([])
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.evaluate(() => (document.documentElement.style.fontSize = '200%'))
+    expect(await cut(), `${path} with text 200%`).toEqual([])
+  }
+})
+
+test('tables fit iPad Pro portrait and small laptops, and scroll with large text', async ({ page }) => {
+  test.skip(test.info().project.name !== 'desktop', 'wide layout only')
+  await signIn(page)
+  // Seed records ("ทดสอบ …") over the whole year, so the list is never empty
+  const history = `/history?m=0&q=${encodeURIComponent('ทดสอบ')}`
+  const edits = page.locator('main table').getByRole('button', { name: /^แก้ไข / })
+  const sideways = () => page.evaluate(() => document.documentElement.scrollWidth - innerWidth)
+
+  // iPad Pro portrait: the side nav leaves 720 px, too little for the table, so the list
+  await page.setViewportSize({ width: 1024, height: 1366 })
+  await page.goto(history)
+  await expect(page.getByRole('button', { name: /แตะเพื่อแก้ไข/ }).first()).toBeVisible()
+  await expect(page.locator('main table')).toHaveCount(0)
+  expect(await sideways(), 'no sideways scroll at 1024').toBeLessThanOrEqual(0)
+
+  // From 1280 the table, with every edit button inside its card
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await expect(edits.first()).toBeVisible()
+  const outside = await page.evaluate(() => {
+    const card = document.querySelector('main table')!.parentElement!.getBoundingClientRect()
+    return [...document.querySelectorAll('main table button')].filter((b) => b.getBoundingClientRect().right > card.right + 1).length
+  })
+  expect(outside, 'edit buttons outside the table card at 1280').toBe(0)
+
+  // Text 200%: the table scrolls sideways inside its card (it was cut off), the page does not
+  await page.evaluate(() => (document.documentElement.style.fontSize = '200%'))
+  const card = await page.evaluate(() => {
+    const el = document.querySelector('main table')!.parentElement!
+    return { scrolls: el.scrollWidth > el.clientWidth, overflow: getComputedStyle(el).overflowX }
+  })
+  expect(card).toEqual({ scrolls: true, overflow: 'auto' })
+  expect(await sideways(), 'no page scroll with text 200%').toBeLessThanOrEqual(0)
+  await page.evaluate(() => (document.documentElement.style.fontSize = ''))
+
+  // Customer names in the table are 44 px targets (they were 21 px). The CI seed has no
+  // customers, so add one and remove it afterwards (service key, local only)
+  const who = `ทดสอบ E2E-T ${`${Date.now() % 10000}`.padStart(4, '0')}`
+  try {
+    await page.goto('/customers')
+    await page.getByRole('button', { name: 'เพิ่มลูกค้า' }).first().click()
+    const form = page.getByRole('dialog', { name: 'เพิ่มลูกค้า' })
+    await form.getByRole('textbox', { name: /ชื่อลูกค้า/ }).fill(who)
+    await form.getByRole('button', { name: 'บันทึก', exact: true }).click()
+    await expect(page.getByRole('heading', { level: 1, name: who })).toBeVisible()
+    await page.goto('/customers')
+    const name = page.locator('main table tbody').getByRole('link', { name: who })
+    await expect(name).toBeVisible()
+    expect((await name.boundingBox())!.height).toBeGreaterThanOrEqual(44)
+  } finally {
+    const { url, serviceKey } = localSupabase()
+    await fetch(`${url}/rest/v1/customers?name=like.${encodeURIComponent('ทดสอบ E2E-T*')}`, {
+      method: 'DELETE',
+      headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` },
+    })
+  }
+
+  // The month and year pickers share a line, and with large text take one each (not cut short)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/history')
+  const month = page.getByLabel('ช่วงเวลา: เดือน')
+  const year = page.getByLabel('ช่วงเวลา: ปี')
+  expect((await year.boundingBox())!.y).toBe((await month.boundingBox())!.y)
+  await page.evaluate(() => (document.documentElement.style.fontSize = '200%'))
+  const m = (await month.boundingBox())!
+  expect((await year.boundingBox())!.y).toBeGreaterThanOrEqual(m.y + m.height)
 })
 
 test('pages are accessible in the light theme too', async ({ page }, info) => {
@@ -75,7 +238,10 @@ test('a car can be recorded with the keyboard only (AC-34-2)', async ({ page }, 
   await expect(page.getByRole('status').filter({ hasText: `บันทึก ${plate} ฿120 แล้ว` })).toBeVisible()
 })
 
-test('the skip link moves focus to the main content', async ({ page }) => {
+test('the skip link moves focus to the main content', async ({ page, browserName }) => {
+  // Safari moves Tab between form fields only unless the user turns on "Press Tab to
+  // highlight each item"; WebKit here does the same, and iPhones have no Tab key
+  test.skip(browserName === 'webkit', 'Safari does not Tab to links by default')
   await signIn(page)
   await page.keyboard.press('Tab')
   const skip = page.getByRole('link', { name: 'ข้ามไปเนื้อหา' })

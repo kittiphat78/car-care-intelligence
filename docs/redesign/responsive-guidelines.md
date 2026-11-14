@@ -14,13 +14,13 @@
 
 **Mobile-first:** เขียน style ฐานสำหรับ Compact แล้วเพิ่มด้วย `md:` (600) และ `lg:` (1024) เท่านั้น ห้ามใช้ max-width media query ยกเว้นกรณีพิเศษที่ต้องระบุเหตุผล
 
-**ความสูงต่ำ:** `@media (max-height: 500px)` (มือถือแนวนอน) ซ่อน ActionBar label "บันทึกย้อนหลัง" และลดขนาด MoneyHero เป็น `--text-title-lg`
+**ความสูงต่ำ:** variant `short:` = `@media (max-height: 31.25rem) and (width < 1024px)` (`globals.css`) ครอบมือถือแนวนอนและตัวอักษรใหญ่ (zoom ทำให้ viewport เตี้ยลง, rem ตามขนาดตัวอักษรตั้งต้นของเบราว์เซอร์) · หน้าที่มี ActionBar (`/add`): BottomNav หลบ, ActionBar แถวเดียวเตี้ยชิดขอบล่าง · Dialog sheet/modal สูงได้เต็มจอ · ป้าย "บันทึกย้อนหลัง" ยังแสดง (กันบันทึกผิดวัน) · MoneyHero ยังไม่ย่อ
 
 ## 2. Navigation Behavior
 
 | | Compact | Medium | Expanded |
 |---|---|---|---|
-| Primary nav | BottomNav 5 ช่อง (64px + safe-area) | BottomNav 5 ช่อง (ป้ายข้างไอคอนเมื่อกว้าง ≥ 720) | SideNav ซ้าย แสดงตลอด |
+| Primary nav | BottomNav 5 ช่อง (สูงอย่างน้อย 64px + safe-area · โตตามขนาดตัวอักษร ป้ายขึ้นได้ 2 บรรทัด ไม่ตัดทิ้ง) | BottomNav 5 ช่อง (ป้ายข้างไอคอนเมื่อกว้าง ≥ 720) | SideNav ซ้าย แสดงตลอด |
 | ปุ่มบันทึก | วงกลมกลาง BottomNav | วงกลมกลาง | Button primary บนสุดของ SideNav |
 | Badge ค้างชำระ | บนไอคอน | บนไอคอน | ท้ายข้อความ "ค้างชำระ (3)" |
 | เพิ่มเติม | ช่องที่ 5 → `/more` | ช่องที่ 5 → `/more` | อยู่ล่าง SideNav และ `/more` เปิดได้ |

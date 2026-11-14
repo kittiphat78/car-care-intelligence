@@ -35,11 +35,13 @@ export interface DialogProps {
   className?: string
 }
 
+// On a short screen (phone on its side, large text) a form dialog may use the full height,
+// and its header and footer are tighter: at 85% it left ~180px for the fields (Phase A H3)
 const PANEL: Record<DialogVariant, string> = {
   sheet:
-    'inset-x-0 bottom-0 max-h-[90dvh] rounded-t-xl animate-sheet-in md:inset-x-auto md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:max-h-[85dvh] md:rounded-xl md:animate-dialog-in',
+    'inset-x-0 bottom-0 max-h-[90dvh] rounded-t-xl animate-sheet-in md:inset-x-auto md:bottom-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:max-h-[85dvh] md:rounded-xl md:animate-dialog-in short:max-h-dvh',
   modal:
-    'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-h-[85dvh] w-[calc(100%-2rem)] rounded-xl animate-dialog-in',
+    'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-h-[85dvh] w-[calc(100%-2rem)] rounded-xl animate-dialog-in short:max-h-dvh',
   alert:
     'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 max-h-[85dvh] w-[calc(100%-2rem)] max-w-100 rounded-xl animate-dialog-in',
 }
@@ -129,7 +131,7 @@ export function Dialog({
             {variant === 'sheet' && (
               <div aria-hidden="true" className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-border-strong md:hidden" />
             )}
-            <header className="flex shrink-0 items-start gap-2 px-5 pt-4 pb-2">
+            <header className="flex shrink-0 items-start gap-2 px-5 pt-4 pb-2 short:pt-2 short:pb-0">
               <h2 id={titleId} className="min-w-0 flex-1 pt-2 text-heading text-text">
                 {title}
               </h2>
@@ -144,7 +146,7 @@ export function Dialog({
               {children}
             </div>
             {footer && (
-              <footer className="flex shrink-0 gap-3 border-t border-border px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] *:flex-1">
+              <footer className="flex shrink-0 gap-3 border-t border-border px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] *:flex-1 short:pt-2 short:pb-[max(0.5rem,env(safe-area-inset-bottom))]">
                 {footer}
               </footer>
             )}

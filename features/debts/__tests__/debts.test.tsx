@@ -18,6 +18,7 @@ vi.mock('@/features/customers/api', () => customersApi)
 vi.mock('@/lib/observability', () => ({ reportAppError: vi.fn() }))
 
 import { DebtsScreen } from '../components/DebtsScreen'
+import { DebtCustomerCard } from '../components/DebtCustomerCard'
 import { groupDebts, platePreview, settleOutcome, sortDebts, debtTotals, URGENT_DAYS, UNNAMED_KEY } from '../logic'
 import { forgetCustomers } from '@/features/customers/memory'
 import { plateCore, plateKey } from '@/features/customers/logic'
@@ -96,6 +97,19 @@ beforeEach(() => {
   api.settleRecords.mockReset()
   customersApi.listCustomers.mockReset().mockResolvedValue({ ok: true, data: [] })
   forgetCustomers()
+})
+
+describe('DebtCustomerCard', () => {
+  it('says "ค้างวันนี้" rather than "0 วัน", and shows the whole name and plate', () => {
+    const name = 'เต็นท์รถมือสองศรีสะเกษพาณิชย์ยานยนต์ สาขาพหลโยธิน'
+    const [group] = groupDebts([{ ...rec('9', TODAY, 500, name), plate: 'ขกษ 9999 กรุงเทพฯ' }], TODAY)
+    const noop = () => {}
+    render(<DebtCustomerCard group={group} today={TODAY} online billing={false} onBill={noop} onSettle={noop} onOpenRow={noop} />)
+    expect(screen.getByText('ค้างวันนี้')).toBeInTheDocument()
+    expect(screen.queryByText(/0 วัน/)).toBeNull()
+    expect(screen.getByRole('heading', { name })).not.toHaveClass('truncate')
+    expect(screen.getByText('ขกษ 9999 กรุงเทพฯ')).not.toHaveClass('truncate')
+  })
 })
 
 describe('DebtsScreen', () => {

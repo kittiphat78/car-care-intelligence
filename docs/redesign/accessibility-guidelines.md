@@ -14,7 +14,7 @@
 | 1.4.1 | Use of color | สถานะมีข้อความหรือไอคอนเสมอ (DP-4) และ chip ที่เลือกมี ✓ | PP-25 |
 | 1.4.3 | Contrast (text) | 4.5:1 ทุกคู่ (ตรวจแล้ว 38/38 ใน `design-tokens.md` §3.3) | PP-12 |
 | 1.4.4 | Resize text | ใช้ rem และซูม 200% ได้ | PP-11 |
-| 1.4.10 | Reflow | 320px ไม่มี scroll แนวนอน (ยกเว้น DataTable ซึ่งมีบน Expanded เท่านั้น) | — |
+| 1.4.10 | Reflow | 320px ไม่มี scroll แนวนอน (ยกเว้น DataTable ซึ่งมีเมื่อกว้าง ≥ 1280 เท่านั้น และเลื่อนแนวนอนภายในการ์ดเมื่อตัวอักษรใหญ่ หน้าไม่เลื่อน) | — |
 | 1.4.11 | Non-text contrast | ขอบ input `border-strong` ≥ 3:1 และ focus ring ≥ 3:1 | ขอบเดิม 8% opacity |
 | 1.4.12 | Text spacing | ไม่ fix ความสูงของกล่องข้อความ (เลิก `h-[7.5rem]` ใน StatCard) | — |
 | 1.4.13 | Content on hover/focus | popover อากาศปิดด้วย Esc และไม่หายเมื่อเลื่อนเมาส์เข้า | — |

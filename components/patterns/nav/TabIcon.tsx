@@ -23,7 +23,7 @@ export function TabIcon({ icon, active, primary = false }: { icon: IconName; act
   return (
     <span
       className={cn(
-        'grid h-7 w-13 place-items-center rounded-full transition-colors duration-150',
+        'grid h-7 w-13 max-w-full place-items-center rounded-full transition-colors duration-150',
         (active || pending) && 'bg-primary-subtle',
         pending && 'motion-safe:animate-pulse',
       )}

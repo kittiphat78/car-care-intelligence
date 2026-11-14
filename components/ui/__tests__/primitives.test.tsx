@@ -254,3 +254,15 @@ describe('Banner, Badge, Skeleton', () => {
     expect(screen.getAllByText('กำลังโหลด…')).toHaveLength(1)
   })
 })
+
+describe('Switch', () => {
+  it('switches from its label too, and its button is a 44px target', async () => {
+    const { Switch } = await import('@/components/ui/Switch')
+    const onChange = vi.fn()
+    render(<Switch label="ธีมมืด" checked={false} onChange={onChange} />)
+    const button = screen.getByRole('switch', { name: 'ธีมมืด' })
+    expect(button).toHaveClass('h-11')
+    fireEvent.click(screen.getByText('ธีมมืด'))
+    expect(onChange).toHaveBeenCalledWith(true)
+  })
+})

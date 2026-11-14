@@ -138,7 +138,8 @@
   --size-icon-sm: 16px;
   --size-icon-md: 20px;
   --size-icon-lg: 24px;
-  --size-nav-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  /* 4rem, not 64px: grows with the text size; BottomNav keeps it equal to its real height */
+  --size-nav-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
   --size-sidebar: 240px;
   --size-content-max: 720px;
   --size-dialog-max: 480px;

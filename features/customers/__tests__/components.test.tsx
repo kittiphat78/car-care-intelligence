@@ -75,6 +75,8 @@ beforeEach(() => {
   for (const fn of [nav.push, nav.replace, nav.back]) fn.mockReset()
   nav.search = ''
   nav.pathname = '/customers'
+  // The address the page reads for writes that come later (liveUrlWith)
+  window.history.replaceState(null, '', '/customers')
   api.listCustomers.mockReset().mockResolvedValue({ ok: true, data: [A, B] })
   api.saveCustomer.mockReset().mockResolvedValue({ ok: true, data: { id: 'new-id', updated_at: null } })
   api.deleteCustomer.mockReset().mockResolvedValue({ ok: true, data: undefined })
@@ -91,6 +93,12 @@ afterEach(() => {
 // ── Call and copy ────────────────────────────────────────────────────────────
 
 describe('CallLink and CopyNumberButton', () => {
+  it('says only "โทร" when the number is already shown beside it, and still reads the number (L4)', () => {
+    render(<CallLink number="0800000001" who="ทดสอบ เต็นท์ A" short />)
+    const link = screen.getByRole('link', { name: 'โทร 080-000-0001 ทดสอบ เต็นท์ A' })
+    expect(link).toHaveTextContent(/^โทร$/)
+  })
+
   it('dials the stored number; the name read aloud starts with the visible text (AC-03-1)', () => {
     render(<CallLink number="0800000001" who="ทดสอบ เต็นท์ A" />)
     const link = screen.getByRole('link', { name: 'โทร 080-000-0001 ทดสอบ เต็นท์ A' })
@@ -372,6 +380,19 @@ describe('CustomersScreen', () => {
     })
     // A late change would cancel the navigation that is under way
     expect(replaceState).not.toHaveBeenCalled()
+    vi.useRealTimers()
+  })
+
+  it('tapping "add" right after typing keeps the form open when the search is written later (Safari)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    await renderList()
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'ทดสอบ ใหม่' } })
+    fireEvent.click(screen.getByRole('button', { name: 'เพิ่มลูกค้าใหม่ชื่อ ทดสอบ ใหม่' }))
+    await act(async () => {
+      vi.advanceTimersByTime(1000)
+    })
+    // Before, the late write used the address of the last render and dropped ?new=
+    expect(new URLSearchParams(window.location.search).get('new')).toBe('search')
     vi.useRealTimers()
   })
 

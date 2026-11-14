@@ -1,6 +1,6 @@
 {
   "name": "carwash",
-  "version": "2.2.1",
+  "version": "2.2.2",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -10,7 +10,8 @@
     "type-check": "tsc --noEmit",
     "test": "vitest run",
     "validate": "npm run lint && npm run type-check && npm run test && npm run build",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:e2e:device": "playwright test -c playwright.devices.config.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.0",

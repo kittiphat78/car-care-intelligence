@@ -85,7 +85,7 @@ Tones: `neutral` · `success` "ชำระแล้ว" · `warning` "ค้า
 ### 1.8 Dialog
 | | |
 |---|---|
-| Variants | `modal` (กลางจอ, max 480/560px) บน Medium/Expanded · `sheet` (bottom sheet, มุมบน radius xl, สูงสุด 90dvh, มี handle) บน Compact · `alert` (`role="alertdialog"`, กลางจอทุกขนาด, max 400px) |
+| Variants | `modal` (กลางจอ, max 480/560px) บน Medium/Expanded · `sheet` (bottom sheet, มุมบน radius xl, สูงสุด 90dvh, มี handle) บน Compact · จอเตี้ย: sheet/modal สูงได้เต็มจอ หัวและท้ายแคบลง · `alert` (`role="alertdialog"`, กลางจอทุกขนาด, max 400px) |
 | Anatomy | Header (หัวข้อ `h2` + IconButton ปิด) · Body (scroll ได้) · Footer (ปุ่มติดล่าง) |
 | พฤติกรรม | focus trap, focus เริ่มต้นตามสเปก (IS §3.2), Esc ปิด, คลิกฉากหลังปิด (ยกเว้น alert), back ปิด (URL state) และคืน focus |
 | Motion | sheet เลื่อนขึ้น 220ms และ modal fade+scale 0.98→1 220ms (reduced: fade อย่างเดียว) |
@@ -133,15 +133,15 @@ Banner danger บนสุดของฟอร์ม "กรุณาแก้�
 |---|---|
 | `PlateField` | สูง 64px, ข้อความ 24px/700 กึ่งกลาง, `autocapitalize="characters"`, max 20 + counter และ slot ใต้ช่องสำหรับ "ลูกค้าประจำ ครั้งที่ N" (Badge info) |
 | `MoneyField` | สูง 64px, prefix "฿", ข้อความ 28px/700 ชิดขวา, `inputMode="numeric"`, รับเฉพาะตัวเลข และแสดงคั่นหลักพันเมื่อ blur · tone `expense` สำหรับรายจ่าย (ตัวเลข `expense`) |
-| `DateField` | ปุ่มแสดง "วันนี้ · 14 ต.ค. 2569" (พ.ศ.) ที่ focus ได้ แล้วเปิด native date input · ถ้าไม่ใช่วันนี้ แสดง Badge warning "บันทึกย้อนหลัง" · มีปุ่มลัด "วันนี้" / "เมื่อวาน" |
+| `DateField` | ปุ่มแสดง "วันนี้ · 14 ต.ค. 2569" (พ.ศ.) ที่ focus ได้ แล้วเปิด native date input · ถ้าไม่ใช่วันนี้ แสดง Badge warning "บันทึกย้อนหลัง" · มีปุ่มลัด "วันนี้" / "เมื่อวาน" (ตกบรรทัดเป็นคู่ ไม่แยกกัน) |
 | `TimeField` | native `type="time"` 24 ชม. |
 | `SearchField` | TextInput + ไอคอนค้นหา + ปุ่มล้าง, `type="search"` และ `enterkeyhint="search"` |
 | `CustomerField` | quick-pick chips (3) + TextInput + datalist (30 ชื่อล่าสุด) |
 | `BrandPicker` | SearchField + Chip group (8 ยอดนิยม) + ปุ่ม "ดูทั้งหมด (24)" |
-| `MonthYearPicker` | 2 select (เดือนรวม "ทั้งปี" และปี พ.ศ. ถึงปีปัจจุบัน) โดยมี label ที่ผูกจริง |
+| `MonthYearPicker` | 2 select (เดือนรวม "ทั้งปี" และปี พ.ศ. ถึงปีปัจจุบัน) โดยมี label ที่ผูกจริง · อยู่บรรทัดเดียวกัน (ราว 3 : 2) และตกเป็นคนละบรรทัดเมื่อตัวอักษรใหญ่ ไม่ตัดชื่อเดือน |
 
 ### 2.4 ActionBar
-แถบติดล่างเหนือ nav: พื้น `surface`, elevation-2, padding 12px + safe-area และมีปุ่ม secondary (ซ้าย, 40%) + primary (ขวา, 60%) ขนาด `lg` · ป้าย "บันทึกย้อนหลัง" อยู่บนแถบเมื่อมี · ซ่อนเมื่อ virtual keyboard เปิดบน Compact (IS §2.4) · Expanded: เป็นแถวปกติท้ายฟอร์ม
+แถบติดล่างเหนือ nav: พื้น `surface`, elevation-2, padding 12px + safe-area และมีปุ่ม secondary (ซ้าย, 40%) + primary (ขวา, 60%) ขนาด `lg` · ป้าย "บันทึกย้อนหลัง" อยู่บนแถบเมื่อมี · ซ่อนเมื่อ virtual keyboard เปิดบน Compact (IS §2.4) · Expanded: เป็นแถวปกติท้ายฟอร์ม · **จอเตี้ย** (สูง ≤ 500px ที่ตัวอักษรปกติ และกว้าง < 1024: มือถือแนวนอน, ตัวอักษรใหญ่): BottomNav หลบไปบนหน้าที่มี ActionBar, แถบชิดขอบล่าง padding 8px + safe-area และปุ่มสูง 48px
 
 ### 2.5 EmptyState
 ไอคอน 40px (`text-tertiary`) + หัวข้อ 18px/600 + คำอธิบาย 16px + ปุ่ม (ถ้ามี) และจัดกึ่งกลาง
@@ -162,14 +162,14 @@ Dialog `alert`: หัวข้อ (คำถาม) + สรุปขอบเ�
 
 | Component | สเปก |
 |---|---|
-| `BottomNav` | Compact/Medium: สูง 64px + safe-area, 5 ช่องเท่ากัน (ไอคอน 24px + ป้าย 14px/500) · active: ไอคอนและข้อความ `text-link` + pill พื้น `action-primary-subtle` + `aria-current="page"` · ช่อง "บันทึก" ตรงกลาง: วงกลม 56px พื้น `action-primary` ไอคอนขาว (ไม่ใช้ gradient) และป้ายด้านล่าง · Badge ค้างชำระ: วงกลม 20px พื้น `warning` ตัวขาว 14px (ตัวเลข ≤ 9 แล้วแสดง "9+") |
+| `BottomNav` | Compact/Medium: สูงอย่างน้อย 64px (4rem) + safe-area และโตตามขนาดตัวอักษร (ป้ายขึ้นได้ 2 บรรทัด, `--size-nav-bottom` เท่าความสูงจริง), 5 ช่องเท่ากัน (ไอคอน 24px + ป้าย 14px/500) · active: ไอคอนและข้อความ `text-link` + pill พื้น `action-primary-subtle` + `aria-current="page"` · ช่อง "บันทึก" ตรงกลาง: วงกลม 56px พื้น `action-primary` ไอคอนขาว (ไม่ใช้ gradient) และป้ายด้านล่าง · Badge ค้างชำระ: วงกลม 20px พื้น `warning` ตัวขาว 14px (ตัวเลข ≤ 9 แล้วแสดง "9+") |
 | `SideNav` | Expanded: กว้าง 240px, พื้น `surface`, ขอบขวา `border` · บนสุด: โลโก้ + ชื่อ "คาร์แคร์" · ปุ่ม "บันทึกรายการ" (Button primary lg full) · รายการ nav 48px (ไอคอน + ข้อความ 16px) · ล่างสุด: theme toggle, ชื่อบัญชี, "ออกจากระบบ" และเวอร์ชัน |
 
 ### 2.11 ChartCard
 Card + หัวข้อ + SegmentedControl (7/30 วัน) + กราฟแท่ง (recharts เดิม) สูง 200px (Compact) / 240px (Expanded) + **สรุปข้อความ** ("7 วันล่าสุด: รายรับ ฿x, รายจ่าย ฿y") + ปุ่ม "ดูเป็นตาราง" (เปิด `<table>` ใน disclosure) · สีจาก tokens โดยอ่านจาก CSS variables (ไม่ hardcode ตาม theme แบบเดิม)
 
 ### 2.12 DataTable (Expanded เท่านั้น)
-`<table>` จริง มี `caption` (sr-only), หัวตาราง sticky, แถวสูง 52px, ตัวเลขชิดขวา tabular และแถวกดได้ (ปุ่ม "แก้ไข" ในแถว ไม่ทำให้ทั้งแถวเป็นลิงก์) · ใช้ใน `/history` บน Expanded ส่วน Compact/Medium ใช้ RecordRow
+`<table>` จริง มี `caption` (sr-only), หัวตาราง sticky, แถวสูง 52px, ตัวเลขชิดขวา tabular และแถวกดได้ (ปุ่ม "แก้ไข" ในแถว ไม่ทำให้ทั้งแถวเป็นลิงก์) · ใช้ใน `/history` และ `/customers` เมื่อกว้าง ≥ 1280 (`TABLE_SCREEN`) ส่วนจอที่แคบกว่าใช้ RecordRow / การ์ด: ที่ 1024 SideNav กินไป 240px เหลือ 720px ให้ตาราง 850px และปุ่ม "แก้ไข" ถูกตัดจนกดไม่ได้ · การ์ดของตาราง `overflow-x-auto` (ไม่ใช่ hidden): ตัวอักษรใหญ่แล้วเลื่อนแนวนอนในการ์ด ไม่ตัดคอลัมน์ขวาทิ้ง
 
 ---
 
@@ -194,7 +194,7 @@ Card `tone="warning"` เป็นลิงก์ไป `/debts` ทั้งก
 | | |
 |---|---|
 | ใช้กับ | รายการวันนี้, ประวัติ (Compact/Medium), รายการในการ์ดหนี้ (แบบ compact) |
-| Anatomy | แถบซ้าย 4px (สี job) · ไอคอน job 24px ในกล่อง 40px (`job-*-subtle`) · บรรทัด 1: ทะเบียน (18px/600) + ยี่ห้อ (14px `text-secondary`) · บรรทัด 2: Badge job + Badge "ค้างชำระ" (ถ้ามี) + `#seq` (14px) · บรรทัด 3 (ถ้ามี): ลูกค้า · หมายเหตุ (14px `text-tertiary`, ตัดบรรทัดเดียว) · ขวา: ราคา (18px/700 tabular, `unpaid` ถ้าค้าง) + เวลา "09:40 น." (14px) |
+| Anatomy | แถบซ้าย 4px (สี job) · ไอคอน job 24px ในกล่อง 40px (`job-*-subtle`) · บรรทัด 1: ทะเบียน (18px/600, **ไม่ตัด** ยาวแล้วตกบรรทัด) + ยี่ห้อ (14px `text-secondary`, ย้ายลงใต้ทะเบียนและเป็นส่วนที่ถูกตัดแทน) · บรรทัด 2: Badge job + Badge "ค้างชำระ" (ถ้ามี) + `#seq` (14px) · บรรทัด 3 (ถ้ามี): ชื่อลูกค้า (14px `text-tertiary`, ไม่ตัด) · บรรทัด 4 (ถ้ามี): หมายเหตุ (สูงสุด 2 บรรทัด) · ขวา: ราคา (18px/700 tabular, `unpaid` ถ้าค้าง) + เวลา "09:40 น." (14px) · ข้อความมีที่อย่างน้อย 7rem ข้างไอคอน · ถ้าราคาวางข้างกันไม่พอ (ตัวอักษรใหญ่, จอพับ 280) ราคาและเวลาตกลงบรรทัดล่างชิดขวา (flex-wrap ไม่ใช้ container query เพราะทำให้เปิด dialog บนหน้าประวัติช้าลง ~10ms) |
 | Variant `expense` | ไอคอนตามหมวด (จากปุ่มลัด) · ชื่อรายการ · หมายเหตุ · ราคา "−฿350" สี `expense` |
 | Interactive | เป็น `<button>` ทั้งแถว (ไม่ใช่ `article role="button"` แบบเดิม) เปิด dialog แก้ไข พร้อม `aria-label` ที่สรุปรายการ ("ล้างรถ กข 1234 ฿150 ค้างชำระ 09:40 น. แตะเพื่อแก้ไข") |
 | Highlight | รายการที่เพิ่งบันทึก: พื้น `action-primary-subtle` แล้ว fade ใน 2 วินาที (reduced: ไม่ fade แต่หายทันทีหลัง 2 วินาที) |
@@ -204,7 +204,7 @@ Card `tone="warning"` เป็นลิงก์ไป `/debts` ทั้งก
 Sticky: "14 ต.ค. 2569 · อังคาร" (16px/600) + "ล้างรถ 18 · ขัดสี 2" (14px) + ยอดรายวัน (16px/700 สี income/expense) และพื้น `bg` ทึบ (ไม่ใช้ glass)
 
 ### 3.6 PeriodSummary (`history`)
-Card: ป้ายช่วง ("ยอดรวม ตุลาคม 2569") + ยอด `--text-title-lg` + แถว StatItem (ล้างรถ N คัน ฿x · ขัดสี N คัน ฿y และแสดงทั้งจำนวนและยอดพร้อมกัน แทน toggle) + Button secondary "ส่งออก Excel" (ทั้ง 2 แท็บ)
+Card: ป้ายช่วง ("ยอดรวม ตุลาคม 2569") + ยอด `--text-title-lg` + แถว StatItem (ล้างรถ N คัน ฿x · ขัดสี N คัน ฿y · ยังค้างชำระ ฿z เมื่อมี และแสดงทั้งจำนวนและยอดพร้อมกัน แทน toggle) เรียงแถวเดียว ตกบรรทัดเฉพาะจอแคบมาก/ตัวอักษรใหญ่ · ปุ่ม "ส่งออก Excel" อยู่หัวหน้า (เดิมอยู่ในการ์ด ดันรายการลงบนมือถือ) · Skeleton สูงเท่าของจริงบรรทัดต่อบรรทัด (กันหน้ากระโดด)
 
 ### 3.7 FilterPanel (`history`)
 SearchField + ปุ่ม "ตัวกรอง (2)" ที่เปิด/ปิดส่วน: ช่วงวันที่ (2 DateField แบบ native) + ChoiceGroup ประเภทงาน (รายรับเท่านั้น) + ปุ่ม "ล้างตัวกรอง" · Expanded: แสดงเป็นแถวเดียวตลอด (ไม่พับ)
@@ -212,8 +212,8 @@ SearchField + ปุ่ม "ตัวกรอง (2)" ที่เปิด/ป
 ### 3.8 DebtCustomerCard (`debts`)
 | | |
 |---|---|
-| Header | ชื่อลูกค้า (20px/600) + ยอด (24px/700 `unpaid`) |
-| Meta | "6 คัน" · Badge ความเร่งด่วน: ไอคอน clock + "ค้างนานสุด 15 วัน" + ระดับ ("เร่งด่วน" danger ≥ 14 วัน, ต่ำกว่าเป็น warning) |
+| Header | ชื่อลูกค้า (20px/600, ไม่ตัด) + ยอด (24px/700 `unpaid`) · ถ้าวางข้างกันไม่พอ ยอดย้ายลงใต้ชื่อ |
+| Meta | "6 คัน" · Badge ความเร่งด่วน: ไอคอน clock + "ค้างนานสุด 15 วัน" (ค้าง 0 วัน = "ค้างวันนี้") + ระดับ ("เร่งด่วน" danger ≥ 14 วัน, ต่ำกว่าเป็น warning) |
 | รายการ | RecordRow แบบ compact (ทะเบียน, วันที่ "2 ต.ค.", "12 วัน", ราคา และหมายเหตุ) โดยแต่ละแถวเปิด dialog แก้ไขได้ · แสดง 5 แถวแรก + "ดูอีก N คัน" ถ้ามีมากกว่า 5 |
 | Actions | Button secondary "สร้างบิล" (ไอคอน file-text) + Button success "เคลียร์ยอด" (ไอคอน check-circle) โดยแต่ละปุ่มมีสถานะ loading แยกกัน |
 | ARIA | `<article aria-labelledby="ชื่อลูกค้า">` และปุ่มมี `aria-label` รวมชื่อลูกค้า |
@@ -239,7 +239,7 @@ SegmentedControl โหมด (ฉบับธนาคาร / ฉบับภ�
 FormField อีเมล (`type="email"`, `autocomplete="username"`) · รหัสผ่าน + IconButton แสดง/ซ่อน (focus ได้) · Checkbox "จดจำอีเมล" (44px target) · Banner danger · Button primary lg full "เข้าสู่ระบบ" · ข้อความ "ลืมรหัสผ่าน? ติดต่อผู้ดูแลร้าน"
 
 ### 3.15 Checkbox / Switch
-Checkbox 24px ในพื้นที่แตะ 44px, ขอบ `border-strong` และ checked พื้น `action-primary` + ✓ · Switch (theme toggle) 52×32 พร้อมข้อความ "ธีมมืด" และ `role="switch"` + `aria-checked`
+Checkbox 24px ในพื้นที่แตะ 44px, ขอบ `border-strong` และ checked พื้น `action-primary` + ✓ · Switch (theme toggle) ราง 52×32 ในปุ่มสูง 44px (พื้นที่แตะ) และแตะข้อความ "ธีมมืด" ก็สลับได้ และ `role="switch"` + `aria-checked`
 
 ## 4. Component Inventory Summary
 

@@ -21,5 +21,10 @@ export function useMediaQuery(query: string): boolean {
   )
 }
 
-/** The `lg` breakpoint of the design tokens (app/styles/tokens.css --breakpoint-lg) */
-export const WIDE_SCREEN = '(min-width: 1024px)'
+/**
+ * Wide enough for a table (history, customers). From the `lg` breakpoint (1024) the side
+ * nav takes 240px, which left the history table 720px for 850px of columns: the edit
+ * button was cut off with no way to scroll to it (iPad Pro portrait, Phase A H4). From
+ * 1280 the content is 976px wide; narrower screens get the list, like tablets.
+ */
+export const TABLE_SCREEN = '(min-width: 1280px)'

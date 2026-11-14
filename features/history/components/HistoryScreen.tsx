@@ -14,7 +14,7 @@ import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ChoiceGroup } from '@/components/ui/ChoiceGroup'
-import { SkeletonGroup, SkeletonRow, SkeletonText } from '@/components/ui/Skeleton'
+import { Skeleton, SkeletonGroup, SkeletonRow } from '@/components/ui/Skeleton'
 import { Tabs, tabId, tabPanelId } from '@/components/ui/Tabs'
 import { TextInput } from '@/components/ui/TextInput'
 import { EmptyState } from '@/components/patterns/EmptyState'
@@ -24,8 +24,8 @@ import { EditRecordDialog } from '@/features/records/components/EditRecordDialog
 import { ExpenseRow, IncomeRow } from '@/features/records/components/RecordRow'
 import { useEditParam } from '@/features/records/useEditParam'
 import type { Expense, Record as AppRecord } from '@/types'
-import { useMediaQuery, WIDE_SCREEN } from '@/lib/use-media-query'
-import { loadYear } from '../api'
+import { useMediaQuery, TABLE_SCREEN } from '@/lib/use-media-query'
+import { loadPeriod } from '../api'
 import {
   activeFilterCount,
   expenseSummary,
@@ -34,6 +34,7 @@ import {
   filtersQuery,
   groupByDay,
   incomeSummary,
+  filterParams,
   parseFilters,
   periodLabel,
   type DayGroup,
@@ -48,16 +49,22 @@ const baht = (n: number) => `฿${n.toLocaleString('en-US')}`
 const SEARCH_DELAY_MS = 250
 const EARLIEST_YEAR = 2023
 
-interface YearData {
+/** Rows of one Bangkok month, or of the whole year when month is 0 */
+interface PeriodData {
   year: number
+  month: number
   records: Result<AppRecord[]>
   expenses: Result<Expense[]>
 }
 
+const covers = (d: PeriodData | null, year: number, month: number): d is PeriodData =>
+  !!d && d.year === year && (d.month === 0 || d.month === month)
+
 export function HistoryScreen() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const filters = useMemo(() => parseFilters(new URLSearchParams(searchParams.toString())), [searchParams])
+  const filterKey = filterParams(searchParams)
+  const filters = useMemo(() => parseFilters(new URLSearchParams(filterKey)), [filterKey])
   const thisYear = bangkokParts().year
   const years = useMemo(() => Array.from({ length: thisYear - EARLIEST_YEAR + 1 }, (_, i) => thisYear - i), [thisYear])
 
@@ -66,12 +73,18 @@ export function HistoryScreen() {
     (patch: Partial<HistoryFilters>) => {
       const next = { ...filters, ...patch }
       const params = new URLSearchParams(filtersQuery(next))
-      // Keep dialogs that are open (edit/export)
-      for (const key of ['edit', 'export']) if (searchParams.has(key)) params.set(key, searchParams.get(key)!)
+      // Keep dialogs that are open (edit/export), read from the address as it is now: the
+      // search is written after a typing pause, and a dialog opened in that pause is not in
+      // the params of the last render (it closed again on slow phones, lib/url-state.ts)
+      const live = new URLSearchParams(window.location.search)
+      for (const key of ['edit', 'export']) {
+        const value = live.get(key)
+        if (value !== null) params.set(key, value)
+      }
       const query = params.toString()
       replaceUrl(query ? `${pathname}?${query}` : pathname)
     },
-    [filters, searchParams, pathname],
+    [filters, pathname],
   )
 
   // Search: type freely, update the URL after a short pause (UF-HIST-01)
@@ -86,30 +99,63 @@ export function HistoryScreen() {
     return () => clearTimeout(timer)
   }, [query, setFilters])
 
-  // ── Data: one Bangkok year at a time ──
+  // ── Data: the month shown first, then the rest of its year (Phase A P2) ──
+  // A month is ~1/12 of the rows to download and draw. The whole year follows, so another
+  // month of it shows with no wait and the export can count rows. It is kept aside: the
+  // month on screen stays as it is (swapping in the year would draw every row again).
   // Back on this tab: the last year shown at once, a fresh copy right after (lib/screen-memory.ts)
-  const [data, setData] = useState<YearData | null>(() => keptScreen<YearData>('history') ?? null)
-  const load = useCallback(async (year: number) => {
-    const result = await loadYear(year)
-    for (const part of [result.records, result.expenses]) if (!part.ok) reportAppError(part.error)
-    if (result.records.ok && result.expenses.ok) keepScreen<YearData>('history', { year, ...result })
-    setData({ year, ...result })
+  const [shown, setShown] = useState<PeriodData | null>(() => keptScreen<PeriodData>('history') ?? null)
+  const [year, setYear] = useState<PeriodData | null>(() => keptScreen<PeriodData>('history') ?? null)
+  const latestLoad = useRef(0)
+  const load = useCallback(async (y: number, m: number) => {
+    const id = ++latestLoad.current
+    const get = async (month: number): Promise<PeriodData | null> => {
+      const result = await loadPeriod(y, month)
+      if (id !== latestLoad.current) return null
+      for (const part of [result.records, result.expenses]) if (!part.ok) reportAppError(part.error)
+      return { year: y, month, ...result }
+    }
+    if (m !== 0) {
+      const month = await get(m)
+      if (!month) return
+      setShown(month)
+      if (!month.records.ok || !month.expenses.ok) return
+    }
+    const all = await get(0)
+    if (!all) return
+    if (all.records.ok && all.expenses.ok) {
+      keepScreen<PeriodData>('history', all)
+      setYear(all)
+    }
+    if (m === 0) setShown(all)
   }, [])
+  // Load on arrival and for another year; another month of the year already here needs nothing
+  const have = useRef({ shown, year })
   useEffect(() => {
-    // Loads when the year changes; the result arrives after this effect
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void load(filters.year)
-  }, [filters.year, load])
-  const reload = useCallback(() => void load(filters.year), [load, filters.year])
+    have.current = { shown, year }
+  })
+  const arrived = useRef(false)
+  useEffect(() => {
+    const { shown: s, year: y } = have.current
+    if (arrived.current && (covers(s, filters.year, filters.month) || covers(y, filters.year, filters.month))) return
+    arrived.current = true
+    void load(filters.year, filters.month)
+  }, [filters.year, filters.month, load])
+  const reload = useCallback(() => void load(filters.year, filters.month), [load, filters.year, filters.month])
 
-  const current = data?.year === filters.year ? data : null
+  // The month on screen while it covers the view, else the year (another month of it)
+  const current = covers(shown, filters.year, filters.month) ? shown : covers(year, filters.year, filters.month) ? year : null
   const records = useMemo(() => (current?.records.ok ? current.records.data : []), [current])
   const expenses = useMemo(() => (current?.expenses.ok ? current.expenses.data : []), [current])
+  // The edit dialog may name a row of another month (a link, the back button)
+  const fullYear = year?.year === filters.year ? year : null
+  const editIncome = useMemo(() => (fullYear?.records.ok ? fullYear.records.data : records), [fullYear, records])
+  const editExpenses = useMemo(() => (fullYear?.expenses.ok ? fullYear.expenses.data : expenses), [fullYear, expenses])
   const side = filters.tab === 'income' ? current?.records : current?.expenses
   const loading = !current
   const failed = side && !side.ok ? side : null
 
-  const edit = useEditParam({ income: records, expenses, ready: !loading })
+  const edit = useEditParam({ income: editIncome, expenses: editExpenses, ready: !loading })
   const exportOpen = searchParams.get('export') === '1'
   const exportOpenedHere = useRef(false)
 
@@ -166,8 +212,13 @@ export function HistoryScreen() {
   // wide as its longest option) can make the column wider than the screen
   return (
     <div className="grid grid-cols-1 gap-4 pb-4">
-      <header className="flex flex-wrap items-end justify-between gap-3 pt-6">
-        <h1 className="text-title text-text">ประวัติ</h1>
+      {/* Export sits by the title (it was under the summary, pushing the list down on phones,
+          Phase A M4); on wider screens it follows the period picker */}
+      <header className="flex flex-wrap items-end gap-3 pt-6">
+        <h1 className="mr-auto text-title text-text">ประวัติ</h1>
+        <Button variant="secondary" leadingIcon="download" onClick={() => toggleExport(true)} className="sm:order-last">
+          ส่งออก Excel
+        </Button>
         <div className="w-full sm:w-auto sm:min-w-72">
           <MonthYearPicker
             id="history-period"
@@ -193,7 +244,7 @@ export function HistoryScreen() {
       />
 
       <section id={tabPanelId('history', filters.tab)} role="tabpanel" aria-labelledby={tabId('history', filters.tab)} className="grid grid-cols-1 gap-4">
-        <PeriodSummary filters={filters} records={current?.records} expenses={current?.expenses} onExport={() => toggleExport(true)} />
+        <PeriodSummary filters={filters} records={current?.records} expenses={current?.expenses} />
 
         <FilterPanel filters={filters} query={query} onQuery={setQuery} onChange={setFilters} count={filterCount} onClear={clearFilters} />
 
@@ -245,7 +296,7 @@ export function HistoryScreen() {
         onClose={() => toggleExport(false)}
         defaultMonth={exportDefault}
         years={years}
-        loaded={current?.records.ok && current.expenses.ok ? { year: current.year, records, expenses } : null}
+        loaded={fullYear?.records.ok && fullYear.expenses.ok ? { year: fullYear.year, records: fullYear.records.data, expenses: fullYear.expenses.data } : null}
       />
     </div>
   )
@@ -257,24 +308,35 @@ function PeriodSummary({
   filters,
   records,
   expenses,
-  onExport,
 }: {
   filters: HistoryFilters
   records?: Result<AppRecord[]>
   expenses?: Result<Expense[]>
-  onExport: () => void
 }) {
   const id = useId()
   const side = filters.tab === 'income' ? records : expenses
   return (
-    <Card as="section" aria-labelledby={id} className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
+    <Card as="section" aria-labelledby={id}>
       <div className="grid grid-cols-1 gap-3">
         <h2 id={id} className="text-label text-text-secondary">
           {filters.tab === 'income' ? 'รายรับรวม' : 'รายจ่ายรวม'} {periodLabel(filters)}
         </h2>
         {!side ? (
-          <SkeletonGroup>
-            <SkeletonText className="w-48" />
+          // Line for line the size of what comes, so the list below does not jump (CLS, P2)
+          <SkeletonGroup className="grid grid-cols-1 gap-3">
+            <div className="text-title-lg">
+              <Skeleton className="h-[1lh] w-48" />
+            </div>
+            {filters.tab === 'income' ? (
+              <div className={STATS}>
+                <StatSkeleton />
+                <StatSkeleton />
+              </div>
+            ) : (
+              <div className="text-caption">
+                <Skeleton className="h-[1lh] w-20" />
+              </div>
+            )}
           </SkeletonGroup>
         ) : !side.ok ? (
           <p className="text-body text-text-secondary">—</p>
@@ -284,7 +346,7 @@ function PeriodSummary({
             return (
               <>
                 <p className="text-title-lg text-income tabular-nums">{baht(s.total)}</p>
-                <dl className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                <dl className={STATS}>
                   <Stat label="ล้างรถ" value={`${s.washCount} คัน`} sub={baht(s.washTotal)} tone="text-wash" />
                   <Stat label="ขัดสี" value={`${s.polishCount} คัน`} sub={baht(s.polishTotal)} tone="text-polish" />
                   {s.unpaidTotal > 0 && <Stat label="ยังค้างชำระ" value={baht(s.unpaidTotal)} tone="text-unpaid" />}
@@ -304,10 +366,27 @@ function PeriodSummary({
           })()
         ) : null}
       </div>
-      <Button variant="secondary" leadingIcon="download" onClick={onExport} className="justify-self-start">
-        ส่งออก Excel
-      </Button>
     </Card>
+  )
+}
+
+// Wash, polish and unpaid on one row (unpaid sat alone on a second row on phones, Phase A
+// L5); each box needs ~6rem, so they wrap only on very narrow screens or with large text
+const STATS = 'grid grid-cols-[repeat(auto-fit,minmax(min(100%,6rem),1fr))] gap-2'
+
+function StatSkeleton() {
+  return (
+    <div className="grid rounded-md border border-border-strong px-3 py-2">
+      <div className="text-caption">
+        <Skeleton className="h-[1lh] w-10" />
+      </div>
+      <div className="text-body">
+        <Skeleton className="h-[1lh] w-14" />
+      </div>
+      <div className="text-caption">
+        <Skeleton className="h-[1lh] w-16" />
+      </div>
+    </div>
   )
 }
 
@@ -406,7 +485,7 @@ const RecordList = memo(function RecordList({
   onClear: () => void
   onOpen: (id: string) => void
 }) {
-  const wide = useMediaQuery(WIDE_SCREEN)
+  const wide = useMediaQuery(TABLE_SCREEN)
   if (empty || groups.length === 0) {
     return (
       <Card>
@@ -478,8 +557,11 @@ const by = (email?: string) => email?.split('@')[0] ?? '—'
 function DataTable({ groups, kind, onOpen }: { groups: DayGroup<AppRecord>[] | DayGroup<Expense>[]; kind: 'income' | 'expense'; onOpen: (id: string) => void }) {
   const th = 'sticky top-0 bg-surface-2 px-3 py-2 text-left text-caption font-medium text-text-secondary'
   const td = 'px-3 py-3 align-middle'
+  // overflow-x-auto, not hidden: with large text the columns can be wider than the card.
+  // It scrolls sideways instead of cutting off the edit buttons, and tabbing to one
+  // scrolls it into view (accessibility-guidelines 1.4.10 allows this for DataTable)
   return (
-    <Card className="overflow-hidden p-0!">
+    <Card className="overflow-x-auto p-0!">
       <table className="w-full text-body">
         <caption className="sr-only">{kind === 'income' ? 'รายการรายรับ' : 'รายการรายจ่าย'}</caption>
         <thead>

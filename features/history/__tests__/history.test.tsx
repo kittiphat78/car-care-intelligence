@@ -10,7 +10,7 @@ vi.mock('next/navigation', () => ({
   usePathname: () => '/history',
   useSearchParams: () => new URLSearchParams(nav.search),
 }))
-const api = vi.hoisted(() => ({ loadYear: vi.fn(), loadExportRange: vi.fn() }))
+const api = vi.hoisted(() => ({ loadPeriod: vi.fn(), loadExportRange: vi.fn() }))
 vi.mock('../api', () => api)
 vi.mock('@/features/records/api', () => ({ getEntry: vi.fn(), updateEntry: vi.fn(), deleteEntry: vi.fn(), countVisitsByPlate: vi.fn() }))
 vi.mock('@/lib/observability', () => ({ reportAppError: vi.fn() }))
@@ -24,6 +24,7 @@ import {
   exportFileName,
   exportRangeError,
   filterIncome,
+  filterParams,
   filtersQuery,
   groupByDay,
   incomeSummary,
@@ -50,6 +51,11 @@ describe('history rules', () => {
     expect(filtersQuery(f, NOW)).toBe('m=9&tab=expense&q=x&from=2026-09-01')
     expect(filtersQuery({ ...f, tab: 'income', job: 'polish' }, NOW)).toBe('m=9&q=x&from=2026-09-01&job=polish')
     expect(parseFilters(new URLSearchParams('y=1999&m=13'), NOW)).toMatchObject({ year: 2026, month: 10 })
+  })
+
+  it('keeps only the filter parameters, so opening a dialog does not change the filters (UX-04)', () => {
+    expect(filterParams(new URLSearchParams('m=0&edit=income:r1&q=กข&export=1'))).toBe(filterParams(new URLSearchParams('m=0&q=กข')))
+    expect(filterParams(new URLSearchParams('edit=income:r1'))).toBe('')
   })
 
   it('treats a date range as whole Bangkok days, including 00:00–06:59 (ER-10)', () => {
@@ -95,10 +101,11 @@ async function renderScreen() {
 
 beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'], now: NOW })
+  window.history.replaceState(null, '', '/history')
   nav.push.mockReset()
   nav.replace.mockReset()
   nav.search = ''
-  api.loadYear.mockReset().mockResolvedValue({ records: { ok: true, data: records }, expenses: { ok: true, data: expenses } })
+  api.loadPeriod.mockReset().mockResolvedValue({ records: { ok: true, data: records }, expenses: { ok: true, data: expenses } })
   api.loadExportRange.mockReset()
   xlsx.exportToExcel.mockReset().mockResolvedValue(undefined)
   return () => vi.useRealTimers()
@@ -113,6 +120,29 @@ describe('HistoryScreen', () => {
     expect(screen.queryByText('กข 3')).toBeNull()
   })
 
+  it('loads the month shown first, then its year; another month of that year loads nothing (P2)', async () => {
+    // A new element each time: the same one would let React skip the render
+    const screenEl = () => (
+      <ToastProvider>
+        <HistoryScreen />
+      </ToastProvider>
+    )
+    let view!: ReturnType<typeof render>
+    await act(async () => {
+      view = render(screenEl())
+    })
+    expect(api.loadPeriod.mock.calls).toEqual([
+      [2026, 10],
+      [2026, 0],
+    ])
+    nav.search = 'm=9'
+    await act(async () => {
+      view.rerender(screenEl())
+    })
+    expect(api.loadPeriod).toHaveBeenCalledTimes(2)
+    expect(screen.getByRole('region', { name: /รายรับรวม กันยายน 2569/ })).toBeInTheDocument()
+  })
+
   it('renders one layout only: the list on phones, the table on wide screens (O-04)', async () => {
     await renderScreen()
     expect(screen.getByRole('region', { name: '15 ต.ค. 2569 · วันพฤหัสบดี' })).toBeInTheDocument()
@@ -121,7 +151,7 @@ describe('HistoryScreen', () => {
 
   it('shows only the table on a wide screen', async () => {
     const original = window.matchMedia
-    window.matchMedia = ((query: string) => ({ matches: query === '(min-width: 1024px)', media: query, addEventListener: () => {}, removeEventListener: () => {} })) as unknown as typeof window.matchMedia
+    window.matchMedia = ((query: string) => ({ matches: query === '(min-width: 1280px)', media: query, addEventListener: () => {}, removeEventListener: () => {} })) as unknown as typeof window.matchMedia
     try {
       await renderScreen()
       expect(screen.getByRole('table', { name: 'รายการรายรับ' })).toHaveTextContent('กข 1')
@@ -165,7 +195,7 @@ describe('HistoryScreen', () => {
   })
 
   it('shows a load error above the list, not ฿0', async () => {
-    api.loadYear.mockResolvedValue({ records: { ok: false, error: appError('NETWORK') }, expenses: { ok: true, data: [] } })
+    api.loadPeriod.mockResolvedValue({ records: { ok: false, error: appError('NETWORK') }, expenses: { ok: true, data: [] } })
     await renderScreen()
     expect(screen.getByRole('alert')).toHaveTextContent('โหลดประวัติไม่สำเร็จ')
     expect(screen.queryByText('฿0')).toBeNull()

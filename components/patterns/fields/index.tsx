@@ -158,12 +158,16 @@ export function DateField({ id, label, required, error, value, onChange, today =
           aria-describedby={describedBy(id, { hint: hintText, error })}
           className="min-w-36 flex-1"
         />
-        <Button size="sm" variant={value === today ? 'primary' : 'secondary'} aria-pressed={value === today} onClick={() => onChange(today)}>
-          วันนี้
-        </Button>
-        <Button size="sm" variant={value === yesterday ? 'primary' : 'secondary'} aria-pressed={value === yesterday} onClick={() => onChange(yesterday)}>
-          เมื่อวาน
-        </Button>
+        {/* The two quick picks wrap as a pair: on a 320px dialog "เมื่อวาน" alone used to
+            drop to its own line (Phase A M10) */}
+        <div className="flex gap-2">
+          <Button size="sm" variant={value === today ? 'primary' : 'secondary'} aria-pressed={value === today} onClick={() => onChange(today)}>
+            วันนี้
+          </Button>
+          <Button size="sm" variant={value === yesterday ? 'primary' : 'secondary'} aria-pressed={value === yesterday} onClick={() => onChange(yesterday)}>
+            เมื่อวาน
+          </Button>
+        </div>
       </div>
     </FormField>
   )
@@ -380,8 +384,10 @@ export function MonthYearPicker({
 }) {
   return (
     <FormField id={id} label={label} asGroup error={error}>
-      <div role="group" aria-labelledby={labelId(id)} className="grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-2">
-        <span className="relative min-w-0">
+      {/* Month and year share a line (about 3 : 2); with large text each takes its own
+          line instead of cutting the names short ("พฤศจิก…" at 200%) */}
+      <div role="group" aria-labelledby={labelId(id)} className="flex flex-wrap gap-2">
+        <span className="relative min-w-0 flex-[3_1_8rem]">
           <select
             id={`${id}-month`}
             aria-label={`${label}: เดือน`}
@@ -399,7 +405,7 @@ export function MonthYearPicker({
           </select>
           <Icon name="chevron-down" className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-text-secondary" />
         </span>
-        <span className="relative min-w-0">
+        <span className="relative min-w-0 flex-[2_1_6rem]">
           <select
             id={`${id}-year`}
             aria-label={`${label}: ปี`}

@@ -15,22 +15,24 @@ export interface CallLinkProps {
   /** Read after the visible text, e.g. the customer's name */
   who?: string
   variant?: 'secondary' | 'primary'
+  /** The number is already on screen beside it (customer page): the button just says "โทร" */
+  short?: boolean
   className?: string
 }
 
 /** <a href="tel:…"> that looks like a button, at least 44px high. Nothing for a number that is not valid. */
-export function CallLink({ number, who, variant = 'secondary', className }: CallLinkProps) {
+export function CallLink({ number, who, variant = 'secondary', short = false, className }: CallLinkProps) {
   const href = telHref(number)
   if (!href) return null
   const shown = formatPhone(number)
   return (
     <a
       href={href}
-      aria-label={who ? `โทร ${shown} ${who}` : undefined}
+      aria-label={who ? `โทร ${shown} ${who}` : short ? `โทร ${shown}` : undefined}
       className={cn(buttonClassName({ variant, size: 'sm' }), 'min-w-0 tabular-nums', className)}
     >
       <Icon name="phone" />
-      <span className="truncate">โทร {shown}</span>
+      <span className="truncate">{short ? 'โทร' : `โทร ${shown}`}</span>
     </a>
   )
 }
@@ -61,11 +63,11 @@ export function CopyNumberButton({ number, who }: { number: string; who?: string
 }
 
 /** Call + copy side by side (list rows, customer page) */
-export function CallActions({ number, who, className }: { number: string; who?: string; className?: string }) {
+export function CallActions({ number, who, short, className }: { number: string; who?: string; short?: boolean; className?: string }) {
   if (!telHref(number)) return null
   return (
     <div className={cn('flex min-w-0 items-center gap-2', className)}>
-      <CallLink number={number} who={who} className="flex-1 sm:flex-none" />
+      <CallLink number={number} who={who} short={short} className="flex-1 sm:flex-none" />
       <CopyNumberButton number={number} who={who} />
     </div>
   )
