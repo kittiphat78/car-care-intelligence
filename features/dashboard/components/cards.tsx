@@ -95,7 +95,8 @@ export function MoneyHero({ stats, error, onRetry }: { stats: DashboardStats | n
           </SkeletonGroup>
         ) : (
           <>
-            <p className={cn('text-display tabular-nums lg:text-display-lg', negative ? 'text-expense' : 'text-text')}>
+            {/* Gradient figure (ADR-28); a loss stays plainly red with its minus sign */}
+            <p className={cn('w-fit text-display tabular-nums lg:text-display-lg', negative ? 'text-expense' : 'text-gradient')}>
               {negative && <span className="sr-only">ติดลบ </span>}
               {negative ? '−' : ''}
               {baht(stats.netProfit)}

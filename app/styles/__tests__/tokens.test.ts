@@ -129,9 +129,9 @@ describe('glass tokens', () => {
       }
     })
 
-    it(`${themeName}: gradient heading text stays 4.5:1 on the glow`, () => {
+    it(`${themeName}: gradient text stays 4.5:1 on the glow and on glass cards`, () => {
       for (const end of ['--color-gradient-from', '--color-gradient-to']) {
-        for (const surface of page) expect(contrastRatio(resolve(theme, end), surface), end).toBeGreaterThanOrEqual(4.5)
+        for (const surface of [...page, ...card]) expect(contrastRatio(resolve(theme, end), surface), end).toBeGreaterThanOrEqual(4.5)
       }
     })
 

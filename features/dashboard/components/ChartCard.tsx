@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
-import type { ChartBarsProps } from './ChartBars'
+import type { ChartAreaProps } from './ChartArea'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { ChoiceGroup } from '@/components/ui/ChoiceGroup'
@@ -12,15 +12,15 @@ import { useTheme } from '@/components/patterns/theme'
 import { chartSummary, toChartData, type ChartMode, type DayTotal } from '../logic'
 import { CardHeader, baht } from './cards'
 
-// The bars come from recharts (about 110 KB gzip). Loaded after the rest of the page so
+// The lines come from recharts (about 110 KB gzip). Loaded after the rest of the page so
 // today's numbers are not waiting for it; the box keeps its height meanwhile, so nothing
-// moves when the bars appear (optimization-log O-07)
+// moves when the lines appear (optimization-log O-07)
 //
 // If that file cannot be downloaded (weak signal), only the chart box says so: a failed
 // import must not take the whole dashboard to the error page (Step 10, D-11). The
 // sentence above and "ดูเป็นตาราง" still give the numbers.
-const ChartBars = dynamic<ChartBarsProps>(
-  () => import('./ChartBars').catch(() => ({ default: ChartUnavailable })),
+const ChartArea = dynamic<ChartAreaProps>(
+  () => import('./ChartArea').catch(() => ({ default: ChartUnavailable })),
   { ssr: false, loading: () => <div className="size-full rounded-md bg-surface-2" /> },
 )
 
@@ -32,10 +32,10 @@ function ChartUnavailable() {
   )
 }
 
-// component-specifications.md §2.11 — bars plus a sentence and a table, so the numbers
+// component-specifications.md §2.11 — lines plus a sentence and a table, so the numbers
 // never depend on reading colours. Colours come from the tokens of the current theme.
 
-const TOKENS = ['--color-income', '--color-expense', '--color-border', '--color-text-tertiary', '--color-surface', '--color-text'] as const
+const TOKENS = ['--color-income', '--color-expense', '--color-border', '--color-text-tertiary', '--color-surface', '--color-text', '--color-gradient-from', '--color-gradient-to'] as const
 
 function useTokenColours(theme: string) {
   const [colours, setColours] = useState<Record<string, string>>({})
@@ -80,6 +80,9 @@ export function ChartCard({ series, today, error, onRetry }: { series: DayTotal[
             <Skeleton className="h-[1lh] w-3/4" />
           </div>
           <Skeleton className="h-50 lg:h-60" />
+          <div className="mt-2 text-caption">
+            <Skeleton className="h-[1lh] w-40" />
+          </div>
           <Skeleton className="mt-2 h-12 w-32" />
         </SkeletonGroup>
       ) : (
@@ -89,8 +92,19 @@ export function ChartCard({ series, today, error, onRetry }: { series: DayTotal[
             <span className="font-semibold text-expense tabular-nums">{baht(sum.expense)}</span>
           </p>
           <div aria-hidden="true" className="h-50 lg:h-60">
-            <ChartBars data={data} mode={mode} colours={c} />
+            <ChartArea data={data} mode={mode} colours={c} />
           </div>
+          {/* Line style, not only colour, tells the two apart */}
+          <p aria-hidden="true" className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-caption text-text-secondary">
+            <span className="flex items-center gap-1.5">
+              <span className="w-5 border-t-3 border-gradient-from" />
+              รายรับ
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-5 border-t-3 border-dashed border-expense" />
+              รายจ่าย
+            </span>
+          </p>
           <Button variant="ghost" size="md" onClick={() => setShowTable((v) => !v)} aria-expanded={showTable} className="mt-2">
             {showTable ? 'ซ่อนตาราง' : 'ดูเป็นตาราง'}
           </Button>
