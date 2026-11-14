@@ -106,6 +106,36 @@ html:has(dialog[open]) {
   }
 }
 
+/* The one card to look at first: a gradient edge around the solid floating colour, so the
+ * text inside keeps the contrast checked for that colour (tokens.test.ts) */
+@utility glass-featured {
+  border: 2px solid transparent;
+  background:
+    linear-gradient(var(--color-glass-float-solid), var(--color-glass-float-solid)) padding-box,
+    linear-gradient(135deg, var(--color-gradient-from), var(--color-gradient-to)) border-box;
+  @media (forced-colors: active) {
+    border-color: CanvasText;
+  }
+}
+
+/* Gradient text for one key word or figure (ADR-28). Both ends pass 4.5:1 on the page and on
+ * glass (tokens.test.ts). Plain text colour where the browser cannot clip a background to
+ * text, and in forced colours (Windows high contrast), where the background is removed
+ * and transparent text would vanish. */
+@utility text-gradient {
+  color: var(--color-text);
+  @supports ((-webkit-background-clip: text) or (background-clip: text)) {
+    background-image: linear-gradient(90deg, var(--color-gradient-from), var(--color-gradient-to));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  @media (forced-colors: active) {
+    background-image: none;
+    color: CanvasText;
+  }
+}
+
 /* Pressed feedback (§0.1): scale 0.98, none with reduced motion */
 @utility press {
   transition-property: transform, background-color, border-color, color, opacity;

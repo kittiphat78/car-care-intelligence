@@ -186,3 +186,30 @@ export function topCustomers(items: readonly CustomerBreakdownItem[], period: Cu
   const general = sorted.find((i) => i.customerName === DEFAULT_CUSTOMER_NAME)
   return [...named, ...(general ? [general] : [])].map(toShare)
 }
+
+// ── Glass home (ADR-28) — only data the dashboard already loads ──────────────
+
+const EMPTY_PERIOD: CustomerTimePeriod = { washCount: 0, washAmount: 0, polishCount: 0, polishAmount: 0, total: 0 }
+
+/** Income of this week (from Monday) and this month, summed over every customer of customer_breakdown() */
+export function periodTotals(rows: readonly CustomerTotals[]): { week: CustomerTimePeriod; month: CustomerTimePeriod } {
+  return rows.reduce(
+    (acc, r) => ({ week: addPeriod(acc.week, r.week), month: addPeriod(acc.month, r.month) }),
+    { week: EMPTY_PERIOD, month: EMPTY_PERIOD },
+  )
+}
+
+/** Named customers with income this month (walk-ins without a name are not counted) */
+export function customersThisMonth(rows: readonly CustomerTotals[]): number {
+  return new Set(rows.filter((r) => r.key.trim() !== '' && r.key !== DEFAULT_CUSTOMER_NAME && r.month.total > 0).map((r) => r.key.trim())).size
+}
+
+/** Share of today's income already received, and of the jobs that were washes (0–100) */
+export function todayShares(stats: DashboardStats): { paidPct: number; washPct: number } {
+  const jobs = stats.washCount + stats.polishCount
+  return {
+    paidPct: stats.todayTotalIncome > 0 ? Math.round((stats.todayPaid / stats.todayTotalIncome) * 100) : 0,
+    washPct: jobs > 0 ? Math.round((stats.washCount / jobs) * 100) : 0,
+  }
+}
+
