@@ -37,6 +37,8 @@ export const TOAST_DURATION_MS = 5000
 const MAX_TOASTS = 3
 
 const ICONS: Record<ToastTone, IconName> = { success: 'check-circle', error: 'alert', info: 'info' }
+// The message says it in words; the icon colour only repeats it
+const ICON_COLOURS: Record<ToastTone, string> = { success: 'text-success-text', error: 'text-danger-text', info: 'text-info-text' }
 
 const ToastContext = createContext<ToastApi | null>(null)
 
@@ -116,9 +118,10 @@ function ToastView({ toast, onDismiss }: { toast: ToastItem; onDismiss: () => vo
       onBlur={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setPaused(false)
       }}
-      className="pointer-events-auto flex w-full max-w-110 items-center gap-3 rounded-md bg-surface-inverse py-2 pr-2 pl-4 text-body text-text-inverse shadow-elevation-3 animate-toast-in motion-reduce:animate-fade-in"
+      // Floating glass with a backdrop blur, solid where blur is not available (ADR-28)
+      className="pointer-events-auto flex w-full max-w-110 items-center gap-3 rounded-md border glass-float py-2 pr-2 pl-4 text-body text-text shadow-elevation-3 animate-toast-in motion-reduce:animate-fade-in"
     >
-      <Icon name={ICONS[toast.tone]} />
+      <Icon name={ICONS[toast.tone]} className={ICON_COLOURS[toast.tone]} />
       <p className="min-w-0 flex-1 py-1">{toast.message}</p>
       {toast.action && (
         <button
