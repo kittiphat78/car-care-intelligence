@@ -1,6 +1,6 @@
 # v2.2.2 — อ่านง่ายทุกขนาดจอ + หน้าประวัติเร็วขึ้น + แก้ปุ่มเพิ่มลูกค้าบน iPhone
 
-> สถานะ: **Ready for release PR** · RC `v2.2.2-rc.1` (`0ecddee`, tag แล้ว) · ฐาน: `v2.2.1` (`6d7aaa6`)
+> สถานะ: **Released** · production 2026-11-14 11:17 · PR #77 merge commit `9d1b731` · tag `v2.2.2` · RC `v2.2.2-rc.1` (`0ecddee`) · ฐาน: `v2.2.1` (`6d7aaa6`)
 > SemVer: PATCH (แก้หน้าจอ, ความเร็ว และบั๊ก · ไม่มี migration · ไม่เปลี่ยนข้อมูล) · ป้าย: **[V]** Verified · **[I]** Inferred · **[U]** Unknown
 
 ## สำหรับคนในร้าน
@@ -43,6 +43,18 @@
 | E2E iPhone 13 (WebKit) | 34 ผ่าน / 1 ล้ม: CUJ-1 contrast ของปุ่มเข้าสู่ระบบระหว่างรอหน้าพร้อม (axe) ล้มเป็นบางรอบตั้งแต่ v2.2.0 (`release-2.2.1.md`) · ข้อลูกค้าที่เคยล้ม (K-02, บั๊กแตะเพิ่มลูกค้า) ผ่านแล้ว [V] |
 | E2E Android จอเล็ก / laptop 1366 | 36 / 41 ผ่านบน `8069f9e` (#75) · โค้ดที่เปลี่ยนหลังจากนั้นคือ #76 ซึ่งผ่าน E2E Chromium ครบ [V] |
 | Preview + staging (`e2e-preview`) | 15 ผ่าน · ข้าม 6 · มือถือ · PC · iPhone · Preview แสดง `v2.2.2-rc.1` · login ด้วยบัญชีที่มีเฉพาะใน staging สำเร็จ = ใช้ staging · ข้อมูลทดสอบลบแล้ว · tag `v2.2.2-rc.1` [V] |
+
+## Deploy และตรวจหลังขึ้น production [V]
+
+| เวลา (2026-11-14) | เหตุการณ์ |
+|---|---|
+| ก่อน merge | CI ของ PR #77 รอบแรก: `e2e` ล้มที่ขั้น "Start Supabase" (เปิดฐานข้อมูลทดสอบใน CI ไม่สำเร็จ ก่อน build และ test) · commit เดียวกันตอน push ผ่าน 9/9 และงาน `db` ใน PR เดียวกันผ่าน · ผลของการรันซ้ำก่อน merge: [U] (ตรวจผ่าน API ไม่ได้ในวันนั้นเพราะเกินโควตา) |
+| 11:16:35 | เจ้าของ merge PR #77 แบบ merge commit → `9d1b731` (`release/2.2.2` @ `7807841` อยู่ใน `main` ครบ) |
+| 11:17:11 | Vercel production deployment `7782451897` success (commit `9d1b731`) |
+| หลัง deploy | Smoke test อ่านอย่างเดียวที่ `car-care-intelligence-53wd.vercel.app`: `/login` 200 ขึ้น `v2.2.2` · ไม่มีแถบ Preview · `/`, `/add`, `/debts`, `/history`, `/customers`, `/more` ไม่ login → 307 ไป `/login` (`?next=`) · header ความปลอดภัยครบ (CSP, HSTS, X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy) · JavaScript 12 ไฟล์ชี้ Supabase production (`fgze…`) เท่านั้น ไม่มี key หรือชื่อฝั่ง server |
+| หลัง smoke | tag `v2.2.2` (annotated) บน `9d1b731` · back-merge fast-forward `develop` = `main` = `9d1b731` |
+
+ยังไม่ได้ทำ (เจ้าของ): ลองใช้จริงด้วยบัญชีร้านบนมือถือ โดยเฉพาะ iPhone: พิมพ์ค้นหาลูกค้าแล้วแตะ "เพิ่มลูกค้าใหม่ชื่อ …" ทันที, หน้าประวัติ (ปุ่มส่งออกข้างหัวข้อ, เปลี่ยนเดือน), ตัวอักษรใหญ่
 
 ## Rollback
 
