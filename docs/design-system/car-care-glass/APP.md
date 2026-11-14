@@ -1,6 +1,6 @@
 # ระบบดีไซน์ "คาร์แคร์กระจก" (Car Care Glass)
 
-> สถานะ: **PR 2/8 ชิ้นส่วนพื้นฐาน** (2026-11-14) · ADR-28 (`docs/redesign/architecture-decisions.md`) · **ไฟล์นี้ override [`MASTER.md`](./MASTER.md)** ซึ่งเป็นผลดิบจากสกิล
+> สถานะ: **PR 3/8 เมนู** (2026-11-14) · ADR-28 (`docs/redesign/architecture-decisions.md`) · **ไฟล์นี้ override [`MASTER.md`](./MASTER.md)** ซึ่งเป็นผลดิบจากสกิล
 > ค่าจริงอยู่ที่ `app/styles/tokens.css` · ตาราง contrast ที่ `docs/redesign/design-tokens.md` §3.3–3.4 · test `app/styles/__tests__/tokens.test.ts`
 
 ## 1. ที่มา
@@ -97,8 +97,8 @@ CSS เท่านั้น (ไม่ใช้ GSAP ที่สกิลแ�
 | # | branch | เนื้อหา | สถานะ |
 |---|---|---|---|
 | 1 | `feature/ux-glass-tokens` | tokens + ฟอนต์ + แสงพื้นหลัง + เอกสารนี้ + ADR-28 | merge แล้ว (#79) |
-| 2 | `feature/ux-glass-components` | utility `glass` / `glass-float` · Card กระจก · Toast กระจกลอย blur · Dialog พื้นทึบไม่ blur · Button ขอบ+เงา · Tabs ช่องเลือกน้ำเงิน · Badge แคปซูล · TextInput, Switch, Skeleton ใช้ token ใหม่โดยไม่ต้องแก้ | ส่งตรวจ |
-| 3 | เมนู | BottomNav, SideNav, PageHeader, ActionBar (blur) | |
+| 2 | `feature/ux-glass-components` | utility `glass` / `glass-float` · Card กระจก · Toast กระจกลอย blur · Dialog พื้นทึบไม่ blur · Button ขอบ+เงา · Tabs ช่องเลือกน้ำเงิน · Badge แคปซูล · TextInput, Switch, Skeleton ใช้ token ใหม่โดยไม่ต้องแก้ | merge แล้ว (#80) |
+| 3 | `feature/ux-glass-menus` | BottomNav, SideNav, ActionBar (มือถือ) เป็นกระจกลอย blur · ปุ่มบันทึกกลางเมนูและโลโก้ไล่สี · PageHeader ไม่เปลี่ยน (คำไล่สีในหัวข้อมากับ PR ของแต่ละหน้า) | ส่งตรวจ |
 | 4 | หน้าแรก | ส่วนบน + กราฟ + ทางลัด + การ์ด 3 ช่อง + ป้ายสถานะ | |
 | 5 | เพิ่ม / แก้รายการ | | |
 | 6 | ประวัติ | | |
