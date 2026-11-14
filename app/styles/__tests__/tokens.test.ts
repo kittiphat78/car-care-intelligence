@@ -93,8 +93,55 @@ describe('design tokens', () => {
 
   it('matches the ratios published in design-tokens.md (spot check)', () => {
     const round = (n: number) => Math.round(n * 100) / 100
-    expect(round(contrastRatio(resolve(dark, token('text')), resolve(dark, token('bg'))))).toBe(17.28)
-    expect(round(contrastRatio(resolve(light, token('unpaid')), resolve(light, token('bg'))))).toBe(4.64)
-    expect(round(contrastRatio(resolve(dark, token('border-strong')), resolve(dark, token('surface'))))).toBe(3.97)
+    expect(round(contrastRatio(resolve(dark, token('text')), resolve(dark, token('bg'))))).toBe(17.43)
+    expect(round(contrastRatio(resolve(light, token('unpaid')), resolve(light, token('bg'))))).toBe(6.01)
+    expect(round(contrastRatio(resolve(dark, token('border-strong')), resolve(dark, token('surface'))))).toBe(4.46)
   })
+})
+
+// ── Glass (ADR-28) ──
+// The glass colours are translucent, so text is checked against what the eye sees: the page
+// at the strongest point of each glow, a glass card laid over it, and a floating bar over it
+// (the worst case of each; the blur only softens what is behind and is left out).
+function parseRgba(value: string): [[number, number, number], number] {
+  const m = /^rgb\((\d+) (\d+) (\d+) \/ ([\d.]+)\)$/.exec(value.trim())
+  if (!m) throw new Error(`not an rgb(r g b / a) colour: ${value}`)
+  return [[Number(m[1]), Number(m[2]), Number(m[3])], Number(m[4])]
+}
+function over(under: string, overlay: string): string {
+  const [rgb, alpha] = parseRgba(overlay)
+  const base = [1, 3, 5].map((i) => parseInt(under.slice(i, i + 2), 16))
+  return '#' + base.map((u, i) => Math.round(u * (1 - alpha) + rgb[i] * alpha).toString(16).padStart(2, '0')).join('')
+}
+
+describe('glass tokens', () => {
+  const ON_PAGE = ['text', 'text-secondary', 'text-tertiary', 'primary-text', 'income', 'expense', 'unpaid', 'wash', 'polish', 'success-text', 'danger-text', 'warning-text']
+
+  for (const [themeName, theme] of [['dark', dark], ['light', light]] as const) {
+    const bg = resolve(theme, '--color-bg')
+    const page = [bg, over(bg, resolve(theme, '--color-glow-a')), over(bg, resolve(theme, '--color-glow-b'))]
+    const card = page.map((p) => over(p, resolve(theme, '--color-glass')))
+    const bar = page.map((p) => over(p, resolve(theme, '--color-glass-float')))
+
+    it.each(ON_PAGE)(`${themeName}: %s stays 4.5:1 on the glow, on glass cards and on floating bars`, (fg) => {
+      for (const surface of [...page, ...card, ...bar]) {
+        expect(contrastRatio(resolve(theme, token(fg)), surface), `${fg} on ${surface}`).toBeGreaterThanOrEqual(4.5)
+      }
+    })
+
+    it(`${themeName}: gradient heading text stays 4.5:1 on the glow`, () => {
+      for (const end of ['--color-gradient-from', '--color-gradient-to']) {
+        for (const surface of page) expect(contrastRatio(resolve(theme, end), surface), end).toBeGreaterThanOrEqual(4.5)
+      }
+    })
+
+    it(`${themeName}: the primary button edge shows on a glass card (3:1)`, () => {
+      for (const surface of card) expect(contrastRatio(resolve(theme, '--color-action-primary-edge'), surface)).toBeGreaterThanOrEqual(3)
+    })
+
+    it(`${themeName}: the solid fallback of floating bars keeps body text 4.5:1`, () => {
+      expect(contrastRatio(resolve(theme, '--color-text'), resolve(theme, '--color-glass-float-solid'))).toBeGreaterThanOrEqual(4.5)
+      expect(contrastRatio(resolve(theme, '--color-text-secondary'), resolve(theme, '--color-glass-float-solid'))).toBeGreaterThanOrEqual(4.5)
+    })
+  }
 })

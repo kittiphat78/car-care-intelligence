@@ -24,7 +24,7 @@ export function AppShell({ children, email, dialogs, badges }: AppShellProps) {
         ข้ามไปเนื้อหา
       </a>
       {/* overflow-x-clip: nothing wider than the screen can make the whole page slide sideways */}
-      <div className="min-h-dvh overflow-x-clip bg-bg text-text lg:pl-(--size-sidebar)">
+      <div className="min-h-dvh overflow-x-clip text-text lg:pl-(--size-sidebar)">
         <StatusBar />
         <main
           id="main"

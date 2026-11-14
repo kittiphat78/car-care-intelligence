@@ -15,7 +15,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
   }, [error])
 
   return (
-    <main id="main" className="grid min-h-dvh place-items-center bg-bg px-(--page-gutter) py-10">
+    <main id="main" className="grid min-h-dvh place-items-center px-(--page-gutter) py-10">
       <div role="alert" className="grid w-full max-w-100 grid-cols-1 justify-items-center gap-3 text-center">
         <Icon name="alert" className="size-10 text-danger-text" />
         <h1 className="text-title text-text">เกิดข้อผิดพลาด</h1>

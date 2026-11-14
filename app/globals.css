@@ -126,4 +126,17 @@ html:has(dialog[open]) {
     background-color: var(--color-action-primary-subtle);
     color: var(--color-text);
   }
+  /* Two soft lights behind every page (ADR-28). A fixed layer of its own, not a background
+     on body with background-attachment: fixed, which repaints the whole page on every
+     scroll on phones. Text over it is checked against its strongest point (tokens.test.ts) */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(60% 45% at 0% 0%, var(--color-glow-a), transparent 70%),
+      radial-gradient(55% 45% at 100% 8%, var(--color-glow-b), transparent 70%);
+  }
 }
