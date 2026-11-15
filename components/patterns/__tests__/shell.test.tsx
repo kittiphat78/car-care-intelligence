@@ -13,6 +13,7 @@ import { SideNav } from '../nav/SideNav'
 import { badgeText, isActivePath, withLogoutParam } from '../nav/items'
 import { StatusBar, envLabel } from '../StatusBar'
 import { useTheme } from '../theme'
+import { warmPageData } from '@/lib/prefetch-data'
 
 beforeEach(() => {
   nav.pathname = '/'
@@ -57,10 +58,14 @@ describe('BottomNav', () => {
   it('prefetches a tab when a finger touches it, not when it appears (AppLink)', () => {
     nav.pathname = '/'
     nav.prefetch.mockReset()
+    vi.mocked(warmPageData).mockClear()
     render(<BottomNav />)
     expect(nav.prefetch).not.toHaveBeenCalled()
+    expect(warmPageData).not.toHaveBeenCalled()
     fireEvent.touchStart(within(screen.getByRole('navigation', { name: 'เมนูหลัก' })).getByRole('link', { name: 'ค้างชำระ' }))
     expect(nav.prefetch).toHaveBeenCalledWith('/debts')
+    // …and its data starts loading at the same moment (speed work 3c)
+    expect(warmPageData).toHaveBeenCalledWith('/debts')
   })
 
   it('keeps five places on phones: ลูกค้า is reached from เพิ่มเติม, which stays marked (Q-1)', () => {

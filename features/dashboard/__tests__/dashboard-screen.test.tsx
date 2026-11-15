@@ -21,6 +21,7 @@ const load = vi.hoisted(() => ({ loadDashboard: vi.fn() }))
 vi.mock('../api', () => load)
 
 import { DashboardScreen } from '../components/DashboardScreen'
+import { RECENT_MS } from '@/lib/data-store'
 
 const ok = <T,>(data: T) => ({ ok: true as const, data })
 const today = { totalIncome: 500, paidIncome: 350, unpaidIncome: 150, expense: 100, washCount: 3, polishCount: 1, yesterdayIncome: 400 }
@@ -96,14 +97,26 @@ describe('DashboardScreen', () => {
   })
 
   it('shows the figures of the last visit at once, then a fresh copy', async () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(1000)
     await renderScreen()
     cleanup()
+    now.mockReturnValue(1000 + RECENT_MS)
     load.loadDashboard.mockReturnValue(new Promise(() => {}))
     await renderScreen()
     // No skeleton: the kept figures, while the ⟳ button says it is updating
     expect(screen.queryByText('กำลังโหลดยอดค้างชำระ…')).toBeNull()
     expect(screen.getByRole('region', { name: 'เงินสดสุทธิวันนี้' })).toHaveTextContent('฿250')
     expect(screen.getByRole('button', { name: /กำลังอัปเดต/ })).toBeInTheDocument()
+    now.mockRestore()
+  })
+
+  it('uses figures that arrived a moment ago (a prefetch on the tap) without asking again (ADR-29)', async () => {
+    await renderScreen()
+    cleanup()
+    load.loadDashboard.mockClear()
+    await renderScreen()
+    expect(load.loadDashboard).not.toHaveBeenCalled()
+    expect(screen.getByRole('region', { name: 'เงินสดสุทธิวันนี้' })).toHaveTextContent('฿250')
   })
 
   it('shows an error in the failing card only, never ฿0', async () => {

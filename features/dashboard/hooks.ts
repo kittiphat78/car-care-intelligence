@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { reportAppError } from '@/lib/observability'
-import { DASHBOARD_KEY, UNPAID_KEY, isOk, load as loadShared, peek } from '@/lib/data-store'
+import { DASHBOARD_KEY, load as loadShared, peek } from '@/lib/data-store'
 import { bangkokToday } from '@/lib/time/bangkok'
-import { listUnpaid } from '@/features/debts/api'
+import { loadUnpaidShared } from '@/features/debts/shared'
 import { loadDashboard, type DashboardData } from './api'
 
 // Data of the dashboard. Each part keeps its own Result so one failure shows an error
@@ -44,7 +44,7 @@ export function loadTodayDashboard({ fresh = false } = {}): Promise<KeptDashboar
     DASHBOARD_KEY,
     async () => {
       const day = bangkokToday()
-      const data = await loadDashboard(day, () => loadShared(UNPAID_KEY, listUnpaid, { keep: isOk, fresh }))
+      const data = await loadDashboard(day, () => loadUnpaidShared({ fresh }))
       return { day, data, loadedAt: new Date() }
     },
     { fresh },

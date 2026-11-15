@@ -4,8 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { reportAppError } from '@/lib/observability'
 import { ok, type Result } from '@/lib/result'
 import { LOCAL_DRAFT_PREFIX } from '@/features/auth/drafts'
-import { CUSTOMERS_KEY, isOk, load as loadShared } from '@/lib/data-store'
-import { listCustomers } from './api'
+import { loadDirectory } from './shared'
 import { keptList } from './memory'
 import { customersForTypedPlate, draftSignature, emptyVehicle, plateKey } from './logic'
 import type { Customer, CustomerDraft } from './types'
@@ -27,7 +26,7 @@ export function useCustomerDirectory({ enabled = true }: { enabled?: boolean } =
 
   /** `again`: a new request, not the one already running (a reload after a change) */
   const load = useCallback(async (again: boolean) => {
-    const next = await loadShared(CUSTOMERS_KEY, listCustomers, { keep: isOk, fresh: again })
+    const next = await loadDirectory({ fresh: again })
     if (!next.ok) reportAppError(next.error)
     setResult(next)
     setFresh(true)
