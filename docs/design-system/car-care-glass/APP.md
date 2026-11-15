@@ -1,6 +1,6 @@
 # ระบบดีไซน์ "คาร์แคร์กระจก" (Car Care Glass)
 
-> สถานะ: **PR 7/8 ลูกค้า + ค้างชำระ** (2026-11-15) · ADR-28 (`docs/redesign/architecture-decisions.md`) · **ไฟล์นี้ override [`MASTER.md`](./MASTER.md)** ซึ่งเป็นผลดิบจากสกิล
+> สถานะ: **PR 8/8 ตั้งค่า + เข้าสู่ระบบ + PWA** (2026-11-15) · ADR-28 (`docs/redesign/architecture-decisions.md`) · **ไฟล์นี้ override [`MASTER.md`](./MASTER.md)** ซึ่งเป็นผลดิบจากสกิล
 > ค่าจริงอยู่ที่ `app/styles/tokens.css` · ตาราง contrast ที่ `docs/redesign/design-tokens.md` §3.3–3.4 · test `app/styles/__tests__/tokens.test.ts`
 
 ## 1. ที่มา
@@ -99,8 +99,8 @@ CSS เท่านั้น (ไม่ใช้ GSAP ที่สกิลแ�
 | 1 | `feature/ux-glass-tokens` | tokens + ฟอนต์ + แสงพื้นหลัง + เอกสารนี้ + ADR-28 | merge แล้ว (#79) |
 | 2 | `feature/ux-glass-components` | utility `glass` / `glass-float` · Card กระจก · Toast กระจกลอย blur · Dialog พื้นทึบไม่ blur · Button ขอบ+เงา · Tabs ช่องเลือกน้ำเงิน · Badge แคปซูล · TextInput, Switch, Skeleton ใช้ token ใหม่โดยไม่ต้องแก้ | merge แล้ว (#80) |
 | 3 | `feature/ux-glass-menus` | BottomNav, SideNav, ActionBar (มือถือ) เป็นกระจกลอย blur · ปุ่มบันทึกกลางเมนูและโลโก้ไล่สี · PageHeader ไม่เปลี่ยน (คำไล่สีในหัวข้อมากับ PR ของแต่ละหน้า) | merge แล้ว (#81) |
-| 4 | `feature/ux-glass-home` | ป้ายสถานะ · การ์ด วันนี้/สัปดาห์นี้/เดือนนี้ · ทางลัด 4 ใบ · งานวันนี้ (โดนัท + แถบ) · กราฟเส้นไล่สี · ยอดเงินสดไล่สี · utility `text-gradient`, `glass-featured` | merge แล้ว (#82) |
+| 4 | `feature/ux-glass-home` | ป้ายสถานะ · การ์ด วันนี้/สัปดาห์นี้/เดือนนี้ · ทางลัด 4 ใบ · งานวันนี้ (โดนัท + แถบ) · กราฟเส้นไล่สี · ยอดเงินสดไล่สี · utility `text-gradient`, `glass-featured` (เอาออกใน PR 8) | merge แล้ว (#82) |
 | 5 | `feature/ux-glass-record-form` | หัวข้อ "บันทึก<ไล่สี>รายการ" · ฟอร์มบนการ์ดกระจก (จอคอม) · ตัวเลือก tile ที่มีไอคอน (ล้างรถ/ขัดสี) ไอคอนในกรอบสีอยู่ซ้าย ทั้งหน้าเพิ่มและ dialog แก้ไข | merge แล้ว (#83) |
 | 6 | `feature/ux-glass-history` | ยอดรายรับไล่สี · กล่องสถิติกระจก · หัววันที่ติดบนเป็นพื้นทึบของกระจกลอย (ไม่ blur: มีหลายหัว) · ตารางบนการ์ดกระจก (จาก PR 2) | merge แล้ว (#84) |
-| 7 | `feature/ux-glass-customers-debts` | การ์ดลูกค้ามีไอคอนคนในกรอบสี · การ์ดค้างชำระมีไอคอนนาฬิกาในกรอบอำพัน · สีตอนชี้แถวเป็นกระจก | ส่งตรวจ |
-| 8 | ตั้งค่า + เข้าสู่ระบบ + PWA | `manifest.json` theme/background color ตาม `--color-bg` ใหม่ | |
+| 7 | `feature/ux-glass-customers-debts` | การ์ดลูกค้ามีไอคอนคนในกรอบสี · การ์ดค้างชำระมีไอคอนนาฬิกาในกรอบอำพัน · สีตอนชี้แถวเป็นกระจก | merge แล้ว (#85) |
+| 8 | `feature/ux-glass-settings-login` | เข้าสู่ระบบ: ป้าย ออนไลน์ · "คาร์แคร์" ตัวใหญ่ · "ระบบจัดการ<ไล่สี>ร้านล้างรถ</ไล่สี>" · จอคอม 2 คอลัมน์ + ป้ายความสามารถ 3 ใบ · ตั้งค่า: ไอคอนในกรอบสีที่หัวการ์ด · `manifest.json` theme/background color = `--color-bg` มืด #0A0F1E (test ตรวจให้ตรงกัน) · ไอคอนแอปคงเดิม · หน้าแรก: การ์ดรายรับ 3 ช่องเท่ากัน (เอาขอบไล่สีช่อง "สัปดาห์นี้" ออก, "ตั้งแต่วันจันทร์" เป็นตัวเทาใต้หัวข้อ — เจ้าของเลือก A 2026-11-15) | ส่งตรวจ |

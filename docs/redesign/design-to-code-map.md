@@ -57,7 +57,7 @@
 ## 2. Theme Switching
 - คง attribute `data-theme` บน `<html>` และ localStorage key `car-care-theme` เดิม (ผู้ใช้ไม่เสียค่าที่ตั้งไว้)
 - คง inline script กัน theme กะพริบใน `app/layout.tsx` แต่ลบการตั้งซ้ำใน `ClientLayout` (TD-12)
-- `<meta name="theme-color">` อัปเดตตาม theme (#0B111A / #F4F6F9)
+- `<meta name="theme-color">` อัปเดตตาม theme (#0A0F1E / #F3F6FD, ADR-28)
 
 ## 3. Component → File
 
@@ -134,7 +134,7 @@ features/
 
 ## 6. Assets
 - ฟอนต์ Sarabun: `next/font/google` (หน้าจอ) + `public/fonts/Sarabun-*.ttf` (PDF) โดยลดน้ำหนักจาก 5 เหลือ 4 (เลิก 800)
-- Manifest: `theme_color`/`background_color` → `#0B111A` และ shortcuts ตาม `sitemap.md` §3
+- Manifest: `theme_color`/`background_color` → `#0A0F1E` (ADR-28) และ shortcuts ตาม `sitemap.md` §3
 - ไอคอน PWA: คงเดิม (ไม่อยู่ใน scope ของการออกแบบใหม่)
 
 ## 7. Dependencies ที่อาจเพิ่ม (ต้องอนุมัติใน Step 05)
