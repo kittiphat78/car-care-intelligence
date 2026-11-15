@@ -1,6 +1,6 @@
 # v2.3.0 — หน้าตาใหม่แบบกระจก (Glass) + ฟอนต์ Noto Sans Thai
 
-> สถานะ: **RC ผ่าน รอเจ้าของ merge** · RC `v2.3.0-rc.2` (`a7e9994`, tag แล้ว) · ฐาน: `v2.2.2` (`9d1b731`)
+> สถานะ: **Released** · production 2026-11-15 12:19 · PR #87 merge commit `abd062b` · tag `v2.3.0` · RC `v2.3.0-rc.2` (`a7e9994`) · ฐาน: `v2.2.2` (`9d1b731`)
 > SemVer: MINOR (หน้าตาใหม่ทั้งแอป + ส่วนใหม่บนหน้าแรก · ไม่มี migration · ไม่เปลี่ยนข้อมูล · flow ข้อความ และ URL เดิม) · ป้าย: **[V]** Verified · **[I]** Inferred · **[U]** Unknown
 
 ## สำหรับคนในร้าน
@@ -62,7 +62,19 @@
 | E2E rc.2: Chromium มือถือ + PC / iPhone 13 / iPad Pro / Android จอเล็ก / laptop 1366 | 77 / 35 / 40 / 36 / 41 ผ่าน · ไม่มีข้อล้ม [V] · รอบแรกของ iPhone/iPad ล้ม 2–15 ข้อ (หน้าประวัติทั้งปีไม่ขึ้นใน 10 วินาที) ตอนเครื่องมีเกมเปิดกิน CPU และฐานข้อมูลในเครื่องมีแถว E2E ค้าง 308 แถว · ปิดเกม ลบแถวค้าง (เฉพาะ local) แล้วผ่านครบ |
 | Preview + staging rc.1 (`e2e-preview`) | 15 ผ่าน · ข้าม 6 · มือถือ · PC · iPhone · ใช้ staging · ขึ้น `v2.3.0-rc.1` [V] |
 | Preview + staging rc.2 | 15 ผ่าน · ข้าม 6 · มือถือ · PC · iPhone · ใช้ staging · ขึ้น `v2.3.0-rc.2` [V] |
-| CI | (รอ CI ของ release PR) |
+| CI ของ release PR #87 | [U] ไม่ได้ตรวจผ่าน API (log ต้องใช้สิทธิ์) · เจ้าของ merge หลังเห็นผล |
+
+## Deploy และตรวจหลังขึ้น production [V]
+
+| เวลา (2026-11-15) | เหตุการณ์ |
+|---|---|
+| ก่อน merge | Preview ของ `b666c29` (`chore(release): 2.3.0`) แสดง `2.3.0` · ใช้ staging |
+| 12:18:58 | เจ้าของ merge PR #87 แบบ merge commit → `abd062b` (`release/2.3.0` @ `b666c29` อยู่ใน `main` ครบ) |
+| 12:19:36 | Vercel production deployment `7798984462` success (commit `abd062b`) |
+| หลัง deploy | Smoke test อ่านอย่างเดียวที่ `car-care-intelligence-53wd.vercel.app` (ไม่ login, ไม่รัน SQL): `/login` 200 ขึ้น `v2.3.0` · ไม่มีแถบ Preview · `/`, `/add`, `/debts`, `/history`, `/customers`, `/more` ไม่ login → 307 ไป `/login` (`?next=`) · header ความปลอดภัยครบ (CSP, HSTS, X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy) · JavaScript 12 ไฟล์ชี้ Supabase production (`fgze…`) เท่านั้น ไม่มี key ฝั่ง server · `manifest.json` theme/background `#0A0F1E` · หน้าเข้าสู่ระบบใหม่วาดครบใน Chromium มือถือ, WebKit iPhone และ PC 1440: หัวข้อ "คาร์แคร์", ป้าย ออนไลน์, ปุ่มกดได้, ฟอนต์ Noto Sans Thai, ไม่ล้นแนวนอน, ไม่มี console error (WebKit เตือน viewport `interactive-widget` ซึ่ง Safari ไม่รู้จักและข้ามไป) |
+| หลัง smoke | tag `v2.3.0` (annotated) บน `abd062b` · back-merge fast-forward `develop` = `main` = `abd062b` |
+
+ยังไม่ได้ทำ (เจ้าของ): ลองใช้จริงด้วยบัญชีร้านบนมือถือ: หน้าแรก (การ์ด 3 ช่วงเวลา, ทางลัด), บันทึกรถ 1 คัน, ค้างชำระ, ธีมสว่าง/มืด, แอปที่ติดตั้งไว้ (สีแถบบนเปลี่ยนหลังเปิดใหม่)
 
 ## Rollback
 
