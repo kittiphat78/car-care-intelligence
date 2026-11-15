@@ -26,6 +26,26 @@ export function useOnline(): boolean {
   return useSyncExternalStore(subscribeOnline, () => navigator.onLine, () => true)
 }
 
+/** The connection pill's content (home, login): a green dot only while the browser reports
+ * a connection, with the words always beside it (colour is never the only signal). */
+export function OnlineLabel() {
+  const online = useOnline()
+  return online ? (
+    <>
+      <span aria-hidden="true" className="size-2 rounded-full bg-live shadow-[0_0_0_3px_color-mix(in_srgb,var(--color-live)_25%,transparent)]" />
+      ออนไลน์
+    </>
+  ) : (
+    <>
+      <Icon name="alert" size="sm" className="text-warning-text" />
+      ไม่มีอินเทอร์เน็ต
+    </>
+  )
+}
+
+/** Shape of the small status pills on glass (home, login) */
+export const STATUS_PILL = 'inline-flex min-h-8 items-center gap-1.5 rounded-full border glass px-3 text-caption font-semibold text-text'
+
 export function envLabel(appEnv: string, database: string): string | null {
   if (appEnv === 'production') return null
   let text = ENV_LABELS[appEnv] ?? appEnv

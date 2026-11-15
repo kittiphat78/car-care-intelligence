@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/Card'
 import { Icon, type IconName } from '@/components/ui/Icon'
 import { Skeleton, SkeletonGroup } from '@/components/ui/Skeleton'
 import { cn } from '@/lib/cn'
-import { useOnline } from '@/components/patterns/StatusBar'
+import { OnlineLabel, STATUS_PILL } from '@/components/patterns/StatusBar'
 import { todayShares, type CustomerTimePeriod, type DashboardStats, type DebtSummary } from '../logic'
 import { baht } from './cards'
 
@@ -33,24 +33,17 @@ function Tile({ tone, icon, className }: { tone: keyof typeof TILES; icon: IconN
 // ── Status pills: connection, customers this month, customers who owe ──────────
 
 export function StatusPills({ customersMonth, debt }: { customersMonth: number | null | undefined; debt: DebtSummary | null | undefined }) {
-  const online = useOnline()
-  const pill = 'inline-flex min-h-8 items-center gap-1.5 rounded-full border glass px-3 text-caption font-semibold text-text'
   return (
     <ul aria-label="สถานะ" className="flex flex-wrap gap-2">
-      <li className={pill}>
-        {online ? (
-          <span aria-hidden="true" className="size-2 rounded-full bg-live shadow-[0_0_0_3px_color-mix(in_srgb,var(--color-live)_25%,transparent)]" />
-        ) : (
-          <Icon name="alert" size="sm" className="text-warning-text" />
-        )}
-        {online ? 'ออนไลน์' : 'ไม่มีอินเทอร์เน็ต'}
+      <li className={STATUS_PILL}>
+        <OnlineLabel />
       </li>
       {/* The other two hold their place while loading, so the row never changes height */}
-      <li className={pill}>
+      <li className={STATUS_PILL}>
         <Icon name="users" size="sm" className="text-link" />
         {customersMonth === null ? <Skeleton className="h-4 w-28" /> : `ลูกค้าเดือนนี้ ${customersMonth ?? '—'} ราย`}
       </li>
-      <li className={pill}>
+      <li className={STATUS_PILL}>
         <Icon name="clock" size="sm" className="text-warning-text" />
         {debt === null ? <Skeleton className="h-4 w-24" /> : `ค้างชำระ ${debt?.customers ?? '—'} ราย`}
       </li>
@@ -100,9 +93,9 @@ type Period = { total: number; washCount: number; polishCount: number }
 
 export function PeriodCards({ today, week, month }: { today: Period | null | undefined; week: CustomerTimePeriod | null | undefined; month: CustomerTimePeriod | null | undefined }) {
   const id = useId()
-  const items: Array<{ key: string; label: string; data: Period | null | undefined; featured?: boolean }> = [
+  const items: Array<{ key: string; label: string; data: Period | null | undefined; since?: string }> = [
     { key: 'today', label: 'รายรับวันนี้', data: today },
-    { key: 'week', label: 'รายรับสัปดาห์นี้', data: week, featured: true },
+    { key: 'week', label: 'รายรับสัปดาห์นี้', data: week, since: 'ตั้งแต่วันจันทร์' },
     { key: 'month', label: 'รายรับเดือนนี้', data: month },
   ]
   return (
@@ -113,17 +106,15 @@ export function PeriodCards({ today, week, month }: { today: Period | null | und
       {/* Three across from a 360px phone (each ~6.5rem); with large text or on a 280px fold they wrap */}
       <ul className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,6.5rem),1fr))] gap-2 md:gap-3">
         {items.map((it) => (
-          <li
-            key={it.key}
-            className={cn(
-              'grid min-w-0 grid-cols-1 content-start gap-1 rounded-lg border p-3 md:p-3.5 lg:p-5',
-              // The week is the one to watch: a gradient edge (solid inside, so text keeps its contrast)
-              it.featured ? 'glass-featured shadow-elevation-2' : 'glass',
-            )}
-          >
-            {/* On phones the gradient edge marks it; the words stay for screen readers */}
-            {it.featured && <span className="mb-0.5 justify-self-start rounded-full bg-primary px-2 text-caption font-semibold whitespace-nowrap text-on-primary max-md:sr-only">ตั้งแต่วันจันทร์</span>}
-            <span className="text-caption break-words text-text-secondary">{it.label}</span>
+          // All three alike (owner, 2026-11-15): none of the periods matters more than the others
+          <li key={it.key} className="grid min-w-0 grid-cols-1 content-start gap-1 rounded-lg border glass p-3 md:p-3.5 lg:p-5">
+            {/* From md up every heading keeps two lines (the week's second line says since when),
+                so the three amounts line up. A subgrid did the same but cost ~+10% TBT on home (G-08). */}
+            <span className="grid grid-cols-1 content-start text-caption md:min-h-[2lh]">
+              <span className="text-caption break-words text-text-secondary">{it.label}</span>
+              {/* Shown from md up; on narrow phones only screen readers get it, as before */}
+              {it.since && <span className="text-caption break-words text-text-tertiary max-md:sr-only">{it.since}</span>}
+            </span>
             {/* Placeholder and figures take the same lines (amount: one line; note: two lines
                 on phones, where it can wrap), so nothing moves when the numbers arrive */}
             {it.data === null ? (
