@@ -1,14 +1,15 @@
 import { ok, type Result } from '@/lib/result'
 import { toBangkokDay } from '@/lib/time/bangkok'
-import { withOutboxIncome, type OutboxItem } from '@/features/records/outbox'
+import { withOutboxIncome, type OutboxSnapshot } from '@/features/records/outbox'
+import type { Record as AppRecord } from '@/types'
 import type { DashboardData } from './api'
 import type { CustomerTimePeriod } from './logic'
 
-// The dashboard with the rows still on their way (ADR-30): today's list, the unpaid list,
-// today's totals, today's bar in the chart and the week / month cards all count them, so
-// every figure moves together the moment "บันทึก" is pressed.
+// The dashboard with the writes still on their way (ADR-30): today's list, the unpaid
+// list, today's totals, today's bar in the chart and the week / month cards all count
+// them, so every figure moves together the moment a save, edit, delete or settle is made.
 
-/** Income and expenses of today that the loaded figures do not count yet */
+/** How today's figures differ from the loaded ones until the database's copy arrives (may be negative) */
 export interface PendingToday {
   washCount: number
   washAmount: number
@@ -23,39 +24,76 @@ export const NO_PENDING: PendingToday = { washCount: 0, washAmount: 0, polishCou
 
 const map = <T>(result: Result<T>, fn: (data: T) => T): Result<T> => (result.ok ? ok(fn(result.data)) : result)
 
+type IncomeLike = Pick<AppRecord, 'type' | 'price' | 'payment_status' | 'created_at'>
+
 /**
- * `startedAt`: when the figures were asked for (performance.now()). A row the database
- * confirmed before that is already in them; one confirmed after is not yet.
+ * `startedAt`: when the figures were asked for (performance.now()). A write the database
+ * confirmed before that is already in them; one confirmed after is not yet. For income,
+ * today's list (loaded with the totals) says exactly which version the totals counted.
  */
-export function pendingToday(data: DashboardData, outbox: readonly OutboxItem[], day: string, startedAt: number): PendingToday {
-  const notCounted = (item: OutboxItem) => item.status !== 'sent' || (item.sentAt ?? 0) > startedAt
-  // Today's list came with the totals: a row in it is counted (exact, by request id)
-  const listed = data.todayRecords.ok ? new Set(data.todayRecords.data.map((r) => r.client_request_id)) : null
+export function pendingToday(data: DashboardData, outbox: OutboxSnapshot, day: string, startedAt: number): PendingToday {
+  const notCounted = (w: { status: string; sentAt?: number }) => w.status !== 'sent' || (w.sentAt ?? 0) > startedAt
+  const listed = data.todayRecords.ok ? new Map(data.todayRecords.data.map((r) => [r.id, r])) : null
+  const listedRequests = data.todayRecords.ok ? new Set(data.todayRecords.data.map((r) => r.client_request_id)) : null
   const total = { ...NO_PENDING }
-  for (const item of outbox) {
-    if (toBangkokDay(item.row.created_at) !== day) continue
+  const isToday = (at: string) => toBangkokDay(at) === day
+
+  const income = (row: IncomeLike, sign: 1 | -1) => {
+    if (!isToday(row.created_at)) return
+    if (row.type === 'polish') {
+      total.polishCount += sign
+      total.polishAmount += sign * row.price
+    } else {
+      total.washCount += sign
+      total.washAmount += sign * row.price
+    }
+    if (row.payment_status === 'unpaid') total.unpaid += sign * row.price
+    else total.paid += sign * row.price
+  }
+  const expense = (row: { amount: number; created_at: string }, sign: 1 | -1) => {
+    if (isToday(row.created_at)) total.expense += sign * row.amount
+  }
+
+  for (const item of outbox.items) {
     if (item.table === 'expenses') {
-      if (notCounted(item)) total.expense += item.row.amount
+      if (notCounted(item)) expense(item.row, 1)
+    } else if (listedRequests ? !listedRequests.has(item.requestId) : notCounted(item)) income(item.row, 1)
+  }
+
+  for (const c of outbox.changes) {
+    if (c.table === 'expenses') {
+      // No expense list here: the confirmation time tells
+      if (!notCounted(c)) continue
+      expense(c.before, -1)
+      if (c.kind === 'update') expense(c.after, 1)
       continue
     }
-    if (listed ? listed.has(item.requestId) : !notCounted(item)) continue
-    const { price, type, payment_status } = item.row
-    if (type === 'polish') {
-      total.polishCount += 1
-      total.polishAmount += price
-    } else {
-      total.washCount += 1
-      total.washAmount += price
+    if (c.kind === 'settle') {
+      for (const b of c.before) {
+        const now = listed?.get(b.id)
+        if (listed ? now?.payment_status === 'unpaid' : notCounted(c)) {
+          income(b, -1)
+          income({ ...b, payment_status: 'paid' }, 1)
+        }
+      }
+      continue
     }
-    if (payment_status === 'unpaid') total.unpaid += price
-    else total.paid += price
+    const now = listed?.get(c.before.id)
+    // The totals still count the version that was changed (a row of another day is not in the list)
+    const stillOld = listed ? (now ? (now.updated_at ?? null) === (c.before.updated_at ?? null) : !isToday(c.before.created_at)) : notCounted(c)
+    if (!stillOld) continue
+    income(c.before, -1)
+    if (c.kind === 'update') income(c.after, 1)
   }
   return total
 }
 
-export function dashboardWithOutbox(data: DashboardData, outbox: readonly OutboxItem[], day: string, startedAt: number): { data: DashboardData; pending: PendingToday } {
-  if (outbox.length === 0) return { data, pending: NO_PENDING }
-  const pending = pendingToday(data, outbox, day, startedAt)
+const isNone = (p: PendingToday) => Object.values(p).every((v) => v === 0)
+
+export function dashboardWithOutbox(data: DashboardData, outbox: OutboxSnapshot, day: string, startedAt: number): { data: DashboardData; pending: PendingToday } {
+  if (outbox.items.length === 0 && outbox.changes.length === 0) return { data, pending: NO_PENDING }
+  const found = pendingToday(data, outbox, day, startedAt)
+  const pending = isNone(found) ? NO_PENDING : found
   const income = pending.washAmount + pending.polishAmount
   return {
     pending,
@@ -79,7 +117,7 @@ export function dashboardWithOutbox(data: DashboardData, outbox: readonly Outbox
   }
 }
 
-/** A week or month card with today's rows still on their way */
+/** A week or month card with today's writes still on their way */
 export function periodWithPending(period: CustomerTimePeriod, pending: PendingToday): CustomerTimePeriod {
   if (pending === NO_PENDING) return period
   return {

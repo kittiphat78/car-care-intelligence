@@ -3,7 +3,7 @@
 import { memo, useCallback, useDeferredValue, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { keptPeriod, loadHistoryPeriod, type PeriodData } from '../shared'
-import { useOutbox, useReloadWhenSent, withOutboxExpenses, withOutboxIncome, type OutboxItem } from '@/features/records/outbox'
+import { useOutbox, useReloadWhenSent, withOutboxExpenses, withOutboxIncome, type OutboxSnapshot } from '@/features/records/outbox'
 import { pushUrl, replaceUrl } from '@/lib/url-state'
 import { cn } from '@/lib/cn'
 import { bangkokParts, formatBangkok } from '@/lib/time/bangkok'
@@ -53,8 +53,8 @@ const covers = (d: PeriodData | null, year: number, month: number): d is PeriodD
   !!d && d.year === year && (d.month === 0 || d.month === month)
 
 /** The period with the rows still on their way that fall in it (ADR-30) */
-function periodWithOutbox(data: PeriodData | null, outbox: readonly OutboxItem[]): PeriodData | null {
-  if (!data || outbox.length === 0) return data
+function periodWithOutbox(data: PeriodData | null, outbox: OutboxSnapshot): PeriodData | null {
+  if (!data || (outbox.items.length === 0 && outbox.changes.length === 0)) return data
   const inPeriod = (row: { created_at: string }) => {
     const at = bangkokParts(new Date(row.created_at))
     return at.year === data.year && (data.month === 0 || at.month === data.month)

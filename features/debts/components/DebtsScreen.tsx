@@ -74,7 +74,8 @@ export function DebtsScreen() {
   // Unpaid rows still on their way are owed too (ADR-30); the database's copy follows
   const outbox = useOutbox()
   const owed = useMemo(() => (unpaid?.ok ? withOutboxIncome(unpaid.data, outbox, (row) => row.payment_status === 'unpaid') : null), [unpaid, outbox])
-  useReloadWhenSent(useCallback(() => void load(true), [load]))
+  // load(false) joins the reload a settle already started instead of asking twice
+  useReloadWhenSent(useCallback(() => void load(false), [load]))
 
   const sort: DebtSort = searchParams.get('sort') === 'age' ? 'age' : 'amount'
   const groups = useMemo(() => (owed ? sortDebts(groupDebts(owed, today), sort) : []), [owed, sort, today])

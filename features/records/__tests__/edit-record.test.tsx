@@ -1,5 +1,5 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { appError } from '@/lib/errors'
 import { ToastProvider } from '@/components/ui/Toast'
 import type { Expense, Record as AppRecord } from '@/types'
@@ -10,6 +10,7 @@ vi.mock('@/lib/observability', () => ({ reportAppError: vi.fn() }))
 
 import { EditRecordDialog, type EditTarget } from '../components/EditRecordDialog'
 import { editedCreatedAt, incomeDraftFrom, incomePatch, checkIncomeEdit } from '../editor'
+import { clearOutbox, outboxSnapshot, withOutboxIncome } from '../outbox'
 
 const record: AppRecord = {
   id: 'r1',
@@ -69,6 +70,8 @@ const press = async (name: string | RegExp, scope: HTMLElement = document.body) 
   })
 }
 
+afterEach(() => clearOutbox())
+
 beforeEach(() => {
   api.updateEntry.mockReset().mockResolvedValue({ ok: true, data: undefined })
   api.deleteEntry.mockReset().mockResolvedValue({ ok: true, data: undefined })
@@ -85,22 +88,51 @@ describe('EditRecordDialog', () => {
     expect(dialog).toHaveTextContent('owner@example.com')
   })
 
-  it('saves only the changed field, guarded by updated_at (ADR-07)', async () => {
+  it('saves only the changed field, guarded by updated_at (ADR-07), closing at once (ADR-30)', async () => {
+    let answer!: (value: unknown) => void
+    api.updateEntry.mockReturnValue(new Promise((resolve) => (answer = resolve)))
     const { onClose, onChanged } = renderDialog()
     fireEvent.change(screen.getByLabelText(/ราคา \(บาท\)/), { target: { value: '200' } })
     await press('บันทึกการแก้ไข')
     expect(api.updateEntry).toHaveBeenCalledWith('records', 'r1', { price: 200 }, record.updated_at)
-    expect(onChanged).toHaveBeenCalled()
     expect(onClose).toHaveBeenCalled()
+    // The lists show the new price with "กำลังส่ง" before the database answers
+    expect(withOutboxIncome([record], outboxSnapshot(), () => true).map((r) => [r.price, r.outbox])).toEqual([[200, 'sending']])
+    await act(async () => answer({ ok: true, data: undefined }))
+    expect(screen.getByRole('status')).toHaveTextContent('บันทึกการแก้ไขแล้ว')
+    // Screens reload when the database has it (useReloadWhenSent), not through onChanged
+    expect(onChanged).not.toHaveBeenCalled()
   })
 
-  it('says when another device changed the record and keeps the dialog open', async () => {
+  it('shows the other device’s version when it changed the record first, and "แก้อีกครั้ง" brings the edit back', async () => {
     api.updateEntry.mockResolvedValue({ ok: false, error: appError('CONFLICT') })
-    const { onClose } = renderDialog()
+    const { onChanged } = renderDialog()
     fireEvent.change(screen.getByLabelText(/ราคา \(บาท\)/), { target: { value: '200' } })
     await press('บันทึกการแก้ไข')
-    expect(screen.getByRole('alert')).toHaveTextContent('มีการแก้รายการนี้จากเครื่องอื่น')
-    expect(onClose).not.toHaveBeenCalled()
+    // Undone in the lists, reloaded, and said why
+    expect(outboxSnapshot().changes).toEqual([])
+    expect(onChanged).toHaveBeenCalled()
+    const toast = screen.getByRole('alert')
+    expect(toast).toHaveTextContent('มีการแก้ กข 1234 ฿150 จากเครื่องอื่น แสดงค่าล่าสุดแล้ว')
+    const pushState = vi.spyOn(window.history, 'pushState')
+    fireEvent.click(within(toast).getByRole('button', { name: 'แก้อีกครั้ง' }))
+    expect(pushState).toHaveBeenCalledWith(null, '', expect.stringContaining('edit=income%3Ar1'))
+    pushState.mockRestore()
+  })
+
+  it('opens again with the values that could not be saved', async () => {
+    api.updateEntry.mockResolvedValue({ ok: false, error: appError('SERVER') })
+    renderDialog()
+    fireEvent.change(screen.getByLabelText(/ราคา \(บาท\)/), { target: { value: '200' } })
+    await press('บันทึกการแก้ไข')
+    expect(screen.getByRole('alert')).toHaveTextContent('แก้ กข 1234 ฿150 ไม่สำเร็จ ค่ากลับเป็นเดิมแล้ว')
+    fireEvent.click(within(screen.getByRole('alert')).getByRole('button', { name: 'แก้อีกครั้ง' }))
+    // The page opens the dialog again from the URL
+    cleanup()
+    renderDialog()
+    const reopened = screen.getByRole('dialog', { name: 'แก้ไขรายรับ' })
+    expect(within(reopened).getByLabelText(/ราคา \(บาท\)/)).toHaveValue('200')
+    expect(within(reopened).getByRole('button', { name: 'บันทึกการแก้ไข' })).toBeEnabled()
   })
 
   it('does not save an emptied plate (AC-26-2)', async () => {
@@ -121,7 +153,28 @@ describe('EditRecordDialog', () => {
     expect(screen.getByRole('button', { name: 'ยกเลิก' })).toHaveFocus()
     await press('ลบรายการ')
     expect(api.deleteEntry).toHaveBeenCalledWith('records', 'r1')
-    expect(onChanged).toHaveBeenCalled()
+    expect(screen.getByRole('status')).toHaveTextContent('ลบ กข 1234 ฿150 แล้ว')
+    expect(onChanged).not.toHaveBeenCalled()
+  })
+
+  it('takes a deleted row out at once and brings it back if the delete fails (ADR-30)', async () => {
+    let answer!: (value: unknown) => void
+    api.deleteEntry.mockReturnValue(new Promise((resolve) => (answer = resolve)))
+    const { onClose } = renderDialog()
+    await press('ลบ')
+    await press('ลบรายการ')
+    expect(onClose).toHaveBeenCalled()
+    expect(withOutboxIncome([record], outboxSnapshot(), () => true)).toEqual([])
+    await act(async () => answer({ ok: false, error: appError('NETWORK') }))
+    expect(withOutboxIncome([record], outboxSnapshot(), () => true).map((r) => r.id)).toEqual(['r1'])
+    const toast = screen.getByRole('alert')
+    expect(toast).toHaveTextContent('ลบ กข 1234 ฿150 ไม่สำเร็จ รายการกลับมาแล้ว')
+    api.deleteEntry.mockResolvedValue({ ok: true, data: undefined })
+    await act(async () => {
+      fireEvent.click(within(toast).getByRole('button', { name: 'ลองอีกครั้ง' }))
+    })
+    expect(api.deleteEntry).toHaveBeenCalledTimes(2)
+    expect(screen.getByRole('status')).toHaveTextContent('ลบ กข 1234 ฿150 แล้ว')
   })
 
   it('asks before throwing away unsaved changes', async () => {

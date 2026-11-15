@@ -10,6 +10,7 @@ import {
   SENT_KEEP_MS,
   clearOutbox,
   outboxItems,
+  outboxSnapshot,
   resend,
   restoreDraft,
   send,
@@ -152,20 +153,20 @@ describe('rows for the lists', () => {
     send({ ...income('a'), draft: null })
     send({ ...income('b', { payment_status: 'unpaid' }), draft: null })
     const loaded = [{ id: 'db-1', client_request_id: 'a' } as AppRecord]
-    const shown = withOutboxIncome(loaded, outboxItems(), (row) => row.payment_status === 'unpaid')
+    const shown = withOutboxIncome(loaded, outboxSnapshot(), (row) => row.payment_status === 'unpaid')
     expect(shown.map((r) => [r.id, r.outbox])).toEqual([
       ['db-1', undefined],
       ['outbox:b', 'sending'],
     ])
-    expect(withOutboxIncome(loaded, outboxItems(), () => true).map((r) => r.id)).toEqual(['db-1', 'outbox:b'])
-    expect(withOutboxExpenses([], outboxItems(), () => true)).toEqual([])
+    expect(withOutboxIncome(loaded, outboxSnapshot(), () => true).map((r) => r.id)).toEqual(['db-1', 'outbox:b'])
+    expect(withOutboxExpenses([], outboxSnapshot(), () => true)).toEqual([])
   })
 
   it('a row on its way shows "กำลังส่ง" and cannot be opened for editing yet', async () => {
     api.createIncome.mockReturnValue(new Promise(() => {}))
     send({ ...income('a'), draft: null })
     const onOpen = vi.fn()
-    const [row] = withOutboxIncome([], outboxItems(), () => true)
+    const [row] = withOutboxIncome([], outboxSnapshot(), () => true)
     render(<IncomeRow record={row} onOpen={onOpen} />)
     const button = screen.getByRole('button', { name: /ทดสอบ a.*กำลังส่ง.*แก้ได้เมื่อส่งเสร็จ/ })
     fireEvent.click(button)
@@ -176,7 +177,7 @@ describe('rows for the lists', () => {
     api.createIncome.mockResolvedValueOnce({ ok: false, error: appError('NETWORK') })
     send({ ...income('a'), draft: null })
     await settle()
-    const [row] = withOutboxIncome([], outboxItems(), () => true)
+    const [row] = withOutboxIncome([], outboxSnapshot(), () => true)
     render(<IncomeRow record={row} onOpen={vi.fn()} />)
     fireEvent.click(screen.getByRole('button', { name: /ยังไม่ส่ง.*แตะเพื่อส่งอีกครั้ง/ }))
     await settle()
@@ -190,7 +191,7 @@ describe('rows for the lists', () => {
       row: { title: 'ค่าน้ำยา', amount: 90, note: '', created_at: '2026-10-15T03:00:00.000Z', created_by: 'user-1', created_by_email: 'owner@example.com', client_request_id: 'e' },
       draft: null,
     })
-    const [row] = withOutboxExpenses([], outboxItems(), () => true)
+    const [row] = withOutboxExpenses([], outboxSnapshot(), () => true)
     render(<ExpenseRow expense={row} onOpen={vi.fn()} />)
     expect(screen.getByRole('button', { name: /ค่าน้ำยา.*กำลังส่ง.*รายจ่าย แก้ได้เมื่อส่งเสร็จ/ })).toBeInTheDocument()
   })
