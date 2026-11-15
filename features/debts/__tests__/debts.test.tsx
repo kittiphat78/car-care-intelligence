@@ -21,6 +21,7 @@ import { DebtsScreen } from '../components/DebtsScreen'
 import { DebtCustomerCard } from '../components/DebtCustomerCard'
 import { groupDebts, platePreview, settleOutcome, sortDebts, debtTotals, URGENT_DAYS, UNNAMED_KEY } from '../logic'
 import { forgetCustomers } from '@/features/customers/memory'
+import { UNPAID_KEY, load, put } from '@/lib/data-store'
 import { plateCore, plateKey } from '@/features/customers/logic'
 import type { Customer } from '@/features/customers/types'
 
@@ -113,6 +114,23 @@ describe('DebtCustomerCard', () => {
 })
 
 describe('DebtsScreen', () => {
+  it('shows the list the dashboard loaded at once, while a fresh copy loads (ADR-29)', async () => {
+    put(UNPAID_KEY, { ok: true, data: unpaid })
+    api.listUnpaid.mockReturnValue(new Promise(() => {}))
+    await renderScreen()
+    expect(screen.getAllByRole('article')).toHaveLength(3)
+    expect(api.listUnpaid).toHaveBeenCalledOnce()
+  })
+
+  it('waits for the unpaid list the dashboard is already loading instead of asking again', async () => {
+    let answer!: (value: unknown) => void
+    void load(UNPAID_KEY, () => new Promise((resolve) => (answer = resolve)))
+    await renderScreen()
+    expect(api.listUnpaid).not.toHaveBeenCalled()
+    await act(async () => answer({ ok: true, data: unpaid }))
+    expect(screen.getAllByRole('article')).toHaveLength(3)
+  })
+
   it('shows the total and one card per customer, largest first', async () => {
     await renderScreen()
     expect(screen.getByRole('heading', { level: 1, name: 'ค้างชำระ' })).toBeInTheDocument()

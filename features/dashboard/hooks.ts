@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { reportAppError } from '@/lib/observability'
-import { keepScreen, keptScreen } from '@/lib/screen-memory'
+import { DASHBOARD_KEY, UNPAID_KEY, isOk, load as loadShared, peek } from '@/lib/data-store'
 import { bangkokToday } from '@/lib/time/bangkok'
+import { listUnpaid } from '@/features/debts/api'
 import { loadDashboard, type DashboardData } from './api'
 
 // Data of the dashboard. Each part keeps its own Result so one failure shows an error
@@ -29,8 +30,25 @@ interface KeptDashboard {
 
 /** What the dashboard showed last in this tab, if it is still for today */
 function keptForToday(): KeptDashboard | null {
-  const kept = keptScreen<KeptDashboard>('dashboard')
+  const kept = peek<KeptDashboard>(DASHBOARD_KEY)
   return kept && kept.day === bangkokToday() ? kept : null
+}
+
+/**
+ * Today's dashboard through the shared store: joins a load already running (one started
+ * right after a save, on the way here) unless `fresh`. The unpaid list is kept on its own
+ * key, so /debts shows it at once.
+ */
+export function loadTodayDashboard({ fresh = false } = {}): Promise<KeptDashboard> {
+  return loadShared(
+    DASHBOARD_KEY,
+    async () => {
+      const day = bangkokToday()
+      const data = await loadDashboard(day, () => loadShared(UNPAID_KEY, listUnpaid, { keep: isOk, fresh }))
+      return { day, data, loadedAt: new Date() }
+    },
+    { fresh },
+  )
 }
 
 export function useDashboardData(): DashboardState {
@@ -42,30 +60,27 @@ export function useDashboardData(): DashboardState {
   const [loadedAt, setLoadedAt] = useState<Date | null>(kept?.loadedAt ?? null)
   const latest = useRef(0)
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (fresh: boolean) => {
     const call = ++latest.current
     setRefreshing(true)
-    const today = bangkokToday()
-    const result = await loadDashboard(today)
+    const result = await loadTodayDashboard({ fresh })
     // An older, slower reload must not overwrite a newer one
     if (call !== latest.current) return
-    for (const part of Object.values(result)) if (!part.ok) reportAppError(part.error)
-    const at = new Date()
-    keepScreen<KeptDashboard>('dashboard', { day: today, data: result, loadedAt: at })
-    setDay(today)
-    setData(result)
-    setLoadedAt(at)
+    for (const part of Object.values(result.data)) if (!part.ok) reportAppError(part.error)
+    setDay(result.day)
+    setData(result.data)
+    setLoadedAt(result.loadedAt)
     setRefreshing(false)
   }, [])
 
   useEffect(() => {
     // Initial load: data arrives asynchronously, outside this effect's render
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    void load()
+    void load(false)
     let timer: ReturnType<typeof setTimeout> | undefined
     const soon = () => {
       clearTimeout(timer)
-      timer = setTimeout(() => void load(), 300)
+      timer = setTimeout(() => void load(true), 300)
     }
     const channel = supabase
       .channel('dashboard-updates')
@@ -78,5 +93,6 @@ export function useDashboardData(): DashboardState {
     }
   }, [load])
 
-  return { day, data, loading: data === null, refreshing: refreshing && data !== null, loadedAt, refresh: load }
+  const refresh = useCallback(() => void load(true), [load])
+  return { day, data, loading: data === null, refreshing: refreshing && data !== null, loadedAt, refresh }
 }

@@ -4,14 +4,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { reportAppError } from '@/lib/observability'
 import { ok, type Result } from '@/lib/result'
 import { LOCAL_DRAFT_PREFIX } from '@/features/auth/drafts'
+import { CUSTOMERS_KEY, isOk, load as loadShared } from '@/lib/data-store'
 import { listCustomers } from './api'
-import { keepList, keptList } from './memory'
+import { keptList } from './memory'
 import { customersForTypedPlate, draftSignature, emptyVehicle, plateKey } from './logic'
 import type { Customer, CustomerDraft } from './types'
 
 // ── The directory (ADR-23) ───────────────────────────────────────────────────
-// Loaded whole and searched in the browser. The last list is kept in memory (memory.ts)
-// so going back from a customer to the list shows it at once while a fresh copy loads.
+// Loaded whole and searched in the browser. The last list is kept in memory (lib/data-store.ts)
+// so going back from a customer to the list shows it at once while a fresh copy loads, and
+// pages asking for it at the same time (e.g. /debts and a prefetch) share one request.
 
 /** `enabled: false` waits (e.g. /add loads the directory only once a plate is being typed) */
 export function useCustomerDirectory({ enabled = true }: { enabled?: boolean } = {}) {
@@ -23,21 +25,22 @@ export function useCustomerDirectory({ enabled = true }: { enabled?: boolean } =
   const [fresh, setFresh] = useState(false)
   const requested = useRef(false)
 
-  const reload = useCallback(async () => {
-    const next = await listCustomers()
-    if (next.ok) keepList(next.data)
-    else reportAppError(next.error)
+  /** `again`: a new request, not the one already running (a reload after a change) */
+  const load = useCallback(async (again: boolean) => {
+    const next = await loadShared(CUSTOMERS_KEY, listCustomers, { keep: isOk, fresh: again })
+    if (!next.ok) reportAppError(next.error)
     setResult(next)
     setFresh(true)
   }, [])
+  const reload = useCallback(() => load(true), [load])
 
   useEffect(() => {
     if (!enabled || requested.current) return
     // Load once per visit; the result arrives after this effect
     requested.current = true
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    void reload()
-  }, [enabled, reload])
+    void load(false)
+  }, [enabled, load])
 
   return { result, customers: result?.ok ? result.data : null, fresh, reload }
 }

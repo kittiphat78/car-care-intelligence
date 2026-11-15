@@ -12,7 +12,7 @@ const auth = vi.hoisted(() => ({ signOut: vi.fn() }))
 vi.mock('@/lib/supabase', () => ({ supabase: { auth: auth } }))
 
 import { ToastProvider } from '@/components/ui/Toast'
-import { keepScreen, keptScreen } from '@/lib/screen-memory'
+import { CUSTOMERS_KEY, UNPAID_KEY, peek, put } from '@/lib/data-store'
 import { LogoutDialog } from '../components/LogoutDialog'
 
 const renderDialog = () =>
@@ -80,7 +80,8 @@ describe('LogoutDialog', () => {
   it('signs out, clears drafts and kept screens, and goes to /login', async () => {
     auth.signOut.mockResolvedValue({ error: null })
     localStorage.setItem(`${LOCAL_DRAFT_PREFIX}add-income`, '{}')
-    keepScreen('debts', { ok: true, data: [] })
+    put(UNPAID_KEY, { ok: true, data: [] })
+    put(CUSTOMERS_KEY, { ok: true, data: [] })
     renderDialog()
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'ออกจากระบบ' }))
@@ -88,7 +89,8 @@ describe('LogoutDialog', () => {
     expect(auth.signOut).toHaveBeenCalledOnce()
     expect(localStorage.getItem(`${LOCAL_DRAFT_PREFIX}add-income`)).toBeNull()
     // The next person on a shared phone must not see the last lists
-    expect(keptScreen('debts')).toBeUndefined()
+    expect(peek(UNPAID_KEY)).toBeUndefined()
+    expect(peek(CUSTOMERS_KEY)).toBeUndefined()
     expect(nav.replace).toHaveBeenCalledWith('/login')
   })
 

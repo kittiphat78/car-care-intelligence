@@ -11,6 +11,8 @@ vi.mock('../api', () => api)
 vi.mock('@/lib/observability', () => ({ reportAppError: vi.fn() }))
 const customersApi = vi.hoisted(() => ({ listCustomers: vi.fn(), saveCustomer: vi.fn(), deleteCustomer: vi.fn(), getCustomer: vi.fn() }))
 vi.mock('@/features/customers/api', () => customersApi)
+const dashboard = vi.hoisted(() => ({ loadTodayDashboard: vi.fn() }))
+vi.mock('@/features/dashboard/hooks', () => dashboard)
 
 import { ExpenseEditor, IncomeEditor } from '../components/RecordEditor'
 import { forgetCustomers } from '@/features/customers/memory'
@@ -59,6 +61,7 @@ const press = async (name: string | RegExp) => {
 
 beforeEach(() => {
   router.push.mockReset()
+  dashboard.loadTodayDashboard.mockReset().mockResolvedValue(undefined)
   api.createIncome.mockReset().mockResolvedValue({ ok: true, data: undefined })
   api.createExpense.mockReset().mockResolvedValue({ ok: true, data: undefined })
   api.countVisitsByPlate.mockReset().mockResolvedValue({ ok: true, data: 0 })
@@ -93,6 +96,9 @@ describe('IncomeEditor', () => {
     expect(row).not.toHaveProperty('seq_number')
     expect(router.push).toHaveBeenCalledWith('/')
     expect(screen.getByRole('status')).toHaveTextContent('บันทึก กข 1234 ฿150 แล้ว')
+    // The dashboard's data starts loading on the way there (ADR-29)
+    expect(dashboard.loadTodayDashboard).toHaveBeenCalledOnce()
+    expect(dashboard.loadTodayDashboard.mock.invocationCallOrder[0]).toBeLessThan(router.push.mock.invocationCallOrder[0])
   })
 
   it('"บันทึกแล้วทำต่อ" keeps the job settings and focuses the plate (AC-05-1)', async () => {
@@ -101,6 +107,7 @@ describe('IncomeEditor', () => {
     fillIncome()
     await press('บันทึกแล้วทำต่อ')
     expect(router.push).not.toHaveBeenCalled()
+    expect(dashboard.loadTodayDashboard).not.toHaveBeenCalled()
     expect(screen.getByLabelText(/ป้ายทะเบียน/)).toHaveValue('')
     expect(screen.getByLabelText(/ป้ายทะเบียน/)).toHaveFocus()
     expect(screen.getByLabelText(/ราคา \(บาท\)/)).toHaveValue('')
