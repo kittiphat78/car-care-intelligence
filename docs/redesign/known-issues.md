@@ -32,7 +32,7 @@
 | K-16 | ประวัติ migration ใน CLI ของ production (`schema_migrations`) | Low | [U] · ดู `database-migrations.md` §2 ก่อนใช้ `db push` |
 | K-17 | `develop` ไม่มี ruleset (merge ได้แม้ CI ไม่ผ่าน) | Medium | แนะนำตั้งเหมือน `main` |
 | K-18 | ไม่เคยซ้อม Vercel Instant Rollback | Medium | `rollback-plan.md` §7 |
-| K-19 | Node version บน Vercel และ function region | Low | [U] · ตั้ง `engines.node` = `22.x` หลังยืนยัน |
+| K-19 | Node version บน Vercel และ function region | Low | Function region: แก้ใน v2.4.0 (`vercel.json` → `sin1`, เดิม `iad1`) [V] · Node version ยัง [U] · ตั้ง `engines.node` = `22.x` หลังยืนยัน |
 
 ## 3. Technical Debt
 
