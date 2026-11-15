@@ -120,7 +120,9 @@ export function Dialog({
           />
           <div
             className={cn(
-              'absolute flex flex-col bg-surface shadow-elevation-3',
+              // The solid colour of floating glass, without the blur: the page behind is already dimmed,
+              // and blurring it as the panel slides in made opening ~30 ms slower on a slow phone (G-02)
+              'absolute flex flex-col border border-glass-border bg-glass-float-solid shadow-elevation-3',
               variant !== 'alert' && (size === 'md' ? 'md:w-120' : 'md:w-140'),
               variant === 'modal' && (size === 'md' ? 'max-w-120' : 'max-w-140'),
               'motion-reduce:animate-fade-in',

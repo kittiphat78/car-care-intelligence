@@ -1,7 +1,7 @@
 'use client'
 
 import { AppLink } from '@/components/ui/AppLink'
-import { useEffect, useId, useMemo, useState } from 'react'
+import { memo, useDeferredValue, useEffect, useId, useMemo, useState } from 'react'
 import { bangkokParts, formatBangkok, startOfBangkokDay } from '@/lib/time/bangkok'
 import { toUserMessage } from '@/lib/errors'
 import { buttonClassName, Button } from '@/components/ui/Button'
@@ -14,9 +14,20 @@ import { EditRecordDialog } from '@/features/records/components/EditRecordDialog
 import { useEditParam } from '@/features/records/useEditParam'
 import { takeLastSaved } from '@/features/records/hooks'
 import { useDashboardData } from '../hooks'
-import { greeting, newestFirst, toCustomerBreakdown, toDebtSummary, toStats } from '../logic'
+import { customersThisMonth, greeting, newestFirst, periodTotals, toCustomerBreakdown, toDebtSummary, toStats } from '../logic'
 import { ChartCard } from './ChartCard'
 import { CardHeader, CustomerBreakdownCard, DebtSummaryCard, DebtSummarySkeleton, MoneyHero } from './cards'
+import { PeriodCards, QuickLinks, StatusPills, TodaySplit } from './highlights'
+
+// The parts below today's figures and list follow at low priority (useDeferredValue in the
+// screen). memo() lets them skip the urgent render, so the list paints first: after saving a
+// car, the new row is what people look for (saving took +66 ms on a slow phone otherwise, G-04)
+const LateStatusPills = memo(StatusPills)
+const LatePeriodCards = memo(PeriodCards)
+const LateQuickLinks = memo(QuickLinks)
+const LateTodaySplit = memo(TodaySplit)
+const LateChartCard = memo(ChartCard)
+const LateCustomerBreakdownCard = memo(CustomerBreakdownCard)
 import { RainAlert, WeatherDetail, WeatherStrip, useDashboardWeather, useWeatherDetail } from './Weather'
 
 // screen-specifications.md §2 — "/" ภาพรวมวันนี้
@@ -39,9 +50,30 @@ export function DashboardScreen({ email }: { email: string }) {
   const stats = data?.today.ok ? toStats(data.today.data) : null
   const records = useMemo(() => (data?.todayRecords.ok ? newestFirst(data.todayRecords.data) : []), [data])
   const debt = data?.unpaidRecords.ok ? toDebtSummary(data.unpaidRecords.data) : null
-  const customers = data?.customers.ok ? toCustomerBreakdown(data.customers.data) : null
-  const series = data?.series.ok ? data.series.data : null
   const visible = showAll ? records : records.slice(0, FIRST_ROWS)
+
+  // ── Derived, low priority: everything below today's figures and list ──
+  // Glass home (ADR-28): figures from the same data, nothing extra is loaded.
+  // null = still loading · undefined = that part failed (shown as —)
+  const late = useDeferredValue(data)
+  const lateParts = useMemo(() => {
+    const lateStats = late?.today.ok ? toStats(late.today.data) : null
+    const lateDebt = late?.unpaidRecords.ok ? toDebtSummary(late.unpaidRecords.data) : null
+    const customerRows = late ? (late.customers.ok ? late.customers.data : undefined) : null
+    const periods = customerRows ? periodTotals(customerRows) : customerRows
+    return {
+      stats: lateStats,
+      customers: late?.customers.ok ? toCustomerBreakdown(late.customers.data) : null,
+      series: late?.series.ok ? late.series.data : null,
+      customersMonth: customerRows ? customersThisMonth(customerRows) : customerRows,
+      debt: late ? (lateDebt ?? undefined) : null,
+      today: lateStats ? { total: lateStats.todayTotalIncome, washCount: lateStats.washCount, polishCount: lateStats.polishCount } : late && !late.today.ok ? undefined : null,
+      week: periods === undefined ? undefined : (periods?.week ?? null),
+      month: periods === undefined ? undefined : (periods?.month ?? null),
+      seriesError: messageOf(late?.series),
+      customersError: messageOf(late?.customers),
+    }
+  }, [late])
 
   // ── Highlight the record just saved on /add, once ──
   useEffect(() => {
@@ -66,7 +98,9 @@ export function DashboardScreen({ email }: { email: string }) {
       <header className="flex flex-wrap items-end justify-between gap-3 pt-6">
         <div className="min-w-0">
           <p className="text-caption text-text-secondary">{dateLine}</p>
-          <h1 className="text-title text-text">ภาพรวมวันนี้</h1>
+          <h1 className="text-title text-text">
+            ภาพรวม<span className="text-gradient">วันนี้</span>
+          </h1>
           {email && (
             <p className="hidden text-caption text-text-tertiary lg:block">
               {greeting(bangkokParts(new Date()).hour)}, {email.split('@')[0]}
@@ -99,12 +133,19 @@ export function DashboardScreen({ email }: { email: string }) {
 
       <RainAlert weather={weather} />
 
+      <LateStatusPills customersMonth={lateParts.customersMonth} debt={lateParts.debt} />
+
+      {/* Phones read it top to bottom in this order; on PC the cells are placed in two columns */}
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-12">
-        <div className="lg:col-span-7 lg:row-start-1">
+        <div className="lg:col-span-7 lg:row-start-2">
           <MoneyHero stats={stats} error={messageOf(data?.today)} onRetry={refresh} />
         </div>
 
-        <div className="empty:hidden lg:col-span-5 lg:col-start-8 lg:row-start-1">
+        <div className="lg:col-span-12 lg:row-start-1">
+          <LatePeriodCards today={lateParts.today} week={lateParts.week} month={lateParts.month} />
+        </div>
+
+        <div className="empty:hidden lg:col-span-5 lg:col-start-8 lg:row-start-2">
           {loading && <DebtSummarySkeleton />}
           {debt && <DebtSummaryCard debt={debt} />}
           {data && !data.unpaidRecords.ok && (
@@ -114,7 +155,9 @@ export function DashboardScreen({ email }: { email: string }) {
           )}
         </div>
 
-        <Card as="section" aria-labelledby={listId} className="lg:col-span-7 lg:row-span-2 lg:row-start-2">
+        <LateQuickLinks debt={lateParts.debt ?? null} className="lg:col-span-5 lg:col-start-8 lg:row-start-3" />
+
+        <Card as="section" aria-labelledby={listId} className="lg:col-span-7 lg:row-span-4 lg:row-start-3">
           <CardHeader id={listId} title={`รายการวันนี้${records.length ? ` (${records.length})` : ''}`}>
             <AppLink href="/add" className={buttonClassName({ variant: 'ghost' })}>
               <Icon name="plus" />
@@ -158,12 +201,16 @@ export function DashboardScreen({ email }: { email: string }) {
           )}
         </Card>
 
-        <div className="lg:col-span-5 lg:col-start-8 lg:row-start-2">
-          <ChartCard series={series} today={day} error={messageOf(data?.series)} onRetry={refresh} />
+        <div className="lg:col-span-5 lg:col-start-8 lg:row-start-4">
+          <LateChartCard series={lateParts.series} today={day} error={lateParts.seriesError} onRetry={refresh} />
         </div>
 
-        <div className="lg:col-span-5 lg:col-start-8 lg:row-start-3">
-          <CustomerBreakdownCard items={customers} error={messageOf(data?.customers)} onRetry={refresh} />
+        <div className="lg:col-span-5 lg:col-start-8 lg:row-start-5">
+          <LateTodaySplit stats={lateParts.stats} />
+        </div>
+
+        <div className="lg:col-span-5 lg:col-start-8 lg:row-start-6">
+          <LateCustomerBreakdownCard items={lateParts.customers} error={lateParts.customersError} onRetry={refresh} />
         </div>
       </div>
 

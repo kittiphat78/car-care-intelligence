@@ -25,7 +25,14 @@ export function AddScreen({ userId, email }: EditorProps) {
 
   return (
     <div className="grid grid-cols-1 gap-4 pb-4">
-      <PageHeader title="บันทึกรายการ" />
+      {/* Same words for screen readers: "บันทึกรายการ" (ADR-28 gradient word) */}
+      <PageHeader
+        title={
+          <>
+            บันทึก<span className="text-gradient">รายการ</span>
+          </>
+        }
+      />
       <Tabs
         idBase="add"
         label="ประเภทรายการ"
@@ -36,7 +43,9 @@ export function AddScreen({ userId, email }: EditorProps) {
           { value: 'expense', label: 'รายจ่าย' },
         ]}
       />
-      <section id={tabPanelId('add', kind)} role="tabpanel" aria-labelledby={tabId('add', kind)} className="pt-1">
+      <section id={tabPanelId('add', kind)} role="tabpanel" aria-labelledby={tabId('add', kind)} className="pt-1 lg:glass lg:rounded-lg lg:border lg:p-(--card-padding)">
+        {/* On PC the form sits on a glass card. Not on phones: the save bar there is pinned to
+            the screen edges (negative page margins), which a padded card would break */}
         {kind === 'income' ? <IncomeEditor key="income" userId={userId} email={email} /> : <ExpenseEditor key="expense" userId={userId} email={email} />}
       </section>
     </div>

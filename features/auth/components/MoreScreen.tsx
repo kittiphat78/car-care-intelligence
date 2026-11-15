@@ -3,7 +3,7 @@
 import { AppLink } from '@/components/ui/AppLink'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { Card } from '@/components/ui/Card'
-import { Icon } from '@/components/ui/Icon'
+import { Icon, type IconName } from '@/components/ui/Icon'
 import { Switch } from '@/components/ui/Switch'
 import { buttonClassName } from '@/components/ui/Button'
 import { PageHeader } from '@/components/patterns/PageHeader'
@@ -18,10 +18,16 @@ const VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? ''
 const APP_ENV = process.env.NEXT_PUBLIC_APP_ENV ?? 'development'
 const DATABASE = process.env.NEXT_PUBLIC_APP_DATABASE ?? 'unknown'
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+// Each heading carries its icon in a coloured tile, like the home shortcuts (ADR-28)
+function Section({ title, icon, tile, children }: { title: string; icon: IconName; tile: string; children: React.ReactNode }) {
   return (
-    <Card as="section" aria-label={title} className="grid grid-cols-1 gap-2">
-      <h2 className="text-subheading text-text">{title}</h2>
+    <Card as="section" aria-label={title} className="grid grid-cols-1 gap-3">
+      <h2 className="flex items-center gap-3 text-subheading text-text">
+        <span aria-hidden="true" className={`grid size-9 shrink-0 place-items-center rounded-sm ${tile}`}>
+          <Icon name={icon} size="sm" />
+        </span>
+        {title}
+      </h2>
       {children}
     </Card>
   )
@@ -51,18 +57,15 @@ export function MoreScreen({ email }: { email: string }) {
         </Card>
       </AppLink>
 
-      <Section title="บัญชี">
-        <p className="flex items-center gap-2 text-body text-text-secondary">
-          <Icon name="user" />
-          <span className="min-w-0 break-all">{email || '—'}</span>
-        </p>
+      <Section title="บัญชี" icon="user" tile="bg-primary-subtle text-link">
+        <p className="min-w-0 text-body break-all text-text-secondary">{email || '—'}</p>
       </Section>
 
-      <Section title="การแสดงผล">
+      <Section title="การแสดงผล" icon="palette" tile="bg-polish-subtle text-polish">
         <Switch label="ธีมมืด" checked={theme === 'dark'} onChange={(dark) => setTheme(dark ? 'dark' : 'light')} />
       </Section>
 
-      <Section title="เกี่ยวกับ">
+      <Section title="เกี่ยวกับ" icon="info" tile="bg-wash-subtle text-wash">
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-body">
           <dt className="text-text-secondary">เวอร์ชัน</dt>
           <dd className="text-text">{VERSION || '—'}</dd>

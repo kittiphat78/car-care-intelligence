@@ -1,5 +1,7 @@
 # Design Direction — Step 04
 
+> **2026-11-14 · ADR-28:** หน้าตาเปลี่ยนเป็นแบบกระจก (Glass) และฟอนต์ Noto Sans Thai แทน Sarabun (บิล PDF ยังใช้ Sarabun) · ทิศทางใหม่อยู่ที่ `docs/design-system/car-care-glass/APP.md` · หลักการเรื่องสีมีความหมายเดียว (DP-2), ตัวเลขเงินเป็นพระเอก และไม่พึ่งสีอย่างเดียวยังใช้ต่อ · ข้อ "ไม่มี gradient หรือ blur" (DP-6) เปลี่ยนเป็น: แสงไล่สีเฉพาะพื้นหลังและหัวข้อ, blur เฉพาะชิ้นที่ลอยทับ
+
 > วันที่: 2026-10-14 · Branch: `docs/redesign-step-04-design-system`
 > Input: `personas.md`, `ux-audit.md`, `information-architecture.md`, D-12 (มือถือ + tablet + PC), D-13 ("ดูง่าย แต่มือโปร")
 > **ยังไม่มี mockup ภาพหรือ prototype** เอกสารชุด Step 04 เป็นสเปกที่ implement ได้ ส่วน "moodboard" ด้านล่างเป็นคำอธิบายคุณลักษณะ ไม่ใช่ภาพ
@@ -55,7 +57,7 @@
 | โลโก้ | คงรูปรถเดิม (`app/login/page.tsx:151`) แต่ใช้สีพื้น `primary` สีเดียวแทน gradient |
 | ฟอนต์ | **Sarabun** 400/500/600/700 (เลิกใช้ 800) |
 | Theme | มืดเป็นค่าเริ่มต้น และสลับเป็นสว่างได้ที่หน้าเพิ่มเติม (Q-11 = a) |
-| PWA `theme_color` | ตาม `--color-bg` ของ theme มืด `#0B111A` |
+| PWA `theme_color` | ตาม `--color-bg` ของ theme มืด `#0A0F1E` (ADR-28) |
 
 ## 5. ตัวอย่างการใช้สีบนหน้าจอหลัก (คำอธิบาย)
 

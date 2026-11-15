@@ -62,11 +62,22 @@ describe('DashboardScreen', () => {
     const hero = screen.getByRole('region', { name: 'เงินสดสุทธิวันนี้' })
     expect(hero).toHaveTextContent('฿250')
     expect(hero).toHaveTextContent('25%')
-    expect(screen.getByRole('link', { name: /ค้างชำระ/ })).toHaveAttribute('href', '/debts')
+    // The debt card (the shortcut below also goes to /debts)
+    expect(screen.getByRole('link', { name: /ค้างชำระ.*ดูทั้งหมด/ })).toHaveAttribute('href', '/debts')
     const list = screen.getByRole('region', { name: /รายการวันนี้ \(2\)/ })
     const rows = within(list).getAllByRole('button', { name: /แตะเพื่อแก้ไข/ })
     // The name is the text on screen in the same order, plus a hint (WCAG 2.5.3 Label in Name)
     expect(rows[0]).toHaveAccessibleName(/^กข 2.*ค้างชำระ.*฿150.*แตะเพื่อแก้ไข$/)
+  })
+
+  it('adds the glass home parts from the same data: status, shortcuts, periods, today’s jobs (ADR-28)', async () => {
+    await renderScreen()
+    expect(within(screen.getByRole('list', { name: 'สถานะ' })).getByText('ออนไลน์')).toBeInTheDocument()
+    const shortcuts = within(screen.getByRole('navigation', { name: 'ทางลัด' })).getAllByRole('link')
+    expect(shortcuts.map((a) => a.getAttribute('href'))).toEqual(['/add', '/history', '/customers', '/debts'])
+    const periods = screen.getByRole('region', { name: 'รายรับตามช่วงเวลา' })
+    for (const label of ['รายรับวันนี้', 'รายรับสัปดาห์นี้', 'รายรับเดือนนี้']) expect(periods).toHaveTextContent(label)
+    expect(screen.getByRole('region', { name: 'งานวันนี้' })).toHaveTextContent('รับเงินแล้ว')
   })
 
   it('keeps a place for the debt card while loading, so the cards below do not jump (O-09)', async () => {
@@ -109,7 +120,7 @@ describe('DashboardScreen', () => {
     await renderScreen()
     expect(screen.getByText('ยังไม่มีงานวันนี้')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'บันทึกรายการแรก' })).toHaveAttribute('href', '/add')
-    const card = screen.getByRole('link', { name: /ค้างชำระ.*ไม่มียอดค้าง/ })
+    const card = screen.getByRole('link', { name: /ค้างชำระ.*ไม่มียอดค้าง.*ดูทั้งหมด/ })
     expect(card).toHaveAttribute('href', '/debts')
     expect(card).not.toHaveTextContent('฿')
   })

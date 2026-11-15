@@ -32,6 +32,10 @@ test('a signed-out visitor is sent to login and comes back to the page (UF-AUTH-
 
 test('CUJ-1 · login, then the dashboard; both pages are accessible', async ({ page }, info) => {
   await page.goto('/login')
+  // Check the page people use: the button turns from disabled (faded, exempt from contrast)
+  // to ready once the JavaScript runs. Checking during that fade read a half-faded button
+  // as low contrast on WebKit (flaky since v2.2.0; every run in 2.3.0-rc.1).
+  await expect(page.getByRole('button', { name: 'เข้าสู่ระบบ' })).toBeEnabled()
   await expectAccessible(page, info, 'login')
   await signIn(page)
   await expect(page.getByRole('heading', { level: 1, name: 'ภาพรวมวันนี้' })).toBeVisible()

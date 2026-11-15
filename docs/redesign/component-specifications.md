@@ -39,7 +39,7 @@
 |---|---|
 | ใช้กับ | ทุกการกระทำ |
 | Anatomy | [ไอคอนนำหน้า?] ข้อความ [ไอคอนตามหลัง?] |
-| Variants | `primary` (พื้น `action-primary`) · `secondary` (พื้น `surface`, ขอบ `border-strong`, ข้อความ `text`) · `ghost` (ไม่มีพื้น, ข้อความ `text-link`) · `danger` (พื้น `danger`) · `danger-ghost` (ข้อความ `danger-text`) · `success` (พื้น `success`) สำหรับ "เคลียร์ยอด" เท่านั้น |
+| Variants | `primary` (พื้น `action-primary`, ขอบ `action-primary-edge` และเงานุ่มสีน้ำเงิน, ADR-28) · `secondary` (พื้น `surface`, ขอบ `border-strong`, ข้อความ `text`) · `ghost` (ไม่มีพื้น, ข้อความ `text-link`) · `danger` (พื้น `danger`) · `danger-ghost` (ข้อความ `danger-text`) · `success` (พื้น `success`) สำหรับ "เคลียร์ยอด" เท่านั้น |
 | Sizes | `md` 48px (ข้อความ 16px/600) · `lg` 56px (18px/600) |
 | Width | `auto` หรือ `full` |
 | States | §0.1 ทั้งหมด และ loading: ข้อความจาก prop `loadingText` (เช่น "กำลังบันทึก…") |
@@ -61,7 +61,7 @@
 | | |
 |---|---|
 | ใช้กับ | ประเภทงาน, ประเภทรถ, ยี่ห้อ, สถานะชำระ, ปุ่มลัดรายจ่าย, quick-pick ลูกค้า, ตัวกรองประเภท |
-| Variants | `chip` (สูง 44px, ข้อความ 16px) · `tile` (การ์ดเลือกใหญ่ 72px: ไอคอน 24px + ข้อความ + คำอธิบาย สำหรับ ล้างรถ/ขัดสี และประเภทรถ) |
+| Variants | `chip` (สูง 44px, ข้อความ 16px) · `tile` (การ์ดเลือกใหญ่ 72px: ข้อความ + คำอธิบาย สำหรับ ล้างรถ/ขัดสี และประเภทรถ · ตัวเลือกที่มีไอคอน: ไอคอน 24px ในกรอบสีมุมมน 40px ตาม tone อยู่ซ้ายข้อความ ปุ่มไม่สูงขึ้น ADR-28) |
 | Tone ของสถานะเลือก | `primary` (ค่าเริ่มต้น) · `wash` · `polish` · `success` (ชำระแล้ว) · `warning` (ค้างชำระ) · `danger` (ปุ่มลัดรายจ่าย) โดยแต่ละ tone ใช้ `*-subtle` + ขอบสีหลัก + ✓ |
 | Mode | `single` (`role="radiogroup"` + `role="radio"` + `aria-checked` และลูกศรเลื่อน) · `single-clearable` (แตะซ้ำแล้วยกเลิก ใช้กับประเภทรถ/ยี่ห้อตามเดิม) · `multi` (ไม่ใช้ใน MVP) |
 | Layout | wrap (ค่าเริ่มต้น) หรือ grid N คอลัมน์ และห้าม scroll แนวนอนเป็นทางเดียว (เลิกใช้ drag-scroll ใน EditModal) |
@@ -70,15 +70,15 @@
 | | |
 |---|---|
 | ใช้กับ | รายรับ/รายจ่าย (`/add`, `/history`), 7/30 วัน, สัปดาห์/เดือน/ปี |
-| Visual | ราง `surface-2`, ช่องที่เลือกพื้น `surface` + elevation-1 + ข้อความ `text` 600 และสูง 44px |
+| Visual | รางกระจก (`glass` + ขอบ), ช่องที่เลือกพื้น `action-primary` ข้อความ `on-action-primary` 600 พร้อมเงานุ่ม และสูง 44px (ADR-28) |
 | ARIA | ถ้าสลับ **เนื้อหา** ใช้ `tablist`/`tab`/`tabpanel` และถ้าสลับ **ค่า** ใช้ radiogroup |
 
 ### 1.6 Card
-พื้น `surface`, ขอบ `border`, radius lg, padding `--card-padding` และ elevation-0
-Variants: `static` · `interactive` (ทั้งการ์ดเป็น `<button>` หรือ `<a>` ไม่ใช่ `div role="button"`, hover elevation-1) · `tone="warning"` (พื้น `warning-subtle`, ขอบ `warning`)
+กระจก (`glass`: พื้นโปร่ง `--color-glass`, ขอบสว่าง `--color-glass-border`, เงา elevation-1, **ไม่มี blur**), radius lg (20px) และ padding `--card-padding` (ADR-28)
+Variants: `static` · `interactive` (ทั้งการ์ดเป็น `<button>` หรือ `<a>` ไม่ใช่ `div role="button"`, hover ขอบ `border-strong` + elevation-2) · `tone="warning"` (พื้น `warning-subtle`, ขอบ `warning`)
 
 ### 1.7 Badge
-สูง 24px, ข้อความ 14px/500, radius sm และมีไอคอน 16px ได้
+สูง 24px, ข้อความ 14px/500, ทรงแคปซูล (radius full, ADR-28) และมีไอคอน 16px ได้
 Tones: `neutral` · `success` "ชำระแล้ว" · `warning` "ค้างชำระ" · `danger` "เร่งด่วน" · `wash` "ล้างรถ" · `polish` "ขัดสี" · `info`
 กฎ: badge สถานะมีข้อความเสมอ
 
@@ -88,6 +88,7 @@ Tones: `neutral` · `success` "ชำระแล้ว" · `warning` "ค้า
 | Variants | `modal` (กลางจอ, max 480/560px) บน Medium/Expanded · `sheet` (bottom sheet, มุมบน radius xl, สูงสุด 90dvh, มี handle) บน Compact · จอเตี้ย: sheet/modal สูงได้เต็มจอ หัวและท้ายแคบลง · `alert` (`role="alertdialog"`, กลางจอทุกขนาด, max 400px) |
 | Anatomy | Header (หัวข้อ `h2` + IconButton ปิด) · Body (scroll ได้) · Footer (ปุ่มติดล่าง) |
 | พฤติกรรม | focus trap, focus เริ่มต้นตามสเปก (IS §3.2), Esc ปิด, คลิกฉากหลังปิด (ยกเว้น alert), back ปิด (URL state) และคืน focus |
+| Visual | พื้นทึบของกระจกลอย (`glass-float-solid`) + ขอบสว่าง + elevation-3 · **ไม่ blur** เพราะฉากหลังมืดอยู่แล้ว และ blur ทำให้เปิดช้าลง ~30ms บนมือถือช้า (เจ้าของเลือก 2026-11-14, G-02) |
 | Motion | sheet เลื่อนขึ้น 220ms และ modal fade+scale 0.98→1 220ms (reduced: fade อย่างเดียว) |
 | ARIA | `role="dialog"` + `aria-modal="true"` + `aria-labelledby` |
 | Implementation | ใช้ `<dialog>` element หรือ library ที่จัดการ focus ได้ (ตัดสิน Step 05) |
@@ -96,8 +97,8 @@ Tones: `neutral` · `success` "ชำระแล้ว" · `warning` "ค้า
 | | |
 |---|---|
 | ตำแหน่ง | Compact: บน action bar/nav ด้านล่าง · Expanded: มุมขวาล่าง |
-| Visual | พื้น `surface-inverse`, ข้อความ `text-inverse` 16px, ไอคอนสถานะ, ปุ่มปิด และปุ่ม action (เช่น "ลองอีกครั้ง") ได้ 1 ปุ่ม |
-| Tones | `success` (ไอคอน ✓ สี `success-text` ของ theme ตรงข้าม) · `error` · `info` |
+| Visual | กระจกลอย (`glass-float`, blur 12px หรือพื้นทึบ), ข้อความ `text` 16px, ไอคอนสถานะสีตาม tone, ปุ่มปิด และปุ่ม action (เช่น "ลองอีกครั้ง") ได้ 1 ปุ่ม |
+| Tones | `success` (ไอคอน ✓ สี `success-text`) · `error` (`danger-text`) · `info` (`info-text`) · ข้อความบอกสถานะเสมอ สีไอคอนแค่ย้ำ |
 | เวลา | success/info 5 วินาที (หยุดเมื่อ hover/focus) และ error ค้างจนปิด (IS §3.1) |
 | Stack | สูงสุด 3 อัน โดยอันใหม่อยู่ใกล้ขอบ |
 | ARIA | success/info `role="status"` และ error `role="alert"` |
@@ -141,7 +142,7 @@ Banner danger บนสุดของฟอร์ม "กรุณาแก้�
 | `MonthYearPicker` | 2 select (เดือนรวม "ทั้งปี" และปี พ.ศ. ถึงปีปัจจุบัน) โดยมี label ที่ผูกจริง · อยู่บรรทัดเดียวกัน (ราว 3 : 2) และตกเป็นคนละบรรทัดเมื่อตัวอักษรใหญ่ ไม่ตัดชื่อเดือน |
 
 ### 2.4 ActionBar
-แถบติดล่างเหนือ nav: พื้น `surface`, elevation-2, padding 12px + safe-area และมีปุ่ม secondary (ซ้าย, 40%) + primary (ขวา, 60%) ขนาด `lg` · ป้าย "บันทึกย้อนหลัง" อยู่บนแถบเมื่อมี · ซ่อนเมื่อ virtual keyboard เปิดบน Compact (IS §2.4) · Expanded: เป็นแถวปกติท้ายฟอร์ม · **จอเตี้ย** (สูง ≤ 500px ที่ตัวอักษรปกติ และกว้าง < 1024: มือถือแนวนอน, ตัวอักษรใหญ่): BottomNav หลบไปบนหน้าที่มี ActionBar, แถบชิดขอบล่าง padding 8px + safe-area และปุ่มสูง 48px
+แถบติดล่างเหนือ nav: กระจกลอย (`glass-float`, blur 12px หรือพื้นทึบเมื่อไม่รองรับ, ADR-28), elevation-2, padding 12px + safe-area และมีปุ่ม secondary (ซ้าย, 40%) + primary (ขวา, 60%) ขนาด `lg` · ป้าย "บันทึกย้อนหลัง" อยู่บนแถบเมื่อมี · ซ่อนเมื่อ virtual keyboard เปิดบน Compact (IS §2.4) · Expanded: เป็นแถวปกติท้ายฟอร์ม (ไม่มีพื้นและไม่ blur) · **จอเตี้ย** (สูง ≤ 500px ที่ตัวอักษรปกติ และกว้าง < 1024: มือถือแนวนอน, ตัวอักษรใหญ่): BottomNav หลบไปบนหน้าที่มี ActionBar, แถบชิดขอบล่าง padding 8px + safe-area และปุ่มสูง 48px
 
 ### 2.5 EmptyState
 ไอคอน 40px (`text-tertiary`) + หัวข้อ 18px/600 + คำอธิบาย 16px + ปุ่ม (ถ้ามี) และจัดกึ่งกลาง
@@ -162,11 +163,11 @@ Dialog `alert`: หัวข้อ (คำถาม) + สรุปขอบเ�
 
 | Component | สเปก |
 |---|---|
-| `BottomNav` | Compact/Medium: สูงอย่างน้อย 64px (4rem) + safe-area และโตตามขนาดตัวอักษร (ป้ายขึ้นได้ 2 บรรทัด, `--size-nav-bottom` เท่าความสูงจริง), 5 ช่องเท่ากัน (ไอคอน 24px + ป้าย 14px/500) · active: ไอคอนและข้อความ `text-link` + pill พื้น `action-primary-subtle` + `aria-current="page"` · ช่อง "บันทึก" ตรงกลาง: วงกลม 56px พื้น `action-primary` ไอคอนขาว (ไม่ใช้ gradient) และป้ายด้านล่าง · Badge ค้างชำระ: วงกลม 20px พื้น `warning` ตัวขาว 14px (ตัวเลข ≤ 9 แล้วแสดง "9+") |
-| `SideNav` | Expanded: กว้าง 240px, พื้น `surface`, ขอบขวา `border` · บนสุด: โลโก้ + ชื่อ "คาร์แคร์" · ปุ่ม "บันทึกรายการ" (Button primary lg full) · รายการ nav 48px (ไอคอน + ข้อความ 16px) · ล่างสุด: theme toggle, ชื่อบัญชี, "ออกจากระบบ" และเวอร์ชัน |
+| `BottomNav` | กระจกลอย (`glass-float`, blur 12px หรือพื้นทึบ) ขอบบนสว่าง (ADR-28) · Compact/Medium: สูงอย่างน้อย 64px (4rem) + safe-area และโตตามขนาดตัวอักษร (ป้ายขึ้นได้ 2 บรรทัด, `--size-nav-bottom` เท่าความสูงจริง), 5 ช่องเท่ากัน (ไอคอน 24px + ป้าย 14px/500) · active: ไอคอนและข้อความ `text-link` + pill พื้น `action-primary-subtle` + `aria-current="page"` · ช่อง "บันทึก" ตรงกลาง: วงกลม 40px ไล่สี `action-primary` → `gradient-to` ไอคอนขาว (ADR-28, ป้าย "บันทึก" ด้านล่างบอกความหมาย) และป้ายด้านล่าง · Badge ค้างชำระ: วงกลม 20px พื้น `warning` ตัวขาว 14px (ตัวเลข ≤ 9 แล้วแสดง "9+") |
+| `SideNav` | Expanded: กว้าง 240px, กระจกลอย (`glass-float`) ขอบขวาสว่าง (ADR-28) · บนสุด: โลโก้ (ไล่สีน้ำเงิน→ม่วง) + ชื่อ "คาร์แคร์" · ปุ่ม "บันทึกรายการ" (Button primary lg full) · รายการ nav 48px (ไอคอน + ข้อความ 16px) · ล่างสุด: theme toggle, ชื่อบัญชี, "ออกจากระบบ" และเวอร์ชัน |
 
 ### 2.11 ChartCard
-Card + หัวข้อ + SegmentedControl (7/30 วัน) + กราฟแท่ง (recharts เดิม) สูง 200px (Compact) / 240px (Expanded) + **สรุปข้อความ** ("7 วันล่าสุด: รายรับ ฿x, รายจ่าย ฿y") + ปุ่ม "ดูเป็นตาราง" (เปิด `<table>` ใน disclosure) · สีจาก tokens โดยอ่านจาก CSS variables (ไม่ hardcode ตาม theme แบบเดิม)
+Card + หัวข้อ + SegmentedControl (7/30 วัน) + กราฟเส้น (recharts เดิม, โหลดทีหลัง ADR-18): รายรับเส้นทึบ + พื้นไล่สีใต้เส้น, รายจ่ายเส้นประ, คำอธิบายเส้นใต้กราฟ, แกนตั้งเป็นตัวเลขย่อ (4k) ไม่ถูกตัด (ADR-28, M1) สูง 200px (Compact) / 240px (Expanded) + **สรุปข้อความ** ("7 วันล่าสุด: รายรับ ฿x, รายจ่าย ฿y") + ปุ่ม "ดูเป็นตาราง" (เปิด `<table>` ใน disclosure) · สีจาก tokens โดยอ่านจาก CSS variables (ไม่ hardcode ตาม theme แบบเดิม)
 
 ### 2.12 DataTable (Expanded เท่านั้น)
 `<table>` จริง มี `caption` (sr-only), หัวตาราง sticky, แถวสูง 52px, ตัวเลขชิดขวา tabular และแถวกดได้ (ปุ่ม "แก้ไข" ในแถว ไม่ทำให้ทั้งแถวเป็นลิงก์) · ใช้ใน `/history` และ `/customers` เมื่อกว้าง ≥ 1280 (`TABLE_SCREEN`) ส่วนจอที่แคบกว่าใช้ RecordRow / การ์ด: ที่ 1024 SideNav กินไป 240px เหลือ 720px ให้ตาราง 850px และปุ่ม "แก้ไข" ถูกตัดจนกดไม่ได้ · การ์ดของตาราง `overflow-x-auto` (ไม่ใช่ hidden): ตัวอักษรใหญ่แล้วเลื่อนแนวนอนในการ์ด ไม่ตัดคอลัมน์ขวาทิ้ง
@@ -201,10 +202,10 @@ Card `tone="warning"` เป็นลิงก์ไป `/debts` ทั้งก
 | Audit | ประวัติแสดง "เพิ่มโดย x · แก้โดย y" (14px) ใต้แถว |
 
 ### 3.5 DayGroupHeader (`history`)
-Sticky: "14 ต.ค. 2569 · อังคาร" (16px/600) + "ล้างรถ 18 · ขัดสี 2" (14px) + ยอดรายวัน (16px/700 สี income/expense) และพื้น `bg` ทึบ (ไม่ใช้ glass)
+Sticky: "14 ต.ค. 2569 · อังคาร" (16px/600) + "ล้างรถ 18 · ขัดสี 2" (14px) + ยอดรายวัน (16px/700 สี income/expense) · ADR-28: พื้นทึบของกระจกลอย (`glass-float-solid`) มุมมน + ขอบสว่าง แทนแถบพื้น `bg` ที่ตัดกับแสงไล่สีด้านหลัง · ไม่ blur เพราะหนึ่งเดือนมีราว 14 หัว (G-06)
 
 ### 3.6 PeriodSummary (`history`)
-Card: ป้ายช่วง ("ยอดรวม ตุลาคม 2569") + ยอด `--text-title-lg` + แถว StatItem (ล้างรถ N คัน ฿x · ขัดสี N คัน ฿y · ยังค้างชำระ ฿z เมื่อมี และแสดงทั้งจำนวนและยอดพร้อมกัน แทน toggle) เรียงแถวเดียว ตกบรรทัดเฉพาะจอแคบมาก/ตัวอักษรใหญ่ · ปุ่ม "ส่งออก Excel" อยู่หัวหน้า (เดิมอยู่ในการ์ด ดันรายการลงบนมือถือ) · Skeleton สูงเท่าของจริงบรรทัดต่อบรรทัด (กันหน้ากระโดด)
+Card: ป้ายช่วง ("ยอดรวม ตุลาคม 2569") + ยอด `--text-title-lg` (รายรับเป็นตัวไล่สี `text-gradient`, รายจ่ายสี `expense` ADR-28) + แถว StatItem กล่องกระจก (ล้างรถ N คัน ฿x · ขัดสี N คัน ฿y · ยังค้างชำระ ฿z เมื่อมี และแสดงทั้งจำนวนและยอดพร้อมกัน แทน toggle) เรียงแถวเดียว ตกบรรทัดเฉพาะจอแคบมาก/ตัวอักษรใหญ่ · ปุ่ม "ส่งออก Excel" อยู่หัวหน้า (เดิมอยู่ในการ์ด ดันรายการลงบนมือถือ) · Skeleton สูงเท่าของจริงบรรทัดต่อบรรทัด (กันหน้ากระโดด)
 
 ### 3.7 FilterPanel (`history`)
 SearchField + ปุ่ม "ตัวกรอง (2)" ที่เปิด/ปิดส่วน: ช่วงวันที่ (2 DateField แบบ native) + ChoiceGroup ประเภทงาน (รายรับเท่านั้น) + ปุ่ม "ล้างตัวกรอง" · Expanded: แสดงเป็นแถวเดียวตลอด (ไม่พับ)
@@ -212,7 +213,7 @@ SearchField + ปุ่ม "ตัวกรอง (2)" ที่เปิด/ป
 ### 3.8 DebtCustomerCard (`debts`)
 | | |
 |---|---|
-| Header | ชื่อลูกค้า (20px/600, ไม่ตัด) + ยอด (24px/700 `unpaid`) · ถ้าวางข้างกันไม่พอ ยอดย้ายลงใต้ชื่อ |
+| Header | ไอคอนนาฬิกาในกรอบสี `warning-subtle` 44px (ADR-28) + ชื่อลูกค้า (20px/600, ไม่ตัด) + ยอด (24px/700 `unpaid`) · ถ้าวางข้างกันไม่พอ ยอดย้ายลงใต้ชื่อ |
 | Meta | "6 คัน" · Badge ความเร่งด่วน: ไอคอน clock + "ค้างนานสุด 15 วัน" (ค้าง 0 วัน = "ค้างวันนี้") + ระดับ ("เร่งด่วน" danger ≥ 14 วัน, ต่ำกว่าเป็น warning) |
 | รายการ | RecordRow แบบ compact (ทะเบียน, วันที่ "2 ต.ค.", "12 วัน", ราคา และหมายเหตุ) โดยแต่ละแถวเปิด dialog แก้ไขได้ · แสดง 5 แถวแรก + "ดูอีก N คัน" ถ้ามีมากกว่า 5 |
 | Actions | Button secondary "สร้างบิล" (ไอคอน file-text) + Button success "เคลียร์ยอด" (ไอคอน check-circle) โดยแต่ละปุ่มมีสถานะ loading แยกกัน |

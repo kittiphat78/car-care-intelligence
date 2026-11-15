@@ -178,20 +178,26 @@ function CustomerCard({ result: { customer, match }, onOpen }: { result: SearchR
   const cars = vehicleSummary(customer)
   return (
     <Card className="grid grid-cols-1 gap-2 p-0!">
-      <AppLink href={`/customers/${customer.id}`} onClick={onOpen} className="focus-ring grid grid-cols-1 gap-0.5 rounded-lg px-4 pt-3 pb-1 hover:bg-surface-2">
-        <span className="flex min-w-0 items-center gap-2">
-          <span className="min-w-0 flex-1 text-heading break-words text-text">{customer.name}</span>
-          <Icon name="chevron-right" className="text-text-tertiary" />
+      {/* A person icon in a tile, as on the home shortcuts (ADR-28); the text keeps its own column */}
+      <AppLink href={`/customers/${customer.id}`} onClick={onOpen} className="focus-ring flex items-start gap-3 rounded-lg px-4 pt-3 pb-1 hover:bg-glass">
+        <span aria-hidden="true" className="grid size-10 shrink-0 place-items-center rounded-md bg-wash-subtle text-wash">
+          <Icon name="user" />
         </span>
-        {cars.first && (
-          <span className="text-body break-words text-text-secondary">
-            {cars.first}
-            {cars.make && ` · ${cars.make}`}
-            {cars.more > 0 && ` · +${cars.more} คัน`}
+        <span className="grid min-w-0 flex-1 grid-cols-1 gap-0.5">
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="min-w-0 flex-1 text-heading break-words text-text">{customer.name}</span>
+            <Icon name="chevron-right" className="text-text-tertiary" />
           </span>
-        )}
-        {!phone && <span className="text-body text-text-tertiary">ยังไม่มีเบอร์</span>}
-        {match && <span className="truncate text-caption font-medium text-link">{matchText(match)}</span>}
+          {cars.first && (
+            <span className="text-body break-words text-text-secondary">
+              {cars.first}
+              {cars.make && ` · ${cars.make}`}
+              {cars.more > 0 && ` · +${cars.more} คัน`}
+            </span>
+          )}
+          {!phone && <span className="text-body text-text-tertiary">ยังไม่มีเบอร์</span>}
+          {match && <span className="truncate text-caption font-medium text-link">{matchText(match)}</span>}
+        </span>
       </AppLink>
       {phone ? <CallActions number={phone.number} who={customer.name} className="px-4 pb-3" /> : <span className="pb-2" />}
     </Card>

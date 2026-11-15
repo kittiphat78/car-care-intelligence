@@ -44,7 +44,8 @@ export function BottomNav({ badges = {} }: BottomNavProps) {
       ref={ref}
       aria-label="เมนูหลัก"
       data-bottom-nav
-      className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] shadow-elevation-2 lg:hidden"
+      // Floating glass: blurs what scrolls under it, solid without blur support (ADR-28)
+      className="fixed inset-x-0 bottom-0 z-20 border-t glass-float pb-[env(safe-area-inset-bottom)] shadow-elevation-2 lg:hidden"
     >
       {/* min-h in rem, not a fixed 64px: with large text (system font size, zoom) the bar
           grows and keeps its labels instead of cutting them off (WCAG 1.4.4) */}

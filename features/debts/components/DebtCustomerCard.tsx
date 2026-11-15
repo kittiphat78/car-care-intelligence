@@ -6,6 +6,7 @@ import { formatBangkok } from '@/lib/time/bangkok'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
+import { Icon } from '@/components/ui/Icon'
 import type { Record as AppRecord } from '@/types'
 import { daysOwed, type DebtGroup } from '../logic'
 
@@ -22,7 +23,7 @@ function DebtRow({ record, today, onOpen }: { record: AppRecord; today: string; 
     <button
       type="button"
       onClick={() => onOpen(record)}
-      className="focus-ring flex w-full items-center gap-3 rounded-md px-2 py-2.5 text-left hover:bg-surface-2"
+      className="focus-ring flex w-full items-center gap-3 rounded-md px-2 py-2.5 text-left hover:bg-glass"
     >
       <span className="grid grid-cols-1 min-w-0 flex-1">
         <span className="text-body font-semibold break-words text-text">{record.plate}</span>
@@ -59,6 +60,10 @@ export function DebtCustomerCard({ group, today, online, billing, onBill, onSett
       {/* The name is never cut (who to chase); when name and total do not fit side by side
           (280px, large text) the total moves under the name */}
       <header className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
+        {/* The icon in a tile of the unpaid tone, as on the home shortcuts (ADR-28) */}
+        <span aria-hidden="true" className="grid size-11 shrink-0 place-items-center rounded-md bg-warning-subtle text-warning-text">
+          <Icon name="clock" />
+        </span>
         <div className="min-w-[min(100%,10rem)] flex-1">
           <h2 id={id} className="text-heading break-words text-text">
             {group.name}

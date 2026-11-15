@@ -345,7 +345,8 @@ function PeriodSummary({
             const s = incomeSummary(records.data, filters.month)
             return (
               <>
-                <p className="text-title-lg text-income tabular-nums">{baht(s.total)}</p>
+                {/* The period's income as a gradient figure, like cash today on the home page (ADR-28) */}
+                <p className="w-fit text-title-lg text-gradient tabular-nums">{baht(s.total)}</p>
                 <dl className={STATS}>
                   <Stat label="ล้างรถ" value={`${s.washCount} คัน`} sub={baht(s.washTotal)} tone="text-wash" />
                   <Stat label="ขัดสี" value={`${s.polishCount} คัน`} sub={baht(s.polishTotal)} tone="text-polish" />
@@ -376,7 +377,7 @@ const STATS = 'grid grid-cols-[repeat(auto-fit,minmax(min(100%,6rem),1fr))] gap-
 
 function StatSkeleton() {
   return (
-    <div className="grid rounded-md border border-border-strong px-3 py-2">
+    <div className="grid rounded-md border glass px-3 py-2">
       <div className="text-caption">
         <Skeleton className="h-[1lh] w-10" />
       </div>
@@ -392,7 +393,7 @@ function StatSkeleton() {
 
 function Stat({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone: string }) {
   return (
-    <div className="rounded-md border border-border-strong px-3 py-2">
+    <div className="rounded-md border glass px-3 py-2">
       <dt className="text-caption text-text-secondary">{label}</dt>
       <dd className={cn('text-body font-bold tabular-nums', tone)}>{value}</dd>
       {sub && <dd className="text-caption text-text-secondary tabular-nums">{sub}</dd>}
@@ -536,7 +537,9 @@ const RecordList = memo(function RecordList({
 
 function DayGroupHeader({ group, kind }: { group: DayGroup<AppRecord> | DayGroup<Expense>; kind: 'income' | 'expense' }) {
   return (
-    <h2 className="sticky top-0 z-10 -mx-1 mb-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 bg-bg px-1 py-2">
+    // The solid colour of floating glass, rounded with a light edge (ADR-28). Not blurred: a month
+    // has ~14 of these, and blurring them all added ~20 ms of blocking time to the page (G-06)
+    <h2 className="sticky top-0 z-10 -mx-2 mb-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 rounded-md border border-glass-border bg-glass-float-solid px-2 py-2">
       <span className="text-body font-semibold text-text">{group.label}</span>
       <span className="flex items-baseline gap-2">
         {kind === 'income' && (

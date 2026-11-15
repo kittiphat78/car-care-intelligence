@@ -17,8 +17,9 @@ export function Card({ children, tone = 'default', interactive = false, as: Tag 
     <Tag
       className={cn(
         'rounded-lg border p-(--card-padding)',
-        tone === 'warning' ? 'border-warning bg-warning-subtle' : 'border-border bg-surface',
-        interactive && 'transition-colors duration-150 hover:border-border-strong hover:shadow-elevation-1',
+        // glass: translucent card with a light edge, no blur (ADR-28)
+        tone === 'warning' ? 'border-warning bg-warning-subtle' : 'glass',
+        interactive && 'transition-[border-color,box-shadow] duration-150 hover:border-border-strong hover:shadow-elevation-2',
         className,
       )}
       {...rest}

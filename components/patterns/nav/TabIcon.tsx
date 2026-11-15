@@ -15,7 +15,7 @@ export function TabIcon({ icon, active, primary = false }: { icon: IconName; act
     // Inside the bar, not raised above it: a raised button covered the save buttons on
     // /add and the content while scrolling
     return (
-      <span className={cn('grid size-10 place-items-center rounded-full bg-primary text-on-primary', pending && 'motion-safe:animate-pulse')}>
+      <span className={cn('grid size-10 place-items-center rounded-full bg-linear-135 from-primary to-gradient-to text-on-primary shadow-[0_6px_16px_-8px_var(--color-action-primary)]', pending && 'motion-safe:animate-pulse')}>
         <Icon name={icon} size="lg" />
       </span>
     )

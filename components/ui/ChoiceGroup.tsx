@@ -30,6 +30,17 @@ const SELECTED: Record<ChoiceTone, string> = {
   danger: 'aria-checked:bg-danger-subtle aria-checked:border-danger aria-checked:text-danger-text',
 }
 
+// Tile with an icon: the icon sits in a rounded square of the tone (ADR-28), left of the text,
+// so the tile is no taller than before
+const ICON_TILE: Record<ChoiceTone, string> = {
+  primary: 'bg-primary-subtle text-link',
+  wash: 'bg-wash-subtle text-wash',
+  polish: 'bg-polish-subtle text-polish',
+  success: 'bg-success-subtle text-success-text',
+  warning: 'bg-warning-subtle text-warning-text',
+  danger: 'bg-danger-subtle text-danger-text',
+}
+
 const GRID_COLUMNS: Record<number, string> = {
   2: 'grid grid-cols-2',
   3: 'grid grid-cols-3',
@@ -99,6 +110,7 @@ export function ChoiceGroup<V extends string>({
     >
       {options.map((option, index) => {
         const checked = option.value === value
+        const iconTile = variant === 'tile' && !!option.icon
         return (
           <button
             key={option.value}
@@ -120,18 +132,27 @@ export function ChoiceGroup<V extends string>({
               invalid && !value ? 'border-2 border-danger-text' : 'border-border-strong',
               variant === 'chip'
                 ? 'min-h-11 gap-1.5 px-3.5 text-body font-medium'
-                : 'min-h-18 flex-col gap-0.5 p-2 text-body font-medium',
+                : iconTile
+                  ? 'min-h-18 justify-start gap-2.5 p-2 px-3 text-left text-body font-medium'
+                  : 'min-h-18 flex-col gap-0.5 p-2 text-body font-medium',
               SELECTED[option.tone ?? tone],
             )}
           >
-            <span className="inline-flex items-center gap-1.5">
-              {checked && <Icon name="check" size="sm" data-testid="choice-check" />}
-              {option.icon && <Icon name={option.icon} size={variant === 'tile' ? 'lg' : 'md'} />}
-              <span>{option.label}</span>
-            </span>
-            {variant === 'tile' && option.description && (
-              <span className="text-caption font-normal text-text-tertiary">{option.description}</span>
+            {iconTile && (
+              <span aria-hidden="true" className={cn('grid size-10 shrink-0 place-items-center rounded-md', ICON_TILE[option.tone ?? tone])}>
+                <Icon name={option.icon!} size="lg" />
+              </span>
             )}
+            <span className={cn('grid min-w-0', iconTile ? 'justify-items-start' : 'justify-items-center')}>
+              <span className="inline-flex items-center gap-1.5">
+                {checked && <Icon name="check" size="sm" data-testid="choice-check" />}
+                {option.icon && !iconTile && <Icon name={option.icon} size="md" />}
+                <span>{option.label}</span>
+              </span>
+              {variant === 'tile' && option.description && (
+                <span className="text-caption font-normal text-text-tertiary">{option.description}</span>
+              )}
+            </span>
           </button>
         )
       })}

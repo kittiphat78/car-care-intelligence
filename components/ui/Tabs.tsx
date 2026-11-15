@@ -35,7 +35,7 @@ export function Tabs<V extends string>({ idBase, label, tabs, value, onChange, c
   }
 
   return (
-    <div role="tablist" aria-label={label} className={cn('grid auto-cols-fr grid-flow-col gap-1 rounded-md bg-surface-2 p-1', className)}>
+    <div role="tablist" aria-label={label} className={cn('grid auto-cols-fr grid-flow-col gap-1 rounded-md border glass p-1', className)}>
       {tabs.map((tab, index) => {
         const selected = tab.value === value
         return (
@@ -54,7 +54,7 @@ export function Tabs<V extends string>({ idBase, label, tabs, value, onChange, c
             onKeyDown={(e) => onKeyDown(e, index)}
             className={cn(
               'focus-ring min-h-11 rounded-[9px] px-3.5 text-body font-semibold transition-colors duration-150',
-              selected ? 'bg-primary-subtle text-link' : 'text-text-secondary hover:text-text',
+              selected ? 'bg-primary text-on-primary shadow-[0_6px_16px_-10px_var(--color-action-primary)]' : 'text-text-secondary hover:text-text',
             )}
           >
             {tab.label}

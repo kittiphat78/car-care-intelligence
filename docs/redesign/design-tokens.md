@@ -2,6 +2,7 @@
 
 > วันที่: 2026-10-14 · ค่าทุกตัวในเอกสารนี้คือ **source of truth** สำหรับ implement (Step 07)
 > รูปแบบ: CSS custom properties บน `:root` (theme มืดเป็นค่าเริ่มต้น) และ `[data-theme="light"]` แล้ว map เข้า Tailwind v4 ผ่าน `@theme` (`design-to-code-map.md` §2)
+> **อัปเดต 2026-11-14 (ADR-28 หน้าตาแบบกระจก):** ค่าใน §3–§8 เป็นชุดใหม่ ระบบดีไซน์อยู่ที่ `docs/design-system/car-care-glass/APP.md` · §2 คือ primitive ของ v2 เก็บไว้อ้างอิง · ตาราง contrast §3.3–3.4 ตรวจด้วย `app/styles/__tests__/tokens.test.ts` ทุกครั้ง
 > Contrast ทุกคู่ใน §3.3 **คำนวณจริง** ด้วยสูตร WCAG 2.x (script ใน scratchpad ของ session นี้ ไม่ได้ commit เข้า repo → S04-03)
 
 ## 1. โครงสร้าง Token 3 ชั้น
@@ -41,23 +42,24 @@
 
 | Token | Dark (default) | Light | ใช้กับ |
 |---|---|---|---|
-| `--color-bg` | #0B111A | #F4F6F9 | พื้นหลังแอป |
-| `--color-surface` | #131B26 | #FFFFFF | การ์ด, dialog, nav |
-| `--color-surface-2` | #1B2533 | #EDF0F4 | พื้นรอง (แถวสลับ, input disabled, กลุ่มรายการ) |
-| `--color-surface-inverse` | #F1F5F9 | #0F1A2A | tooltip, toast |
-| `--color-overlay` | rgb(0 0 0 / 0.6) | rgb(15 26 42 / 0.5) | ฉากหลัง dialog |
-| `--color-text` | #F1F5F9 | #0F1A2A | ข้อความหลัก, ตัวเลขเงิน |
-| `--color-text-secondary` | #CBD5E1 | #3D4A5C | ข้อความรอง, label |
-| `--color-text-tertiary` | #A3B0C2 | #5A6678 | เวลา, หมายเหตุ, placeholder |
-| `--color-text-inverse` | #0B111A | #FFFFFF | ข้อความบน surface-inverse |
-| `--color-border` | #2A3647 | #D9DFE7 | เส้นแบ่ง, ขอบการ์ด (ตกแต่ง) |
-| `--color-border-strong` | #6B7A90 | #7B8798 | **ขอบ input, checkbox, chip ที่ไม่ได้เลือก** (≥ 3:1) |
-| `--color-action-primary` | #2563EB | #1D4ED8 | ปุ่มหลัก, nav active, ปุ่มบันทึก |
-| `--color-action-primary-hover` | #1D4ED8 | #1E40AF | hover / pressed |
+| `--color-bg` | #0A0F1E | #F3F6FD | พื้นหลังแอป (มีแสงไล่สีตรึงซ้อนด้านหลัง §3.4) |
+| `--color-surface` | #151C30 | #FFFFFF | ช่องกรอก, ปุ่มรอง, dialog ที่ไม่ blur |
+| `--color-surface-2` | #1C2540 | #F1F4FB | พื้นรอง (แถวสลับ, input disabled, กลุ่มรายการ) |
+| `--color-surface-inverse` | #F1F5F9 | #0F172A | tooltip, toast |
+| `--color-text` | #F1F5F9 | #0F172A | ข้อความหลัก, ตัวเลขเงิน |
+| `--color-text-secondary` | #C3CCDB | #3D4A5C | ข้อความรอง, label |
+| `--color-text-tertiary` | #A3AFC4 | #4F5B6D | เวลา, หมายเหตุ, placeholder |
+| `--color-text-inverse` | #0A0F1E | #FFFFFF | ข้อความบน surface-inverse |
+| `--color-border` | #26324B | #D5DCEB | เส้นแบ่ง, ขอบการ์ด (ตกแต่ง) |
+| `--color-border-strong` | #7184A3 | #64748B | **ขอบ input, checkbox, chip ที่ไม่ได้เลือก** (≥ 3:1) |
+| `--color-action-primary` | #2563EB | #2563EB | ปุ่มหลัก, nav active, ปุ่มบันทึก |
+| `--color-action-primary-hover` | #1D4ED8 | #1D4ED8 | hover / pressed |
 | `--color-on-action-primary` | #FFFFFF | #FFFFFF | ข้อความบนปุ่มหลัก |
-| `--color-action-primary-subtle` | #16274A | #E3EBFD | chip ที่เลือก, nav active background |
-| `--color-text-link` | #8AB4FF | #1D4ED8 | ลิงก์, ข้อความ action รอง |
-| `--color-focus-ring` | #8AB4FF | #1D4ED8 | focus outline |
+| `--color-action-primary-subtle` | #1C2B57 | #DCE7FD | chip ที่เลือก, nav active background |
+| `--color-action-primary-edge` | #60A5FA | #2563EB | ขอบปุ่มหลัก (ให้ปุ่มเห็นชัดบนกระจกมืด) |
+| `--color-text-link` | #93C5FD | #1D4ED8 | ลิงก์, ข้อความ action รอง |
+| `--color-focus-ring` | #93C5FD | #1D4ED8 | focus outline |
+| `--color-overlay` | rgb(0 0 0 / 0.6) | rgb(15 26 42 / 0.5) | ฉากหลัง dialog |
 
 ### 3.2 Status & Domain
 
@@ -72,12 +74,12 @@
 | `--color-warning` | #B45309 | #B45309 | ไอคอนเตือน (พื้นทึบ) |
 | `--color-warning-subtle` | #3A2610 | #FEF0D2 | การ์ดค้างชำระ, banner เตือน |
 | `--color-warning-text` | #FBBF4D | #8A3B05 | ข้อความค้างชำระ, ป้ายวันค้าง |
-| `--color-info-subtle` | #16274A | #E3EBFD | banner ข้อมูล |
-| `--color-info-text` | #8AB4FF | #1E40AF | ข้อความข้อมูล |
-| `--color-income` | #4ADE9B | #047857 | ยอดรายรับ (ตัวเลข) |
-| `--color-expense` | #FF8A8A | #B91C1C | ยอดรายจ่าย (ตัวเลข) |
-| `--color-unpaid` | #FBBF4D | #B45309 | ยอดค้างชำระ (ตัวเลข) |
-| `--color-job-wash` | #4FC3F7 | #0369A1 | ล้างรถ (แถบ, ไอคอน, ข้อความ) |
+| `--color-info-subtle` | #1C2B57 | #DCE7FD | banner ข้อมูล |
+| `--color-info-text` | #93C5FD | #1E40AF | ข้อความข้อมูล |
+| `--color-income` | #4ADE9B | #036649 | ยอดรายรับ (ตัวเลข) · สว่างเข้มขึ้นจาก #047857 (ADR-28) |
+| `--color-expense` | #FF8A8A | #A51A1A | ยอดรายจ่าย (ตัวเลข) |
+| `--color-unpaid` | #FBBF4D | #9A4507 | ยอดค้างชำระ (ตัวเลข) |
+| `--color-job-wash` | #4FC3F7 | #035A8A | ล้างรถ (แถบ, ไอคอน, ข้อความ) |
 | `--color-job-wash-subtle` | #0E2A3A | #E0F0FA | พื้น badge ล้างรถ |
 | `--color-job-polish` | #C4A8FF | #6D28D9 | ขัดสี |
 | `--color-job-polish-subtle` | #26193F | #EFE7FD | พื้น badge ขัดสี |
@@ -91,50 +93,110 @@
 
 | Foreground | Background | ใช้กับ | เกณฑ์ | Light | Dark |
 |---|---|---|---|---|---|
-| `text` | `bg` | body text | 4.5:1 | 16.14 ✅ | 17.28 ✅ |
-| `text` | `surface` | body text | 4.5:1 | 17.48 ✅ | 15.81 ✅ |
-| `text` | `surface-2` | body text | 4.5:1 | 15.29 ✅ | 14.10 ✅ |
-| `text-secondary` | `surface` | secondary text | 4.5:1 | 9.00 ✅ | 11.67 ✅ |
-| `text-secondary` | `bg` | secondary text | 4.5:1 | 8.32 ✅ | 12.75 ✅ |
-| `text-tertiary` | `surface` | tertiary text | 4.5:1 | 5.82 ✅ | 7.87 ✅ |
-| `text-tertiary` | `bg` | tertiary text | 4.5:1 | 5.38 ✅ | 8.61 ✅ |
-| `text-tertiary` | `surface-2` | tertiary text | 4.5:1 | 5.09 ✅ | 7.02 ✅ |
-| `text-inverse` | `surface-inverse` | inverse | 4.5:1 | 17.48 ✅ | 17.28 ✅ |
-| `on-primary` | `primary` | primary button | 4.5:1 | 6.70 ✅ | 5.17 ✅ |
-| `on-primary` | `primary-hover` | primary hover | 4.5:1 | 8.72 ✅ | 6.70 ✅ |
-| `primary-text` | `surface` | link text | 4.5:1 | 6.70 ✅ | 8.29 ✅ |
-| `primary-text` | `bg` | link text | 4.5:1 | 6.19 ✅ | 9.06 ✅ |
-| `primary-text` | `primary-subtle` | selected chip text | 4.5:1 | 5.61 ✅ | 7.06 ✅ |
-| `focus` | `surface` | focus ring | 3.0:1 | 6.70 ✅ | 8.29 ✅ |
-| `focus` | `bg` | focus ring | 3.0:1 | 6.19 ✅ | 9.06 ✅ |
-| `border-strong` | `surface` | input border | 3.0:1 | 3.65 ✅ | 3.97 ✅ |
-| `border-strong` | `bg` | input border | 3.0:1 | 3.37 ✅ | 4.34 ✅ |
+| `text` | `bg` | body text | 4.5:1 | 16.50 ✅ | 17.43 ✅ |
+| `text` | `surface` | body text | 4.5:1 | 17.85 ✅ | 15.45 ✅ |
+| `text` | `surface-2` | body text | 4.5:1 | 16.21 ✅ | 13.81 ✅ |
+| `text-secondary` | `surface` | secondary text | 4.5:1 | 9.00 ✅ | 10.46 ✅ |
+| `text-secondary` | `bg` | secondary text | 4.5:1 | 8.32 ✅ | 11.80 ✅ |
+| `text-tertiary` | `surface` | tertiary text | 4.5:1 | 6.89 ✅ | 7.65 ✅ |
+| `text-tertiary` | `bg` | tertiary text | 4.5:1 | 6.37 ✅ | 8.62 ✅ |
+| `text-tertiary` | `surface-2` | tertiary text | 4.5:1 | 6.25 ✅ | 6.83 ✅ |
+| `text-inverse` | `surface-inverse` | inverse | 4.5:1 | 17.85 ✅ | 17.43 ✅ |
+| `on-primary` | `primary` | primary button | 4.5:1 | 5.17 ✅ | 5.17 ✅ |
+| `on-primary` | `primary-hover` | primary button | 4.5:1 | 6.70 ✅ | 6.70 ✅ |
+| `primary-text` | `surface` | link text | 4.5:1 | 6.70 ✅ | 9.39 ✅ |
+| `primary-text` | `bg` | link text | 4.5:1 | 6.19 ✅ | 10.59 ✅ |
+| `primary-text` | `primary-subtle` | link text | 4.5:1 | 5.39 ✅ | 7.60 ✅ |
+| `focus` | `surface` | focus ring | 3.0:1 | 6.70 ✅ | 9.39 ✅ |
+| `focus` | `bg` | focus ring | 3.0:1 | 6.19 ✅ | 10.59 ✅ |
+| `border-strong` | `surface` | input border | 3.0:1 | 4.76 ✅ | 4.46 ✅ |
+| `border-strong` | `bg` | input border | 3.0:1 | 4.40 ✅ | 5.03 ✅ |
 | `on-success` | `success` | success button | 4.5:1 | 5.48 ✅ | 5.48 ✅ |
-| `success-text` | `success-subtle` | success badge | 4.5:1 | 6.66 ✅ | 8.51 ✅ |
-| `success-text` | `surface` | success text | 4.5:1 | 7.63 ✅ | 10.07 ✅ |
+| `success-text` | `success-subtle` | success text | 4.5:1 | 6.66 ✅ | 8.51 ✅ |
+| `success-text` | `surface` | success text | 4.5:1 | 7.63 ✅ | 9.84 ✅ |
 | `on-danger` | `danger` | danger button | 4.5:1 | 6.47 ✅ | 5.62 ✅ |
-| `danger-text` | `danger-subtle` | danger badge | 4.5:1 | 7.03 ✅ | 7.12 ✅ |
-| `danger-text` | `surface` | danger text | 4.5:1 | 8.31 ✅ | 7.63 ✅ |
+| `danger-text` | `danger-subtle` | danger text | 4.5:1 | 7.03 ✅ | 7.12 ✅ |
+| `danger-text` | `surface` | danger text | 4.5:1 | 8.31 ✅ | 7.46 ✅ |
 | `on-warning` | `warning` | warning button | 4.5:1 | 5.02 ✅ | 5.02 ✅ |
-| `warning-text` | `warning-subtle` | warning badge | 4.5:1 | 6.87 ✅ | 8.64 ✅ |
-| `warning-text` | `surface` | warning text | 4.5:1 | 7.75 ✅ | 10.44 ✅ |
-| `info-text` | `info-subtle` | info badge | 4.5:1 | 7.30 ✅ | 7.06 ✅ |
-| `wash` | `surface` | wash text | 4.5:1 | 5.93 ✅ | 8.64 ✅ |
-| `wash` | `wash-subtle` | wash badge | 4.5:1 | 5.09 ✅ | 7.43 ✅ |
-| `polish` | `surface` | polish text | 4.5:1 | 7.10 ✅ | 8.57 ✅ |
-| `polish` | `polish-subtle` | polish badge | 4.5:1 | 5.93 ✅ | 8.04 ✅ |
-| `income` | `surface` | income amount | 4.5:1 | 5.48 ✅ | 10.07 ✅ |
-| `expense` | `surface` | expense amount | 4.5:1 | 6.47 ✅ | 7.63 ✅ |
-| `unpaid` | `surface` | unpaid amount | 4.5:1 | 5.02 ✅ | 10.44 ✅ |
-| `income` | `bg` | income amount | 4.5:1 | 5.07 ✅ | 11.01 ✅ |
-| `expense` | `bg` | expense amount | 4.5:1 | 5.98 ✅ | 8.34 ✅ |
-| `unpaid` | `bg` | unpaid amount | 4.5:1 | 4.64 ✅ | 11.41 ✅ |
+| `warning-text` | `warning-subtle` | warning text | 4.5:1 | 6.87 ✅ | 8.64 ✅ |
+| `warning-text` | `surface` | warning text | 4.5:1 | 7.75 ✅ | 10.21 ✅ |
+| `info-text` | `info-subtle` | info badge | 4.5:1 | 7.02 ✅ | 7.60 ✅ |
+| `wash` | `surface` | wash text | 4.5:1 | 7.41 ✅ | 8.45 ✅ |
+| `wash` | `wash-subtle` | wash text | 4.5:1 | 6.36 ✅ | 7.43 ✅ |
+| `polish` | `surface` | polish text | 4.5:1 | 7.10 ✅ | 8.38 ✅ |
+| `polish` | `polish-subtle` | polish text | 4.5:1 | 5.93 ✅ | 8.04 ✅ |
+| `income` | `surface` | income amount | 4.5:1 | 7.00 ✅ | 9.84 ✅ |
+| `expense` | `surface` | expense amount | 4.5:1 | 7.60 ✅ | 7.46 ✅ |
+| `unpaid` | `surface` | unpaid amount | 4.5:1 | 6.50 ✅ | 10.21 ✅ |
+| `income` | `bg` | income amount | 4.5:1 | 6.47 ✅ | 11.10 ✅ |
+| `expense` | `bg` | expense amount | 4.5:1 | 7.03 ✅ | 8.41 ✅ |
+| `unpaid` | `bg` | unpaid amount | 4.5:1 | 6.01 ✅ | 11.51 ✅ |
 
-**ผลรวม: 38/38 คู่ผ่าน ทั้ง 2 theme** (เกณฑ์: ข้อความ 4.5:1 และ UI component/focus 3:1) ชื่อในตารางคือ semantic token โดยตัด prefix `--color-`
+**ผลรวม: 38/38 คู่ผ่าน ทั้ง 2 theme** (ค่าชุด ADR-28) (เกณฑ์: ข้อความ 4.5:1 และ UI component/focus 3:1) ชื่อในตารางคือ semantic token โดยตัด prefix `--color-`
+
+### 3.4 Glass (ADR-28)
+
+| Token | Dark | Light | ใช้กับ |
+|---|---|---|---|
+| `--color-glow-a` | rgb(37 99 235 / 0.28) | rgb(96 165 250 / 0.24) | แสงฟ้ามุมซ้ายบน (`body::before` ตรึงหลังหน้า) |
+| `--color-glow-b` | rgb(124 58 237 / 0.24) | rgb(167 139 250 / 0.2) | แสงม่วงมุมขวาบน |
+| `--color-glass` | rgb(255 255 255 / 0.06) | rgb(255 255 255 / 0.74) | การ์ดกระจก (ไม่ blur) |
+| `--color-glass-border` | rgb(255 255 255 / 0.1) | rgb(255 255 255 / 0.9) | ขอบสว่างบางของกระจก |
+| `--color-glass-float` | rgb(15 22 41 / 0.72) | rgb(255 255 255 / 0.7) | แถบบน, เมนู, แถบปุ่มบันทึก, dialog, toast (blur `--blur-float` 12px) |
+| `--color-glass-float-solid` | #121A2E | #F7F9FE | ชิ้นลอยเมื่อไม่ blur |
+| `--color-gradient-from` / `-to` | #60A5FA / #C084FC | #1D4ED8 / #6D28D9 | หัวข้อและเส้นกราฟไล่สี |
+| `--color-live` | #22C55E | #22C55E | จุด "ออนไลน์" (มีข้อความกำกับ) |
+
+Contrast บนสีที่ตาเห็นจริง: กรณีแย่ที่สุดของพื้นไล่สี (พื้น + แสงเต็มกำลัง), การ์ดกระจกซ้อนบนจุดนั้น และแถบลอยซ้อนบนจุดนั้น
+จุดที่แสงเข้มสุด: มืด #122757, #251950 · สว่าง #D0E3FC, #E4E1FC
+
+| ข้อความ | วางบน (แย่ที่สุด) | เกณฑ์ | Light | Dark |
+|---|---|---|---|---|
+| `text` | พื้นไล่สี | 4.5:1 | 13.67 ✅ | 13.19 ✅ |
+| `text` | การ์ดกระจก | 4.5:1 | 16.72 ✅ | 11.11 ✅ |
+| `text` | แถบลอย | 4.5:1 | 16.56 ✅ | 15.56 ✅ |
+| `text-secondary` | พื้นไล่สี | 4.5:1 | 6.89 ✅ | 8.93 ✅ |
+| `text-secondary` | การ์ดกระจก | 4.5:1 | 8.43 ✅ | 7.52 ✅ |
+| `text-secondary` | แถบลอย | 4.5:1 | 8.35 ✅ | 10.54 ✅ |
+| `text-tertiary` | พื้นไล่สี | 4.5:1 | 5.27 ✅ | 6.53 ✅ |
+| `text-tertiary` | การ์ดกระจก | 4.5:1 | 6.45 ✅ | 5.50 ✅ |
+| `text-tertiary` | แถบลอย | 4.5:1 | 6.39 ✅ | 7.70 ✅ |
+| `primary-text` | พื้นไล่สี | 4.5:1 | 5.13 ✅ | 8.01 ✅ |
+| `primary-text` | การ์ดกระจก | 4.5:1 | 6.28 ✅ | 6.75 ✅ |
+| `primary-text` | แถบลอย | 4.5:1 | 6.22 ✅ | 9.45 ✅ |
+| `income` | พื้นไล่สี | 4.5:1 | 5.36 ✅ | 8.40 ✅ |
+| `income` | การ์ดกระจก | 4.5:1 | 6.55 ✅ | 7.08 ✅ |
+| `income` | แถบลอย | 4.5:1 | 6.49 ✅ | 9.91 ✅ |
+| `expense` | พื้นไล่สี | 4.5:1 | 5.82 ✅ | 6.37 ✅ |
+| `expense` | การ์ดกระจก | 4.5:1 | 7.12 ✅ | 5.36 ✅ |
+| `expense` | แถบลอย | 4.5:1 | 7.05 ✅ | 7.51 ✅ |
+| `unpaid` | พื้นไล่สี | 4.5:1 | 4.98 ✅ | 8.71 ✅ |
+| `unpaid` | การ์ดกระจก | 4.5:1 | 6.09 ✅ | 7.34 ✅ |
+| `unpaid` | แถบลอย | 4.5:1 | 6.03 ✅ | 10.28 ✅ |
+| `wash` | พื้นไล่สี | 4.5:1 | 5.67 ✅ | 7.21 ✅ |
+| `wash` | การ์ดกระจก | 4.5:1 | 6.94 ✅ | 6.08 ✅ |
+| `wash` | แถบลอย | 4.5:1 | 6.87 ✅ | 8.51 ✅ |
+| `polish` | พื้นไล่สี | 4.5:1 | 5.44 ✅ | 7.15 ✅ |
+| `polish` | การ์ดกระจก | 4.5:1 | 6.65 ✅ | 6.02 ✅ |
+| `polish` | แถบลอย | 4.5:1 | 6.59 ✅ | 8.43 ✅ |
+| `success-text` | พื้นไล่สี | 4.5:1 | 5.84 ✅ | 8.40 ✅ |
+| `success-text` | การ์ดกระจก | 4.5:1 | 7.15 ✅ | 7.08 ✅ |
+| `success-text` | แถบลอย | 4.5:1 | 7.08 ✅ | 9.91 ✅ |
+| `danger-text` | พื้นไล่สี | 4.5:1 | 6.36 ✅ | 6.37 ✅ |
+| `danger-text` | การ์ดกระจก | 4.5:1 | 7.78 ✅ | 5.36 ✅ |
+| `danger-text` | แถบลอย | 4.5:1 | 7.71 ✅ | 7.51 ✅ |
+| `warning-text` | พื้นไล่สี | 4.5:1 | 5.94 ✅ | 8.71 ✅ |
+| `warning-text` | การ์ดกระจก | 4.5:1 | 7.26 ✅ | 7.34 ✅ |
+| `warning-text` | แถบลอย | 4.5:1 | 7.19 ✅ | 10.28 ✅ |
+| `gradient-from` | พื้นไล่สี | 4.5:1 | 5.13 ✅ | 5.68 ✅ |
+| `gradient-to` | พื้นไล่สี | 4.5:1 | 5.44 ✅ | 5.47 ✅ |
+| `action-primary-edge` | การ์ดกระจก (3:1) | 3.0:1 | 4.84 ✅ | 4.79 ✅ |
+
+**ผลรวม: 38/38 คู่ใน §3.3 และ 39/39 กรณีกระจก ผ่านทั้ง 2 theme** · ธีมสว่างทำให้ income/expense/unpaid/wash เข้มขึ้นหนึ่งระดับและแสงจางลงจาก mockup (.35 → .24) เพราะตัวเลขพวกนี้ไม่ผ่านบนจุดแสงเข้มสุด
 
 ## 4. Typography
 
-ฟอนต์: `--font-sans: var(--font-sarabun), "Sarabun", "Noto Sans Thai", system-ui, sans-serif`
+ฟอนต์: `--font-sans: var(--font-noto-thai), "Noto Sans Thai", system-ui, sans-serif` (ADR-28: Noto Sans Thai variable ไทย + ละติน 56 KB · เดิม Sarabun 4 น้ำหนัก 84 KB · บิล PDF ยังใช้ Sarabun)
 ตัวเลข: `--font-numeric: tabular-nums` ใช้ `font-variant-numeric: tabular-nums` กับตัวเลขเงินและเวลาทุกที่ [U] ต้องตรวจว่า Sarabun มี tabular figures (S04-02) และถ้าไม่มี ให้จัดชิดขวาแทน
 
 | Token | Size / Line-height | Weight | ใช้กับ |
@@ -196,24 +258,24 @@
 
 | Token | ค่า | ใช้กับ |
 |---|---|---|
-| `--radius-sm` | 8px | badge, chip เล็ก |
-| `--radius-md` | 12px | ปุ่ม, input, chip |
-| `--radius-lg` | 16px | การ์ด |
-| `--radius-xl` | 20px | dialog, bottom sheet (มุมบน) |
-| `--radius-full` | 9999px | ปุ่มบันทึกกลาง nav, avatar, dot |
+| `--radius-sm` | 10px | badge, chip เล็ก |
+| `--radius-md` | 14px | ปุ่ม, input, chip |
+| `--radius-lg` | 20px | การ์ด (กระจก) |
+| `--radius-xl` | 24px | dialog, bottom sheet (มุมบน) |
+| `--radius-full` | 9999px | ป้าย, ปุ่มบันทึกกลาง nav, avatar, dot |
 
-ลดจากเดิม (สูงสุด 28–32px) เพื่อให้ดูเป็นทางการขึ้น (DP-6)
+ADR-28: โค้งขึ้นจาก 8/12/16/20 ให้เข้ากับการ์ดกระจก (เดิมลดจาก 28–32px ของ v1 เพื่อความเป็นทางการ)
 
 ## 8. Elevation & Shadow
 
 | ระดับ | Token | Light | Dark | ใช้กับ |
 |---|---|---|---|---|
-| 0 | `--elevation-0` | none + ขอบ `--color-border` | none + ขอบ `--color-border` | การ์ดปกติ |
-| 1 | `--elevation-1` | `0 1px 2px rgb(15 26 42 / .06), 0 1px 3px rgb(15 26 42 / .08)` | พื้น `--color-surface-2` (ไม่ใช้เงา) | การ์ดที่กดได้ (hover) |
-| 2 | `--elevation-2` | `0 4px 12px rgb(15 26 42 / .12)` | `0 4px 12px rgb(0 0 0 / .5)` | sticky action bar, nav, dropdown |
-| 3 | `--elevation-3` | `0 12px 32px rgb(15 26 42 / .2)` | `0 12px 32px rgb(0 0 0 / .6)` | dialog, toast |
+| 0 | — | none + ขอบ `--color-border` | none + ขอบ `--color-border` | การ์ดทึบ |
+| 1 | `--shadow-elevation-1` | `0 1px 2px rgb(30 41 90 / .06), 0 10px 30px -16px rgb(30 41 90 / .22)` | `inset 0 1px 0 rgb(255 255 255 / .04), 0 10px 30px -16px rgb(0 0 0 / .7)` | การ์ดกระจก |
+| 2 | `--shadow-elevation-2` | `0 1px 2px rgb(30 41 90 / .06), 0 16px 36px -14px rgb(30 41 90 / .28)` | `inset 0 1px 0 rgb(255 255 255 / .05), 0 16px 36px -14px rgb(0 0 0 / .75)` | sticky action bar, nav, dropdown |
+| 3 | `--shadow-elevation-3` | `0 24px 56px -18px rgb(30 41 90 / .34)` | `0 24px 56px -18px rgb(0 0 0 / .8)` | dialog, toast |
 
-ห้ามเงาที่มีสี (เช่น `shadow-blue-500/20` เดิม)
+`--blur-float: 12px` ใช้กับชิ้นที่ลอยทับเท่านั้น (ADR-28) · เงาสีน้ำเงินเทาจาง ๆ ในธีมสว่างตั้งใจให้เข้ากับแสงไล่สี ไม่ใช้เงาสีสด (เช่น `shadow-blue-500/20` ของ v1)
 
 ## 9. Border
 

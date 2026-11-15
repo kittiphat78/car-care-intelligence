@@ -10,7 +10,8 @@ export type ButtonSize = 'sm' | 'md' | 'lg'
 // Each variant sets its own border colour: two border-colour utilities on one element
 // would leave the winner to stylesheet order
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary: 'border-transparent bg-primary text-on-primary hover:bg-primary-hover',
+  // The edge keeps the button visible on dark glass (ADR-28)
+  primary: 'border-primary-edge bg-primary text-on-primary shadow-[0_8px_20px_-12px_var(--color-action-primary)] hover:bg-primary-hover',
   secondary: 'border-border-strong bg-surface text-text hover:bg-surface-2',
   ghost: 'border-transparent bg-transparent text-link hover:bg-surface-2',
   danger: 'border-transparent bg-danger text-on-primary',

@@ -143,7 +143,7 @@ describe('theme', () => {
     expect(screen.getByRole('button')).toHaveTextContent('light')
     expect(localStorage.getItem('car-care-theme')).toBe('light')
     expect(document.documentElement).toHaveAttribute('data-theme', 'light')
-    expect(meta).toHaveAttribute('content', '#F4F6F9')
+    expect(meta).toHaveAttribute('content', '#F3F6FD')
     meta.remove()
   })
 })

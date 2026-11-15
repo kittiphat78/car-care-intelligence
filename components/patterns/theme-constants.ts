@@ -2,4 +2,5 @@
 export type Theme = 'dark' | 'light'
 
 export const THEME_STORAGE_KEY = 'car-care-theme'
-export const THEME_COLOR: Record<Theme, string> = { dark: '#0B111A', light: '#F4F6F9' }
+// Equal to --color-bg of each theme (app/styles/tokens.css)
+export const THEME_COLOR: Record<Theme, string> = { dark: '#0A0F1E', light: '#F3F6FD' }

@@ -25,6 +25,7 @@
 | ADR-18 | ไลบรารีหนักโหลดเมื่อใช้ และล้มได้โดยหน้าไม่พัง | Implemented (O-07, D-11) |
 | ADR-19 | Test อัตโนมัติไม่แตะ production | Implemented |
 | ADR-20 | CSP production ไม่มี `unsafe-eval` | Implemented (D-05) |
+| ADR-28 | หน้าตาแบบกระจก (Glass) + ฟอนต์ Noto Sans Thai (ADR-21..27 อยู่ใน `docs/features/customer-directory.md`) | Accepted 2026-11-14 · PR 1/8 tokens |
 
 ---
 
@@ -117,3 +118,8 @@
 ## ADR-20 — CSP production ไม่มี `unsafe-eval` (D-05)
 **Decision:** ใส่ `'unsafe-eval'` เฉพาะ `next dev` · ใช้ `zod/mini` (ผ่าน `lib/zod.ts`) ซึ่งไม่ต้อง eval · test ตรวจว่าไม่มี CSP violation ในทุกหน้าและทุก dialog
 **Consequences:** ลดความเสียหายถ้ามี XSS · import zod ต้องผ่าน `lib/zod.ts` เท่านั้น
+
+## ADR-28 — หน้าตาแบบกระจก (Glass) และฟอนต์ Noto Sans Thai (2026-11-14, เจ้าของเลือก)
+**Context:** v2.2.2 แก้การใช้งานแต่คงหน้าตาเดิม เจ้าของต้องการหน้าตาใหม่ที่ทันสมัยแบบ SaaS dashboard (glassmorphism) โดยไม่ช้าลงบนมือถือ Android ราคาประหยัด · เทียบ mockup แบบ A/B/C แล้วเปลี่ยนเป็นแนวกระจกตาม prompt และรูปตัวอย่างของเจ้าของ
+**Decision:** ระบบดีไซน์ `docs/design-system/car-care-glass/APP.md` (override ผลดิบของสกิล `MASTER.md`) · การ์ดกระจกโปร่งไม่มี blur · `backdrop-filter: blur(12px)` เฉพาะชิ้นที่ลอยทับ (แถบบน, เมนู, แถบปุ่มบันทึก, dialog, toast) พร้อม fallback พื้นทึบ (`@supports`, `prefers-reduced-transparency`) · แสงไล่สี 2 จุดเป็นชั้นตรึงหลังหน้า (`body::before`) · ฟอนต์ Noto Sans Thai variable 56 KB แทน Sarabun 84 KB (บิล PDF คง Sarabun) · ชื่อ token เดิมคงไว้ เพิ่ม `--color-glass*`, `--color-glow-*`, `--color-gradient-*`, `--color-action-primary-edge`, `--blur-float` · ไม่เพิ่มไลบรารี (ADR-14) · ทำทีละ PR 8 ชิ้น วัดแบบจับคู่ทุก PR
+**Consequences:** contrast ต้องวัดบนสีที่ตาเห็นจริง (กระจกซ้อนบนแสงไล่สีจุดเข้มสุด) จึงเพิ่ม test ใน `tokens.test.ts` · ธีมสว่างตัวเลขรายรับ/รายจ่าย/ค้างชำระ/ล้างรถเข้มขึ้นหนึ่งระดับ · blur ทำงานบน GPU ถ้าวัดแล้วช้าลงให้ลดหรือใช้เฉพาะจอคอม (ถามเจ้าของ) · `manifest.json` theme color เปลี่ยนใน PR สุดท้าย

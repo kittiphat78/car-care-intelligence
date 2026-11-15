@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { toChartData, toCustomerBreakdown, toStats, type CustomerTimePeriod } from '@/features/dashboard/logic'
+import { customersThisMonth, periodTotals, toChartData, toCustomerBreakdown, todayShares, toStats, type CustomerTimePeriod } from '@/features/dashboard/logic'
 
 const p = (washCount: number, washAmount: number, polishCount = 0, polishAmount = 0): CustomerTimePeriod =>
   ({ washCount, washAmount, polishCount, polishAmount, total: washAmount + polishAmount })
@@ -51,3 +51,27 @@ describe('toCustomerBreakdown', () => {
     expect(items[2].month).toEqual(p(4, 450))
   })
 })
+
+describe('glass home figures (ADR-28)', () => {
+  const p = (total: number, washCount = 0, polishCount = 0): CustomerTimePeriod => ({ washCount, washAmount: 0, polishCount, polishAmount: 0, total })
+  const rows = [
+    { key: '', week: p(300, 2), month: p(900, 6), year: p(900, 6) },
+    { key: 'เต็นท์ ก', week: p(1800, 0, 1), month: p(5400, 1, 3), year: p(5400, 1, 3) },
+    { key: 'คุณ ข', week: p(0), month: p(0), year: p(700, 3) },
+  ]
+
+  it('adds up this week and this month over every customer, the unnamed one included', () => {
+    expect(periodTotals(rows)).toEqual({ week: p(2100, 2, 1), month: p(6300, 7, 3) })
+    expect(periodTotals([])).toEqual({ week: p(0), month: p(0) })
+  })
+
+  it('counts named customers with income this month only', () => {
+    expect(customersThisMonth(rows)).toBe(1)
+  })
+
+  it('gives the share received and the share of washes, with no division by zero', () => {
+    expect(todayShares(toStats({ totalIncome: 1000, paidIncome: 780, unpaidIncome: 220, expense: 0, washCount: 18, polishCount: 2, yesterdayIncome: 0 }))).toEqual({ paidPct: 78, washPct: 90 })
+    expect(todayShares(toStats({ totalIncome: 0, paidIncome: 0, unpaidIncome: 0, expense: 0, washCount: 0, polishCount: 0, yesterdayIncome: 0 }))).toEqual({ paidPct: 0, washPct: 0 })
+  })
+})
+

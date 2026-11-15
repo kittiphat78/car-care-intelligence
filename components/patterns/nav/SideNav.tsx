@@ -26,9 +26,9 @@ export function SideNav({ email, badges = {} }: SideNavProps) {
   const { theme, setTheme } = useTheme()
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-20 hidden w-(--size-sidebar) flex-col border-r border-border bg-surface lg:flex">
+    <aside className="fixed inset-y-0 left-0 z-20 hidden w-(--size-sidebar) flex-col border-r glass-float lg:flex">
       <div className="flex items-center gap-3 px-5 pt-6 pb-5">
-        <span aria-hidden="true" className="grid size-10 place-items-center rounded-md bg-primary text-on-primary">
+        <span aria-hidden="true" className="grid size-10 place-items-center rounded-md bg-linear-135 from-primary to-gradient-to text-on-primary shadow-[0_8px_20px_-10px_var(--color-action-primary)]">
           <Icon name="car" size="lg" />
         </span>
         <span className="text-heading text-text">คาร์แคร์</span>
@@ -53,7 +53,7 @@ export function SideNav({ email, badges = {} }: SideNavProps) {
                   aria-current={active ? 'page' : undefined}
                   className={cn(
                     'focus-ring flex min-h-12 items-center gap-3 rounded-md px-3 text-body',
-                    active ? 'bg-primary-subtle font-semibold text-link' : 'text-text-secondary hover:bg-surface-2',
+                    active ? 'bg-primary-subtle font-semibold text-link' : 'text-text-secondary hover:bg-glass',
                   )}
                 >
                   <Icon name={item.icon} />
@@ -72,7 +72,7 @@ export function SideNav({ email, badges = {} }: SideNavProps) {
         </ul>
       </nav>
 
-      <div className="grid grid-cols-1 gap-2 border-t border-border px-4 pt-3 pb-5">
+      <div className="grid grid-cols-1 gap-2 border-t border-glass-border px-4 pt-3 pb-5">
         <Switch label="ธีมมืด" checked={theme === 'dark'} onChange={(dark) => setTheme(dark ? 'dark' : 'light')} />
         {email && <p className="truncate text-caption text-text-secondary">{email}</p>}
         {/* A plain link: it only adds ?logout=1 here, in the browser (lib/url-state.ts) */}

@@ -15,6 +15,7 @@
   --color-wash-subtle: var(--color-job-wash-subtle);
   --color-polish: var(--color-job-polish);
   --color-polish-subtle: var(--color-job-polish-subtle);
+  --color-primary-edge: var(--color-action-primary-edge);
 }
 
 /* Motion (design-tokens.md §10). With reduced motion, components switch to fade-in. */
@@ -79,6 +80,50 @@ html:has(dialog[open]) {
   }
 }
 
+/* Glass (ADR-28, docs/design-system/car-care-glass/APP.md §4).
+ * glass: a card. Translucent with a light edge and a soft shadow, never blurred (lists hold
+ * many cards, and a blur per card is slow on low-end phones).
+ * glass-float: something that floats over the page (bars, menus, dialogs, toasts), the only
+ * parts with a backdrop blur. Solid where blur is unsupported or the user asks for less
+ * transparency, so text never sits on an unblurred see-through surface. */
+@utility glass {
+  background-color: var(--color-glass);
+  border-color: var(--color-glass-border);
+  box-shadow: var(--shadow-elevation-1);
+}
+@utility glass-float {
+  background-color: var(--color-glass-float-solid);
+  border-color: var(--color-glass-border);
+  @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+    background-color: var(--color-glass-float);
+    -webkit-backdrop-filter: blur(var(--blur-float)) saturate(140%);
+    backdrop-filter: blur(var(--blur-float)) saturate(140%);
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    background-color: var(--color-glass-float-solid);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* Gradient text for one key word or figure (ADR-28). Both ends pass 4.5:1 on the page and on
+ * glass (tokens.test.ts). Plain text colour where the browser cannot clip a background to
+ * text, and in forced colours (Windows high contrast), where the background is removed
+ * and transparent text would vanish. */
+@utility text-gradient {
+  color: var(--color-text);
+  @supports ((-webkit-background-clip: text) or (background-clip: text)) {
+    background-image: linear-gradient(90deg, var(--color-gradient-from), var(--color-gradient-to));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  @media (forced-colors: active) {
+    background-image: none;
+    color: CanvasText;
+  }
+}
+
 /* Pressed feedback (§0.1): scale 0.98, none with reduced motion */
 @utility press {
   transition-property: transform, background-color, border-color, color, opacity;
@@ -125,5 +170,18 @@ html:has(dialog[open]) {
   ::selection {
     background-color: var(--color-action-primary-subtle);
     color: var(--color-text);
+  }
+  /* Two soft lights behind every page (ADR-28). A fixed layer of its own, not a background
+     on body with background-attachment: fixed, which repaints the whole page on every
+     scroll on phones. Text over it is checked against its strongest point (tokens.test.ts) */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(60% 45% at 0% 0%, var(--color-glow-a), transparent 70%),
+      radial-gradient(55% 45% at 100% 8%, var(--color-glow-b), transparent 70%);
   }
 }
