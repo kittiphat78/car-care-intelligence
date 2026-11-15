@@ -199,7 +199,6 @@ const submitIntent = (e: FormEvent<HTMLFormElement>) =>
 
 export function IncomeEditor({ userId, email }: EditorProps) {
   const toDashboard = useToDashboard()
-  const router = useRouter()
   const toast = useToast()
   const online = useOnline()
   const today = bangkokToday()
@@ -474,7 +473,6 @@ export function IncomeEditor({ userId, email }: EditorProps) {
 
 export function ExpenseEditor({ userId, email }: EditorProps) {
   const toDashboard = useToDashboard()
-  const router = useRouter()
   const toast = useToast()
   const online = useOnline()
   const today = bangkokToday()
