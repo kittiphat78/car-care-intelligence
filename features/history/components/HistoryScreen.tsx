@@ -3,6 +3,7 @@
 import { memo, useCallback, useDeferredValue, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { keptPeriod, loadHistoryPeriod, type PeriodData } from '../shared'
+import { useOutbox, useReloadWhenSent, withOutboxExpenses, withOutboxIncome, type OutboxItem } from '@/features/records/outbox'
 import { pushUrl, replaceUrl } from '@/lib/url-state'
 import { cn } from '@/lib/cn'
 import { bangkokParts, formatBangkok } from '@/lib/time/bangkok'
@@ -50,6 +51,20 @@ const EARLIEST_YEAR = 2023
 
 const covers = (d: PeriodData | null, year: number, month: number): d is PeriodData =>
   !!d && d.year === year && (d.month === 0 || d.month === month)
+
+/** The period with the rows still on their way that fall in it (ADR-30) */
+function periodWithOutbox(data: PeriodData | null, outbox: readonly OutboxItem[]): PeriodData | null {
+  if (!data || outbox.length === 0) return data
+  const inPeriod = (row: { created_at: string }) => {
+    const at = bangkokParts(new Date(row.created_at))
+    return at.year === data.year && (data.month === 0 || at.month === data.month)
+  }
+  return {
+    ...data,
+    records: data.records.ok ? { ok: true, data: withOutboxIncome(data.records.data, outbox, inPeriod) } : data.records,
+    expenses: data.expenses.ok ? { ok: true, data: withOutboxExpenses(data.expenses.data, outbox, inPeriod) } : data.expenses,
+  }
+}
 
 export function HistoryScreen() {
   const pathname = usePathname()
@@ -134,13 +149,19 @@ export function HistoryScreen() {
     void load(filters.year, filters.month, false)
   }, [filters.year, filters.month, load])
   const reload = useCallback(() => void load(filters.year, filters.month, true), [load, filters.year, filters.month])
+  useReloadWhenSent(reload)
+
+  // Rows still on their way show in the period they belong to (ADR-30)
+  const outbox = useOutbox()
+  const shownView = useMemo(() => periodWithOutbox(shown, outbox), [shown, outbox])
+  const yearView = useMemo(() => periodWithOutbox(year, outbox), [year, outbox])
 
   // The month on screen while it covers the view, else the year (another month of it)
-  const current = covers(shown, filters.year, filters.month) ? shown : covers(year, filters.year, filters.month) ? year : null
+  const current = covers(shownView, filters.year, filters.month) ? shownView : covers(yearView, filters.year, filters.month) ? yearView : null
   const records = useMemo(() => (current?.records.ok ? current.records.data : []), [current])
   const expenses = useMemo(() => (current?.expenses.ok ? current.expenses.data : []), [current])
   // The edit dialog may name a row of another month (a link, the back button)
-  const fullYear = year?.year === filters.year ? year : null
+  const fullYear = yearView?.year === filters.year ? yearView : null
   const editIncome = useMemo(() => (fullYear?.records.ok ? fullYear.records.data : records), [fullYear, records])
   const editExpenses = useMemo(() => (fullYear?.expenses.ok ? fullYear.expenses.data : expenses), [fullYear, expenses])
   const side = filters.tab === 'income' ? current?.records : current?.expenses

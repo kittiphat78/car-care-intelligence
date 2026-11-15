@@ -4,11 +4,10 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type
 import { useRouter } from 'next/navigation'
 import { CAR_BRANDS, CAR_TYPES } from '@/types'
 import { bangkokToday } from '@/lib/time/bangkok'
-import { toAppError, toUserMessage, type AppError } from '@/lib/errors'
+import { toUserMessage } from '@/lib/errors'
 import { useKeepEarlyTyping } from '@/lib/use-early-typing'
 import { useHydrated } from '@/lib/use-hydrated'
 import { reportAppError } from '@/lib/observability'
-import type { Result } from '@/lib/result'
 import { Badge } from '@/components/ui/Badge'
 import { Banner } from '@/components/ui/Banner'
 import { Button } from '@/components/ui/Button'
@@ -28,7 +27,7 @@ import { useUrlDialog } from '@/lib/url-state'
 import { matchDebtGroup, nameKey, plateKey } from '@/features/customers/logic'
 import type { Customer } from '@/features/customers/types'
 import { loadTodayDashboard } from '@/features/dashboard/hooks'
-import { createExpense, createIncome } from '../api'
+import { resend, restoreDraft, send, takeRestoredDraft, type OutboxEntry } from '../outbox'
 import {
   EMPTY_EXPENSE,
   EMPTY_INCOME,
@@ -58,37 +57,84 @@ export interface EditorProps {
 
 const errorFor = (errors: FieldError[], id: string) => errors.find((e) => e.id === id)?.message ?? null
 
-/** Shared save plumbing: busy flag, failure banner, one request id per payload */
-function useSave() {
-  const [busy, setBusy] = useState(false)
-  const [failure, setFailure] = useState<AppError | null>(null)
-  const requestId = useRequestId()
+/** What the form was when it was sent, to fill it again if the database refuses the row */
+interface SentForm<T> {
+  form: T
+  day: string
+}
 
-  const save = useCallback(
-    async (write: () => Promise<Result<void>>): Promise<boolean> => {
-      setBusy(true)
-      setFailure(null)
-      try {
-        const result = await write()
-        if (result.ok) {
-          requestId.clear()
-          return true
-        }
-        reportAppError(result.error)
-        setFailure(result.error)
-      } catch (e) {
-        const error = toAppError(e)
-        reportAppError(error)
-        setFailure(error)
-      } finally {
-        setBusy(false)
-      }
-      return false
+/** A tap this soon after a send, on the form it left behind, is the same tap again */
+const RESUBMIT_GUARD_MS = 800
+
+/**
+ * Shared save plumbing (ADR-30): the row goes on its way (outbox.ts) and the form moves on
+ * at once; the lists show it with "กำลังส่ง". One request id per payload, a new one after
+ * each send. A tap in the moment after a send, on the form exactly as the send left it, is
+ * the same tap again and is ignored (AC-06-1): the emptied form would only show "fill in"
+ * errors. Anything typed since makes it a new save.
+ */
+function useSend() {
+  const requestId = useRequestId()
+  const router = useRouter()
+  const toast = useToast()
+  const lastSent = useRef(-Infinity)
+
+  const left = useRef<unknown>(null)
+  /** The form the send left behind (the value passed to draft.reset) */
+  const leaveForm = useCallback(<T,>(form: T): T => {
+    left.current = form
+    return form
+  }, [])
+  const repeatTap = useCallback((form: unknown) => form === left.current && performance.now() - lastSent.current < RESUBMIT_GUARD_MS, [])
+
+  const sendRow = useCallback(
+    <T,>(entry: OutboxEntry, sent: SentForm<T>, { label, onSent }: { label: string; onSent: () => void }) => {
+      lastSent.current = performance.now()
+      requestId.clear()
+      let unsentToast: number | null = null
+      send({
+        ...entry,
+        draft: sent,
+        callbacks: {
+          onSent: () => {
+            if (unsentToast !== null) toast.dismiss(unsentToast)
+            onSent()
+          },
+          onUnsent: () => {
+            unsentToast = toast.error(`ส่ง ${label} ไม่ได้ ไม่มีสัญญาณ`, { action: { label: 'ส่งอีกครั้ง', onClick: () => resend(entry.row.client_request_id) } })
+          },
+          onRefused: (error) => {
+            reportAppError(error)
+            if (unsentToast !== null) toast.dismiss(unsentToast)
+            toast.error(`บันทึก ${label} ไม่สำเร็จ ${toUserMessage(error)}`, {
+              action: {
+                label: 'กลับไปแก้',
+                onClick: () => {
+                  restoreDraft(entry.table, sent)
+                  router.push(entry.table === 'records' ? '/add' : '/add?type=expense')
+                },
+              },
+            })
+          },
+        },
+      })
     },
-    [requestId],
+    [requestId, router, toast],
   )
 
-  return { busy, failure, setFailure, save, requestId }
+  return { requestId, sendRow, leaveForm, repeatTap }
+}
+
+/** A refused row sent back to this form ("กลับไปแก้"), once, after the draft kept in this tab is read */
+function useRestoredForm<T>(table: OutboxEntry['table'], restore: (form: T) => void, setDay: (day: string) => void) {
+  useEffect(() => {
+    const sent = takeRestoredDraft<SentForm<T>>(table)
+    if (!sent) return
+    restore(sent.form)
+    setDay(sent.day)
+    // Once on arrival
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 }
 
 /**
@@ -101,25 +147,6 @@ function useToDashboard() {
     void loadTodayDashboard()
     router.push('/')
   }, [router])
-}
-
-function FailureBanner({ error }: { error: AppError | null }) {
-  const ref = useRef<HTMLDivElement>(null)
-  // The banner is at the top of the form while the save button is at the bottom, so on
-  // a phone it appeared out of sight and the tap seemed to do nothing. Move focus to it
-  // (which scrolls it into view) on every new failure, like FormErrorSummary (IS-1, U-01)
-  useEffect(() => {
-    if (error) ref.current?.focus()
-  }, [error])
-  if (!error) return null
-  const title = error.code === 'NETWORK' || error.code === 'TIMEOUT' ? 'บันทึกไม่สำเร็จ ข้อมูลยังอยู่ในฟอร์ม' : 'บันทึกไม่สำเร็จ'
-  return (
-    <div ref={ref} tabIndex={-1} className="focus-ring scroll-mt-4 rounded-md">
-      <Banner tone="danger" title={title}>
-        {toUserMessage(error)}
-      </Banner>
-    </div>
-  )
 }
 
 function RestoredBanner({ onClear }: { onClear: () => void }) {
@@ -137,14 +164,12 @@ function RestoredBanner({ onClear }: { onClear: () => void }) {
 }
 
 function SaveButtons({
-  busy,
   online,
   primaryLabel,
   primaryVariant = 'primary',
   day,
   today,
 }: {
-  busy: 'save' | 'continue' | null
   online: boolean
   primaryLabel: string
   primaryVariant?: 'primary' | 'danger'
@@ -170,9 +195,7 @@ function SaveButtons({
         value="continue"
         variant="secondary"
         size="lg"
-        disabled={!ready || !online || busy === 'save'}
-        isLoading={busy === 'continue'}
-        loadingText="กำลังบันทึก…"
+        disabled={!ready || !online}
       >
         บันทึกแล้วทำต่อ
       </Button>
@@ -182,9 +205,7 @@ function SaveButtons({
         value="save"
         variant={primaryVariant}
         size="lg"
-        disabled={!ready || !online || busy === 'continue'}
-        isLoading={busy === 'save'}
-        loadingText="กำลังบันทึก…"
+        disabled={!ready || !online}
       >
         {online ? primaryLabel : 'รอเชื่อมต่อ'}
       </Button>
@@ -209,8 +230,8 @@ export function IncomeEditor({ userId, email }: EditorProps) {
 
   const recent = useRecentCustomers()
   const visits = usePlateVisits(d.plate)
-  const { busy, failure, setFailure, save, requestId } = useSave()
-  const [intent, setIntent] = useState<'save' | 'continue' | null>(null)
+  const { requestId, sendRow, leaveForm, repeatTap } = useSend()
+  useRestoredForm<IncomeDraft>('records', draft.restore, setDay)
   const [attempt, setAttempt] = useState(0)
   const [askName, setAskName] = useState<'save' | 'continue' | null>(null)
   const [showCustomer, setShowCustomer] = useState(false)
@@ -244,40 +265,42 @@ export function IncomeEditor({ userId, email }: EditorProps) {
     setShowCustomer(true)
   }
 
-  async function write(mode: 'save' | 'continue') {
+  function write(mode: 'save' | 'continue') {
     const result = checkIncome(d)
     if (!result.ok) return
-    setIntent(mode)
     const payload = incomeRow(result.data, d, { day, userId, email, requestId: '' })
     const row = { ...payload, client_request_id: requestId.idFor({ ...payload, created_at: day }) }
-    const saved = await save(() => createIncome(row))
-    setIntent(null)
-    if (!saved) return
 
     recent.remember(row.customer_name)
     // A name and plate the directory does not know yet: offer to keep them (US-13)
     const unknown = mode === 'continue' && row.customer_name.trim() !== '' && directory.customers !== null && matchDebtGroup(directory.customers, { name: row.customer_name, plates: [row.plate] }).length === 0
     const from = { name: row.customer_name.trim(), plates: [row.plate] }
-    toast.success(
-      incomeSavedMessage(row),
-      unknown
-        ? {
-            action: {
-              label: 'บันทึกเป็นลูกค้า',
-              onClick: () => {
-                setNewCustomerFrom(from)
-                newCustomer.open('new')
-              },
-            },
-          }
-        : undefined,
-    )
+    // On its way: the lists show it at once, the toast says when the database has it (ADR-30)
+    sendRow({ table: 'records', row }, { form: d, day }, {
+      label: row.plate,
+      onSent: () =>
+        toast.success(
+          incomeSavedMessage(row),
+          unknown
+            ? {
+                action: {
+                  label: 'บันทึกเป็นลูกค้า',
+                  onClick: () => {
+                    setNewCustomerFrom(from)
+                    newCustomer.open('new')
+                  },
+                },
+              }
+            : undefined,
+        ),
+    })
     if (mode === 'continue') {
-      draft.reset(nextIncome(d))
+      draft.reset(leaveForm(nextIncome(d)))
       setAttempt(0)
       plateRef.current?.focus()
     } else {
-      draft.reset()
+      draft.reset(leaveForm(EMPTY_INCOME))
+      setAttempt(0)
       rememberLastSaved(row.client_request_id)
       toDashboard()
     }
@@ -285,21 +308,19 @@ export function IncomeEditor({ userId, email }: EditorProps) {
 
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (busy) return
+    if (repeatTap(d)) return
     const mode = submitIntent(e)
     setAttempt((n) => n + 1)
-    setFailure(null)
     if (!checkIncome(d).ok) return
     if (needsNameWarning(d)) return setAskName(mode)
-    void write(mode)
+    write(mode)
   }
 
   return (
     <>
-      <form ref={formRef} method="post" noValidate onSubmit={onSubmit} onKeyDown={enterMovesToNextField} aria-busy={busy || undefined} className="grid grid-cols-1 gap-5">
+      <form ref={formRef} method="post" noValidate onSubmit={onSubmit} onKeyDown={enterMovesToNextField} className="grid grid-cols-1 gap-5">
         {draft.restored && <RestoredBanner onClear={() => draft.reset()} />}
         <FormErrorSummary errors={errors} attempt={attempt} />
-        <FailureBanner error={failure} />
 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 lg:gap-x-8">
           <div className="grid grid-cols-1 content-start gap-5">
@@ -414,7 +435,7 @@ export function IncomeEditor({ userId, email }: EditorProps) {
           </div>
         </div>
 
-        <SaveButtons busy={busy ? intent : null} online={online} primaryLabel="บันทึก" day={day} today={today} />
+        <SaveButtons online={online} primaryLabel="บันทึก" day={day} today={today} />
 
         <Dialog
           open={askName !== null}
@@ -429,7 +450,7 @@ export function IncomeEditor({ userId, email }: EditorProps) {
                 onClick={() => {
                   const mode = askName ?? 'save'
                   setAskName(null)
-                  void write(mode)
+                  write(mode)
                 }}
               >
                 บันทึกโดยไม่ใส่ชื่อ
@@ -481,8 +502,8 @@ export function ExpenseEditor({ userId, email }: EditorProps) {
   const d = draft.value
   const set = <K extends keyof ExpenseDraft>(key: K, value: ExpenseDraft[K]) => draft.setValue((prev) => ({ ...prev, [key]: value }))
 
-  const { busy, failure, setFailure, save, requestId } = useSave()
-  const [intent, setIntent] = useState<'save' | 'continue' | null>(null)
+  const { requestId, sendRow, leaveForm, repeatTap } = useSend()
+  useRestoredForm<ExpenseDraft>('expenses', draft.restore, setDay)
   const [attempt, setAttempt] = useState(0)
   const amountRef = useRef<HTMLInputElement>(null)
   const formRef = useRef<HTMLFormElement>(null)
@@ -497,34 +518,27 @@ export function ExpenseEditor({ userId, email }: EditorProps) {
   const errors = attempt > 0 && !checked.ok ? checked.errors : []
   const preset = (EXPENSE_PRESETS as readonly string[]).includes(d.title) ? d.title : null
 
-  async function onSubmit(e: FormEvent<HTMLFormElement>) {
+  function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    if (busy) return
+    if (repeatTap(d)) return
     const mode = submitIntent(e)
     setAttempt((n) => n + 1)
-    setFailure(null)
     const result = checkExpense(d)
     if (!result.ok) return
 
-    setIntent(mode)
     const payload = expenseRow(result.data, { day, userId, email, requestId: '' })
     const row = { ...payload, client_request_id: requestId.idFor({ ...payload, created_at: day }) }
-    const saved = await save(() => createExpense(row))
-    setIntent(null)
-    if (!saved) return
-
-    toast.success(expenseSavedMessage(row))
-    draft.reset()
+    sendRow({ table: 'expenses', row }, { form: d, day }, { label: row.title, onSent: () => toast.success(expenseSavedMessage(row)) })
+    draft.reset(leaveForm(EMPTY_EXPENSE))
     setAttempt(0)
     if (mode === 'continue') amountRef.current?.focus()
     else toDashboard()
   }
 
   return (
-    <form ref={formRef} method="post" noValidate onSubmit={onSubmit} onKeyDown={enterMovesToNextField} aria-busy={busy || undefined} className="grid grid-cols-1 gap-5">
+    <form ref={formRef} method="post" noValidate onSubmit={onSubmit} onKeyDown={enterMovesToNextField} className="grid grid-cols-1 gap-5">
       {draft.restored && <RestoredBanner onClear={() => draft.reset()} />}
       <FormErrorSummary errors={errors} attempt={attempt} />
-      <FailureBanner error={failure} />
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 lg:gap-x-8">
         <div className="grid grid-cols-1 content-start gap-5">
@@ -572,7 +586,7 @@ export function ExpenseEditor({ userId, email }: EditorProps) {
         </div>
       </div>
 
-      <SaveButtons busy={busy ? intent : null} online={online} primaryLabel="บันทึกรายจ่าย" primaryVariant="danger" day={day} today={today} />
+      <SaveButtons online={online} primaryLabel="บันทึกรายจ่าย" primaryVariant="danger" day={day} today={today} />
     </form>
   )
 }
