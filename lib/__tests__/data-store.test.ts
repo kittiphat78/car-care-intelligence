@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { forget, isOk, load, peek, put } from '@/lib/data-store'
+import { RECENT_MS, forget, isOk, known, load, peek, put } from '@/lib/data-store'
 
 /** A request the test answers by hand */
 function deferred<T>() {
@@ -28,7 +28,7 @@ describe('data store', () => {
   it('keeps the last answer on screen while a new request runs', async () => {
     await load('records:a', async () => 'old')
     const next = deferred<string>()
-    void load('records:a', () => next.promise)
+    void load('records:a', () => next.promise, { fresh: true })
     expect(peek('records:a')).toBe('old')
     next.resolve('new')
     await next.promise
@@ -69,6 +69,29 @@ describe('data store', () => {
     const after = vi.fn(async () => 'after the change')
     expect(await load('records:dashboard', after)).toBe('after the change')
     expect(after).toHaveBeenCalledOnce()
+  })
+
+  it('uses an answer that just arrived (a prefetch on the tap) and asks again after RECENT_MS', async () => {
+    const now = vi.spyOn(performance, 'now').mockReturnValue(1000)
+    await load('records:a', async () => 'prefetched')
+    const again = vi.fn(async () => 'newer')
+    now.mockReturnValue(1000 + RECENT_MS - 1)
+    expect(await load('records:a', again)).toBe('prefetched')
+    expect(again).not.toHaveBeenCalled()
+    now.mockReturnValue(1000 + RECENT_MS)
+    expect(await load('records:a', again)).toBe('newer')
+    // A value put by hand is not an answer: the next screen still asks
+    put('records:b', 'by hand')
+    expect(await load('records:b', again)).toBe('newer')
+    now.mockRestore()
+  })
+
+  it('knows a key that is kept or on its way', () => {
+    expect(known('records:a')).toBe(false)
+    void load('records:a', () => new Promise(() => {}))
+    expect(known('records:a')).toBe(true)
+    put('records:b', 'rows')
+    expect(known('records:b')).toBe(true)
   })
 
   it('sign-out forgets everything', () => {

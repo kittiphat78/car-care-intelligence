@@ -16,12 +16,12 @@ import { useOnline } from '@/components/patterns/StatusBar'
 import { CustomerFormDialog } from '@/features/customers/components/CustomerFormDialog'
 import { DebtContact } from '@/features/customers/components/DebtContact'
 import { useCustomerDirectory } from '@/features/customers/hooks'
-import { UNPAID_KEY, isOk, load as loadShared, peek } from '@/lib/data-store'
+import { UNPAID_KEY, peek } from '@/lib/data-store'
 import { pushUrl, replaceUrl, useUrlDialog } from '@/lib/url-state'
 import { EditRecordDialog } from '@/features/records/components/EditRecordDialog'
 import { useEditParam } from '@/features/records/useEditParam'
 import type { Record as AppRecord } from '@/types'
-import { listUnpaid } from '../api'
+import { loadUnpaidShared } from '../shared'
 import { UNNAMED_KEY, debtTotals, groupDebts, sortDebts, type DebtGroup, type DebtSort } from '../logic'
 import { DebtCustomerCard } from './DebtCustomerCard'
 import { SettleDialog } from './SettleDialog'
@@ -44,7 +44,7 @@ export function DebtsScreen() {
 
   /** `fresh`: not the request already running (it may have started before a change) */
   const load = useCallback(async (fresh: boolean) => {
-    const result = await loadShared(UNPAID_KEY, listUnpaid, { keep: isOk, fresh })
+    const result = await loadUnpaidShared({ fresh })
     if (!result.ok) reportAppError(result.error)
     setUnpaid(result)
   }, [])

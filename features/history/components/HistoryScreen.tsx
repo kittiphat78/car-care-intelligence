@@ -2,7 +2,7 @@
 
 import { memo, useCallback, useDeferredValue, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
-import { historyKey, load as loadShared, peek } from '@/lib/data-store'
+import { keptPeriod, loadHistoryPeriod, type PeriodData } from '../shared'
 import { pushUrl, replaceUrl } from '@/lib/url-state'
 import { cn } from '@/lib/cn'
 import { bangkokParts, formatBangkok } from '@/lib/time/bangkok'
@@ -25,7 +25,6 @@ import { ExpenseRow, IncomeRow } from '@/features/records/components/RecordRow'
 import { useEditParam } from '@/features/records/useEditParam'
 import type { Expense, Record as AppRecord } from '@/types'
 import { useMediaQuery, TABLE_SCREEN } from '@/lib/use-media-query'
-import { loadPeriod } from '../api'
 import {
   activeFilterCount,
   expenseSummary,
@@ -48,14 +47,6 @@ import { ExportDialog } from './ExportDialog'
 const baht = (n: number) => `฿${n.toLocaleString('en-US')}`
 const SEARCH_DELAY_MS = 250
 const EARLIEST_YEAR = 2023
-
-/** Rows of one Bangkok month, or of the whole year when month is 0 */
-interface PeriodData {
-  year: number
-  month: number
-  records: Result<AppRecord[]>
-  expenses: Result<Expense[]>
-}
 
 const covers = (d: PeriodData | null, year: number, month: number): d is PeriodData =>
   !!d && d.year === year && (d.month === 0 || d.month === month)
@@ -106,19 +97,15 @@ export function HistoryScreen() {
   // Back on this tab: the month and year kept for this view at once, a fresh copy right
   // after (lib/data-store.ts)
   const [shown, setShown] = useState<PeriodData | null>(
-    () => peek<PeriodData>(historyKey(filters.year, filters.month)) ?? peek<PeriodData>(historyKey(filters.year, 0)) ?? null,
+    () => keptPeriod(filters.year, filters.month) ?? keptPeriod(filters.year, 0) ?? null,
   )
-  const [year, setYear] = useState<PeriodData | null>(() => peek<PeriodData>(historyKey(filters.year, 0)) ?? null)
+  const [year, setYear] = useState<PeriodData | null>(() => keptPeriod(filters.year, 0) ?? null)
   const latestLoad = useRef(0)
   /** `fresh`: not a request already running (it may have started before an edit) */
   const load = useCallback(async (y: number, m: number, fresh: boolean) => {
     const id = ++latestLoad.current
     const get = async (month: number): Promise<PeriodData | null> => {
-      const data = await loadShared(
-        historyKey(y, month),
-        async (): Promise<PeriodData> => ({ year: y, month, ...(await loadPeriod(y, month)) }),
-        { keep: (d) => d.records.ok && d.expenses.ok, fresh },
-      )
+      const data = await loadHistoryPeriod(y, month, { fresh })
       if (id !== latestLoad.current) return null
       for (const part of [data.records, data.expenses]) if (!part.ok) reportAppError(part.error)
       return data
