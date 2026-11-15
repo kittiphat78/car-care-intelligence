@@ -84,7 +84,7 @@
 
 ## ADR-13 — Route groups + server guard
 **Decision:** `app/(app)/layout.tsx` (server) เรียก `getUser()` แล้ว redirect · `page.tsx` เป็น server shell ที่มี `metadata` · proxy refresh session + redirect
-**ผลจริง:** ตามนั้น · `getSessionUser` ใช้ `cache()` ให้ layout และ page เรียก Auth ครั้งเดียวต่อ request
+**ผลจริง:** ตามนั้น · `getSessionUser` ใช้ `cache()` ให้ layout และ page เรียก Auth ครั้งเดียวต่อ request · v2.4.0: proxy ใช้ `getClaims()` แทน `getUser()` (ตรวจลายเซ็นด้วย JWKS ที่ cache 10 นาที ยัง refresh session เหมือนเดิม) · session ที่ถูกเพิกถอนผ่าน proxy ได้จนกว่า token หมดอายุ แต่ layout ยังเรียก `getUser()` จึงถูก redirect ตามเดิม · RLS ไม่เปลี่ยน
 
 ## ADR-14 — Dependency policy
 **Decision:** runtime ไม่เพิ่ม · ลบ `isomorphic-dompurify`

@@ -39,7 +39,12 @@ export async function proxy(request: NextRequest) {
     },
   })
 
-  const { data: { user } } = await supabase.auth.getUser()
+  // getClaims() checks the access token's signature here (asymmetric key, cached for 10 minutes)
+  // instead of asking Supabase Auth on every request, and still refreshes an expired session.
+  // It only decides redirects: the (app) layout still asks Auth with getUser() (ADR-13) and
+  // RLS in the database stays the real boundary (ADR-02).
+  const { data } = await supabase.auth.getClaims()
+  const user = data?.claims?.sub ? data.claims : null
   const path = request.nextUrl.pathname
   const isLoginPage = path.startsWith(LOGIN_PATH)
 

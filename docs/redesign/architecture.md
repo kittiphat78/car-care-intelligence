@@ -61,7 +61,7 @@
 | Login | `supabase.auth.signInWithPassword` จากเบราว์เซอร์ · ข้อความผิดพลาดเดียวสำหรับอีเมลหรือรหัสผิด · จำอีเมลในเครื่องได้ (ไม่จำรหัส) | `features/auth/api.ts`, `LoginForm.tsx` |
 | ฟอร์มก่อนหน้าพร้อม | `method="post"`, ช่องกรอกแบบ uncontrolled และปุ่มกดไม่ได้จนหน้าพร้อม เพื่อไม่ให้เบราว์เซอร์ส่งรหัสผ่านไปใน URL (D-07) | `LoginForm.tsx`, `lib/use-hydrated.ts` |
 | Session | `@supabase/ssr` เก็บ session ใน cookie `sb-<project>-auth-token` และ refresh token อัตโนมัติ | `lib/supabase.ts`, `lib/supabase/server.ts` |
-| ทุก request | `proxy.ts` refresh cookie แล้ว redirect: ไม่ login + หน้าที่ต้อง login → `/login?next=<หน้าเดิม>` · login แล้วเปิด `/login` → หน้าใน `next` (เฉพาะ path ในเว็บเดียวกัน กัน open redirect) | `proxy.ts`, `lib/auth/redirect.ts` |
+| ทุก request | `proxy.ts` refresh cookie แล้วตรวจ token ด้วย `getClaims()` (ตรวจลายเซ็น ES256 ในตัวเอง ไม่เรียก Supabase Auth ทุก request · v2.4.0) แล้ว redirect: ไม่ login + หน้าที่ต้อง login → `/login?next=<หน้าเดิม>` · login แล้วเปิด `/login` → หน้าใน `next` (เฉพาะ path ในเว็บเดียวกัน กัน open redirect) | `proxy.ts`, `lib/auth/redirect.ts` |
 | ชั้นที่ 2 | `app/(app)/layout.tsx` เรียก `getUser()` ฝั่ง server อีกครั้ง (ถาม Supabase ไม่เชื่อ cookie อย่างเดียว) เผื่อ request ไม่ผ่าน proxy | `lib/auth/session.ts` |
 | Session หมดอายุ | กล่อง "กรุณาเข้าสู่ระบบอีกครั้ง" · draft ในฟอร์มยังอยู่ | `SessionExpiredDialog.tsx` |
 | ออกจากระบบ | `signOut({ scope: 'local' })` ออก**เฉพาะเครื่องนี้** (D-03) · ถ้าเน็ตหลุดลบ cookie ในเครื่องเอง (D-06) · ล้าง draft ฟอร์มทั้งหมดในเครื่อง (`clearLocalDrafts`) | `features/auth/api.ts`, `LogoutDialog.tsx`, `features/auth/drafts.ts` |
