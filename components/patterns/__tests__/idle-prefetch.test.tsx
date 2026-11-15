@@ -1,7 +1,8 @@
 import { act, render } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('next/navigation', () => ({ usePathname: () => '/history' }))
+const nav = vi.hoisted(() => ({ pathname: '/history' }))
+vi.mock('next/navigation', () => ({ usePathname: () => nav.pathname }))
 
 import { IDLE_PREFETCH_DELAY_MS, IdlePrefetch } from '../nav/IdlePrefetch'
 import { warmOtherPagesData } from '@/lib/prefetch-data'
@@ -9,6 +10,7 @@ import { warmOtherPagesData } from '@/lib/prefetch-data'
 const setConnection = (value: unknown) => Object.defineProperty(navigator, 'connection', { value, configurable: true })
 
 beforeEach(() => {
+  nav.pathname = '/history'
   vi.useFakeTimers()
   vi.mocked(warmOtherPagesData).mockClear()
 })
@@ -30,6 +32,13 @@ describe('IdlePrefetch (speed work 3c)', () => {
 
   it('loads nothing extra with Data Saver on', () => {
     setConnection({ saveData: true })
+    render(<IdlePrefetch />)
+    act(() => vi.runAllTimers())
+    expect(warmOtherPagesData).not.toHaveBeenCalled()
+  })
+
+  it('leaves the network to the save on /add', () => {
+    nav.pathname = '/add'
     render(<IdlePrefetch />)
     act(() => vi.runAllTimers())
     expect(warmOtherPagesData).not.toHaveBeenCalled()
