@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabase, type Db } from '@/lib/supabase'
 import { appError, toAppError } from '@/lib/errors'
 import { err, ok, type Result } from '@/lib/result'
 import { fetchAllPages } from '@/lib/fetch-all-pages'
@@ -125,10 +125,10 @@ export function listBetween<T>(
   table: EntryTable,
   start: Date,
   end: Date | null,
-  { ascending, columns = '*' }: { ascending: boolean; columns?: string },
+  { ascending, columns = '*', client = supabase }: { ascending: boolean; columns?: string; client?: Db },
 ): Promise<Result<T[]>> {
   return fetchAllPages<T>((from, to) => {
-    let query = supabase.from(table).select(columns, { count: 'exact' }).gte('created_at', start.toISOString())
+    let query = client.from(table).select(columns, { count: 'exact' }).gte('created_at', start.toISOString())
     if (end) query = query.lt('created_at', end.toISOString())
     return query
       .order('created_at', { ascending })

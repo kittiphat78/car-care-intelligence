@@ -14,6 +14,9 @@ import { EmptyState, ErrorState } from '@/components/patterns/EmptyState'
 import { PageHeader } from '@/components/patterns/PageHeader'
 import { SearchField } from '@/components/patterns/fields'
 import { useCustomerDirectory } from '../hooks'
+import type { ServerData } from '@/lib/data-store'
+import type { Result } from '@/lib/result'
+import type { Customer } from '../types'
 import { liveUrlWith, replaceUrl, useUrlDialog, useUrlWith } from '@/lib/url-state'
 import { setOpenedFromList } from '../memory'
 import { classifyQuery, normalizePhone, primaryPhone, searchCustomers, vehicleSummary, type SearchMatch, type SearchResult } from '../logic'
@@ -41,11 +44,11 @@ function addFromSearchLabel(query: string): string {
   return `เพิ่มลูกค้าใหม่ชื่อ ${q}`
 }
 
-export function CustomersScreen({ userId }: { userId: string }) {
+export function CustomersScreen({ userId, initial = null }: { userId: string; initial?: ServerData<Result<Customer[]>> | null }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const urlWith = useUrlWith()
-  const { result, customers, reload } = useCustomerDirectory()
+  const { result, customers, reload } = useCustomerDirectory({ initial })
   const form = useUrlDialog('new')
   const wide = useMediaQuery(TABLE_SCREEN)
 

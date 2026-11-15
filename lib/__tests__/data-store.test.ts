@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { RECENT_MS, forget, isOk, known, load, peek, put } from '@/lib/data-store'
+import { RECENT_MS, SERVER_FRESH_MS, forget, isOk, known, load, peek, put, seed } from '@/lib/data-store'
 
 /** A request the test answers by hand */
 function deferred<T>() {
@@ -92,6 +92,24 @@ describe('data store', () => {
     expect(known('records:a')).toBe(true)
     put('records:b', 'rows')
     expect(known('records:b')).toBe(true)
+  })
+
+  it('keeps what a server page loaded; fresh only if taken a moment ago (ADR-31)', async () => {
+    seed('records:a', 'from the server', Date.now())
+    expect(peek('records:a')).toBe('from the server')
+    const again = vi.fn(async () => 'newer')
+    expect(await load('records:a', again)).toBe('from the server')
+    expect(again).not.toHaveBeenCalled()
+    // A page from the router's cache, minutes old: shown, but the screen asks again
+    seed('records:b', 'old page', Date.now() - SERVER_FRESH_MS - 1)
+    expect(peek('records:b')).toBe('old page')
+    expect(await load('records:b', again)).toBe('newer')
+  })
+
+  it('never lets a server copy replace what the tab already has', () => {
+    put('records:a', 'kept in this tab')
+    seed('records:a', 'from the server', Date.now())
+    expect(peek('records:a')).toBe('kept in this tab')
   })
 
   it('sign-out forgets everything', () => {

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { reportAppError } from '@/lib/observability'
-import { DASHBOARD_KEY, load as loadShared, peek } from '@/lib/data-store'
+import { DASHBOARD_KEY, load as loadShared, peek, seed, type ServerData } from '@/lib/data-store'
 import { bangkokToday } from '@/lib/time/bangkok'
 import { loadUnpaidShared } from '@/features/debts/shared'
 import { loadDashboard, type DashboardData } from './api'
@@ -31,6 +31,12 @@ interface KeptDashboard {
   startedAt: number
 }
 
+/** What the server page loaded for the dashboard (3e, ADR-31) */
+export interface ServerDashboard {
+  day: string
+  data: DashboardData
+}
+
 /** What the dashboard showed last in this tab, if it is still for today */
 function keptForToday(): KeptDashboard | null {
   const kept = peek<KeptDashboard>(DASHBOARD_KEY)
@@ -55,9 +61,18 @@ export function loadTodayDashboard({ fresh = false } = {}): Promise<KeptDashboar
   )
 }
 
-export function useDashboardData(): DashboardState {
-  // Back on the dashboard: the last figures at once, a fresh copy right after (the ⟳ spins)
-  const [kept] = useState(keptForToday)
+export function useDashboardData(initial: ServerData<ServerDashboard> | null = null): DashboardState {
+  // Back on the dashboard: the last figures at once, a fresh copy right after (the ⟳ spins).
+  // Opened from the server: its figures, kept for the next visit (3e). The server's copy
+  // has no request start in this page's clock: 0 counts every row still on its way.
+  const [kept] = useState(() => {
+    if (initial && initial.value.day === bangkokToday()) {
+      const fromServer: KeptDashboard = { ...initial.value, loadedAt: new Date(initial.takenAt), startedAt: 0 }
+      seed(DASHBOARD_KEY, fromServer, initial.takenAt)
+      return keptForToday() ?? fromServer
+    }
+    return keptForToday()
+  })
   const [day, setDay] = useState(() => kept?.day ?? bangkokToday())
   const [data, setData] = useState<DashboardData | null>(kept?.data ?? null)
   const [refreshing, setRefreshing] = useState(false)

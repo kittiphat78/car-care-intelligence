@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabase, type Db } from '@/lib/supabase'
 import { fetchAllPages } from '@/lib/fetch-all-pages'
 import { ok, type Result } from '@/lib/result'
 import { RECORDS, forget } from '@/lib/data-store'
@@ -6,9 +6,10 @@ import { run } from '@/features/records/api'
 import type { Record as AppRecord } from '@/types'
 
 /** Every unpaid income record, oldest first (all pages, ER-02) */
-export function listUnpaid(): Promise<Result<AppRecord[]>> {
+/** `client`: the request's client when a server page loads it (3e) */
+export function listUnpaid(client: Db = supabase): Promise<Result<AppRecord[]>> {
   return fetchAllPages<AppRecord>((from, to) =>
-    supabase
+    client
       .from('records')
       .select('*', { count: 'exact' })
       .eq('payment_status', 'unpaid')

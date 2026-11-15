@@ -3,6 +3,7 @@
 import { memo, useCallback, useDeferredValue, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { keptPeriod, loadHistoryPeriod, type PeriodData } from '../shared'
+import { historyKey, seed, type ServerData } from '@/lib/data-store'
 import { useOutbox, useReloadWhenSent, withOutboxExpenses, withOutboxIncome, type OutboxSnapshot } from '@/features/records/outbox'
 import { pushUrl, replaceUrl } from '@/lib/url-state'
 import { cn } from '@/lib/cn'
@@ -66,7 +67,7 @@ function periodWithOutbox(data: PeriodData | null, outbox: OutboxSnapshot): Peri
   }
 }
 
-export function HistoryScreen() {
+export function HistoryScreen({ initial = null }: { initial?: ServerData<PeriodData> | null } = {}) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const filterKey = filterParams(searchParams)
@@ -111,9 +112,12 @@ export function HistoryScreen() {
   // month on screen stays as it is (swapping in the year would draw every row again).
   // Back on this tab: the month and year kept for this view at once, a fresh copy right
   // after (lib/data-store.ts)
-  const [shown, setShown] = useState<PeriodData | null>(
-    () => keptPeriod(filters.year, filters.month) ?? keptPeriod(filters.year, 0) ?? null,
-  )
+  const [shown, setShown] = useState<PeriodData | null>(() => {
+    // Opened from the server: the month it loaded, kept for the next visit (3e, ADR-31)
+    const fromServer = initial && initial.value.year === filters.year && initial.value.month === filters.month ? initial.value : null
+    if (fromServer && fromServer.records.ok && fromServer.expenses.ok) seed(historyKey(fromServer.year, fromServer.month), fromServer, initial!.takenAt)
+    return keptPeriod(filters.year, filters.month) ?? keptPeriod(filters.year, 0) ?? fromServer
+  })
   const [year, setYear] = useState<PeriodData | null>(() => keptPeriod(filters.year, 0) ?? null)
   const latestLoad = useRef(0)
   /** `fresh`: not a request already running (it may have started before an edit) */

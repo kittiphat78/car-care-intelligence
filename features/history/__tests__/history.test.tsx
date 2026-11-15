@@ -120,6 +120,19 @@ describe('HistoryScreen', () => {
     expect(screen.queryByText('กข 3')).toBeNull()
   })
 
+  it('shows the month the server page loaded and asks only for the rest of the year (ADR-31)', async () => {
+    const month = { year: 2026, month: 10, records: { ok: true as const, data: records }, expenses: { ok: true as const, data: expenses } }
+    await act(async () => {
+      render(
+        <ToastProvider>
+          <HistoryScreen initial={{ value: month, takenAt: Date.now() }} />
+        </ToastProvider>,
+      )
+    })
+    expect(screen.getByRole('region', { name: /รายรับรวม ตุลาคม 2569/ })).toHaveTextContent('฿1,600')
+    expect(api.loadPeriod.mock.calls).toEqual([[2026, 0]])
+  })
+
   it('loads the month shown first, then its year; another month of that year loads nothing (P2)', async () => {
     // A new element each time: the same one would let React skip the render
     const screenEl = () => (
