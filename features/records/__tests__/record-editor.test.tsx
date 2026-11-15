@@ -98,9 +98,9 @@ describe('IncomeEditor', () => {
     expect(row).not.toHaveProperty('seq_number')
     expect(router.push).toHaveBeenCalledWith('/')
     expect(screen.getByRole('status')).toHaveTextContent('บันทึก กข 1234 ฿150 แล้ว')
-    // The dashboard's data starts loading on the way there (ADR-29)
+    // The dashboard's data starts loading once the database has the row (ADR-29, ADR-30)
     expect(dashboard.loadTodayDashboard).toHaveBeenCalledOnce()
-    expect(dashboard.loadTodayDashboard.mock.invocationCallOrder[0]).toBeLessThan(router.push.mock.invocationCallOrder[0])
+    expect(dashboard.loadTodayDashboard.mock.invocationCallOrder[0]).toBeGreaterThan(api.createIncome.mock.invocationCallOrder[0])
   })
 
   it('"บันทึกแล้วทำต่อ" keeps the job settings and focuses the plate (AC-05-1)', async () => {

@@ -64,19 +64,23 @@ export function useDashboardData(): DashboardState {
   const [loadedAt, setLoadedAt] = useState<Date | null>(kept?.loadedAt ?? null)
   const [startedAt, setStartedAt] = useState(kept?.startedAt ?? 0)
   const latest = useRef(0)
+  const shown = useRef(0)
 
   const load = useCallback(async (fresh: boolean) => {
     const call = ++latest.current
     setRefreshing(true)
     const result = await loadTodayDashboard({ fresh })
-    // An older, slower reload must not overwrite a newer one
-    if (call !== latest.current) return
+    // An older, slower reload must not overwrite a newer one. An older one that arrives
+    // first is still shown (e.g. the load started by "บันทึก" when a reload followed it as
+    // the row reached the database): better than the skeleton until the newer one comes.
+    if (call < shown.current) return
+    shown.current = call
     for (const part of Object.values(result.data)) if (!part.ok) reportAppError(part.error)
     setDay(result.day)
     setData(result.data)
     setLoadedAt(result.loadedAt)
     setStartedAt(result.startedAt)
-    setRefreshing(false)
+    if (call === latest.current) setRefreshing(false)
   }, [])
 
   useEffect(() => {

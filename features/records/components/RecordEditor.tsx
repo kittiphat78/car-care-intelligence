@@ -138,16 +138,18 @@ function useRestoredForm<T>(table: OutboxEntry['table'], restore: (form: T) => v
 }
 
 /**
- * "บันทึก" goes back to the dashboard. Its data starts loading now, while the page is on
- * its way, and the dashboard waits for that request instead of sending its own (lib/data-store.ts).
+ * "บันทึก" goes back to the dashboard at once; the row shows there with "กำลังส่ง".
+ * `warmDashboard` is called once the database has the row: the dashboard's data starts
+ * loading then, and the dashboard joins that request (lib/data-store.ts). Started before,
+ * it would be dropped as out of date when the save completes (forget('records:')), and
+ * the dashboard would have to ask again (measured: +100-250 ms to see the row).
  */
 function useToDashboard() {
   const router = useRouter()
-  return useCallback(() => {
-    void loadTodayDashboard()
-    router.push('/')
-  }, [router])
+  return useCallback(() => router.push('/'), [router])
 }
+
+const warmDashboard = () => void loadTodayDashboard()
 
 function RestoredBanner({ onClear }: { onClear: () => void }) {
   return (
@@ -278,7 +280,8 @@ export function IncomeEditor({ userId, email }: EditorProps) {
     // On its way: the lists show it at once, the toast says when the database has it (ADR-30)
     sendRow({ table: 'records', row }, { form: d, day }, {
       label: row.plate,
-      onSent: () =>
+      onSent: () => {
+        if (mode === 'save') warmDashboard()
         toast.success(
           incomeSavedMessage(row),
           unknown
@@ -292,7 +295,8 @@ export function IncomeEditor({ userId, email }: EditorProps) {
                 },
               }
             : undefined,
-        ),
+        )
+      },
     })
     if (mode === 'continue') {
       draft.reset(leaveForm(nextIncome(d)))
@@ -528,7 +532,13 @@ export function ExpenseEditor({ userId, email }: EditorProps) {
 
     const payload = expenseRow(result.data, { day, userId, email, requestId: '' })
     const row = { ...payload, client_request_id: requestId.idFor({ ...payload, created_at: day }) }
-    sendRow({ table: 'expenses', row }, { form: d, day }, { label: row.title, onSent: () => toast.success(expenseSavedMessage(row)) })
+    sendRow({ table: 'expenses', row }, { form: d, day }, {
+      label: row.title,
+      onSent: () => {
+        if (mode === 'save') warmDashboard()
+        toast.success(expenseSavedMessage(row))
+      },
+    })
     draft.reset(leaveForm(EMPTY_EXPENSE))
     setAttempt(0)
     if (mode === 'continue') amountRef.current?.focus()
