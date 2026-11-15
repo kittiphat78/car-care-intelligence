@@ -20,7 +20,7 @@ const fake = vi.hoisted(() => {
 vi.mock('@/lib/supabase', () => ({ supabase: { from: (table: string) => (fake.builder.from as (t: string) => unknown)(table) } }))
 
 import { countVisitsByPlate, createIncome, deleteEntry, listBetween, run, updateEntry, type IncomeInsert } from '@/features/records/api'
-import { keepScreen, keptScreen } from '@/lib/screen-memory'
+import { CUSTOMERS_KEY, DASHBOARD_KEY, UNPAID_KEY, peek, put } from '@/lib/data-store'
 
 const methods = () => fake.state.calls.map(c => c[0])
 const callOf = (method: string): Call | undefined => fake.state.calls.find(c => c[0] === method) as Call | undefined
@@ -101,17 +101,21 @@ describe('records api', () => {
     expect(!result.ok && result.error.code).toBe('VALIDATION')
   })
 
-  it('forgets the screens kept in memory after a save, an edit or a delete', async () => {
+  it('forgets the data kept from the records after a save, an edit or a delete, not the customers', async () => {
     const writes = [
       () => createIncome({ client_request_id: 'req-2' } as IncomeInsert),
       () => updateEntry('records', 'id-1', { price: 1 }, null),
       () => deleteEntry('records', 'id-1'),
     ]
     for (const write of writes) {
-      keepScreen('dashboard', { day: 'x' })
+      put(DASHBOARD_KEY, { day: 'x' })
+      put(UNPAID_KEY, { ok: true, data: [] })
+      put(CUSTOMERS_KEY, { ok: true, data: [] })
       fake.state.response = { data: [{ id: 'id-1' }], error: null, count: null }
       await write()
-      expect(keptScreen('dashboard')).toBeUndefined()
+      expect(peek(DASHBOARD_KEY)).toBeUndefined()
+      expect(peek(UNPAID_KEY)).toBeUndefined()
+      expect(peek(CUSTOMERS_KEY)).toBeDefined()
     }
   })
 })

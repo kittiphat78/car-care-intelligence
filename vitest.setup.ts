@@ -1,9 +1,9 @@
 import '@testing-library/jest-dom'
 import { afterEach } from 'vitest'
-import { forgetScreens } from '@/lib/screen-memory'
+import { forget } from '@/lib/data-store'
 
 // Screens keep their last data in memory between visits; each test starts without it
-afterEach(() => forgetScreens())
+afterEach(() => forget())
 
 // jsdom has no <dialog> showModal()/close(); this stand-in keeps what the Dialog uses
 if (typeof HTMLDialogElement !== 'undefined' && !HTMLDialogElement.prototype.showModal) {

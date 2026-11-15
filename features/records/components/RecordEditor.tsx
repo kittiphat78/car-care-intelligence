@@ -27,6 +27,7 @@ import { useCustomerDirectory, usePlateCustomers } from '@/features/customers/ho
 import { useUrlDialog } from '@/lib/url-state'
 import { matchDebtGroup, nameKey, plateKey } from '@/features/customers/logic'
 import type { Customer } from '@/features/customers/types'
+import { loadTodayDashboard } from '@/features/dashboard/hooks'
 import { createExpense, createIncome } from '../api'
 import {
   EMPTY_EXPENSE,
@@ -88,6 +89,18 @@ function useSave() {
   )
 
   return { busy, failure, setFailure, save, requestId }
+}
+
+/**
+ * "บันทึก" goes back to the dashboard. Its data starts loading now, while the page is on
+ * its way, and the dashboard waits for that request instead of sending its own (lib/data-store.ts).
+ */
+function useToDashboard() {
+  const router = useRouter()
+  return useCallback(() => {
+    void loadTodayDashboard()
+    router.push('/')
+  }, [router])
 }
 
 function FailureBanner({ error }: { error: AppError | null }) {
@@ -185,7 +198,7 @@ const submitIntent = (e: FormEvent<HTMLFormElement>) =>
 // ── Income ───────────────────────────────────────────────────────────────────
 
 export function IncomeEditor({ userId, email }: EditorProps) {
-  const router = useRouter()
+  const toDashboard = useToDashboard()
   const toast = useToast()
   const online = useOnline()
   const today = bangkokToday()
@@ -266,7 +279,7 @@ export function IncomeEditor({ userId, email }: EditorProps) {
     } else {
       draft.reset()
       rememberLastSaved(row.client_request_id)
-      router.push('/')
+      toDashboard()
     }
   }
 
@@ -459,7 +472,7 @@ export function IncomeEditor({ userId, email }: EditorProps) {
 // ── Expense ──────────────────────────────────────────────────────────────────
 
 export function ExpenseEditor({ userId, email }: EditorProps) {
-  const router = useRouter()
+  const toDashboard = useToDashboard()
   const toast = useToast()
   const online = useOnline()
   const today = bangkokToday()
@@ -504,7 +517,7 @@ export function ExpenseEditor({ userId, email }: EditorProps) {
     draft.reset()
     setAttempt(0)
     if (mode === 'continue') amountRef.current?.focus()
-    else router.push('/')
+    else toDashboard()
   }
 
   return (

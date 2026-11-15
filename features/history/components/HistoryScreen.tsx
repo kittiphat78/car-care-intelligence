@@ -2,7 +2,7 @@
 
 import { memo, useCallback, useDeferredValue, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
-import { keepScreen, keptScreen } from '@/lib/screen-memory'
+import { historyKey, load as loadShared, peek } from '@/lib/data-store'
 import { pushUrl, replaceUrl } from '@/lib/url-state'
 import { cn } from '@/lib/cn'
 import { bangkokParts, formatBangkok } from '@/lib/time/bangkok'
@@ -103,17 +103,25 @@ export function HistoryScreen() {
   // A month is ~1/12 of the rows to download and draw. The whole year follows, so another
   // month of it shows with no wait and the export can count rows. It is kept aside: the
   // month on screen stays as it is (swapping in the year would draw every row again).
-  // Back on this tab: the last year shown at once, a fresh copy right after (lib/screen-memory.ts)
-  const [shown, setShown] = useState<PeriodData | null>(() => keptScreen<PeriodData>('history') ?? null)
-  const [year, setYear] = useState<PeriodData | null>(() => keptScreen<PeriodData>('history') ?? null)
+  // Back on this tab: the month and year kept for this view at once, a fresh copy right
+  // after (lib/data-store.ts)
+  const [shown, setShown] = useState<PeriodData | null>(
+    () => peek<PeriodData>(historyKey(filters.year, filters.month)) ?? peek<PeriodData>(historyKey(filters.year, 0)) ?? null,
+  )
+  const [year, setYear] = useState<PeriodData | null>(() => peek<PeriodData>(historyKey(filters.year, 0)) ?? null)
   const latestLoad = useRef(0)
-  const load = useCallback(async (y: number, m: number) => {
+  /** `fresh`: not a request already running (it may have started before an edit) */
+  const load = useCallback(async (y: number, m: number, fresh: boolean) => {
     const id = ++latestLoad.current
     const get = async (month: number): Promise<PeriodData | null> => {
-      const result = await loadPeriod(y, month)
+      const data = await loadShared(
+        historyKey(y, month),
+        async (): Promise<PeriodData> => ({ year: y, month, ...(await loadPeriod(y, month)) }),
+        { keep: (d) => d.records.ok && d.expenses.ok, fresh },
+      )
       if (id !== latestLoad.current) return null
-      for (const part of [result.records, result.expenses]) if (!part.ok) reportAppError(part.error)
-      return { year: y, month, ...result }
+      for (const part of [data.records, data.expenses]) if (!part.ok) reportAppError(part.error)
+      return data
     }
     if (m !== 0) {
       const month = await get(m)
@@ -123,10 +131,7 @@ export function HistoryScreen() {
     }
     const all = await get(0)
     if (!all) return
-    if (all.records.ok && all.expenses.ok) {
-      keepScreen<PeriodData>('history', all)
-      setYear(all)
-    }
+    if (all.records.ok && all.expenses.ok) setYear(all)
     if (m === 0) setShown(all)
   }, [])
   // Load on arrival and for another year; another month of the year already here needs nothing
@@ -139,9 +144,9 @@ export function HistoryScreen() {
     const { shown: s, year: y } = have.current
     if (arrived.current && (covers(s, filters.year, filters.month) || covers(y, filters.year, filters.month))) return
     arrived.current = true
-    void load(filters.year, filters.month)
+    void load(filters.year, filters.month, false)
   }, [filters.year, filters.month, load])
-  const reload = useCallback(() => void load(filters.year, filters.month), [load, filters.year, filters.month])
+  const reload = useCallback(() => void load(filters.year, filters.month, true), [load, filters.year, filters.month])
 
   // The month on screen while it covers the view, else the year (another month of it)
   const current = covers(shown, filters.year, filters.month) ? shown : covers(year, filters.year, filters.month) ? year : null

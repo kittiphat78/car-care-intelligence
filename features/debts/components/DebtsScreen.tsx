@@ -16,7 +16,7 @@ import { useOnline } from '@/components/patterns/StatusBar'
 import { CustomerFormDialog } from '@/features/customers/components/CustomerFormDialog'
 import { DebtContact } from '@/features/customers/components/DebtContact'
 import { useCustomerDirectory } from '@/features/customers/hooks'
-import { keepScreen, keptScreen } from '@/lib/screen-memory'
+import { UNPAID_KEY, isOk, load as loadShared, peek } from '@/lib/data-store'
 import { pushUrl, replaceUrl, useUrlDialog } from '@/lib/url-state'
 import { EditRecordDialog } from '@/features/records/components/EditRecordDialog'
 import { useEditParam } from '@/features/records/useEditParam'
@@ -36,22 +36,22 @@ export function DebtsScreen() {
   const searchParams = useSearchParams()
   const toast = useToast()
   const online = useOnline()
-  // Back on this tab: the last list at once, a fresh copy right after (lib/screen-memory.ts)
-  const [unpaid, setUnpaid] = useState<Result<AppRecord[]> | null>(() => keptScreen<Result<AppRecord[]>>('debts') ?? null)
+  // The last list this tab saw (here or on the dashboard) at once, a fresh copy right after (lib/data-store.ts)
+  const [unpaid, setUnpaid] = useState<Result<AppRecord[]> | null>(() => peek<Result<AppRecord[]>>(UNPAID_KEY) ?? null)
   const [billing, setBilling] = useState<string | null>(null)
   const settleOpenedHere = useRef(false)
   const today = bangkokToday()
 
-  const load = useCallback(async () => {
-    const result = await listUnpaid()
-    if (result.ok) keepScreen('debts', result)
-    else reportAppError(result.error)
+  /** `fresh`: not the request already running (it may have started before a change) */
+  const load = useCallback(async (fresh: boolean) => {
+    const result = await loadShared(UNPAID_KEY, listUnpaid, { keep: isOk, fresh })
+    if (!result.ok) reportAppError(result.error)
     setUnpaid(result)
   }, [])
 
   useEffect(() => {
-    // Initial load; the result arrives after this effect
-    void load()
+    // Initial load (joins the dashboard's if it is still running); the result arrives after this effect
+    void load(false)
   }, [load])
 
   // The nav badge comes from the server layout, so it needs router.refresh(). Not while
@@ -65,7 +65,7 @@ export function DebtsScreen() {
 
   /** Reload this page and the nav badge */
   const reload = useCallback(() => {
-    void load()
+    void load(true)
     if (settleOpen.current) setRefreshAfterClose(true)
     else startRefresh(() => router.refresh())
   }, [load, router])

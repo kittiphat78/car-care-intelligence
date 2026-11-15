@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase'
 import { appError, toAppError } from '@/lib/errors'
 import { err, ok, type Result } from '@/lib/result'
 import { fetchAllPages } from '@/lib/fetch-all-pages'
-import { forgetScreens } from '@/lib/screen-memory'
+import { RECORDS, forget } from '@/lib/data-store'
 import type { Expense, Record as AppRecord } from '@/types'
 
 export type EntryTable = 'records' | 'expenses'
@@ -63,7 +63,7 @@ const done = <T>(result: Result<T>): Result<void> => (result.ok ? ok(undefined) 
  * of date: the dashboard after "บันทึก" must not show the list without the new job.
  */
 function changed<T>(result: Result<T>): Result<T> {
-  forgetScreens()
+  forget(RECORDS)
   return result
 }
 
