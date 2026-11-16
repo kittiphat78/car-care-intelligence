@@ -134,6 +134,17 @@ describe('DebtsScreen', () => {
     expect(screen.getAllByRole('article')).toHaveLength(3)
   })
 
+  it('shows the list the server page loaded, without asking again (ADR-31)', async () => {
+    render(
+      <ToastProvider>
+        <DebtsScreen initial={{ value: { ok: true, data: unpaid }, takenAt: Date.now() }} />
+      </ToastProvider>,
+    )
+    expect(screen.getAllByRole('article')).toHaveLength(3)
+    await act(async () => {})
+    expect(api.listUnpaid).not.toHaveBeenCalled()
+  })
+
   it('shows the total and one card per customer, largest first', async () => {
     await renderScreen()
     expect(screen.getByRole('heading', { level: 1, name: 'ค้างชำระ' })).toBeInTheDocument()

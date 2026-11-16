@@ -16,7 +16,7 @@ import { useOnline } from '@/components/patterns/StatusBar'
 import { CustomerFormDialog } from '@/features/customers/components/CustomerFormDialog'
 import { DebtContact } from '@/features/customers/components/DebtContact'
 import { useCustomerDirectory } from '@/features/customers/hooks'
-import { UNPAID_KEY, peek } from '@/lib/data-store'
+import { UNPAID_KEY, peek, seed, type ServerData } from '@/lib/data-store'
 import { pushUrl, replaceUrl, useUrlDialog } from '@/lib/url-state'
 import { EditRecordDialog } from '@/features/records/components/EditRecordDialog'
 import { useEditParam } from '@/features/records/useEditParam'
@@ -31,14 +31,18 @@ import { SettleDialog } from './SettleDialog'
 
 const baht = (n: number) => `฿${n.toLocaleString('en-US')}`
 
-export function DebtsScreen() {
+export function DebtsScreen({ initial = null }: { initial?: ServerData<Result<AppRecord[]>> | null } = {}) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const toast = useToast()
   const online = useOnline()
   // The last list this tab saw (here or on the dashboard) at once, a fresh copy right after (lib/data-store.ts)
-  const [unpaid, setUnpaid] = useState<Result<AppRecord[]> | null>(() => peek<Result<AppRecord[]>>(UNPAID_KEY) ?? null)
+  // Opened from the server: its list, kept for the next visit (3e, ADR-31)
+  const [unpaid, setUnpaid] = useState<Result<AppRecord[]> | null>(() => {
+    if (initial?.value.ok) seed(UNPAID_KEY, initial.value, initial.takenAt)
+    return peek<Result<AppRecord[]>>(UNPAID_KEY) ?? initial?.value ?? null
+  })
   const [billing, setBilling] = useState<string | null>(null)
   const settleOpenedHere = useRef(false)
   const today = bangkokToday()

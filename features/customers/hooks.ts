@@ -5,6 +5,7 @@ import { reportAppError } from '@/lib/observability'
 import { ok, type Result } from '@/lib/result'
 import { LOCAL_DRAFT_PREFIX } from '@/features/auth/drafts'
 import { loadDirectory } from './shared'
+import { CUSTOMERS_KEY, seed, type ServerData } from '@/lib/data-store'
 import { keptList } from './memory'
 import { customersForTypedPlate, draftSignature, emptyVehicle, plateKey } from './logic'
 import type { Customer, CustomerDraft } from './types'
@@ -15,10 +16,12 @@ import type { Customer, CustomerDraft } from './types'
 // pages asking for it at the same time (e.g. /debts and a prefetch) share one request.
 
 /** `enabled: false` waits (e.g. /add loads the directory only once a plate is being typed) */
-export function useCustomerDirectory({ enabled = true }: { enabled?: boolean } = {}) {
+export function useCustomerDirectory({ enabled = true, initial = null }: { enabled?: boolean; initial?: ServerData<Result<Customer[]>> | null } = {}) {
   const [result, setResult] = useState<Result<Customer[]> | null>(() => {
+    // Opened from the server: its list, kept for the next visit (3e, ADR-31)
+    if (initial?.value.ok) seed(CUSTOMERS_KEY, initial.value, initial.takenAt)
     const kept = keptList()
-    return kept ? ok(kept) : null
+    return kept ? ok(kept) : (initial?.value ?? null)
   })
   // False while only the list kept from an earlier visit is shown (it may lack a customer just added)
   const [fresh, setFresh] = useState(false)

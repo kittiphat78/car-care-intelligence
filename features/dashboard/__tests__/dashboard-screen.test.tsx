@@ -22,6 +22,7 @@ vi.mock('../api', () => load)
 
 import { DashboardScreen } from '../components/DashboardScreen'
 import { RECENT_MS } from '@/lib/data-store'
+import { bangkokToday } from '@/lib/time/bangkok'
 
 const ok = <T,>(data: T) => ({ ok: true as const, data })
 const today = { totalIncome: 500, paidIncome: 350, unpaidIncome: 150, expense: 100, washCount: 3, polishCount: 1, yesterdayIncome: 400 }
@@ -81,6 +82,19 @@ describe('DashboardScreen', () => {
     const periods = screen.getByRole('region', { name: 'รายรับตามช่วงเวลา' })
     for (const label of ['รายรับวันนี้', 'รายรับสัปดาห์นี้', 'รายรับเดือนนี้']) expect(periods).toHaveTextContent(label)
     expect(screen.getByRole('region', { name: 'งานวันนี้' })).toHaveTextContent('รับเงินแล้ว')
+  })
+
+  it('shows the figures the server page loaded, without asking again (ADR-31)', async () => {
+    const day = bangkokToday()
+    await act(async () => {
+      render(
+        <ToastProvider>
+          <DashboardScreen email="owner@example.com" initial={{ value: { day, data: data() }, takenAt: Date.now() }} />
+        </ToastProvider>,
+      )
+    })
+    expect(screen.getByRole('region', { name: 'เงินสดสุทธิวันนี้' })).toHaveTextContent('฿250')
+    expect(load.loadDashboard).not.toHaveBeenCalled()
   })
 
   it('keeps a place for the debt card while loading, so the cards below do not jump (O-09)', async () => {

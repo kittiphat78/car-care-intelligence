@@ -14,7 +14,8 @@ import { EditRecordDialog } from '@/features/records/components/EditRecordDialog
 import { useEditParam } from '@/features/records/useEditParam'
 import { takeLastSaved } from '@/features/records/hooks'
 import { useOutbox, useReloadWhenSent } from '@/features/records/outbox'
-import { useDashboardData } from '../hooks'
+import type { ServerData } from '@/lib/data-store'
+import { useDashboardData, type ServerDashboard } from '../hooks'
 import { dashboardWithOutbox, periodWithPending } from '../outbox-view'
 import { customersThisMonth, greeting, newestFirst, periodTotals, toCustomerBreakdown, toDebtSummary, toStats } from '../logic'
 import { ChartCard } from './ChartCard'
@@ -40,8 +41,8 @@ const HIGHLIGHT_MS = 2000
 const messageOf = <T,>(r: { ok: true; data: T } | { ok: false; error: Parameters<typeof toUserMessage>[0] } | undefined) =>
   r && !r.ok ? toUserMessage(r.error) : undefined
 
-export function DashboardScreen({ email }: { email: string }) {
-  const { day, data: loaded, loading, refreshing, loadedAt, startedAt, refresh } = useDashboardData()
+export function DashboardScreen({ email, initial = null }: { email: string; initial?: ServerData<ServerDashboard> | null }) {
+  const { day, data: loaded, loading, refreshing, loadedAt, startedAt, refresh } = useDashboardData(initial)
   // Rows still on their way count everywhere at once (ADR-30); the database's copy follows
   const outbox = useOutbox()
   const shown = useMemo(() => (loaded ? dashboardWithOutbox(loaded, outbox, day, startedAt) : null), [loaded, outbox, day, startedAt])

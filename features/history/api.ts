@@ -1,4 +1,5 @@
 import { listBetween } from '@/features/records/api'
+import type { Db } from '@/lib/supabase'
 import { ok, type Result } from '@/lib/result'
 import { bangkokMonthRange, bangkokYearRange } from '@/lib/time/bangkok'
 import type { Expense, Record as AppRecord } from '@/types'
@@ -7,11 +8,12 @@ import type { Expense, Record as AppRecord } from '@/types'
  * All income and expenses of a Bangkok month (1–12), or of the whole year for month 0,
  * newest first. Each side can fail on its own.
  */
-export async function loadPeriod(year: number, month: number): Promise<{ records: Result<AppRecord[]>; expenses: Result<Expense[]> }> {
+/** `client`: the request's client when a server page loads it (3e) */
+export async function loadPeriod(year: number, month: number, client?: Db): Promise<{ records: Result<AppRecord[]>; expenses: Result<Expense[]> }> {
   const { start, end } = month === 0 ? bangkokYearRange(year) : bangkokMonthRange(year, month)
   const [records, expenses] = await Promise.all([
-    listBetween<AppRecord>('records', start, end, { ascending: false }),
-    listBetween<Expense>('expenses', start, end, { ascending: false }),
+    listBetween<AppRecord>('records', start, end, { ascending: false, client }),
+    listBetween<Expense>('expenses', start, end, { ascending: false, client }),
   ])
   return { records, expenses }
 }

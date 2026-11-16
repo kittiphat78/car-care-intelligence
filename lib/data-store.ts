@@ -82,6 +82,24 @@ export function load<T>(key: string, fetcher: () => Promise<T>, { keep = () => t
   return pending
 }
 
+/** Data a server page loaded is this fresh at most to be used without asking again (clocks of phone and server may differ) */
+export const SERVER_FRESH_MS = 5000
+
+/**
+ * Keep what a server page loaded for `key` (3e, ADR-31). `takenAt` is the server's
+ * Date.now() when it asked. Browser only: on the server this module is shared by every
+ * request and must stay empty. Something kept here already wins (it is at least as
+ * new: a page from the router's cache can be minutes old). The server copy counts as a
+ * fresh answer (no second request when the page opens) only if it was taken a moment ago.
+ */
+export function seed<T>(key: string, value: T, takenAt: number): void {
+  if (typeof window === 'undefined') return
+  const entry = entries.get(key)
+  if (entry?.value !== undefined) return
+  const fresh = Math.abs(Date.now() - takenAt) < SERVER_FRESH_MS
+  entries.set(key, { value, pending: entry?.pending, request: entry?.request ?? ++requests, at: fresh ? performance.now() : undefined })
+}
+
 /** Replace what is kept (e.g. a customer deleted from the kept list). A request running for it no longer writes. */
 export function put<T>(key: string, value: T): void {
   entries.set(key, { value, request: ++requests })
@@ -102,3 +120,10 @@ export const UNPAID_KEY = 'records:unpaid'
 export const DASHBOARD_KEY = 'records:dashboard'
 export const historyKey = (year: number, month: number) => `records:history:${year}:${month}`
 export const CUSTOMERS_KEY = 'customers:list'
+
+/** What a server page loaded, for the screen to show at once and keep (seed) */
+export interface ServerData<T> {
+  value: T
+  /** The server's Date.now() when it asked */
+  takenAt: number
+}

@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabase, type Db } from '@/lib/supabase'
 import { fetchAllPages } from '@/lib/fetch-all-pages'
 import { appError } from '@/lib/errors'
 import { err, ok, type Result } from '@/lib/result'
@@ -17,9 +17,10 @@ const COLUMNS =
   'customer_vehicles(id,plate,plate_key,plate_core,car_type,brand,model,color,note,position)'
 
 /** The whole directory with phones and vehicles (hundreds of rows: loaded once, searched in the browser, ADR-23) */
-export function listCustomers(): Promise<Result<Customer[]>> {
+/** `client`: the request's client when a server page loads it (3e) */
+export function listCustomers(client: Db = supabase): Promise<Result<Customer[]>> {
   return fetchAllPages<Customer>((from, to) =>
-    supabase
+    client
       .from('customers')
       .select(COLUMNS, { count: 'exact' })
       .order('name')
