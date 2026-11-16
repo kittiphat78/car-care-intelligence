@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { supabase, type Db } from '@/lib/supabase'
 import { ok, type Result } from '@/lib/result'
 import { listBetween, run } from '@/features/records/api'
 import { listUnpaid } from '@/features/debts/api'
@@ -44,13 +44,17 @@ const period = (row: BreakdownRow, prefix: 'week' | 'month' | 'year'): CustomerT
 const map = <T, U>(result: Result<T>, fn: (data: T) => U): Result<U> => (result.ok ? ok(fn(result.data)) : result)
 
 /** Everything the dashboard shows. Each part can fail on its own so the rest still renders. */
-export async function loadDashboard(today: string): Promise<DashboardData> {
+/**
+ * `unpaid` loads the unpaid list; the hook passes one that shares it with /debts
+ * (lib/data-store.ts). `client`: the request's client when the server page loads it (3e).
+ */
+export async function loadDashboard(today: string, unpaid?: () => Promise<Result<AppRecord[]>>, client: Db = supabase): Promise<DashboardData> {
   const [todayRecords, todayRows, seriesRows, breakdownRows, unpaidRecords] = await Promise.all([
-    listBetween<AppRecord>('records', startOfBangkokDay(today), null, { ascending: true }),
-    run(supabase.rpc('dashboard_today', { p_day: today })),
-    run(supabase.rpc('daily_series', { p_from: addDays(today, -29), p_to: today })),
-    run(supabase.rpc('customer_breakdown', { p_day: today })),
-    listUnpaid(),
+    listBetween<AppRecord>('records', startOfBangkokDay(today), null, { ascending: true, client }),
+    run(client.rpc('dashboard_today', { p_day: today })),
+    run(client.rpc('daily_series', { p_from: addDays(today, -29), p_to: today })),
+    run(client.rpc('customer_breakdown', { p_day: today })),
+    unpaid ? unpaid() : listUnpaid(client),
   ])
 
   return {

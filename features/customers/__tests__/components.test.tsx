@@ -358,6 +358,25 @@ describe('CustomersScreen', () => {
     expect(screen.queryByText('ทดสอบ คุณบี')).toBeNull()
   })
 
+  it('keeps a search typed before the page the server sent is ready (D-08, ADR-31)', async () => {
+    const ui = (
+      <ToastProvider>
+        <CustomersScreen userId="user-1" initial={{ value: { ok: true, data: [A, B] }, takenAt: Date.now() }} />
+      </ToastProvider>
+    )
+    // The server's HTML with the list, typed into, then taken over by React (a slow phone)
+    const { renderToString } = await import('react-dom/server')
+    const container = document.createElement('div')
+    container.innerHTML = renderToString(ui)
+    document.body.appendChild(container)
+    ;(within(container).getByRole('searchbox') as HTMLInputElement).value = '5678'
+    await act(async () => {
+      render(ui, { container, hydrate: true })
+    })
+    expect(screen.getByRole('searchbox')).toHaveValue('5678')
+    expect(screen.getByText('ตรงกับ: ทะเบียน 2ขค 5678')).toBeInTheDocument()
+  })
+
   it('writes the search to the URL without a server request (AC-02-4)', async () => {
     const replaceState = vi.spyOn(window.history, 'replaceState')
     await renderList()

@@ -16,12 +16,13 @@ import { useOnline } from '@/components/patterns/StatusBar'
 import { CustomerFormDialog } from '@/features/customers/components/CustomerFormDialog'
 import { DebtContact } from '@/features/customers/components/DebtContact'
 import { useCustomerDirectory } from '@/features/customers/hooks'
-import { keepScreen, keptScreen } from '@/lib/screen-memory'
+import { UNPAID_KEY, peek, seed, type ServerData } from '@/lib/data-store'
 import { pushUrl, replaceUrl, useUrlDialog } from '@/lib/url-state'
 import { EditRecordDialog } from '@/features/records/components/EditRecordDialog'
 import { useEditParam } from '@/features/records/useEditParam'
 import type { Record as AppRecord } from '@/types'
-import { listUnpaid } from '../api'
+import { loadUnpaidShared } from '../shared'
+import { useOutbox, useReloadWhenSent, withOutboxIncome } from '@/features/records/outbox'
 import { UNNAMED_KEY, debtTotals, groupDebts, sortDebts, type DebtGroup, type DebtSort } from '../logic'
 import { DebtCustomerCard } from './DebtCustomerCard'
 import { SettleDialog } from './SettleDialog'
@@ -30,28 +31,32 @@ import { SettleDialog } from './SettleDialog'
 
 const baht = (n: number) => `฿${n.toLocaleString('en-US')}`
 
-export function DebtsScreen() {
+export function DebtsScreen({ initial = null }: { initial?: ServerData<Result<AppRecord[]>> | null } = {}) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const toast = useToast()
   const online = useOnline()
-  // Back on this tab: the last list at once, a fresh copy right after (lib/screen-memory.ts)
-  const [unpaid, setUnpaid] = useState<Result<AppRecord[]> | null>(() => keptScreen<Result<AppRecord[]>>('debts') ?? null)
+  // The last list this tab saw (here or on the dashboard) at once, a fresh copy right after (lib/data-store.ts)
+  // Opened from the server: its list, kept for the next visit (3e, ADR-31)
+  const [unpaid, setUnpaid] = useState<Result<AppRecord[]> | null>(() => {
+    if (initial?.value.ok) seed(UNPAID_KEY, initial.value, initial.takenAt)
+    return peek<Result<AppRecord[]>>(UNPAID_KEY) ?? initial?.value ?? null
+  })
   const [billing, setBilling] = useState<string | null>(null)
   const settleOpenedHere = useRef(false)
   const today = bangkokToday()
 
-  const load = useCallback(async () => {
-    const result = await listUnpaid()
-    if (result.ok) keepScreen('debts', result)
-    else reportAppError(result.error)
+  /** `fresh`: not the request already running (it may have started before a change) */
+  const load = useCallback(async (fresh: boolean) => {
+    const result = await loadUnpaidShared({ fresh })
+    if (!result.ok) reportAppError(result.error)
     setUnpaid(result)
   }, [])
 
   useEffect(() => {
-    // Initial load; the result arrives after this effect
-    void load()
+    // Initial load (joins the dashboard's if it is still running); the result arrives after this effect
+    void load(false)
   }, [load])
 
   // The nav badge comes from the server layout, so it needs router.refresh(). Not while
@@ -65,15 +70,21 @@ export function DebtsScreen() {
 
   /** Reload this page and the nav badge */
   const reload = useCallback(() => {
-    void load()
+    void load(true)
     if (settleOpen.current) setRefreshAfterClose(true)
     else startRefresh(() => router.refresh())
   }, [load, router])
 
+  // Unpaid rows still on their way are owed too (ADR-30); the database's copy follows
+  const outbox = useOutbox()
+  const owed = useMemo(() => (unpaid?.ok ? withOutboxIncome(unpaid.data, outbox, (row) => row.payment_status === 'unpaid') : null), [unpaid, outbox])
+  // load(false) joins the reload a settle already started instead of asking twice
+  useReloadWhenSent(useCallback(() => void load(false), [load]))
+
   const sort: DebtSort = searchParams.get('sort') === 'age' ? 'age' : 'amount'
-  const groups = useMemo(() => (unpaid?.ok ? sortDebts(groupDebts(unpaid.data, today), sort) : []), [unpaid, sort, today])
+  const groups = useMemo(() => (owed ? sortDebts(groupDebts(owed, today), sort) : []), [owed, sort, today])
   const totals = debtTotals(groups)
-  const records = unpaid?.ok ? unpaid.data : []
+  const records = owed ?? []
   const edit = useEditParam({ income: records, ready: unpaid !== null })
 
   // Customer directory: a call button on each card (US-10), "เพิ่มเบอร์" when not in it yet

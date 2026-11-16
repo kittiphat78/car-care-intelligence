@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { appError } from '@/lib/errors'
 import { ToastProvider } from '@/components/ui/Toast'
 import type { Record as AppRecord } from '@/types'
@@ -21,6 +21,8 @@ import { DebtsScreen } from '../components/DebtsScreen'
 import { DebtCustomerCard } from '../components/DebtCustomerCard'
 import { groupDebts, platePreview, settleOutcome, sortDebts, debtTotals, URGENT_DAYS, UNNAMED_KEY } from '../logic'
 import { forgetCustomers } from '@/features/customers/memory'
+import { UNPAID_KEY, load, put } from '@/lib/data-store'
+import { clearOutbox } from '@/features/records/outbox'
 import { plateCore, plateKey } from '@/features/customers/logic'
 import type { Customer } from '@/features/customers/types'
 
@@ -88,6 +90,8 @@ async function renderScreen() {
   })
 }
 
+afterEach(() => clearOutbox())
+
 beforeEach(() => {
   nav.push.mockReset()
   nav.replace.mockReset()
@@ -113,6 +117,34 @@ describe('DebtCustomerCard', () => {
 })
 
 describe('DebtsScreen', () => {
+  it('shows the list the dashboard loaded at once, while a fresh copy loads (ADR-29)', async () => {
+    put(UNPAID_KEY, { ok: true, data: unpaid })
+    api.listUnpaid.mockReturnValue(new Promise(() => {}))
+    await renderScreen()
+    expect(screen.getAllByRole('article')).toHaveLength(3)
+    expect(api.listUnpaid).toHaveBeenCalledOnce()
+  })
+
+  it('waits for the unpaid list the dashboard is already loading instead of asking again', async () => {
+    let answer!: (value: unknown) => void
+    void load(UNPAID_KEY, () => new Promise((resolve) => (answer = resolve)))
+    await renderScreen()
+    expect(api.listUnpaid).not.toHaveBeenCalled()
+    await act(async () => answer({ ok: true, data: unpaid }))
+    expect(screen.getAllByRole('article')).toHaveLength(3)
+  })
+
+  it('shows the list the server page loaded, without asking again (ADR-31)', async () => {
+    render(
+      <ToastProvider>
+        <DebtsScreen initial={{ value: { ok: true, data: unpaid }, takenAt: Date.now() }} />
+      </ToastProvider>,
+    )
+    expect(screen.getAllByRole('article')).toHaveLength(3)
+    await act(async () => {})
+    expect(api.listUnpaid).not.toHaveBeenCalled()
+  })
+
   it('shows the total and one card per customer, largest first', async () => {
     await renderScreen()
     expect(screen.getByRole('heading', { level: 1, name: 'ค้างชำระ' })).toBeInTheDocument()
@@ -174,18 +206,34 @@ describe('DebtsScreen', () => {
     await act(async () => {
       fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'เคลียร์ยอด' }))
     })
-    expect(screen.getByRole('alertdialog')).toHaveTextContent('เคลียร์ยอดได้ 1 จาก 2 รายการ')
+    expect(screen.getByRole('status')).toHaveTextContent('เคลียร์ยอดได้ 1 จาก 2 รายการ')
   })
 
-  it('keeps the debt when settling fails', async () => {
+  it('takes the card away at once and brings it back when settling fails (ADR-30)', async () => {
     nav.search = 'settle=เต็นท์ A'
-    api.settleRecords.mockResolvedValue({ ok: false, error: appError('NETWORK') })
+    let answer!: (value: unknown) => void
+    api.settleRecords.mockReturnValue(new Promise((resolve) => (answer = resolve)))
     await renderScreen()
     await act(async () => {
       fireEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'เคลียร์ยอด' }))
     })
-    expect(within(screen.getByRole('alertdialog')).getByRole('alert')).toHaveTextContent('เคลียร์ยอดไม่สำเร็จ ยอดยังไม่เปลี่ยน')
+    // Gone before the database answered
+    expect(screen.queryByRole('heading', { name: 'เต็นท์ A' })).toBeNull()
+    expect(screen.getAllByRole('article')).toHaveLength(2)
+
+    await act(async () => answer({ ok: false, error: appError('NETWORK') }))
+    expect(screen.getByRole('heading', { name: 'เต็นท์ A' })).toBeInTheDocument()
+    const toast = screen.getByRole('alert')
+    expect(toast).toHaveTextContent('เคลียร์ยอด เต็นท์ A ไม่สำเร็จ ยอดค้างกลับมาแล้ว')
     expect(nav.refresh).not.toHaveBeenCalled()
+
+    // "ลองอีกครั้ง" sends the same jobs again
+    api.settleRecords.mockResolvedValue({ ok: true, data: { updatedCount: 2, total: 1300 } })
+    await act(async () => {
+      fireEvent.click(within(toast).getByRole('button', { name: 'ลองอีกครั้ง' }))
+    })
+    expect(api.settleRecords).toHaveBeenLastCalledWith(['2', '1'])
+    expect(screen.getByRole('status')).toHaveTextContent('เคลียร์ยอด เต็นท์ A ฿1,300 แล้ว')
   })
 
   it('calls the customer from the directory, by name or by plate (US-10)', async () => {

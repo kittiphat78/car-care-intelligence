@@ -1,8 +1,9 @@
-import { supabase } from '@/lib/supabase'
+import { supabase, type Db } from '@/lib/supabase'
 import { fetchAllPages } from '@/lib/fetch-all-pages'
 import { appError } from '@/lib/errors'
 import { err, ok, type Result } from '@/lib/result'
 import { run } from '@/features/records/api'
+import { CUSTOMERS_KEY, forget } from '@/lib/data-store'
 import type { CustomerPayload } from './schema'
 import type { Record as AppRecord } from '@/types'
 import type { Customer, CustomerHistory } from './types'
@@ -16,9 +17,10 @@ const COLUMNS =
   'customer_vehicles(id,plate,plate_key,plate_core,car_type,brand,model,color,note,position)'
 
 /** The whole directory with phones and vehicles (hundreds of rows: loaded once, searched in the browser, ADR-23) */
-export function listCustomers(): Promise<Result<Customer[]>> {
+/** `client`: the request's client when a server page loads it (3e) */
+export function listCustomers(client: Db = supabase): Promise<Result<Customer[]>> {
   return fetchAllPages<Customer>((from, to) =>
-    supabase
+    client
       .from('customers')
       .select(COLUMNS, { count: 'exact' })
       .order('name')
@@ -70,6 +72,8 @@ export async function saveCustomer(payload: CustomerPayload, options: SaveOption
       p_client_request_id: options.requestId,
     }),
   )
+  // Whatever the outcome, a list kept from before may be out of date (ADR-29)
+  forget(CUSTOMERS_KEY)
   if (!result.ok) return result
   const row = ((result.data as SavedCustomer[] | null) ?? [])[0]
   return row ? ok(row) : err(appError('SERVER', new Error('save_customer returned no row')))
@@ -77,6 +81,7 @@ export async function saveCustomer(payload: CustomerPayload, options: SaveOption
 
 /** Delete a customer; its phones and vehicles go with it (cascade). Records are not touched. */
 export async function deleteCustomer(id: string): Promise<Result<void>> {
+  // The detail page takes the customer out of the kept list (dropCustomer), so going back does not flash it
   const result = await run(supabase.from('customers').delete().eq('id', id).select('id'))
   if (!result.ok) return result
   return (result.data as unknown[] | null)?.length ? ok(undefined) : err(appError('NOT_FOUND'))

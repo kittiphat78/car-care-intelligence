@@ -1,8 +1,8 @@
-import { supabase } from '@/lib/supabase'
+import { supabase, type Db } from '@/lib/supabase'
 import { appError, toAppError } from '@/lib/errors'
 import { err, ok, type Result } from '@/lib/result'
 import { fetchAllPages } from '@/lib/fetch-all-pages'
-import { forgetScreens } from '@/lib/screen-memory'
+import { RECORDS, forget } from '@/lib/data-store'
 import type { Expense, Record as AppRecord } from '@/types'
 
 export type EntryTable = 'records' | 'expenses'
@@ -63,7 +63,7 @@ const done = <T>(result: Result<T>): Result<void> => (result.ok ? ok(undefined) 
  * of date: the dashboard after "บันทึก" must not show the list without the new job.
  */
 function changed<T>(result: Result<T>): Result<T> {
-  forgetScreens()
+  forget(RECORDS)
   return result
 }
 
@@ -125,10 +125,10 @@ export function listBetween<T>(
   table: EntryTable,
   start: Date,
   end: Date | null,
-  { ascending, columns = '*' }: { ascending: boolean; columns?: string },
+  { ascending, columns = '*', client = supabase }: { ascending: boolean; columns?: string; client?: Db },
 ): Promise<Result<T[]>> {
   return fetchAllPages<T>((from, to) => {
-    let query = supabase.from(table).select(columns, { count: 'exact' }).gte('created_at', start.toISOString())
+    let query = client.from(table).select(columns, { count: 'exact' }).gte('created_at', start.toISOString())
     if (end) query = query.lt('created_at', end.toISOString())
     return query
       .order('created_at', { ascending })

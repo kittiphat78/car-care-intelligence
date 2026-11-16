@@ -2,9 +2,12 @@
 
 import { memo, useCallback, useDeferredValue, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
-import { keepScreen, keptScreen } from '@/lib/screen-memory'
+import { keptPeriod, loadHistoryPeriod, type PeriodData } from '../shared'
+import { historyKey, seed, type ServerData } from '@/lib/data-store'
+import { useOutbox, useReloadWhenSent, withOutboxExpenses, withOutboxIncome, type OutboxSnapshot } from '@/features/records/outbox'
 import { pushUrl, replaceUrl } from '@/lib/url-state'
 import { cn } from '@/lib/cn'
+import { useKeepEarlyTyping } from '@/lib/use-early-typing'
 import { bangkokParts, formatBangkok } from '@/lib/time/bangkok'
 import { toUserMessage } from '@/lib/errors'
 import { reportAppError } from '@/lib/observability'
@@ -25,7 +28,6 @@ import { ExpenseRow, IncomeRow } from '@/features/records/components/RecordRow'
 import { useEditParam } from '@/features/records/useEditParam'
 import type { Expense, Record as AppRecord } from '@/types'
 import { useMediaQuery, TABLE_SCREEN } from '@/lib/use-media-query'
-import { loadPeriod } from '../api'
 import {
   activeFilterCount,
   expenseSummary,
@@ -49,18 +51,24 @@ const baht = (n: number) => `฿${n.toLocaleString('en-US')}`
 const SEARCH_DELAY_MS = 250
 const EARLIEST_YEAR = 2023
 
-/** Rows of one Bangkok month, or of the whole year when month is 0 */
-interface PeriodData {
-  year: number
-  month: number
-  records: Result<AppRecord[]>
-  expenses: Result<Expense[]>
-}
-
 const covers = (d: PeriodData | null, year: number, month: number): d is PeriodData =>
   !!d && d.year === year && (d.month === 0 || d.month === month)
 
-export function HistoryScreen() {
+/** The period with the rows still on their way that fall in it (ADR-30) */
+function periodWithOutbox(data: PeriodData | null, outbox: OutboxSnapshot): PeriodData | null {
+  if (!data || (outbox.items.length === 0 && outbox.changes.length === 0)) return data
+  const inPeriod = (row: { created_at: string }) => {
+    const at = bangkokParts(new Date(row.created_at))
+    return at.year === data.year && (data.month === 0 || at.month === data.month)
+  }
+  return {
+    ...data,
+    records: data.records.ok ? { ok: true, data: withOutboxIncome(data.records.data, outbox, inPeriod) } : data.records,
+    expenses: data.expenses.ok ? { ok: true, data: withOutboxExpenses(data.expenses.data, outbox, inPeriod) } : data.expenses,
+  }
+}
+
+export function HistoryScreen({ initial = null }: { initial?: ServerData<PeriodData> | null } = {}) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const filterKey = filterParams(searchParams)
@@ -89,6 +97,9 @@ export function HistoryScreen() {
 
   // Search: type freely, update the URL after a short pause (UF-HIST-01)
   const [query, setQuery] = useState(filters.q)
+  // Typed before React took over the page the server sent with the month (D-08, ADR-31)
+  const rootRef = useRef<HTMLDivElement>(null)
+  useKeepEarlyTyping(rootRef, { 'history-search': setQuery })
   const lastPushed = useRef(filters.q)
   useEffect(() => {
     if (query === lastPushed.current) return
@@ -103,17 +114,24 @@ export function HistoryScreen() {
   // A month is ~1/12 of the rows to download and draw. The whole year follows, so another
   // month of it shows with no wait and the export can count rows. It is kept aside: the
   // month on screen stays as it is (swapping in the year would draw every row again).
-  // Back on this tab: the last year shown at once, a fresh copy right after (lib/screen-memory.ts)
-  const [shown, setShown] = useState<PeriodData | null>(() => keptScreen<PeriodData>('history') ?? null)
-  const [year, setYear] = useState<PeriodData | null>(() => keptScreen<PeriodData>('history') ?? null)
+  // Back on this tab: the month and year kept for this view at once, a fresh copy right
+  // after (lib/data-store.ts)
+  const [shown, setShown] = useState<PeriodData | null>(() => {
+    // Opened from the server: the month it loaded, kept for the next visit (3e, ADR-31)
+    const fromServer = initial && initial.value.year === filters.year && initial.value.month === filters.month ? initial.value : null
+    if (fromServer && fromServer.records.ok && fromServer.expenses.ok) seed(historyKey(fromServer.year, fromServer.month), fromServer, initial!.takenAt)
+    return keptPeriod(filters.year, filters.month) ?? keptPeriod(filters.year, 0) ?? fromServer
+  })
+  const [year, setYear] = useState<PeriodData | null>(() => keptPeriod(filters.year, 0) ?? null)
   const latestLoad = useRef(0)
-  const load = useCallback(async (y: number, m: number) => {
+  /** `fresh`: not a request already running (it may have started before an edit) */
+  const load = useCallback(async (y: number, m: number, fresh: boolean) => {
     const id = ++latestLoad.current
     const get = async (month: number): Promise<PeriodData | null> => {
-      const result = await loadPeriod(y, month)
+      const data = await loadHistoryPeriod(y, month, { fresh })
       if (id !== latestLoad.current) return null
-      for (const part of [result.records, result.expenses]) if (!part.ok) reportAppError(part.error)
-      return { year: y, month, ...result }
+      for (const part of [data.records, data.expenses]) if (!part.ok) reportAppError(part.error)
+      return data
     }
     if (m !== 0) {
       const month = await get(m)
@@ -123,10 +141,7 @@ export function HistoryScreen() {
     }
     const all = await get(0)
     if (!all) return
-    if (all.records.ok && all.expenses.ok) {
-      keepScreen<PeriodData>('history', all)
-      setYear(all)
-    }
+    if (all.records.ok && all.expenses.ok) setYear(all)
     if (m === 0) setShown(all)
   }, [])
   // Load on arrival and for another year; another month of the year already here needs nothing
@@ -139,16 +154,22 @@ export function HistoryScreen() {
     const { shown: s, year: y } = have.current
     if (arrived.current && (covers(s, filters.year, filters.month) || covers(y, filters.year, filters.month))) return
     arrived.current = true
-    void load(filters.year, filters.month)
+    void load(filters.year, filters.month, false)
   }, [filters.year, filters.month, load])
-  const reload = useCallback(() => void load(filters.year, filters.month), [load, filters.year, filters.month])
+  const reload = useCallback(() => void load(filters.year, filters.month, true), [load, filters.year, filters.month])
+  useReloadWhenSent(reload)
+
+  // Rows still on their way show in the period they belong to (ADR-30)
+  const outbox = useOutbox()
+  const shownView = useMemo(() => periodWithOutbox(shown, outbox), [shown, outbox])
+  const yearView = useMemo(() => periodWithOutbox(year, outbox), [year, outbox])
 
   // The month on screen while it covers the view, else the year (another month of it)
-  const current = covers(shown, filters.year, filters.month) ? shown : covers(year, filters.year, filters.month) ? year : null
+  const current = covers(shownView, filters.year, filters.month) ? shownView : covers(yearView, filters.year, filters.month) ? yearView : null
   const records = useMemo(() => (current?.records.ok ? current.records.data : []), [current])
   const expenses = useMemo(() => (current?.expenses.ok ? current.expenses.data : []), [current])
   // The edit dialog may name a row of another month (a link, the back button)
-  const fullYear = year?.year === filters.year ? year : null
+  const fullYear = yearView?.year === filters.year ? yearView : null
   const editIncome = useMemo(() => (fullYear?.records.ok ? fullYear.records.data : records), [fullYear, records])
   const editExpenses = useMemo(() => (fullYear?.expenses.ok ? fullYear.expenses.data : expenses), [fullYear, expenses])
   const side = filters.tab === 'income' ? current?.records : current?.expenses
@@ -211,7 +232,7 @@ export function HistoryScreen() {
   // grid-cols-1 = minmax(0, 1fr): nothing inside (e.g. an Android <select>, which is as
   // wide as its longest option) can make the column wider than the screen
   return (
-    <div className="grid grid-cols-1 gap-4 pb-4">
+    <div ref={rootRef} className="grid grid-cols-1 gap-4 pb-4">
       {/* Export sits by the title (it was under the summary, pushing the list down on phones,
           Phase A M4); on wider screens it follows the period picker */}
       <header className="flex flex-wrap items-end gap-3 pt-6">

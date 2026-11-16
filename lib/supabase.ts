@@ -11,3 +11,6 @@ export const supabase = createBrowserClient(
     },
   }
 )
+
+/** A Supabase client: this one in the browser, the request's one on the server (lib/supabase/server.ts) */
+export type Db = typeof supabase

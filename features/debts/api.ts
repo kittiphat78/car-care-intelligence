@@ -1,14 +1,15 @@
-import { supabase } from '@/lib/supabase'
+import { supabase, type Db } from '@/lib/supabase'
 import { fetchAllPages } from '@/lib/fetch-all-pages'
 import { ok, type Result } from '@/lib/result'
-import { forgetScreens } from '@/lib/screen-memory'
+import { RECORDS, forget } from '@/lib/data-store'
 import { run } from '@/features/records/api'
 import type { Record as AppRecord } from '@/types'
 
 /** Every unpaid income record, oldest first (all pages, ER-02) */
-export function listUnpaid(): Promise<Result<AppRecord[]>> {
+/** `client`: the request's client when a server page loads it (3e) */
+export function listUnpaid(client: Db = supabase): Promise<Result<AppRecord[]>> {
   return fetchAllPages<AppRecord>((from, to) =>
-    supabase
+    client
       .from('records')
       .select('*', { count: 'exact' })
       .eq('payment_status', 'unpaid')
@@ -37,7 +38,7 @@ export interface SettleResult {
 export async function settleRecords(ids: string[]): Promise<Result<SettleResult>> {
   const result = await run(supabase.rpc('settle_records', { p_ids: ids }))
   // The dashboard and history kept by other tabs show these as unpaid
-  forgetScreens()
+  forget(RECORDS)
   if (!result.ok) return result
   const row = (result.data as { updated_count: number; total: number }[] | null)?.[0]
   return ok({ updatedCount: num(row?.updated_count), total: num(row?.total) })

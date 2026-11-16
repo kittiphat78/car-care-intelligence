@@ -1,6 +1,7 @@
 import { Suspense, type ReactNode } from 'react'
 import { StatusBar } from '@/components/patterns/StatusBar'
 import { BottomNav } from './BottomNav'
+import { IdlePrefetch } from './IdlePrefetch'
 import { SideNav } from './SideNav'
 
 // screen-specifications.md §0 — frame of every signed-in page: skip link, status bar,
@@ -38,6 +39,7 @@ export function AppShell({ children, email, dialogs, badges }: AppShellProps) {
         <SideNav email={email} badges={badges} />
       </Suspense>
       <BottomNav badges={badges} />
+      <IdlePrefetch />
       {dialogs}
     </>
   )

@@ -11,15 +11,23 @@ type CookieAdapter = {
 const mockState = vi.hoisted(() => ({
   user: null as { id: string } | null,
   refreshedCookies: [] as CookieToSet[],
+  /** getClaims() failing, e.g. a token with a bad signature */
+  claimsError: false,
+  getUserCalls: 0,
 }))
 
 vi.mock('@supabase/ssr', () => ({
   createServerClient: (_url: string, _key: string, options: { cookies: CookieAdapter }) => ({
     auth: {
-      getUser: async () => {
+      getClaims: async () => {
         if (mockState.refreshedCookies.length > 0) {
           options.cookies.setAll(mockState.refreshedCookies, { 'Cache-Control': 'private, no-store' })
         }
+        if (mockState.claimsError) return { data: null, error: new Error('Invalid JWT signature') }
+        return mockState.user ? { data: { claims: { sub: mockState.user.id } }, error: null } : { data: null, error: null }
+      },
+      getUser: async () => {
+        mockState.getUserCalls++
         return { data: { user: mockState.user }, error: null }
       },
     },
@@ -36,6 +44,21 @@ describe('proxy', () => {
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'test-anon-key')
     mockState.user = null
     mockState.refreshedCookies = []
+    mockState.claimsError = false
+    mockState.getUserCalls = 0
+  })
+
+  it('checks the session without calling Supabase Auth (getClaims, not getUser)', async () => {
+    mockState.user = { id: 'user-1' }
+    await proxy(request('/history'))
+    expect(mockState.getUserCalls).toBe(0)
+  })
+
+  it('treats a token that fails verification as signed out', async () => {
+    mockState.user = { id: 'user-1' }
+    mockState.claimsError = true
+    const res = await proxy(request('/history'))
+    expect(res.headers.get('location')).toBe('https://shop.example/login?next=%2Fhistory')
   })
 
   afterEach(() => {

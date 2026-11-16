@@ -79,6 +79,23 @@ test('the dashboard still works when the chart file cannot be downloaded (D-11)'
   await expect(page.getByRole('heading', { level: 1, name: 'ภาพรวมวันนี้' })).toBeVisible()
 })
 
+test('a history search typed before the page is ready stays and filters (D-08, ADR-31)', async ({ page }) => {
+  await signIn(page)
+  // The page arrives with this month's rows (ADR-31) and looks ready before the scripts run
+  let release!: () => void
+  const held = new Promise<void>((r) => (release = r))
+  await page.route(/\/_next\/static\/chunks\/.*\.js/, async (route) => {
+    await held
+    await route.continue().catch(() => {})
+  })
+  await page.goto('/history', { waitUntil: 'domcontentloaded' })
+  const search = page.getByRole('searchbox', { name: /ค้นหาทะเบียน/ })
+  await search.fill('ไม่มีทะเบียนนี้แน่นอน')
+  release()
+  await expect(page).toHaveURL(/q=/)
+  await expect(search).toHaveValue('ไม่มีทะเบียนนี้แน่นอน')
+})
+
 test('what is typed before the page is ready stays in the form and is saved (D-08)', async ({ page }, info) => {
   const plate = uniquePlate(info, 'T')
   await signIn(page)

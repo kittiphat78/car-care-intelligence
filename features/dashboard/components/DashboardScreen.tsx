@@ -13,7 +13,10 @@ import { IncomeRow } from '@/features/records/components/RecordRow'
 import { EditRecordDialog } from '@/features/records/components/EditRecordDialog'
 import { useEditParam } from '@/features/records/useEditParam'
 import { takeLastSaved } from '@/features/records/hooks'
-import { useDashboardData } from '../hooks'
+import { useOutbox, useReloadWhenSent } from '@/features/records/outbox'
+import type { ServerData } from '@/lib/data-store'
+import { useDashboardData, type ServerDashboard } from '../hooks'
+import { dashboardWithOutbox, periodWithPending } from '../outbox-view'
 import { customersThisMonth, greeting, newestFirst, periodTotals, toCustomerBreakdown, toDebtSummary, toStats } from '../logic'
 import { ChartCard } from './ChartCard'
 import { CardHeader, CustomerBreakdownCard, DebtSummaryCard, DebtSummarySkeleton, MoneyHero } from './cards'
@@ -38,8 +41,13 @@ const HIGHLIGHT_MS = 2000
 const messageOf = <T,>(r: { ok: true; data: T } | { ok: false; error: Parameters<typeof toUserMessage>[0] } | undefined) =>
   r && !r.ok ? toUserMessage(r.error) : undefined
 
-export function DashboardScreen({ email }: { email: string }) {
-  const { day, data, loading, refreshing, loadedAt, refresh } = useDashboardData()
+export function DashboardScreen({ email, initial = null }: { email: string; initial?: ServerData<ServerDashboard> | null }) {
+  const { day, data: loaded, loading, refreshing, loadedAt, startedAt, refresh } = useDashboardData(initial)
+  // Rows still on their way count everywhere at once (ADR-30); the database's copy follows
+  const outbox = useOutbox()
+  const shown = useMemo(() => (loaded ? dashboardWithOutbox(loaded, outbox, day, startedAt) : null), [loaded, outbox, day, startedAt])
+  const data = shown?.data ?? null
+  useReloadWhenSent(refresh)
   const { weather, refetch: refetchWeather, isRefetching: weatherRefreshing } = useDashboardWeather()
   const weatherDetail = useWeatherDetail()
   const [showAll, setShowAll] = useState(false)
@@ -55,8 +63,10 @@ export function DashboardScreen({ email }: { email: string }) {
   // ── Derived, low priority: everything below today's figures and list ──
   // Glass home (ADR-28): figures from the same data, nothing extra is loaded.
   // null = still loading · undefined = that part failed (shown as —)
-  const late = useDeferredValue(data)
+  const lateShown = useDeferredValue(shown)
   const lateParts = useMemo(() => {
+    const late = lateShown?.data
+    const pending = lateShown?.pending
     const lateStats = late?.today.ok ? toStats(late.today.data) : null
     const lateDebt = late?.unpaidRecords.ok ? toDebtSummary(late.unpaidRecords.data) : null
     const customerRows = late ? (late.customers.ok ? late.customers.data : undefined) : null
@@ -68,12 +78,12 @@ export function DashboardScreen({ email }: { email: string }) {
       customersMonth: customerRows ? customersThisMonth(customerRows) : customerRows,
       debt: late ? (lateDebt ?? undefined) : null,
       today: lateStats ? { total: lateStats.todayTotalIncome, washCount: lateStats.washCount, polishCount: lateStats.polishCount } : late && !late.today.ok ? undefined : null,
-      week: periods === undefined ? undefined : (periods?.week ?? null),
-      month: periods === undefined ? undefined : (periods?.month ?? null),
+      week: periods === undefined ? undefined : periods && pending ? periodWithPending(periods.week, pending) : null,
+      month: periods === undefined ? undefined : periods && pending ? periodWithPending(periods.month, pending) : null,
       seriesError: messageOf(late?.series),
       customersError: messageOf(late?.customers),
     }
-  }, [late])
+  }, [lateShown])
 
   // ── Highlight the record just saved on /add, once ──
   useEffect(() => {

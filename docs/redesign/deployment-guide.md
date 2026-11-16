@@ -86,6 +86,6 @@ curl -s $P/login | grep -o 'v[0-9]\+\.[0-9]\+\.[0-9]\+[-a-z0-9.]*' | head -1   #
 |---|---|
 | Vercel Hobby | log ย้อนได้ 30 นาที · ไม่มี alert · ไม่มี gradual rollout [V] |
 | Node version | ไม่มี `engines.node` · Vercel ใช้ค่าตั้งของ project [U] |
-| Function region | [U] ควรใกล้ Supabase |
+| Function region | `sin1` (สิงคโปร์) ตั้งใน `vercel.json` ให้ใกล้ Supabase production และ staging (สิงคโปร์) · เดิมเป็นค่าเริ่มต้น `iad1` (สหรัฐฯ) ทำให้หน้าที่ login แล้วรอ server 1.5–2.2 s บน Preview · ตรวจด้วย header `x-vercel-id` ต้องเป็น `sin1::sin1::…` · proxy.ts (Routing Middleware) ทำงานใกล้ผู้ใช้ทุก region อยู่แล้ว [V] |
 | ไม่มี feature flag | ของใหม่ปิดได้ด้วย rollback ทั้ง deployment เท่านั้น |
 | GitHub Actions ล่ม | merge ไม่ได้เพราะ ruleset (ตั้งใจ) · รอ (S11-02) |
