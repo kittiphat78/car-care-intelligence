@@ -113,9 +113,8 @@ jobs:
         with:
           version: 2.118.0
       - name: Start database (migrations + seed)
-        run: >-
-          supabase start
-          -x gotrue,realtime,storage-api,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+        # Tries again when the start itself fails on the runner (scripts/ci-supabase-start.sh)
+        run: scripts/ci-supabase-start.sh gotrue,realtime,storage-api,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
       - name: Add a test member
         run: psql "$DB_URL" -v ON_ERROR_STOP=1 -f supabase/tests/ci_fixtures.sql
       - name: SQL tests
@@ -153,9 +152,8 @@ jobs:
           version: 2.118.0
       - run: npm ci
       - name: Start Supabase (database, auth, API)
-        run: >-
-          supabase start
-          -x realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+        # Tries again when the start itself fails on the runner (scripts/ci-supabase-start.sh)
+        run: scripts/ci-supabase-start.sh realtime,storage-api,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
       - name: Local Supabase address and keys
         run: |
           supabase status -o env | sed -n 's/^\(API_URL\|ANON_KEY\|SERVICE_ROLE_KEY\)="\(.*\)"$/E2E_\1=\2/p' \
