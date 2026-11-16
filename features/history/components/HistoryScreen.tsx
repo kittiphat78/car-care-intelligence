@@ -7,6 +7,7 @@ import { historyKey, seed, type ServerData } from '@/lib/data-store'
 import { useOutbox, useReloadWhenSent, withOutboxExpenses, withOutboxIncome, type OutboxSnapshot } from '@/features/records/outbox'
 import { pushUrl, replaceUrl } from '@/lib/url-state'
 import { cn } from '@/lib/cn'
+import { useKeepEarlyTyping } from '@/lib/use-early-typing'
 import { bangkokParts, formatBangkok } from '@/lib/time/bangkok'
 import { toUserMessage } from '@/lib/errors'
 import { reportAppError } from '@/lib/observability'
@@ -96,6 +97,9 @@ export function HistoryScreen({ initial = null }: { initial?: ServerData<PeriodD
 
   // Search: type freely, update the URL after a short pause (UF-HIST-01)
   const [query, setQuery] = useState(filters.q)
+  // Typed before React took over the page the server sent with the month (D-08, ADR-31)
+  const rootRef = useRef<HTMLDivElement>(null)
+  useKeepEarlyTyping(rootRef, { 'history-search': setQuery })
   const lastPushed = useRef(filters.q)
   useEffect(() => {
     if (query === lastPushed.current) return
@@ -228,7 +232,7 @@ export function HistoryScreen({ initial = null }: { initial?: ServerData<PeriodD
   // grid-cols-1 = minmax(0, 1fr): nothing inside (e.g. an Android <select>, which is as
   // wide as its longest option) can make the column wider than the screen
   return (
-    <div className="grid grid-cols-1 gap-4 pb-4">
+    <div ref={rootRef} className="grid grid-cols-1 gap-4 pb-4">
       {/* Export sits by the title (it was under the summary, pushing the list down on phones,
           Phase A M4); on wider screens it follows the period picker */}
       <header className="flex flex-wrap items-end gap-3 pt-6">

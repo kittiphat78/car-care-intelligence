@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/cn'
 import { toUserMessage } from '@/lib/errors'
 import { useMediaQuery, TABLE_SCREEN } from '@/lib/use-media-query'
+import { useKeepEarlyTyping } from '@/lib/use-early-typing'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Icon } from '@/components/ui/Icon'
@@ -54,6 +55,9 @@ export function CustomersScreen({ userId, initial = null }: { userId: string; in
 
   // Type freely; the URL follows after a short pause (fewer history calls, Safari limits them)
   const [query, setQuery] = useState(() => searchParams.get('q') ?? '')
+  // Typed before React took over the page the server sent with the list (D-08, ADR-31)
+  const rootRef = useRef<HTMLDivElement>(null)
+  useKeepEarlyTyping(rootRef, { 'customers-search': setQuery })
   const urlQuery = searchParams.get('q') ?? ''
   const leaving = useRef(false)
   useEffect(() => {
@@ -82,7 +86,7 @@ export function CustomersScreen({ userId, initial = null }: { userId: string; in
   const searching = query.trim() !== ''
 
   return (
-    <div className="grid grid-cols-1 gap-4 pb-4">
+    <div ref={rootRef} className="grid grid-cols-1 gap-4 pb-4">
       <PageHeader
         title="ลูกค้า"
         description={customers ? `ทั้งหมด ${customers.length} ราย` : undefined}
