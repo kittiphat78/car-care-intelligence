@@ -15,6 +15,7 @@ const dashboard = vi.hoisted(() => ({ loadTodayDashboard: vi.fn() }))
 vi.mock('@/features/dashboard/hooks', () => dashboard)
 
 import { ExpenseEditor, IncomeEditor } from '../components/RecordEditor'
+import { clearOutbox, outboxItems, restoreDraft } from '../outbox'
 import { forgetCustomers } from '@/features/customers/memory'
 import { plateCore, plateKey } from '@/features/customers/logic'
 import type { Customer } from '@/features/customers/types'
@@ -72,6 +73,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  clearOutbox()
   vi.useRealTimers()
 })
 
@@ -96,9 +98,9 @@ describe('IncomeEditor', () => {
     expect(row).not.toHaveProperty('seq_number')
     expect(router.push).toHaveBeenCalledWith('/')
     expect(screen.getByRole('status')).toHaveTextContent('บันทึก กข 1234 ฿150 แล้ว')
-    // The dashboard's data starts loading on the way there (ADR-29)
+    // The dashboard's data starts loading once the database has the row (ADR-29, ADR-30)
     expect(dashboard.loadTodayDashboard).toHaveBeenCalledOnce()
-    expect(dashboard.loadTodayDashboard.mock.invocationCallOrder[0]).toBeLessThan(router.push.mock.invocationCallOrder[0])
+    expect(dashboard.loadTodayDashboard.mock.invocationCallOrder[0]).toBeGreaterThan(api.createIncome.mock.invocationCallOrder[0])
   })
 
   it('"บันทึกแล้วทำต่อ" keeps the job settings and focuses the plate (AC-05-1)', async () => {
@@ -115,34 +117,86 @@ describe('IncomeEditor', () => {
     expect(screen.getByRole('radio', { name: 'รถเก๋ง' })).toHaveAttribute('aria-checked', 'true')
   })
 
-  it('pressing save again while saving sends one request (AC-06-1)', async () => {
+  it('pressing save again right after sends one request and shows no errors (AC-06-1)', async () => {
     let finish: (v: unknown) => void = () => {}
     api.createIncome.mockReturnValue(new Promise((r) => (finish = r)))
     renderIncome()
     fillIncome()
-    fireEvent.click(screen.getByRole('button', { name: 'บันทึก' }))
-    fireEvent.click(screen.getByRole('button', { name: /กำลังบันทึก/ }))
-    fireEvent.click(screen.getByRole('button', { name: /กำลังบันทึก/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'บันทึกแล้วทำต่อ' }))
+    fireEvent.click(screen.getByRole('button', { name: 'บันทึกแล้วทำต่อ' }))
+    fireEvent.click(screen.getByRole('button', { name: 'บันทึกแล้วทำต่อ' }))
     await act(async () => finish({ ok: true, data: undefined }))
     expect(api.createIncome).toHaveBeenCalledOnce()
+    // The emptied form is not checked again: no "กรุณาแก้ไข"
+    expect(screen.queryByText(/กรุณาแก้ไข/)).toBeNull()
   })
 
-  it('keeps the form after a network failure and retries with the same request id (AC-35-1)', async () => {
+  it('a second car typed right after is saved, however fast (CUJ-5)', async () => {
+    renderIncome()
+    fillIncome()
+    await press('บันทึกแล้วทำต่อ')
+    fireEvent.change(screen.getByLabelText(/ป้ายทะเบียน/), { target: { value: 'กข 5678' } })
+    fireEvent.change(screen.getByLabelText(/ราคา \(บาท\)/), { target: { value: '200' } })
+    await press('บันทึกแล้วทำต่อ')
+    expect(api.createIncome.mock.calls.map((c) => c[0].plate)).toEqual(['กข 1234', 'กข 5678'])
+  })
+
+  it('moves on at once and says when the database has it (ADR-30)', async () => {
+    let finish: (v: unknown) => void = () => {}
+    api.createIncome.mockReturnValue(new Promise((r) => (finish = r)))
+    renderIncome()
+    fillIncome()
+    await press('บันทึก')
+    // Gone to the dashboard before the database answered; the row is on its way
+    expect(router.push).toHaveBeenCalledWith('/')
+    expect(outboxItems().map((i) => [i.table === 'records' ? i.row.plate : i.row.title, i.status])).toEqual([['กข 1234', 'sending']])
+    expect(screen.queryByText(/บันทึก กข 1234 ฿150 แล้ว/)).toBeNull()
+    await act(async () => finish({ ok: true, data: undefined }))
+    expect(outboxItems()[0].status).toBe('sent')
+    expect(screen.getByRole('status')).toHaveTextContent('บันทึก กข 1234 ฿150 แล้ว')
+  })
+
+  it('a network failure keeps the row as "ยังไม่ส่ง" and sends it again with the same request id (AC-35-1)', async () => {
     api.createIncome.mockResolvedValueOnce({ ok: false, error: appError('NETWORK') })
     renderIncome()
     fillIncome()
     await press('บันทึก')
-    const banner = screen.getByRole('alert')
-    expect(banner).toHaveTextContent('บันทึกไม่สำเร็จ ข้อมูลยังอยู่ในฟอร์ม')
-    expect(banner).toHaveTextContent('เชื่อมต่ออินเทอร์เน็ตไม่ได้')
-    // Focus (and so the scroll position) moves to the message at the top (U-01)
-    expect(banner.parentElement).toHaveFocus()
-    expect(screen.getByLabelText(/ป้ายทะเบียน/)).toHaveValue('กข 1234')
+    expect(outboxItems()[0].status).toBe('unsent')
+    const toast = screen.getByRole('alert')
+    expect(toast).toHaveTextContent('ส่ง กข 1234 ไม่ได้ ไม่มีสัญญาณ')
 
-    await press('บันทึก')
+    await act(async () => {
+      fireEvent.click(within(toast).getByRole('button', { name: 'ส่งอีกครั้ง' }))
+    })
     const [first, second] = api.createIncome.mock.calls.map((c) => c[0].client_request_id)
     expect(second).toBe(first)
-    expect(router.push).toHaveBeenCalledWith('/')
+    expect(outboxItems()[0].status).toBe('sent')
+    expect(screen.queryByText(/ไม่มีสัญญาณ/)).toBeNull()
+  })
+
+  it('a row the database refuses leaves the lists and "กลับไปแก้" fills the form again', async () => {
+    api.createIncome.mockResolvedValueOnce({ ok: false, error: appError('VALIDATION') })
+    const { unmount } = renderIncome()
+    fillIncome()
+    await press('บันทึก')
+    expect(outboxItems()).toEqual([])
+    const toast = screen.getByRole('alert')
+    expect(toast).toHaveTextContent('บันทึก กข 1234 ไม่สำเร็จ')
+    fireEvent.click(within(toast).getByRole('button', { name: 'กลับไปแก้' }))
+    expect(router.push).toHaveBeenLastCalledWith('/add')
+    unmount()
+    // /add opens again with what was typed
+    renderIncome()
+    await act(async () => {})
+    expect(screen.getByLabelText(/ป้ายทะเบียน/)).toHaveValue('กข 1234')
+    expect(screen.getByText('กู้ข้อมูลที่กรอกค้างไว้แล้ว')).toBeInTheDocument()
+  })
+
+  it('fills a refused expense back into the expense form only', async () => {
+    restoreDraft('expenses', { form: { amount: '90', title: 'ค่าน้ำ', note: '' }, day: '2026-10-14' })
+    renderIncome()
+    await act(async () => {})
+    expect(screen.getByLabelText(/ป้ายทะเบียน/)).toHaveValue('')
   })
 
   it('warns before saving an unpaid job without a name', async () => {

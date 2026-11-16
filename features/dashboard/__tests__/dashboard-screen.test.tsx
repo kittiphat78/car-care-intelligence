@@ -57,7 +57,9 @@ beforeEach(() => {
 })
 
 describe('DashboardScreen', () => {
-  it('shows cash today, the debt card and today’s jobs newest first', async () => {
+  // The first render loads the whole dashboard module graph; in a full parallel run with
+  // the local Supabase env it took 4.9 s on develop already (limit 5 s), so it gets more time
+  it('shows cash today, the debt card and today’s jobs newest first', { timeout: 15_000 }, async () => {
     await renderScreen()
     expect(screen.getByRole('heading', { level: 1, name: 'ภาพรวมวันนี้' })).toBeInTheDocument()
     const hero = screen.getByRole('region', { name: 'เงินสดสุทธิวันนี้' })

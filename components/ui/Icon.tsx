@@ -213,16 +213,16 @@ export function Icon({ name, size = 'md', className, ...rest }: IconProps) {
   )
 }
 
-// Spinner (§1.12): 20px in buttons, 32px for a section. The busy state is announced by
+// Spinner (§1.12): 16px in a badge ("กำลังส่ง", ADR-30), 20px in buttons, 32px for a section. The busy state is announced by
 // its container, so the spinner itself is hidden from assistive tech.
-export function Spinner({ size = 'sm', className }: { size?: 'sm' | 'lg'; className?: string }) {
+export function Spinner({ size = 'sm', className }: { size?: 'xs' | 'sm' | 'lg'; className?: string }) {
   return (
     <svg
       viewBox="0 0 24 24"
       fill="none"
       aria-hidden="true"
       focusable="false"
-      className={cn('shrink-0 animate-spin motion-reduce:[animation-duration:2.5s]', size === 'sm' ? 'size-5' : 'size-8', className)}
+      className={cn('shrink-0 animate-spin motion-reduce:[animation-duration:2.5s]', size === 'xs' ? 'size-4' : size === 'sm' ? 'size-5' : 'size-8', className)}
     >
       <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
       <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />

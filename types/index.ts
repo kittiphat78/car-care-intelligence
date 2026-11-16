@@ -40,6 +40,8 @@ export interface Expense {
   created_by_email?: string  // ✅ เก็บอีเมลคนสร้าง
   updated_by_email?: string  // ✅ เก็บอีเมลคนแก้ไข
   updated_at?:      string   // ✅ เก็บเวลาแก้ไขล่าสุด
+  /** One id per save from the app (M004) */
+  client_request_id?: string | null
 }
 
 export const CAR_TYPES = [

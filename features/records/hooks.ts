@@ -59,7 +59,13 @@ export function useDraft<T extends object>(key: string, empty: T, isDirty: (valu
     [empty],
   )
 
-  return { value, setValue, restored, reset }
+  /** Fill the form again with values from elsewhere (a row the database refused, ADR-30) */
+  const restore = useCallback((next: T) => {
+    setValue(next)
+    setRestored(true)
+  }, [])
+
+  return { value, setValue, restored, reset, restore }
 }
 
 // ── Recent customers (AC-09-1) ───────────────────────────────────────────────

@@ -3,8 +3,9 @@
 import { cn } from '@/lib/cn'
 import { formatBangkok } from '@/lib/time/bangkok'
 import { Badge } from '@/components/ui/Badge'
-import { Icon } from '@/components/ui/Icon'
+import { Icon, Spinner } from '@/components/ui/Icon'
 import type { Expense, Record as AppRecord } from '@/types'
+import { resend, type OutboxStatus, type ShownExpense, type ShownRecord } from '../outbox'
 
 // component-specifications.md §3.4 — one income or expense line. The whole row is a
 // <button> that opens the edit dialog. Its accessible name is the text on screen plus a
@@ -29,6 +30,34 @@ function auditLine(row: { created_by_email?: string; updated_by_email?: string; 
   return parts.filter(Boolean).join(' · ') || null
 }
 
+/** A row on its way to the database (ADR-30): "กำลังส่ง" while sending, "ยังไม่ส่ง" when the network failed */
+function SendStatus({ status }: { status?: OutboxStatus }) {
+  if (status === 'sending')
+    return (
+      <Badge>
+        <Spinner size="xs" />
+        กำลังส่ง
+      </Badge>
+    )
+  if (status === 'unsent')
+    return (
+      <Badge tone="danger" icon="alert">
+        ยังไม่ส่ง
+      </Badge>
+    )
+  return null
+}
+
+/**
+ * A row not in the database yet cannot be edited: a tap on one that failed sends it again,
+ * otherwise nothing (the label says it is on its way). The hidden hint says which.
+ */
+function pendingTap(status: OutboxStatus | undefined, requestId: string | null | undefined): { onTap: () => void; hint: string } | null {
+  if (!status) return null
+  if (status === 'unsent') return { onTap: () => resend(requestId ?? undefined), hint: 'แตะเพื่อส่งอีกครั้ง' }
+  return { onTap: () => {}, hint: 'แก้ได้เมื่อส่งเสร็จ' }
+}
+
 export function IncomeRow({
   record,
   highlight = false,
@@ -37,7 +66,7 @@ export function IncomeRow({
   below,
   onOpen,
 }: {
-  record: AppRecord
+  record: ShownRecord
   highlight?: boolean
   showAudit?: boolean
   /** The date as well as the time (rows from several days, e.g. a customer's history) */
@@ -49,11 +78,12 @@ export function IncomeRow({
   const [, brand, note] = record.services ?? []
   const polish = record.type === 'polish'
   const unpaid = record.payment_status === 'unpaid'
+  const pending = pendingTap(record.outbox, record.client_request_id)
 
   return (
     <button
       type="button"
-      onClick={() => onOpen(record)}
+      onClick={() => (pending ? pending.onTap() : onOpen(record))}
       data-highlight={highlight || undefined}
       className={cn(
         'focus-ring flex w-full flex-wrap items-center gap-x-3 gap-y-1 rounded-md px-2 py-3 text-left transition-colors duration-(--duration-slow) hover:bg-surface-2',
@@ -78,6 +108,7 @@ export function IncomeRow({
             </Badge>
           )}
           {record.seq_number != null && <span className="text-caption text-text-tertiary">#{record.seq_number}</span>}
+          <SendStatus status={record.outbox} />
         </span>
         {/* The customer name is never cut (it is how a job is chased); a note may take two lines */}
         {record.customer_name && <span className="text-caption break-words text-text-tertiary">{record.customer_name}</span>}
@@ -89,16 +120,17 @@ export function IncomeRow({
         <span className={cn('text-subheading font-bold tabular-nums', unpaid ? 'text-unpaid' : 'text-text')}>{baht(record.price)}</span>
         <span className="text-caption text-text-tertiary tabular-nums">{showDate ? `${dateOf(record.created_at)} · ${timeOf(record.created_at)}` : timeOf(record.created_at)}</span>
       </span>
-      <span className="sr-only">แตะเพื่อแก้ไข</span>
+      <span className="sr-only">{pending?.hint ?? 'แตะเพื่อแก้ไข'}</span>
     </button>
   )
 }
 
-export function ExpenseRow({ expense, showAudit = false, onOpen }: { expense: Expense; showAudit?: boolean; onOpen: (e: Expense) => void }) {
+export function ExpenseRow({ expense, showAudit = false, onOpen }: { expense: ShownExpense; showAudit?: boolean; onOpen: (e: Expense) => void }) {
+  const pending = pendingTap(expense.outbox, expense.client_request_id)
   return (
     <button
       type="button"
-      onClick={() => onOpen(expense)}
+      onClick={() => (pending ? pending.onTap() : onOpen(expense))}
       className="focus-ring flex w-full flex-wrap items-center gap-x-3 gap-y-1 rounded-md px-2 py-3 text-left hover:bg-surface-2"
     >
       <span aria-hidden="true" className="grid size-10 shrink-0 place-items-center rounded-md bg-danger-subtle text-danger-text">
@@ -106,6 +138,11 @@ export function ExpenseRow({ expense, showAudit = false, onOpen }: { expense: Ex
       </span>
       <span className={TEXT}>
         <span className="truncate text-subheading text-text">{expense.title}</span>
+        {expense.outbox && expense.outbox !== 'sent' && (
+          <span className="flex flex-wrap items-center gap-1.5">
+            <SendStatus status={expense.outbox} />
+          </span>
+        )}
         {expense.note && <span className="truncate text-caption text-text-tertiary">{expense.note}</span>}
         {showAudit && auditLine(expense) && <span className="truncate text-caption text-text-tertiary">{auditLine(expense)}</span>}
       </span>
@@ -113,7 +150,7 @@ export function ExpenseRow({ expense, showAudit = false, onOpen }: { expense: Ex
         <span className="text-subheading font-bold text-expense tabular-nums">−{baht(expense.amount)}</span>
         <span className="text-caption text-text-tertiary tabular-nums">{timeOf(expense.created_at)}</span>
       </span>
-      <span className="sr-only">รายจ่าย แตะเพื่อแก้ไข</span>
+      <span className="sr-only">{pending ? `รายจ่าย ${pending.hint}` : 'รายจ่าย แตะเพื่อแก้ไข'}</span>
     </button>
   )
 }

@@ -22,6 +22,7 @@ import { EditRecordDialog } from '@/features/records/components/EditRecordDialog
 import { useEditParam } from '@/features/records/useEditParam'
 import type { Record as AppRecord } from '@/types'
 import { loadUnpaidShared } from '../shared'
+import { useOutbox, useReloadWhenSent, withOutboxIncome } from '@/features/records/outbox'
 import { UNNAMED_KEY, debtTotals, groupDebts, sortDebts, type DebtGroup, type DebtSort } from '../logic'
 import { DebtCustomerCard } from './DebtCustomerCard'
 import { SettleDialog } from './SettleDialog'
@@ -70,10 +71,16 @@ export function DebtsScreen() {
     else startRefresh(() => router.refresh())
   }, [load, router])
 
+  // Unpaid rows still on their way are owed too (ADR-30); the database's copy follows
+  const outbox = useOutbox()
+  const owed = useMemo(() => (unpaid?.ok ? withOutboxIncome(unpaid.data, outbox, (row) => row.payment_status === 'unpaid') : null), [unpaid, outbox])
+  // load(false) joins the reload a settle already started instead of asking twice
+  useReloadWhenSent(useCallback(() => void load(false), [load]))
+
   const sort: DebtSort = searchParams.get('sort') === 'age' ? 'age' : 'amount'
-  const groups = useMemo(() => (unpaid?.ok ? sortDebts(groupDebts(unpaid.data, today), sort) : []), [unpaid, sort, today])
+  const groups = useMemo(() => (owed ? sortDebts(groupDebts(owed, today), sort) : []), [owed, sort, today])
   const totals = debtTotals(groups)
-  const records = unpaid?.ok ? unpaid.data : []
+  const records = owed ?? []
   const edit = useEditParam({ income: records, ready: unpaid !== null })
 
   // Customer directory: a call button on each card (US-10), "เพิ่มเบอร์" when not in it yet

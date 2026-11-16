@@ -19,6 +19,8 @@ export interface DashboardState {
   /** A reload after the first one (the ⟳ button spins) */
   refreshing: boolean
   loadedAt: Date | null
+  /** When the figures on screen were asked for (performance.now()), for rows still on their way (ADR-30) */
+  startedAt: number
   refresh: () => void
 }
 
@@ -26,6 +28,7 @@ interface KeptDashboard {
   day: string
   data: DashboardData
   loadedAt: Date
+  startedAt: number
 }
 
 /** What the dashboard showed last in this tab, if it is still for today */
@@ -44,8 +47,9 @@ export function loadTodayDashboard({ fresh = false } = {}): Promise<KeptDashboar
     DASHBOARD_KEY,
     async () => {
       const day = bangkokToday()
+      const startedAt = performance.now()
       const data = await loadDashboard(day, () => loadUnpaidShared({ fresh }))
-      return { day, data, loadedAt: new Date() }
+      return { day, data, loadedAt: new Date(), startedAt }
     },
     { fresh },
   )
@@ -58,19 +62,25 @@ export function useDashboardData(): DashboardState {
   const [data, setData] = useState<DashboardData | null>(kept?.data ?? null)
   const [refreshing, setRefreshing] = useState(false)
   const [loadedAt, setLoadedAt] = useState<Date | null>(kept?.loadedAt ?? null)
+  const [startedAt, setStartedAt] = useState(kept?.startedAt ?? 0)
   const latest = useRef(0)
+  const shown = useRef(0)
 
   const load = useCallback(async (fresh: boolean) => {
     const call = ++latest.current
     setRefreshing(true)
     const result = await loadTodayDashboard({ fresh })
-    // An older, slower reload must not overwrite a newer one
-    if (call !== latest.current) return
+    // An older, slower reload must not overwrite a newer one. An older one that arrives
+    // first is still shown (e.g. the load started by "บันทึก" when a reload followed it as
+    // the row reached the database): better than the skeleton until the newer one comes.
+    if (call < shown.current) return
+    shown.current = call
     for (const part of Object.values(result.data)) if (!part.ok) reportAppError(part.error)
     setDay(result.day)
     setData(result.data)
     setLoadedAt(result.loadedAt)
-    setRefreshing(false)
+    setStartedAt(result.startedAt)
+    if (call === latest.current) setRefreshing(false)
   }, [])
 
   useEffect(() => {
@@ -94,5 +104,5 @@ export function useDashboardData(): DashboardState {
   }, [load])
 
   const refresh = useCallback(() => void load(true), [load])
-  return { day, data, loading: data === null, refreshing: refreshing && data !== null, loadedAt, refresh }
+  return { day, data, loading: data === null, refreshing: refreshing && data !== null, loadedAt, startedAt, refresh }
 }

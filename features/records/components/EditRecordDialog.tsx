@@ -3,20 +3,21 @@
 import { useRef, useState, type ReactNode } from 'react'
 import { CAR_BRANDS, CAR_TYPES, type Expense, type Record as AppRecord } from '@/types'
 import { formatBangkok } from '@/lib/time/bangkok'
-import { toUserMessage, type AppError } from '@/lib/errors'
+import type { AppError } from '@/lib/errors'
 import { reportAppError } from '@/lib/observability'
-import { Banner } from '@/components/ui/Banner'
+import { pushUrl } from '@/lib/url-state'
 import { Button } from '@/components/ui/Button'
 import { ChoiceGroup } from '@/components/ui/ChoiceGroup'
 import { Dialog } from '@/components/ui/Dialog'
 import { TextInput } from '@/components/ui/TextInput'
-import { useToast } from '@/components/ui/Toast'
+import { useToast, type ToastApi } from '@/components/ui/Toast'
 import { ConfirmDialog } from '@/components/patterns/ConfirmDialog'
 import { FormErrorSummary } from '@/components/patterns/FormErrorSummary'
 import { FormField, describedBy, labelId } from '@/components/patterns/FormField'
 import { useOnline } from '@/components/patterns/StatusBar'
 import { BrandPicker, CustomerField, DateField, MoneyField, PlateField, TimeField, thaiDate } from '@/components/patterns/fields'
 import { deleteEntry, updateEntry, type EntryPatch } from '../api'
+import { reopenEdit, sendChange, takeReopenedEdit } from '../outbox'
 import {
   EXPENSE_PRESETS,
   checkExpense,
@@ -33,7 +34,9 @@ import {
 } from '../editor'
 import { useRecentCustomers } from '../hooks'
 
-// screen-specifications.md §8 — RecordEditor in edit mode, inside a dialog.
+// screen-specifications.md §8 — RecordEditor in edit mode, inside a dialog. Saving and
+// deleting close it at once and go on behind (ADR-30): the lists show the change straight
+// away, and undo it if the database says no.
 
 export type EditTarget = { kind: 'income'; row: AppRecord } | { kind: 'expense'; row: Expense }
 
@@ -74,6 +77,40 @@ function AuditInfo({ row }: { row: AppRecord | Expense }) {
   )
 }
 
+/** What the dialog shows, kept for "แก้อีกครั้ง" when a save fails */
+interface EditValues {
+  day: string
+  time: string
+  income: IncomeDraft | null
+  expense: ExpenseDraft | null
+}
+
+/** "ลบ" on its way; a failed delete brings the row back and offers to try again */
+function sendDelete(target: EditTarget, label: string, toast: ToastApi, onChanged: () => void) {
+  const table = target.kind === 'income' ? 'records' : 'expenses'
+  const change = target.kind === 'income' ? ({ kind: 'delete', table: 'records', before: target.row } as const) : ({ kind: 'delete', table: 'expenses', before: target.row } as const)
+  sendChange(change, () => deleteEntry(table, target.row.id), {
+    onSent: () => toast.success(`ลบ ${label} แล้ว`),
+    onFailed: (error) => {
+      if (error.code === 'NOT_FOUND') {
+        toast.info('รายการนี้ถูกลบไปแล้ว')
+        onChanged()
+        return
+      }
+      reportAppError(error)
+      toast.error(`ลบ ${label} ไม่สำเร็จ รายการกลับมาแล้ว`, { action: { label: 'ลองอีกครั้ง', onClick: () => sendDelete(target, label, toast, onChanged) } })
+    },
+  })
+}
+
+/** Opens the edit dialog of `target` again, with the values that could not be saved */
+function editAgain(target: EditTarget, values: EditValues) {
+  reopenEdit(target.row.id, values)
+  const params = new URLSearchParams(window.location.search)
+  params.set('edit', `${target.kind}:${target.row.id}`)
+  pushUrl(`${window.location.pathname}?${params.toString()}`)
+}
+
 function EditBody({ target, onClose, onChanged }: { target: EditTarget; onClose: () => void; onChanged: () => void }) {
   const toast = useToast()
   const online = useOnline()
@@ -82,20 +119,25 @@ function EditBody({ target, onClose, onChanged }: { target: EditTarget; onClose:
   const isIncome = target.kind === 'income'
 
   const when = whenOf(row.created_at)
-  const [day, setDay] = useState(when.date)
-  const [time, setTime] = useState(when.time)
-  const [income, setIncome] = useState<IncomeDraft | null>(isIncome ? incomeDraftFrom(target.row) : null)
-  const [expense, setExpense] = useState<ExpenseDraft | null>(isIncome ? null : expenseDraftFrom(target.row as Expense))
+  // As saved, or what could not be saved a moment ago ("แก้อีกครั้ง")
+  const [saved] = useState<EditValues>(() => ({
+    day: when.date,
+    time: when.time,
+    income: isIncome ? incomeDraftFrom(target.row) : null,
+    expense: isIncome ? null : expenseDraftFrom(target.row as Expense),
+  }))
+  const [start] = useState<EditValues>(() => takeReopenedEdit<EditValues>(row.id) ?? saved)
+  const [day, setDay] = useState(start.day)
+  const [time, setTime] = useState(start.time)
+  const [income, setIncome] = useState<IncomeDraft | null>(start.income)
+  const [expense, setExpense] = useState<ExpenseDraft | null>(start.expense)
   const [attempt, setAttempt] = useState(0)
-  const [busy, setBusy] = useState<'save' | 'delete' | null>(null)
-  const [failure, setFailure] = useState<AppError | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [confirmDiscard, setConfirmDiscard] = useState(false)
   const cancelDeleteRef = useRef<HTMLButtonElement>(null)
 
-  // Snapshot of the values as opened; "บันทึกการแก้ไข" stays disabled until they change
-  const [initial] = useState(() => JSON.stringify([day, time, income, expense]))
-  const dirty = JSON.stringify([day, time, income, expense]) !== initial
+  // Compared with the saved values; "บันทึกการแก้ไข" stays disabled until they differ
+  const dirty = JSON.stringify([day, time, income, expense]) !== JSON.stringify([saved.day, saved.time, saved.income, saved.expense])
 
   const checked = income ? checkIncomeEdit(income) : checkExpense(expense!)
   const errors = attempt > 0 && !checked.ok ? checked.errors : []
@@ -104,26 +146,15 @@ function EditBody({ target, onClose, onChanged }: { target: EditTarget; onClose:
     ? `${(row as AppRecord).plate} ${baht((row as AppRecord).price)} (${shortDate(row.created_at)})`
     : `${(row as Expense).title} ${baht((row as Expense).amount)} (${shortDate(row.created_at)})`
 
+  const label = summary.split(' (')[0]
+
   function requestClose() {
-    if (busy) return
     if (dirty) setConfirmDiscard(true)
     else onClose()
   }
 
-  function fail(error: AppError) {
-    if (error.code === 'NOT_FOUND') {
-      toast.info('รายการนี้ถูกลบไปแล้ว')
-      onChanged()
-      onClose()
-      return
-    }
-    reportAppError(error)
-    setFailure(error)
-  }
-
-  async function save() {
+  function save() {
     setAttempt((n) => n + 1)
-    setFailure(null)
     if (!checked.ok) return
     const createdAt = editedCreatedAt(row.created_at, day, time)
     let patch: EntryPatch
@@ -132,26 +163,34 @@ function EditBody({ target, onClose, onChanged }: { target: EditTarget; onClose:
     else return
     if (Object.keys(patch).length === 0) return onClose()
 
-    setBusy('save')
-    const result = await updateEntry(isIncome ? 'records' : 'expenses', row.id, patch, row.updated_at ?? null)
-    setBusy(null)
-    if (!result.ok) return fail(result.error)
-    toast.success('บันทึกการแก้ไขแล้ว')
-    onChanged()
+    const values: EditValues = { day, time, income, expense }
+    const table = isIncome ? 'records' : 'expenses'
+    const change =
+      target.kind === 'income'
+        ? ({ kind: 'update', table: 'records', before: target.row, after: { ...target.row, ...patch } as AppRecord } as const)
+        : ({ kind: 'update', table: 'expenses', before: target.row, after: { ...target.row, ...patch } as Expense } as const)
+    sendChange(change, () => updateEntry(table, row.id, patch, row.updated_at ?? null), {
+      onSent: () => toast.success('บันทึกการแก้ไขแล้ว'),
+      onFailed: (error: AppError) => {
+        if (error.code === 'NOT_FOUND') {
+          toast.info('รายการนี้ถูกลบไปแล้ว')
+          onChanged()
+          return
+        }
+        reportAppError(error)
+        const again = { action: { label: 'แก้อีกครั้ง', onClick: () => editAgain(target, values) } }
+        if (error.code === 'CONFLICT') {
+          // Changed on another device first: show that version
+          onChanged()
+          toast.error(`มีการแก้ ${label} จากเครื่องอื่น แสดงค่าล่าสุดแล้ว`, again)
+        } else toast.error(`แก้ ${label} ไม่สำเร็จ ค่ากลับเป็นเดิมแล้ว`, again)
+      },
+    })
     onClose()
   }
 
-  async function remove() {
-    setBusy('delete')
-    setFailure(null)
-    const result = await deleteEntry(isIncome ? 'records' : 'expenses', row.id)
-    setBusy(null)
-    if (!result.ok) {
-      setConfirmDelete(false)
-      return fail(result.error)
-    }
-    toast.success(`ลบ ${summary.split(' (')[0]} แล้ว`)
-    onChanged()
+  function remove() {
+    sendDelete(target, label, toast, onChanged)
     onClose()
   }
 
@@ -159,10 +198,10 @@ function EditBody({ target, onClose, onChanged }: { target: EditTarget; onClose:
     <div className="grid grid-cols-1 w-full gap-2">
       <p className="text-body font-semibold text-text">ลบ {summary}?</p>
       <div className="flex gap-3 *:flex-1">
-        <Button ref={cancelDeleteRef} variant="secondary" onClick={() => setConfirmDelete(false)} disabled={busy === 'delete'}>
+        <Button ref={cancelDeleteRef} variant="secondary" onClick={() => setConfirmDelete(false)}>
           ยกเลิก
         </Button>
-        <Button variant="danger" onClick={remove} isLoading={busy === 'delete'} loadingText="กำลังลบ…" disabled={!online}>
+        <Button variant="danger" onClick={remove} disabled={!online}>
           ลบรายการ
         </Button>
       </div>
@@ -173,7 +212,7 @@ function EditBody({ target, onClose, onChanged }: { target: EditTarget; onClose:
         variant="danger-ghost"
         leadingIcon="trash"
         className="flex-none!"
-        disabled={!!busy || !online}
+        disabled={!online}
         onClick={() => {
           setConfirmDelete(true)
           requestAnimationFrame(() => cancelDeleteRef.current?.focus())
@@ -181,7 +220,7 @@ function EditBody({ target, onClose, onChanged }: { target: EditTarget; onClose:
       >
         ลบ
       </Button>
-      <Button onClick={save} disabled={!dirty || !online || busy === 'delete'} isLoading={busy === 'save'} loadingText="กำลังบันทึก…">
+      <Button onClick={save} disabled={!dirty || !online}>
         {online ? 'บันทึกการแก้ไข' : 'รอเชื่อมต่อ'}
       </Button>
     </>
@@ -199,11 +238,6 @@ function EditBody({ target, onClose, onChanged }: { target: EditTarget; onClose:
       >
         <div className="grid grid-cols-1 gap-5 pb-2">
           <FormErrorSummary errors={errors} attempt={attempt} />
-          {failure && (
-            <Banner tone="danger" title={failure.code === 'CONFLICT' ? 'มีการแก้รายการนี้จากเครื่องอื่น' : 'บันทึกไม่สำเร็จ'}>
-              {toUserMessage(failure)}
-            </Banner>
-          )}
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-[3fr_2fr]">
             <DateField id="edit-date" label="วันที่" value={day} onChange={setDay} />

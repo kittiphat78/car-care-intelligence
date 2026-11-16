@@ -8,6 +8,7 @@ import { Dialog } from '@/components/ui/Dialog'
 import { useToast } from '@/components/ui/Toast'
 import { toUserMessage } from '@/lib/errors'
 import { forget } from '@/lib/data-store'
+import { clearOutbox } from '@/features/records/outbox'
 import { replaceUrl } from '@/lib/url-state'
 import { forgetCustomers } from '@/features/customers/memory'
 import { signOut } from '../api'
@@ -48,6 +49,7 @@ export function LogoutDialog({ email }: { email: string }) {
     clearLocalDrafts()
     forgetCustomers()
     forget()
+    clearOutbox()
     // The server could not be reached, but this device is signed out (UF-AUTH-04)
     if (result.data.localOnly) toast.info('ออกจากระบบในเครื่องนี้แล้ว')
     router.replace('/login')
