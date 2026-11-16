@@ -1,6 +1,6 @@
 # v2.4.0 — แอปเร็วขึ้น (งานความเร็ว 3a–3e)
 
-> สถานะ: **Release candidate** · RC `v2.4.0-rc.2` (`e6d4f85`) · ฐาน: `v2.3.0` (`abd062b`)
+> สถานะ: **Released** · production 2026-11-16 13:37 · PR #95 merge commit `2b63bc4` · tag `v2.4.0` · RC `v2.4.0-rc.2` (`e6d4f85`) · ฐาน: `v2.3.0` (`abd062b`)
 > SemVer: MINOR (หน้าตา เมนู ปุ่ม ข้อความ flow URL และฟอนต์เหมือน v2.3.0 · เพิ่มป้าย "กำลังส่ง / ยังไม่ส่ง" ที่เจ้าของเลือก · ไม่มี migration · ไม่เปลี่ยนข้อมูล) · ป้าย: **[V]** Verified · **[I]** Inferred · **[U]** Unknown
 
 ## สำหรับคนในร้าน
@@ -68,17 +68,20 @@
 | E2E iPad Pro (rc.1) / Android จอเล็ก (rc.2) / laptop 1366 (rc.2) | 42 / 39 / 44 ผ่าน [V] |
 | Preview + staging rc.1 (`e2e-preview`) | 14 ผ่าน · 1 ล้ม (iPhone: ช่องค้นหาลูกค้าลบข้อความที่พิมพ์ก่อนหน้าพร้อม) → แก้ใน `a661531` [V] |
 | Preview + staging rc.2 (`e2e-preview`) | 15 ผ่าน · ข้าม 6 · มือถือ · PC · iPhone · ใช้ staging · ไม่มีคำขอไป production [V] |
-| CI rc.1 / rc.2 | ผ่านทุกงาน (develop `44d77e5`: งาน `db` ล้มตอนเริ่ม Supabase บน CI รันซ้ำแล้วผ่าน) [V] |
+| CI rc.1 / rc.2 / release PR #95 | ผ่านทุกงาน · `supabase start` บน CI ล้ม 2 ครั้ง (`db` ของ develop `44d77e5`, `e2e` ของ PR #95) ก่อนรัน test ใด ๆ · รันซ้ำแล้วผ่านทั้งคู่ [V] |
 | หน้าที่มีข้อมูลลูกค้ามากับ HTML | ทั้งหน้าและ RSC ส่ง `private, no-cache, no-store` [V] |
 
-## Deploy และตรวจหลังขึ้น production
+## Deploy และตรวจหลังขึ้น production [V]
 
-ทำหลังเจ้าของ merge release PR · ตรวจแบบอ่านอย่างเดียว:
-- GitHub deployment ของ merge commit = Production + success · หน้า `/login` แสดง `v2.4.0`
-- `x-vercel-id` ของ production ลงท้าย `::sin1` (function ย้ายจาก `iad1` เป็นครั้งแรกบน production)
-- header ความปลอดภัยครบ · JavaScript ชี้ Supabase production เท่านั้น
+| เวลา (2026-11-16) | เหตุการณ์ |
+|---|---|
+| ก่อน merge | Preview ของ `d980d8f` (`chore(release): 2.4.0`) แสดง `v2.4.0` · ใช้ staging · CI ของ PR #95: `pr-title` ล้มเพราะ title แรกไม่ตรงรูปแบบ (แก้เป็น `chore(release): 2.4.0`) · `e2e` ล้มตอน `supabase start` บน CI (test ยังไม่ได้รัน) เจ้าของรันซ้ำแล้วผ่าน |
+| 13:37:01 | เจ้าของ merge PR #95 แบบ merge commit → `2b63bc4` (`release/2.4.0` @ `d980d8f` อยู่ใน `main` ครบ) |
+| 13:37:46 | Vercel production deployment `7817279511` success (commit `2b63bc4`) |
+| หลัง deploy | ตรวจแบบอ่านอย่างเดียวที่ `car-care-intelligence-53wd.vercel.app` (ไม่ login, ไม่รัน SQL): `/login` 200 ขึ้น `v2.4.0` · ไม่มีแถบ Preview · `/`, `/add`, `/debts`, `/history`, `/customers`, `/more` ไม่ login → 307 ไป `/login` (`?next=`) · function รันที่ **`sin1`** (`/api/client-errors` ตอบ `x-vercel-id: sin1::sin1::…`) · header ความปลอดภัยครบ (CSP, HSTS, X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy) · JavaScript 12 ไฟล์ชี้ Supabase production (`fgze…`) เท่านั้น ไม่มี key ฝั่ง server · หน้าเข้าสู่ระบบวาดครบใน Chromium Pixel 7 และ WebKit iPhone 13: หัวข้อ "คาร์แคร์", ปุ่มกดได้, ฟอนต์ Noto Sans Thai, ไม่ล้นแนวนอน, ไม่มี console error (WebKit เตือน viewport `interactive-widget` เหมือน v2.3.0, K-02) |
+| หลังตรวจ | tag `v2.4.0` (annotated) บน `2b63bc4` · back-merge fast-forward `develop` = `main` = `2b63bc4` |
 
-เจ้าของลองบนมือถือด้วยบัญชีร้าน (ADR-19): บันทึกรถ 1 คันแล้วเห็น "กำลังส่ง" หายไป · แก้ราคา 1 รายการ · เปิดทุกแท็บ · (ถ้าสะดวก) ปิดเน็ตตอนกดบันทึกแล้วเห็น "ยังไม่ส่ง" และส่งเองเมื่อเปิดเน็ต
+ยังไม่ได้ทำ (เจ้าของ): ลองบนมือถือด้วยบัญชีร้าน: บันทึกรถ 1 คันแล้วเห็น "กำลังส่ง" หายไป · แก้ราคา 1 รายการ · เปิดทุกแท็บ · (ถ้าสะดวก) ปิดเน็ตตอนกดบันทึกแล้วเห็น "ยังไม่ส่ง" และส่งเองเมื่อเปิดเน็ต
 
 ## Rollback
 
